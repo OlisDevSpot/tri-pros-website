@@ -46,10 +46,10 @@ export function ModifyResultRow({ slot, hit, lead, flash, onApply, onBillEntered
   const current = slot.bill !== null
     ? `${formatAsDollars(Number(slot.current))}${SAVINGS_COPY.billSuffix}`
     : slot.options.find(option => option.value === slot.current)?.label ?? CONTROLS_COPY.facts.missing
-  // Modify lists the efficiency switches as rows of their own, so a build's details here hold no second copy, and a
-  // membrane, whose only detail is the cool roof, shows none.
+  // Modify lists the efficiency switches and the indoor unit's move as rows of their own, so a build's details here hold no
+  // second copy, and a membrane or a whole new system, whose only detail is such a switch, shows none.
   const kind = slot.id.startsWith('build:') ? workDetailsKind(slot.current) : null
-  const details = kind === 'membrane' ? null : kind
+  const details = kind === 'membrane' || kind === 'indoor-unit' ? null : kind
 
   return (
     <div data-result-row={slot.id} className="relative grid gap-2 border-b border-border py-2.5 last:border-b-0">

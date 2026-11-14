@@ -1,5 +1,5 @@
 import type { IndoorUnitPlacement } from '@/features/trade-scenes/lib/indoor-unit-placement'
-import type { BoxSpec, TradeSceneInputs, Vec3 } from '@/features/trade-scenes/types'
+import type { BoxSpec, SceneChangeSlot, SceneChangeSlotId, TradeSceneInputs, Vec3 } from '@/features/trade-scenes/types'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
 import type { HVACComponent, HVACType } from '@/shared/modules/construction/core/constants/enums'
 import type { Assembly, ExistingConditions, HomeFacts, HomeMaterialFacts, PropertyProfile, ResolvedPart, ScopeInstall, Weather } from '@/shared/modules/construction/core/types'
@@ -13,28 +13,36 @@ import { HEAT_ARROW_LOOK } from '@/features/trade-scenes/constants/heat-arrow-lo
 import { CONDENSER_LINE_SET, THERMOSTAT_BOX } from '@/features/trade-scenes/constants/home-details'
 import { FURNISHING_BOXES, HOME_FURNITURE } from '@/features/trade-scenes/constants/home-furnishings'
 import { BACK_INNER, EQUIPMENT, HOME_FLOOR_Y, HOUSE } from '@/features/trade-scenes/constants/home-geometry'
+import { HVAC_INDOOR_LOCATION_LABELS, HVAC_SYSTEM_CHOICE_LABELS, MINI_SPLIT_HEAD_COUNT_LABELS, PART_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
 import { HOME_SCENE_DEFAULTS } from '@/features/trade-scenes/constants/home-scene-defaults'
+import { HVAC_SYSTEM_CHOICES } from '@/features/trade-scenes/constants/home-systems'
 import { INDOOR_UNIT_PLACEMENTS } from '@/features/trade-scenes/constants/indoor-unit-placements'
 import { HOME_PRIMARY_ASSEMBLY } from '@/features/trade-scenes/constants/scene-controls'
+import { applySceneChange } from '@/features/trade-scenes/lib/apply-scene-change'
 import { ceilingOpenings } from '@/features/trade-scenes/lib/ceiling-openings'
 import { drawnHvac } from '@/features/trade-scenes/lib/drawn-hvac'
 import { ductRunPoints } from '@/features/trade-scenes/lib/duct-run-points'
 import { hasDucts } from '@/features/trade-scenes/lib/has-ducts'
 import { homeHeatLanes } from '@/features/trade-scenes/lib/home-heat-lanes'
 import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
-import { atticHoldsUnit, indoorLocation } from '@/features/trade-scenes/lib/indoor-location'
+import { hvacSystemChoice, hvacSystemPatch } from '@/features/trade-scenes/lib/hvac-system-choice'
+import { atticHoldsUnit, indoorLocation, moveToAtticOffered } from '@/features/trade-scenes/lib/indoor-location'
 import { indoorSide } from '@/features/trade-scenes/lib/indoor-side'
 import { indoorUnitBoxes, indoorUnitLineSet } from '@/features/trade-scenes/lib/indoor-unit-boxes'
 import { indoorUnitPlacement } from '@/features/trade-scenes/lib/indoor-unit-placement'
 import { propertyPatch } from '@/features/trade-scenes/lib/property-patch'
+import { repairsRows } from '@/features/trade-scenes/lib/repairs-rows'
 import { resolveScene } from '@/features/trade-scenes/lib/resolve-scene'
 import { sceneChangeSlots } from '@/features/trade-scenes/lib/scene-change-slots'
 import { resolveInputsOf, selectResolveInputs } from '@/features/trade-scenes/lib/scene-resolve-inputs'
 import { scopePick } from '@/features/trade-scenes/lib/scope-pick'
+import { searchSceneChanges } from '@/features/trade-scenes/lib/search-scene-changes'
+import { systemPartRows } from '@/features/trade-scenes/lib/system-parts-shown'
 import { upgradeRowState } from '@/features/trade-scenes/lib/upgrade-row-state'
 import { upgradeRows } from '@/features/trade-scenes/lib/upgrade-rows'
+import { workDetailsKind } from '@/features/trade-scenes/lib/work-details-kind'
 import { ASSEMBLIES } from '@/shared/modules/construction/core/constants/assemblies'
-import { hvacIndoorLocations } from '@/shared/modules/construction/core/constants/enums'
+import { hvacIndoorLocations, miniSplitHeadCounts } from '@/shared/modules/construction/core/constants/enums'
 import { HOME_MATERIAL_FACTS_UNSET } from '@/shared/modules/construction/core/constants/home-materials'
 import { ROOF_FORMS } from '@/shared/modules/construction/core/constants/roof-forms'
 import { SCOPE_IDS } from '@/shared/modules/construction/core/constants/scope-ids'
@@ -513,5 +521,93 @@ for (const location of hvacIndoorLocations) {
   const placed = INDOOR_UNIT_PLACEMENTS[location] !== undefined
   assert.equal(indoorLocation({ ...HOME_MATERIAL_FACTS_UNSET, hvacIndoorLocation: location }, 'pitched', 'existing', [], true), placed ? location : 'closet', `${location}: drawn where it has a placement, else in the closet`)
 }
+
+// The rep sets today's system and where its indoor unit stands; a build can move the unit to the attic and set its
+// mini-split heads; a part the build adds where the home had none reads Added
+const base = HOME_SCENE_DEFAULTS.property
+for (const from of HVAC_SYSTEM_CHOICES) {
+  const start = { ...base, ...hvacSystemPatch(from, base) }
+  for (const choice of HVAC_SYSTEM_CHOICES) {
+    assert.equal(hvacSystemChoice({ ...start, ...hvacSystemPatch(choice, start) }), choice, `${from} to ${choice}: the patch reads back as the choice`)
+  }
+}
+assert.equal(hvacSystemChoice({ ...base, hvacType: null }), null, 'an unknown system reads as no choice')
+assert.equal(hvacSystemChoice({ ...base, hvacType: 'wall-mounted', hvacComponents: 'ac' }), 'wall-unit', 'a wall unit that only cools is a wall unit')
+assert.deepEqual(hvacSystemPatch('wall-furnace', base), { hvacType: 'wall-mounted', hvacComponents: 'furnace' })
+assert.deepEqual(hvacSystemPatch('wall-unit', base), { hvacType: 'wall-mounted', hvacComponents: 'both' })
+assert.deepEqual(hvacSystemPatch('portable', base), { hvacType: 'portable', hvacComponents: null })
+assert.deepEqual(hvacSystemPatch('mini-split', base), { hvacType: 'mini-split', hvacComponents: null })
+const furnaceUnknown: PropertyProfile = { ...base, hvacType: null, hvacComponents: 'furnace' }
+assert.equal({ ...furnaceUnknown, ...hvacSystemPatch('central', furnaceUnknown) }.hvacComponents, 'furnace', 'a furnace-only home set to central stays furnace only')
+assert.deepEqual(HVAC_SYSTEM_CHOICES.map(choice => HVAC_SYSTEM_CHOICE_LABELS[choice]), ['Central', 'Package unit', 'Wall furnace', 'Wall unit', 'Window / portable', 'Mini-splits'])
+assert.deepEqual(hvacIndoorLocations.map(location => HVAC_INDOOR_LOCATION_LABELS[location]), ['Attic', 'HVAC closet', 'Garage'])
+assert.deepEqual(miniSplitHeadCounts.map(count => MINI_SPLIT_HEAD_COUNT_LABELS[count]), ['1 head', '2 heads', '3 heads'])
+
+const wallFurnaceProperty: PropertyProfile = { ...base, ...wallFurnace }
+const wornWallFurnace = resolveHomeMaterials({ property: wallFurnaceProperty, materials: { ...HOME_MATERIAL_FACTS_UNSET, wear: { 'heating-cooling': 'worn' } }, year: 2026 })
+assert.equal(repairsRows(wallFurnaceProperty, wornWallFurnace).find(row => row.material === 'heating-cooling')?.note, 'Wall furnace · Worn', 'Repairs names a wall furnace as the Today chip does')
+
+const slotsFor = (state: TradeSceneInputs) => sceneChangeSlots(state, resolveScene(resolveInputsOf(selectResolveInputs(state)), resolveTradeBillCuts(), 2026), 2026)
+const slotIn = (state: TradeSceneInputs, id: SceneChangeSlotId) => slotsFor(state).find(slot => slot.id === id)
+const valuesOf = (slot: SceneChangeSlot | undefined) => slot?.options.map(option => option.value)
+const pitchedCentral = { hvacType: 'central', roofType: 'shingle' } as const
+const flatCentral = { hvacType: 'central', roofType: 'flat' } as const
+const systemSlot = slotIn(inputs(wallFurnace), 'heating-cooling')!
+assert.deepEqual(valuesOf(systemSlot), [...HVAC_SYSTEM_CHOICES], 'today\'s system offers every system choice')
+assert.equal(systemSlot.current, 'wall-furnace', 'a wall-mounted furnace reads as a wall furnace')
+assert.deepEqual(systemSlot.change('wall-unit'), { kind: 'property', patch: { hvacType: 'wall-mounted', hvacComponents: 'both' } })
+const locationSlot = slotIn(inputs(pitchedCentral), 'hvac-location')
+assert.equal(locationSlot?.name, 'Indoor unit location')
+assert.deepEqual(valuesOf(locationSlot), ['attic', 'closet'], 'a pitched roof\'s unit stands in the attic or a closet')
+assert.equal(locationSlot?.current, 'attic', 'a pitched roof\'s unit is first guessed in the attic')
+assert.deepEqual(locationSlot?.change('closet'), { kind: 'fact', patch: { hvacIndoorLocation: 'closet' } })
+assert.deepEqual(valuesOf(slotIn(inputs(flatCentral), 'hvac-location')), ['closet'], 'a flat roof holds no unit in its joist space')
+assert.equal(slotIn(inputs(flatCentral), 'hvac-location')?.current, 'closet')
+assert.ok(slotIn(inputs({}), 'hvac-location') !== undefined, 'an unknown system is central, so its unit has a location')
+assert.equal(slotIn(inputs(wallFurnace), 'hvac-location'), undefined, 'a wall home has no indoor unit to place')
+assert.equal(slotIn(inputs(pitchedCentral), 'mini-split-heads'), undefined, 'a central home has no mini-split heads to count')
+const headsSlot = slotIn(inputs({ hvacType: 'mini-split' }), 'mini-split-heads')
+assert.equal(headsSlot?.name, 'Mini-split heads')
+assert.deepEqual(valuesOf(headsSlot), ['1', '2', '3'])
+assert.deepEqual(headsSlot?.change('2'), { kind: 'fact', patch: { miniSplitHeads: '2' } })
+
+const closetMaterials = { ...HOME_MATERIAL_FACTS_UNSET, hvacIndoorLocation: 'closet' } as const
+assert.equal(moveToAtticOffered(closetMaterials, 'pitched'), true, 'a pitched closet home can move its unit to the attic')
+assert.equal(moveToAtticOffered({ ...HOME_MATERIAL_FACTS_UNSET, hvacIndoorLocation: 'attic' }, 'pitched'), false, 'a unit already in the attic has nowhere to move')
+assert.equal(moveToAtticOffered(HOME_MATERIAL_FACTS_UNSET, 'pitched'), false, 'a pitched home\'s unit is first guessed in the attic')
+assert.equal(moveToAtticOffered(closetMaterials, 'low-slope'), false, 'a flat roof holds no unit')
+const closetHomeState = (property: Partial<PropertyProfile>, picks: string[]) => inputs(property, { homeMaterials: closetMaterials, proposedScopeIds: picks })
+const moveSlot = (state: TradeSceneInputs) => slotIn(state, 'move:indoor-unit')!
+const notPicked = moveSlot(closetHomeState(pitchedCentral, []))
+assert.equal(notPicked.name, 'Move to the attic')
+assert.ok(notPicked.unavailable !== null && notPicked.options.length === 0 && notPicked.current === null, 'with no whole system picked the move says why')
+assert.ok(searchSceneChanges(slotsFor(closetHomeState(pitchedCentral, [])), 'move').some(result => result.slot.id === 'move:indoor-unit'), 'Modify finds the move')
+const movable = moveSlot(closetHomeState(pitchedCentral, [split]))
+assert.equal(movable.group, 'proposed')
+assert.equal(movable.unavailable, null, 'a pitched closet home with a whole new system can move its unit')
+assert.deepEqual(valuesOf(movable), ['on', 'off'])
+assert.equal(movable.current, 'off')
+assert.deepEqual(movable.change('on'), { kind: 'fact', patch: { proposedHvacIndoorLocation: 'attic' } }, 'switching it on moves the unit to the attic')
+assert.deepEqual(movable.change('off'), { kind: 'fact', patch: { proposedHvacIndoorLocation: null } }, 'switching it off keeps the unit where it stands')
+const movedOn = closetHomeState(pitchedCentral, [split])
+const switchedOn = { ...movedOn, ...applySceneChange(movedOn, movable.change('on'), 2026) }
+assert.equal(moveSlot(switchedOn).current, 'on')
+assert.equal(moveSlot(closetHomeState(pitchedCentral, [SCOPE_IDS.acReplacement])).unavailable !== null, true, 'a half system keeps its unit where it stands')
+assert.ok(moveSlot(closetHomeState(flatCentral, [split, SCOPE_IDS.roofRedeck])).unavailable !== null, 'a flat roof is never offered the move, even with a redeck')
+assert.ok(moveSlot(inputs(pitchedCentral, { proposedScopeIds: [split] })).unavailable !== null, 'a unit already in the attic is never offered the move')
+
+assert.equal(workDetailsKind(SCOPE_IDS.splitSystemReplacement), 'indoor-unit', 'a whole new system can move its unit')
+assert.equal(workDetailsKind(SCOPE_IDS.miniSplitKit), 'mini-split', 'a mini-split kit sets its heads')
+assert.equal(workDetailsKind(SCOPE_IDS.miniSplitInstallation), 'mini-split', 'a mini-split installation sets its heads')
+assert.equal(workDetailsKind(SCOPE_IDS.acReplacement), null, 'an A/C replacement has nothing to pick')
+
+const addedIds = (rows: readonly { id: string, added?: true }[]) => rows.filter(row => row.added).map(row => row.id)
+const furnaceSplitRows = systemPartRows('heating-cooling', scene(centralFurnaceProperty, build([split])))
+for (const id of ['coil', 'refrigerant-lines', 'condenser']) {
+  assert.equal(furnaceSplitRows.find(row => row.id === id)?.added, true, `a furnace-only home's new ${id} reads Added`)
+}
+assert.ok(!addedIds(furnaceSplitRows).includes('furnace'), 'a new furnace over the old one is not added')
+assert.equal(systemPartRows('attic', scene({}, build([SCOPE_IDS.radiantBarrier]))).find(row => row.id === 'radiant-barrier')?.added, true, 'a radiant barrier on a home with none reads Added')
+assert.equal(PART_COPY.added, 'Added')
 
 console.log('verify-heating-cooling: ok')

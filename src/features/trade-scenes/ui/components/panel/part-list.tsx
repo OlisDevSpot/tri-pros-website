@@ -48,7 +48,7 @@ export function PartList({ parts, emphasized, onEmphasize }: PartListProps) {
                   absent && 'border border-dashed border-control-border',
                 )}
               >
-                {PART_COPY.condition[part.condition]}
+                {part.added ? PART_COPY.added : PART_COPY.condition[part.condition]}
               </span>
               <AnimatePresence initial={false}>
                 {selected && part.detail !== '' && (

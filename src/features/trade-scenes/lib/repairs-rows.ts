@@ -3,7 +3,8 @@ import type { HomeMaterialId } from '@/shared/modules/construction/core/constant
 import type { TradeSlug } from '@/shared/modules/construction/core/constants/trade-slugs'
 import type { PropertyProfile, ResolvedHomeMaterial, ResolvedHomeMaterials } from '@/shared/modules/construction/core/types'
 
-import { EXTERIOR_PAINT_LABELS, HOME_MATERIAL_LABELS, HVAC_TYPE_LABELS, REPAIRS_COPY, ROOF_TYPE_LABELS, WEAR_LABELS, WINDOWS_TYPE_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
+import { EXTERIOR_PAINT_LABELS, HOME_MATERIAL_LABELS, HVAC_SYSTEM_CHOICE_LABELS, REPAIRS_COPY, ROOF_TYPE_LABELS, WEAR_LABELS, WINDOWS_TYPE_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
+import { hvacSystemChoice } from '@/features/trade-scenes/lib/hvac-system-choice'
 import { workingRepairs } from '@/features/trade-scenes/lib/repairs-figure'
 import { HOME_MATERIAL_IDS } from '@/shared/modules/construction/core/constants/home-material-ids'
 import { HOME_MATERIALS } from '@/shared/modules/construction/core/constants/home-materials'
@@ -26,8 +27,10 @@ function optionLabel(id: HomeMaterialId, material: ResolvedHomeMaterial, propert
       return material.option === null ? null : WINDOWS_TYPE_LABELS[material.option as keyof typeof WINDOWS_TYPE_LABELS]
     case 'exterior-paint':
       return material.option === null ? null : EXTERIOR_PAINT_LABELS[material.option as keyof typeof EXTERIOR_PAINT_LABELS]
-    case 'heating-cooling':
-      return property.hvacType === null ? null : HVAC_TYPE_LABELS[property.hvacType]
+    case 'heating-cooling': {
+      const choice = hvacSystemChoice(property)
+      return choice === null ? null : HVAC_SYSTEM_CHOICE_LABELS[choice]
+    }
     default:
       return null
   }

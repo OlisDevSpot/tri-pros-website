@@ -26,6 +26,10 @@ export const HOUSE_OPENING_SYSTEM_IDS = ['attic', 'heating-cooling', 'foundation
 // is picked, whatever home view the rep chose: the window its Look inside opens, and the walls' whole painted skin.
 export const HOUSE_CLOSING_SYSTEM_IDS = ['windows', 'walls'] as const satisfies readonly HomeSystemId[]
 
+// Today's system as the rep names it: a wall-mounted unit is a wall furnace or a wall unit, so the rep never reads its
+// equipment to tell them apart.
+export const HVAC_SYSTEM_CHOICES = ['central', 'package-unit', 'wall-furnace', 'wall-unit', 'portable', 'mini-split'] as const
+
 export const HOME_SPOT_IDS = ['roof', 'window', 'wall', 'equipment', 'foundation'] as const
 
 export const SPOT_OF: Record<HomeSystemId, HomeSpotId> = { 'roof': 'roof', 'attic': 'roof', 'windows': 'window', 'walls': 'wall', 'heating-cooling': 'equipment', 'foundation': 'foundation' }

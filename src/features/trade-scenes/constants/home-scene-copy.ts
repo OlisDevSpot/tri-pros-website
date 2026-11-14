@@ -1,9 +1,10 @@
 import type { ReadingId } from '@/features/trade-scenes/constants/home-anchors'
-import type { AreaGroupId, BuildRowPartId, FactsTab, HomeSystemId, HomeView, LotSide, SavingsCategory, SlotGroup, SystemPieceId, TradeSceneInputs, YardId, YardSystemId } from '@/features/trade-scenes/types'
+import type { LOOK_INSIDE_SYSTEM_IDS } from '@/features/trade-scenes/constants/home-systems'
+import type { AreaGroupId, BuildRowPartId, FactsTab, HomeSystemId, HomeView, HvacSystemChoice, LotSide, SavingsCategory, SlotGroup, SystemPieceId, TradeSceneInputs, YardId, YardSystemId } from '@/features/trade-scenes/types'
 import type { CustomerAgeGroup, HouseholdType, YearBuiltRange } from '@/shared/constants/enums/customers'
 import type { Climate } from '@/shared/modules/construction/core/constants/climate-presets'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
-import type { AcTons, AirSealingOption, CoveringWearKind, CrawlInsulation, DuctMaterial, ExteriorPaint, FoundationType, GutterOption, HVACComponent, HVACType, InsulationLevel, PaintWearKind, PaintWearLevel, RoofType, Wear, WindowsType } from '@/shared/modules/construction/core/constants/enums'
+import type { AcTons, AirSealingOption, CoveringWearKind, CrawlInsulation, DuctMaterial, ExteriorPaint, FoundationType, GutterOption, HVACComponent, HvacIndoorLocation, InsulationLevel, MiniSplitHeadCount, PaintWearKind, PaintWearLevel, RoofType, Wear, WindowsType } from '@/shared/modules/construction/core/constants/enums'
 import type { HomeMaterialId } from '@/shared/modules/construction/core/constants/home-material-ids'
 import type { InstallStyleId } from '@/shared/modules/construction/core/constants/install-styles'
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
@@ -21,6 +22,7 @@ export const HOME_VIEW_LABELS = { 'complete': 'Complete', 'partly-open': 'Partly
 export const PANEL_COPY = {
   efficiencyUpgradeHints: { 'cool-roof': 'Preview a shingle or flat roof to add a cool roof.', 'r8-ducts': 'Preview new ducts to step up to R-8.', 'cool-paint': 'Preview a repaint to add Cool Life paint.', 'r38-insulation': 'Preview insulation to step up to R-38.' },
   fasciaReplacementHint: 'Set fascia rot to offer this.',
+  moveToAtticHints: { pick: 'Preview a whole system replacement to move the indoor unit.', attic: 'The indoor unit already stands in the attic.', flat: 'A flat roof has no attic to hold the indoor unit.' },
 } as const
 
 export const DOCK_COPY = {
@@ -43,7 +45,9 @@ export const PROFILE_COPY = {
 export const ROOF_TYPE_LABELS = { shingle: 'Shingle', tile: 'Tile', woodshake: 'Wood shake', flat: 'Torch down', metal: 'Metal' } as const satisfies Record<RoofType, string>
 export const YEAR_BUILT_LABELS = { 'Pre-1950': 'Before 1950', '1950-1978': '1950–1978', '1978-1998': '1978–1998', '1998-2014': '1998–2014', 'Post-2014': 'After 2014' } as const satisfies Record<YearBuiltRange, string>
 export const FOUNDATION_TYPE_LABELS = { raised: 'Raised', slab: 'Slab' } as const satisfies Record<FoundationType, string>
-export const HVAC_TYPE_LABELS = { 'central': 'Central', 'wall-mounted': 'Wall unit', 'portable': 'Window / portable', 'package-unit': 'Package unit', 'mini-split': 'Mini-splits' } as const satisfies Record<HVACType, string>
+export const HVAC_SYSTEM_CHOICE_LABELS = { 'central': 'Central', 'package-unit': 'Package unit', 'wall-furnace': 'Wall furnace', 'wall-unit': 'Wall unit', 'portable': 'Window / portable', 'mini-split': 'Mini-splits' } as const satisfies Record<HvacSystemChoice, string>
+export const HVAC_INDOOR_LOCATION_LABELS = { attic: 'Attic', closet: 'HVAC closet', garage: 'Garage' } as const satisfies Record<HvacIndoorLocation, string>
+export const MINI_SPLIT_HEAD_COUNT_LABELS = { 1: '1 head', 2: '2 heads', 3: '3 heads' } as const satisfies Record<MiniSplitHeadCount, string>
 export const HVAC_COMPONENT_LABELS = { furnace: 'Furnace', ac: 'AC', both: 'Both' } as const satisfies Record<HVACComponent, string>
 export const WINDOWS_TYPE_LABELS = { single: 'Single pane', double: 'Double pane' } as const satisfies Record<WindowsType, string>
 export const HOUSEHOLD_TYPE_LABELS = { 'Single man': 'Single man', 'Single woman': 'Single woman', 'Couple': 'Couple', 'Family': 'Family', 'Relatives': 'Relatives' } as const satisfies Record<HouseholdType, string>
@@ -68,6 +72,8 @@ export const PART_COPY = {
   together: 'Put it back together',
   // Shown beside each part: what the work does to it, in the homeowner's terms.
   condition: { retained: 'Kept', worn: 'Original', installed: 'New', absent: 'Missing' } satisfies Record<PartCondition, string>,
+  // In place of the condition, on a part the build puts in where the home had none.
+  added: 'Added',
 } as const
 
 // Placeholder copy until the owner's copy pass and the disclosure sign-off. The figures are claims made to a homeowner, so
@@ -217,6 +223,8 @@ export const HOME_MATERIALS_COPY = {
   gutters: 'Gutters',
   airSealing: 'Air sealing',
   acSize: 'AC size',
+  indoorUnitLocation: 'Indoor unit location',
+  miniSplitHeads: 'Mini-split heads',
   dotLabel: (material: string, wear: string, years: string) => `${material}: ${wear}, ${years}`,
   dotLabelNoAge: (material: string, wear: string) => `${material}: ${wear}`,
   years: (from: string, to: string) => `${from}–${to} years`,
@@ -292,6 +300,7 @@ export const CONTROLS_COPY = {
     noCrawlSpace: 'Slab, no crawl space',
     foundationFirst: 'Set the foundation first',
     fasciaReplacement: 'Replace rotted fascia',
+    moveToAttic: 'Move to the attic',
     // A rail chip's name where its dot shows.
     changedByBuild: (system: string) => `${system}, changed by the build`,
     // By part: what a build chip says before a pick, and once picked, from the picked way's verb.

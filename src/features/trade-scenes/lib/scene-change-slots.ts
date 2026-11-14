@@ -1,18 +1,23 @@
-import type { SceneChangeSlot, SceneChangeSlotId, SceneTargets, TradeSceneInputs } from '@/features/trade-scenes/types'
+import type { HvacSystemChoice, SceneChangeSlot, SceneChangeSlotId, SceneTargets, TradeSceneInputs } from '@/features/trade-scenes/types'
 import type { CustomerAgeGroup, HouseholdType, YearBuiltRange } from '@/shared/constants/enums/customers'
 import type { Climate } from '@/shared/modules/construction/core/constants/climate-presets'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
-import type { AcTons, AirSealingOption, CrawlInsulation, DuctMaterial, ExteriorPaint, FoundationType, GutterOption, HVACComponent, HVACType, InsulationLevel, RoofType, Wear, WindowsType } from '@/shared/modules/construction/core/constants/enums'
+import type { AcTons, AirSealingOption, CrawlInsulation, DuctMaterial, ExteriorPaint, FoundationType, GutterOption, HVACComponent, HvacIndoorLocation, InsulationLevel, MiniSplitHeadCount, RoofType, Wear, WindowsType } from '@/shared/modules/construction/core/constants/enums'
 import type { HomeMaterialId } from '@/shared/modules/construction/core/constants/home-material-ids'
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 import type { ScopeId } from '@/shared/modules/construction/core/constants/scope-ids'
 import type { HomeFacts, ResolvedHomeMaterial } from '@/shared/modules/construction/core/types'
 
-import { AC_TON_LABELS, AGE_GROUP_LABELS, AIR_SEALING_LABELS, CONTROLS_COPY, CRAWL_INSULATION_LABELS, DUCT_LABELS, EFFICIENCY_UPGRADE_LABELS, EXTERIOR_PAINT_LABELS, FOUNDATION_TYPE_LABELS, GUTTER_LABELS, HOME_MATERIAL_LABELS, HOME_MATERIALS_COPY, HOUSEHOLD_TYPE_LABELS, HVAC_COMPONENT_LABELS, HVAC_TYPE_LABELS, INSTALL_STYLE_HINTS, INSTALL_STYLE_LABELS, PANEL_COPY, PART_LABELS, PROFILE_COPY, REQUIRED_UPGRADE_COPY, ROOF_FORM_LABELS, ROOF_TYPE_LABELS, SAVINGS_COPY, SCOPES_AND_ADDONS_COPY, WEAR_LABELS, WINDOWS_TYPE_LABELS, YEAR_BUILT_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
+import { AC_TON_LABELS, AGE_GROUP_LABELS, AIR_SEALING_LABELS, CONTROLS_COPY, CRAWL_INSULATION_LABELS, DUCT_LABELS, EFFICIENCY_UPGRADE_LABELS, EXTERIOR_PAINT_LABELS, FOUNDATION_TYPE_LABELS, GUTTER_LABELS, HOME_MATERIAL_LABELS, HOME_MATERIALS_COPY, HOUSEHOLD_TYPE_LABELS, HVAC_COMPONENT_LABELS, HVAC_INDOOR_LOCATION_LABELS, HVAC_SYSTEM_CHOICE_LABELS, INSTALL_STYLE_HINTS, INSTALL_STYLE_LABELS, MINI_SPLIT_HEAD_COUNT_LABELS, PANEL_COPY, PART_LABELS, PROFILE_COPY, REQUIRED_UPGRADE_COPY, ROOF_FORM_LABELS, ROOF_TYPE_LABELS, SAVINGS_COPY, SCOPES_AND_ADDONS_COPY, WEAR_LABELS, WINDOWS_TYPE_LABELS, YEAR_BUILT_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
+import { HVAC_SYSTEM_CHOICES } from '@/features/trade-scenes/constants/home-systems'
+import { MOVABLE_INDOOR_UNIT_SCOPES } from '@/features/trade-scenes/constants/movable-indoor-unit-scopes'
 import { SAVINGS_CATEGORIES } from '@/features/trade-scenes/constants/savings-categories'
 import { SCENE_CHANGE_WORDS } from '@/features/trade-scenes/constants/scene-change-words'
-import { NO_CHANGE_CHOICE } from '@/features/trade-scenes/constants/scene-controls'
+import { HOME_PRIMARY_ASSEMBLY, NO_CHANGE_CHOICE } from '@/features/trade-scenes/constants/scene-controls'
 import { SCOPE_VERBS } from '@/features/trade-scenes/constants/scope-verbs'
+import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
+import { hvacSystemChoice, hvacSystemPatch } from '@/features/trade-scenes/lib/hvac-system-choice'
+import { atticHoldsUnit, indoorLocation, indoorUnitLocations, moveToAtticOffered } from '@/features/trade-scenes/lib/indoor-location'
 import { requiredUpgrades } from '@/features/trade-scenes/lib/keep-pick-options'
 import { existingDuctChoices, hasAcUnit, roofTypeChoices, showsEquipment } from '@/features/trade-scenes/lib/material-option-choices'
 import { fasciaRotInForce } from '@/features/trade-scenes/lib/paint-wear-in-force'
@@ -20,11 +25,12 @@ import { upgradeRowState } from '@/features/trade-scenes/lib/upgrade-row-state'
 import { upgradeRows } from '@/features/trade-scenes/lib/upgrade-rows'
 import { customerAgeGroups, householdTypes, yearBuiltRanges } from '@/shared/constants/enums/customers'
 import { CLIMATE_LABELS, CLIMATES } from '@/shared/modules/construction/core/constants/climate-presets'
-import { acTonnages, airSealingOptions, crawlInsulations, exteriorPaints, foundationTypes, gutterOptions, hvacComponents, hvacTypes, INSULATION_LEVEL_LABELS, insulationLevels, wears, windowsTypes } from '@/shared/modules/construction/core/constants/enums'
+import { acTonnages, airSealingOptions, crawlInsulations, exteriorPaints, foundationTypes, gutterOptions, hvacComponents, INSULATION_LEVEL_LABELS, insulationLevels, miniSplitHeadCounts, wears, windowsTypes } from '@/shared/modules/construction/core/constants/enums'
 import { FASCIA_REPLACEMENT_SCOPE_ID } from '@/shared/modules/construction/core/constants/fascia-replacement'
 import { HOME_MATERIAL_IDS } from '@/shared/modules/construction/core/constants/home-material-ids'
 import { ROOF_FORMS } from '@/shared/modules/construction/core/constants/roof-forms'
 import { SCOPE_INSTALLS } from '@/shared/modules/construction/core/constants/scope-installs'
+import { isCentralSystem } from '@/shared/modules/construction/core/lib/hvac-system'
 import { wearInForce } from '@/shared/modules/construction/core/lib/resolve-home-materials'
 import { roofFormOf } from '@/shared/modules/construction/core/lib/roof-form-of'
 import { wearChoices } from '@/shared/modules/construction/core/lib/wear-choices'
@@ -44,7 +50,7 @@ function existingSlot(id: SceneChangeSlotId, name: string, options: SceneChangeS
 }
 
 // A material's own slot, then the facts that ride with it, then its Condition; an absent material has no Condition to set.
-function materialSlots(id: HomeMaterialId, material: ResolvedHomeMaterial, state: TradeSceneInputs): SceneChangeSlot[] {
+function materialSlots(id: HomeMaterialId, material: ResolvedHomeMaterial, state: TradeSceneInputs, form: RoofForm): SceneChangeSlot[] {
   const { property, homeMaterials } = state
   const name = id === 'roof' ? CONTROLS_COPY.modify.roofName : HOME_MATERIAL_LABELS[id]
   const own: SceneChangeSlot[] = []
@@ -72,12 +78,18 @@ function materialSlots(id: HomeMaterialId, material: ResolvedHomeMaterial, state
       own.push(existingSlot(id, name, optionsOf(exteriorPaints, EXTERIOR_PAINT_LABELS), material.option, value => ({ kind: 'option', field: 'exteriorPaint', value: value as ExteriorPaint })))
       break
     case 'heating-cooling':
-      own.push(existingSlot(id, name, optionsOf(hvacTypes, HVAC_TYPE_LABELS), property.hvacType, value => ({ kind: 'property', patch: { hvacType: value as HVACType } })))
+      own.push(existingSlot(id, name, optionsOf(HVAC_SYSTEM_CHOICES, HVAC_SYSTEM_CHOICE_LABELS), hvacSystemChoice(property), value => ({ kind: 'property', patch: hvacSystemPatch(value as HvacSystemChoice, property) })))
+      if (isCentralSystem(property.hvacType)) {
+        own.push(existingSlot('hvac-location', HOME_MATERIALS_COPY.indoorUnitLocation, optionsOf(indoorUnitLocations(form), HVAC_INDOOR_LOCATION_LABELS), indoorLocation(homeMaterials, form, 'existing', [], true), value => ({ kind: 'fact', patch: { hvacIndoorLocation: value as HvacIndoorLocation } })))
+      }
       if (showsEquipment(property)) {
         own.push(existingSlot('hvac-components', PROFILE_COPY.hvacComponents, optionsOf(hvacComponents, HVAC_COMPONENT_LABELS), property.hvacComponents, value => ({ kind: 'property', patch: { hvacComponents: value as HVACComponent } })))
       }
       if (hasAcUnit(property)) {
         own.push(existingSlot('ac-tons', HOME_MATERIALS_COPY.acSize, optionsOf(acTonnages, AC_TON_LABELS), homeMaterials.acTons, value => ({ kind: 'fact', patch: { acTons: value as AcTons } })))
+      }
+      if (property.hvacType === 'mini-split') {
+        own.push(existingSlot('mini-split-heads', HOME_MATERIALS_COPY.miniSplitHeads, optionsOf(miniSplitHeadCounts, MINI_SPLIT_HEAD_COUNT_LABELS), homeMaterials.miniSplitHeads, value => ({ kind: 'fact', patch: { miniSplitHeads: value as MiniSplitHeadCount } })))
       }
       break
     case 'ducts':
@@ -151,6 +163,19 @@ export function sceneChangeSlots(state: TradeSceneInputs, targets: SceneTargets,
     unavailable: rot ? null : PANEL_COPY.fasciaReplacementHint,
     change: value => ({ kind: 'fascia-replacement', on: value === 'on' }),
   })
+  // A whole new system can stand its unit in the attic; Modify lists the move either way, saying why while it cannot.
+  const form = homeRoofForm(targets.assemblies[HOME_PRIMARY_ASSEMBLY]?.form)
+  const wholeSystem = state.proposedScopeIds.some(id => MOVABLE_INDOOR_UNIT_SCOPES.includes(id as ScopeId))
+  const movable = wholeSystem && moveToAtticOffered(state.homeMaterials, form)
+  const moveSlot = slot({
+    id: 'move:indoor-unit',
+    group: 'proposed',
+    name: CONTROLS_COPY.systems.moveToAttic,
+    options: movable ? toggleOptions : [],
+    current: movable ? (state.homeMaterials.proposedHvacIndoorLocation === 'attic' ? 'on' : 'off') : null,
+    unavailable: movable ? null : PANEL_COPY.moveToAtticHints[!wholeSystem ? 'pick' : atticHoldsUnit(form) ? 'attic' : 'flat'],
+    change: value => ({ kind: 'fact', patch: { proposedHvacIndoorLocation: value === 'on' ? 'attic' : null } }),
+  })
 
   return [
     slot({ id: 'household', group: 'facts', name: PROFILE_COPY.householdType, options: optionsOf(householdTypes, HOUSEHOLD_TYPE_LABELS), current: household.type, isFact: true, offersNotSure: true, change: value => ({ kind: 'household', patch: { type: value as HouseholdType } }) }),
@@ -160,7 +185,7 @@ export function sceneChangeSlots(state: TradeSceneInputs, targets: SceneTargets,
     slot({ id: 'year-built', group: 'systems', name: CONTROLS_COPY.systems.yearBuilt, options: optionsOf(yearBuiltRanges, YEAR_BUILT_LABELS), current: property.yearBuilt, change: value => ({ kind: 'property', patch: { yearBuilt: value as YearBuiltRange } }) }),
     ...HOME_MATERIAL_IDS.flatMap((id) => {
       const material = targets.home[id]
-      return material ? materialSlots(id, material, state) : []
+      return material ? materialSlots(id, material, state, form) : []
     }),
     ...states.map(({ row, picked }) => slot({
       id: `build:${row.part}`,
@@ -172,6 +197,7 @@ export function sceneChangeSlots(state: TradeSceneInputs, targets: SceneTargets,
     })),
     ...coolRoof ? [upgradeSlot('cool-roof', coolRoof.coolRoofOffered, coolRoof.coolRoofOn)] : [],
     ...r8.row ? [upgradeSlot('r8-ducts', r8.row === r8.taken, r8.row.r8On)] : [],
+    moveSlot,
     ...coolPaint.row ? [upgradeSlot('cool-paint', coolPaint.row === coolPaint.taken, coolPaint.row.coolPaintOn)] : [],
     ...r38.row ? [upgradeSlot('r38-insulation', r38.row === r38.taken, state.efficiencyUpgrades.includes('r38-insulation'))] : [],
     ...batts ? [battsSlot] : [],

@@ -4,11 +4,17 @@ import type { HomeMaterialFacts } from '@/shared/modules/construction/core/types
 
 import { INDOOR_UNIT_PLACEMENTS } from '@/features/trade-scenes/constants/indoor-unit-placements'
 import { MOVABLE_INDOOR_UNIT_SCOPES } from '@/features/trade-scenes/constants/movable-indoor-unit-scopes'
+import { hvacIndoorLocations } from '@/shared/modules/construction/core/constants/enums'
 import { SCOPE_INSTALLS } from '@/shared/modules/construction/core/constants/scope-installs'
 
 // A flat roof's joist space holds no indoor unit, redeck or not, so a reachable attic is not enough.
 export function atticHoldsUnit(form: RoofForm): boolean {
   return form !== 'low-slope'
+}
+
+// Where the rep can say the unit stands: a place it has a placement, and the attic only under a pitched roof.
+export function indoorUnitLocations(form: RoofForm): HvacIndoorLocation[] {
+  return hvacIndoorLocations.filter(location => INDOOR_UNIT_PLACEMENTS[location] !== undefined && (location !== 'attic' || atticHoldsUnit(form)))
 }
 
 function drawable(location: HvacIndoorLocation, form: RoofForm): HvacIndoorLocation {
@@ -39,4 +45,9 @@ export function indoorLocation(materials: HomeMaterialFacts, form: RoofForm, vie
     return firstPlace(form)
   }
   return today
+}
+
+// The move is offered only where the unit stands elsewhere today and the attic can hold one.
+export function moveToAtticOffered(materials: HomeMaterialFacts, form: RoofForm): boolean {
+  return atticHoldsUnit(form) && indoorLocation(materials, form, 'existing', [], true) !== 'attic'
 }

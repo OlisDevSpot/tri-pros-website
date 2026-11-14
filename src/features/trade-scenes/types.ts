@@ -3,7 +3,7 @@ import type { FENCE_KIND_IDS } from '@/features/trade-scenes/constants/fence-kin
 import type { GROUND_MATERIAL_IDS } from '@/features/trade-scenes/constants/ground-materials'
 import type { ReadingId } from '@/features/trade-scenes/constants/home-anchors'
 import type { HOME_FADES } from '@/features/trade-scenes/constants/home-fades'
-import type { BUILD_ROW_PART_IDS, HOME_SPOT_IDS, HOME_SYSTEM_IDS } from '@/features/trade-scenes/constants/home-systems'
+import type { BUILD_ROW_PART_IDS, HOME_SPOT_IDS, HOME_SYSTEM_IDS, HVAC_SYSTEM_CHOICES } from '@/features/trade-scenes/constants/home-systems'
 import type { LookDevView, MaterialTreatment } from '@/features/trade-scenes/constants/look-dev-options'
 import type { FULLY_OPEN_SYSTEM_IDS, PULLED_APART_SYSTEM_IDS, STEP_DEPTHS } from '@/features/trade-scenes/constants/look-inside'
 import type { PLANT_SPECIES } from '@/features/trade-scenes/constants/lot-plants'
@@ -519,6 +519,8 @@ export type SceneResolveSelection = Omit<SceneResolveInputs, 'homeMaterials'> & 
 
 export type HomeSystemId = typeof HOME_SYSTEM_IDS[number]
 
+export type HvacSystemChoice = typeof HVAC_SYSTEM_CHOICES[number]
+
 export interface HomeSystemRow {
   part: BuildRowPartId
   offer: PartOffer
@@ -751,8 +753,8 @@ export type BuildRowPartId = typeof BUILD_ROW_PART_IDS[number]
 
 export type SceneChangeSlotId
   = | 'household' | 'age-group' | 'foundation' | 'roof-form' | 'year-built' | 'climate'
-    | HomeMaterialId | 'gutters' | 'gutter-wear' | 'air-sealing' | 'hvac-components' | 'ac-tons' | `wear:${HomeMaterialId}`
-    | `build:${BuildRowPartId}` | `upgrade:${EfficiencyUpgradeId}` | `style:${InstallStyleId}` | `bill:${SavingsCategory}` | 'replace:fascia'
+    | HomeMaterialId | 'gutters' | 'gutter-wear' | 'air-sealing' | 'hvac-components' | 'hvac-location' | 'ac-tons' | 'mini-split-heads' | `wear:${HomeMaterialId}`
+    | `build:${BuildRowPartId}` | `upgrade:${EfficiencyUpgradeId}` | `style:${InstallStyleId}` | `bill:${SavingsCategory}` | 'replace:fascia' | 'move:indoor-unit'
 
 // What the Benefits window has picked: one dot, a whole system row, or a whole kind column.
 export type BenefitSelection
