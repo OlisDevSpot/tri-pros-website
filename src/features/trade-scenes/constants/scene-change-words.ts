@@ -38,9 +38,10 @@ const BUILD_WORDS = {
   'attic-fan': 'attic fan',
   'glazing': 'new windows',
   'paint': 'repaint',
-  'air-handler': 'new system',
+  'blower': 'new system furnace blower coil indoor unit air handler',
   'package-unit': 'new system',
   'duct-runs': 'new ducts',
+  'mini-split-heads': 'mini split mini-split ductless heads',
   'floor-insulation': 'crawl insulation',
 } as const satisfies Record<BuildRowPartId, string>
 

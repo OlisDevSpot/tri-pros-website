@@ -43,7 +43,7 @@ export const PROFILE_COPY = {
 export const ROOF_TYPE_LABELS = { shingle: 'Shingle', tile: 'Tile', woodshake: 'Wood shake', flat: 'Torch down', metal: 'Metal' } as const satisfies Record<RoofType, string>
 export const YEAR_BUILT_LABELS = { 'Pre-1950': 'Before 1950', '1950-1978': '1950–1978', '1978-1998': '1978–1998', '1998-2014': '1998–2014', 'Post-2014': 'After 2014' } as const satisfies Record<YearBuiltRange, string>
 export const FOUNDATION_TYPE_LABELS = { raised: 'Raised', slab: 'Slab' } as const satisfies Record<FoundationType, string>
-export const HVAC_TYPE_LABELS = { 'central': 'Central', 'wall-mounted': 'Wall unit', 'portable': 'Portable', 'package-unit': 'Package unit' } as const satisfies Record<HVACType, string>
+export const HVAC_TYPE_LABELS = { 'central': 'Central', 'wall-mounted': 'Wall unit', 'portable': 'Window / portable', 'package-unit': 'Package unit', 'mini-split': 'Mini-splits' } as const satisfies Record<HVACType, string>
 export const HVAC_COMPONENT_LABELS = { furnace: 'Furnace', ac: 'AC', both: 'Both' } as const satisfies Record<HVACComponent, string>
 export const WINDOWS_TYPE_LABELS = { single: 'Single pane', double: 'Double pane' } as const satisfies Record<WindowsType, string>
 export const HOUSEHOLD_TYPE_LABELS = { 'Single man': 'Single man', 'Single woman': 'Single woman', 'Couple': 'Couple', 'Family': 'Family', 'Relatives': 'Relatives' } as const satisfies Record<HouseholdType, string>
@@ -148,9 +148,11 @@ export const PART_LABELS: Record<string, string> = {
   'glazing': 'Window glass',
   'frame': 'Window frames',
   'paint': 'Exterior paint',
-  'air-handler': 'Air handler',
+  // The row sells A/C only and a new system too, so it is named for the whole system, not the indoor unit.
+  'blower': 'Central system',
   'package-unit': 'Package unit',
   'duct-runs': 'Ducts',
+  'mini-split-heads': 'Mini-splits',
   'floor-insulation': 'Floor insulation',
 }
 
@@ -305,10 +307,12 @@ export const CONTROLS_COPY = {
       'attic-fan': { add: 'Attic fan', short: () => 'Attic fan' },
       'glazing': { add: 'New windows', short: () => 'Dual-pane windows' },
       'paint': { add: 'Repaint', short: () => 'Repaint' },
-      'air-handler': { add: 'New system', short: () => 'New system' },
+      // Each job on the row has its own name, so a pick reads it.
+      'blower': { add: 'New system', short: (label: string) => label },
       // No chip words of its own yet, so it reads its part's name.
       'package-unit': { add: PART_LABELS['package-unit'], short: () => PART_LABELS['package-unit'] },
       'duct-runs': { add: 'New ducts', short: () => 'New ducts' },
+      'mini-split-heads': { add: 'Mini-splits', short: () => 'Mini-splits' },
       'floor-insulation': { add: 'Crawl insulation', short: () => 'Crawl insulation' },
     } satisfies Record<BuildRowPartId, { add: string, short: (verb: string) => string }>,
   },

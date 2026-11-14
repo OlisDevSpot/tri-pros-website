@@ -36,8 +36,8 @@ export const SCOPE_INSTALLS: Partial<Record<string, ScopeInstall>> = {
   [SCOPE_IDS.coolLifeRepaint]: { assembly: 'exterior-wall', trade: 'exterior-paint-stucco-and-siding', installs: [{ part: 'paint', material: 'cool' }] },
   [SCOPE_IDS.waterBasedRepaint]: { assembly: 'exterior-wall', trade: 'exterior-paint-stucco-and-siding', installs: [{ part: 'paint', material: 'standard' }] },
   // A full system, so a furnace-only home gains a condenser.
-  [SCOPE_IDS.splitSystemReplacement]: { assembly: 'hvac-attic', trade: 'hvac', installs: [{ part: 'air-handler', material: 'high-efficiency' }, { part: 'condenser', material: 'high-seer' }, { part: 'refrigerant-lines', material: 'copper' }] },
+  [SCOPE_IDS.splitSystemReplacement]: { assembly: 'hvac-attic', trade: 'hvac', onlyWhere: { has: ['blower'] }, installs: [{ part: 'blower', material: 'new-blower' }, { part: 'furnace', material: 'high-efficiency-furnace' }, { part: 'coil', material: 'high-efficiency-coil' }, { part: 'refrigerant-lines', material: 'copper' }, { part: 'condenser', material: 'high-seer' }] },
   [SCOPE_IDS.packageUnitReplacement]: { assembly: 'hvac-attic', trade: 'hvac', installs: [{ part: 'package-unit', material: 'high-efficiency-package' }] },
-  [SCOPE_IDS.airDuctsReplacement]: { assembly: 'hvac-attic', trade: 'hvac', installs: [{ part: 'duct-runs', material: 'r6-silver-flex', swapsWith: { 'r8-ducts': 'r8-flex' } }] },
+  [SCOPE_IDS.airDuctsReplacement]: { assembly: 'hvac-attic', trade: 'hvac', onlyWhere: { has: ['duct-runs'] }, installs: [{ part: 'duct-runs', material: 'r6-silver-flex', swapsWith: { 'r8-ducts': 'r8-flex' } }] },
   [SCOPE_IDS.crawlSpaceInsulation]: { assembly: 'crawl-space', trade: 'foundation-and-crawl-space', installs: [{ part: 'floor-insulation', material: 'batts-r19' }] },
 }

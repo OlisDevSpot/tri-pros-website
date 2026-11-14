@@ -948,7 +948,7 @@ export interface DrawnGutter {
 }
 
 // The home material facts that only draw: no scope, part, material or figure reads them, so a change never re-resolves the scene.
-export type DrawingOnlyMaterialFact = 'acTons' | 'shingleColor' | 'paintWear' | 'coveringWear' | 'existingPaintColors' | 'proposedPaintColors' | 'windowFrameColor' | 'existingGutterColor' | 'proposedGutterColor'
+export type DrawingOnlyMaterialFact = 'acTons' | 'hvacIndoorLocation' | 'proposedHvacIndoorLocation' | 'miniSplitHeads' | 'proposedMiniSplitHeads' | 'shingleColor' | 'paintWear' | 'coveringWear' | 'existingPaintColors' | 'proposedPaintColors' | 'windowFrameColor' | 'existingGutterColor' | 'proposedGutterColor'
 
 // The two hexes the house's paint draws: the body of the walls and the trim round them.
 export interface PaintHexes {

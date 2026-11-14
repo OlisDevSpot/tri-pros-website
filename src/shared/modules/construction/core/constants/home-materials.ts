@@ -2,6 +2,7 @@ import type { HomeMaterialId } from '@/shared/modules/construction/core/constant
 import type { HomeMaterialDefinition, HomeMaterialFacts } from '@/shared/modules/construction/core/types'
 
 import { INSULATION_BY_ERA } from '@/shared/modules/construction/core/constants/era-defaults'
+import { isDuctedSystem } from '@/shared/modules/construction/core/lib/hvac-system'
 
 export const HOME_MATERIALS: Record<HomeMaterialId, HomeMaterialDefinition> = {
   'roof': {
@@ -43,13 +44,11 @@ export const HOME_MATERIALS: Record<HomeMaterialId, HomeMaterialDefinition> = {
   'heating-cooling': {
     trade: 'hvac',
     repairs: true,
-    parts: ['air-handler', 'refrigerant-lines', 'condenser', 'package-unit'].map(part => ({ assembly: 'hvac-attic' as const, part })),
-    repairsEndWith: ['air-handler', 'refrigerant-lines', 'condenser', 'package-unit'].map(part => ({ assembly: 'hvac-attic' as const, part })),
+    parts: ['blower', 'furnace', 'coil', 'plenum', 'thermostat', 'refrigerant-lines', 'condenser', 'package-unit', 'mini-split-heads', 'mini-split-outdoor'].map(part => ({ assembly: 'hvac-attic' as const, part })),
+    repairsEndWith: ['blower', 'furnace', 'coil', 'refrigerant-lines', 'condenser', 'package-unit'].map(part => ({ assembly: 'hvac-attic' as const, part })),
     bands: { all: [3, 8, 12, 15] },
     replaceable: null,
     eraGuess: null,
-    // A wall unit still has a row.
-    appliesTo: () => true,
   },
   'ducts': {
     trade: 'hvac',
@@ -59,6 +58,7 @@ export const HOME_MATERIALS: Record<HomeMaterialId, HomeMaterialDefinition> = {
     bands: { all: [5, 10, 15, 20] },
     replaceable: 'ducts',
     eraGuess: { 'Pre-1950': 'original-flex', '1950-1978': 'original-flex', '1978-1998': 'original-flex', '1998-2014': 'original-flex', 'Post-2014': 'r6-silver-flex' },
+    appliesTo: property => isDuctedSystem(property.hvacType),
   },
   'crawl-insulation': {
     trade: 'foundation-and-crawl-space',
@@ -71,4 +71,4 @@ export const HOME_MATERIALS: Record<HomeMaterialId, HomeMaterialDefinition> = {
   },
 }
 
-export const HOME_MATERIAL_FACTS_UNSET: HomeMaterialFacts = { wear: {}, gutters: null, gutterWear: null, airSealing: null, exteriorPaint: null, ducts: null, crawlInsulation: null, acTons: null, shingleColor: null, paintWear: {}, coveringWear: {}, existingPaintColors: { body: null, trim: null }, proposedPaintColors: { body: null, trim: null, combo: null }, windowFrameColor: 'white', existingGutterColor: null, proposedGutterColor: null }
+export const HOME_MATERIAL_FACTS_UNSET: HomeMaterialFacts = { wear: {}, gutters: null, gutterWear: null, airSealing: null, exteriorPaint: null, ducts: null, crawlInsulation: null, acTons: null, hvacIndoorLocation: null, proposedHvacIndoorLocation: null, miniSplitHeads: null, proposedMiniSplitHeads: null, shingleColor: null, paintWear: {}, coveringWear: {}, existingPaintColors: { body: null, trim: null }, proposedPaintColors: { body: null, trim: null, combo: null }, windowFrameColor: 'white', existingGutterColor: null, proposedGutterColor: null }

@@ -530,7 +530,7 @@ const NO_RUN: Vec3[] = []
 const shownOf = (system: HomeSystemId, scene: ReturnType<typeof at>) => systemLit(system, systemPartRows(system, scene), null).shown
 const allHome = at({ property: profile({ foundationType: 'raised', hvacType: 'central' }) })
 assert.deepEqual(Object.keys(allHome.assemblies).sort(), ['crawl-space', 'exterior-wall', 'hvac-attic', 'roof-attic', 'windows'], 'every assembly that applies, never the yard')
-assert.equal(at({ property: profile({ hvacType: 'wall-mounted', foundationType: 'slab' }) }).assemblies['hvac-attic'], undefined)
+assert.equal(at({ property: profile({ hvacType: 'wall-mounted', foundationType: 'slab' }) }).assemblies['hvac-attic']?.parts.find(part => part.id === 'duct-runs')?.condition, 'absent', 'a wall unit has heating & cooling but no ducts')
 const recentRain = at({ property: profile({ yearBuilt: 'Post-2014' }), weather: 'rain' })
 assert.equal(recentRain.leak.reachesInside, 0, 'a Post-2014 roof no longer leaks')
 assert.ok(at({ property: profile({ yearBuilt: '1950-1978' }), weather: 'rain' }).leak.reachesInside > 0, 'an era-worn roof still does')
@@ -597,9 +597,9 @@ const shallowEqual = (a: object, b: object) => Object.keys(a).length === Object.
 const select = (patch: Partial<HomeMaterialFacts>) => selectResolveInputs({ ...HOME_SCENE_DEFAULTS, homeMaterials: { ...HOME_MATERIAL_FACTS_UNSET, ...patch } })
 assert.ok(shallowEqual(select({ acTons: '3' }), select({ acTons: '5', shingleColor: 'dark-brown', paintWear: { stains: 'heavy' }, coveringWear: { missing: 'heavy' }, existingPaintColors: { body: 'cotton-ball', trim: null }, proposedPaintColors: { body: 'deep-space', trim: 'sugar-dust', combo: 'dark-light' }, windowFrameColor: 'black' })), 'no colour pick re-resolves the scene')
 assert.ok(!shallowEqual(select({ wear: { roof: 'good' } }), select({ wear: { roof: 'worn' } })), 'a wear change does')
-type DrawingOnlyKey = 'acTons' | 'shingleColor' | 'paintWear' | 'coveringWear' | 'existingPaintColors' | 'proposedPaintColors' | 'windowFrameColor' | 'existingGutterColor' | 'proposedGutterColor'
+type DrawingOnlyKey = 'acTons' | 'hvacIndoorLocation' | 'proposedHvacIndoorLocation' | 'miniSplitHeads' | 'proposedMiniSplitHeads' | 'shingleColor' | 'paintWear' | 'coveringWear' | 'existingPaintColors' | 'proposedPaintColors' | 'windowFrameColor' | 'existingGutterColor' | 'proposedGutterColor'
 // One property per key, each `never` when the resolver's inputs carry it, so a key left in fails the assignment.
-const drawingOnly: { [K in DrawingOnlyKey]: K extends keyof SceneResolveInputs['homeMaterials'] ? never : true } = { acTons: true, shingleColor: true, paintWear: true, coveringWear: true, existingPaintColors: true, proposedPaintColors: true, windowFrameColor: true, existingGutterColor: true, proposedGutterColor: true }
+const drawingOnly: { [K in DrawingOnlyKey]: K extends keyof SceneResolveInputs['homeMaterials'] ? never : true } = { acTons: true, hvacIndoorLocation: true, proposedHvacIndoorLocation: true, miniSplitHeads: true, proposedMiniSplitHeads: true, shingleColor: true, paintWear: true, coveringWear: true, existingPaintColors: true, proposedPaintColors: true, windowFrameColor: true, existingGutterColor: true, proposedGutterColor: true }
 assert.ok(Object.values(drawingOnly).every(Boolean))
 const cameraFocusIsDrawingOnly: 'cameraFocus' extends keyof SceneResolveInputs ? never : true = true
 assert.ok(cameraFocusIsDrawingOnly)
@@ -2928,7 +2928,8 @@ for (const foundation of ['slab', 'raised'] as const) {
 // line, old ducts on the joists and hung ones level on straps between the deepest insulation and the roof.
 for (const [hvacType, ducted] of [[null, true], ['central', true], ['package-unit', true], ['wall-mounted', false], ['portable', false]] as const) {
   const scene = resolveScene(inputs({ property: { ...shingleR11, hvacType }, weather: 'summer' }), cuts)
-  assert.equal(scene.assemblies['hvac-attic'] !== undefined, ducted, `${hvacType}: ducts ${ducted}`)
+  const runs = scene.assemblies['hvac-attic']?.parts.find(part => part.id === 'duct-runs')
+  assert.equal(runs !== undefined && runs.condition !== 'absent', ducted, `${hvacType}: ducts ${ducted}`)
 }
 assert.ok(!ceilingOpenings(false).some(opening => opening.kind === 'boot'), 'no boots without ducts')
 for (const opening of CEILING_OPENINGS) {
@@ -3604,7 +3605,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   assert.equal(drawnFor('air-gap')(wornDouble), true, 'an old double-pane has a plain air gap')
 
   // Captured before the rename: Modify's build slots keep their ids.
-  const BUILD_SLOT_IDS = ['build:covering', 'build:deck', 'build:gutter', 'build:radiant-barrier', 'build:attic-insulation', 'build:air-sealing', 'build:attic-fan', 'build:glazing', 'build:paint', 'build:air-handler', 'build:package-unit', 'build:duct-runs', 'build:floor-insulation']
+  const BUILD_SLOT_IDS = ['build:covering', 'build:deck', 'build:gutter', 'build:radiant-barrier', 'build:attic-insulation', 'build:air-sealing', 'build:attic-fan', 'build:glazing', 'build:paint', 'build:blower', 'build:package-unit', 'build:duct-runs', 'build:mini-split-heads', 'build:floor-insulation']
   assert.deepEqual(HOME_SYSTEMS.flatMap(({ rows }) => rows.map(({ part }) => `build:${part}`)), BUILD_SLOT_IDS, 'the build slot ids are unchanged')
   assert.deepEqual(BUILD_ROW_PART_IDS.map(part => `build:${part}`), BUILD_SLOT_IDS)
 }

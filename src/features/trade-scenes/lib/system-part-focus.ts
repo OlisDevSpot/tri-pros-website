@@ -2,7 +2,7 @@ import type { HomeSystemId, SystemPartId, Vec3, WindowPieceId } from '@/features
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 
 import { CEILING_OPENING_LOOK } from '@/features/trade-scenes/constants/home-details'
-import { ATTIC_FAN_SPOT, COVERING_BASE, EQUIPMENT, GUTTER_BACK, GUTTER_Y, HOUSE, HOUSE_WALLS, LOW_SLOPE, LOW_SLOPE_DECK_Y, LOW_SLOPE_ROOF_Y, RAFTER_ORIGIN_Y, RIDGE_Y, SLOPE_LENGTH, WALL_TOP_Y, WINDOW_FRAMES } from '@/features/trade-scenes/constants/home-geometry'
+import { ATTIC_FAN_SPOT, COVERING_BASE, EQUIPMENT, GUTTER_BACK, GUTTER_Y, HOUSE, HOUSE_WALLS, LOW_SLOPE, LOW_SLOPE_DECK_Y, LOW_SLOPE_ROOF_Y, RAFTER_ORIGIN_Y, RIDGE_Y, ROOMS, SLOPE_LENGTH, WALL_TOP_Y, WINDOW_FRAMES } from '@/features/trade-scenes/constants/home-geometry'
 import { LEAK } from '@/features/trade-scenes/constants/home-life'
 import { ATTIC_HEAT_LINE, DUCT_PIN_RISE, LOOK_INSIDE_WINDOW, PART_PIECES, STEP_CUTS, STEP_DEPTHS } from '@/features/trade-scenes/constants/look-inside'
 import { WINDOW_SEAL_LOOKS } from '@/features/trade-scenes/constants/system-part-looks'
@@ -81,14 +81,29 @@ const PIECE_PIN_ALONG = WINDOW.along - 0.2
 
 // The left wall's window, which every home view draws: the whole home's window spot stands on its glass.
 const SPOT_WINDOW = HOUSE_WALLS.left.openings[0]
+const CONDENSER_POINT: Vec3 = [EQUIPMENT.condenser.position[0], 0.55, EQUIPMENT.condenser.position[2]]
+// Each component of the indoor unit has its own pin along the box, in the order the air passes through them.
+function alongIndoorUnit(index: number): Vec3 {
+  const [x, y, z] = EQUIPMENT.plenum.position
+  return [x + (index - 1.5) * EQUIPMENT.plenum.size[0] / 4, y, z]
+}
+// Where the living room's run comes through the ceiling.
+const LIVING_ROOM_BOOT = EQUIPMENT.ductRuns.map(run => run[run.length - 1]).find(([x]) => x > ROOMS.living.from && x < ROOMS.living.to)!
 // Where each system part sits on the house at rest, before the foundation lifts it: the whole window glass, which its spot
 // points at, and the equipment. Working numbers, set by eye.
 const SHARED_POINTS: Partial<Record<SystemPartId, Vec3>> = {
   'glazing': [-HOUSE.halfLength, HOUSE.floorY + SPOT_WINDOW.sill + 0.75, SPOT_WINDOW.along + 0.25],
-  'condenser': [EQUIPMENT.condenser.position[0], 0.55, EQUIPMENT.condenser.position[2]],
+  'condenser': CONDENSER_POINT,
   'refrigerant-lines': [-HOUSE.halfLength - 0.15, 0.4, EQUIPMENT.condenser.position[2] + 0.5],
-  'air-handler': EQUIPMENT.plenum.position,
+  'blower': alongIndoorUnit(0),
+  'furnace': alongIndoorUnit(1),
+  'coil': alongIndoorUnit(2),
+  'plenum': alongIndoorUnit(3),
   'duct-runs': ductC[1],
+  'registers': LIVING_ROOM_BOOT,
+  'thermostat': EQUIPMENT.thermostat.position,
+  'mini-split-heads': CONDENSER_POINT,
+  'mini-split-outdoor': CONDENSER_POINT,
 }
 
 // The roof's and the attic's, and the package unit's, by roof form: on a gable the layers stand in section at the near

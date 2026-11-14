@@ -6,7 +6,7 @@ import type { BillCutAddOnId } from '@/shared/modules/construction/core/constant
 import type { CoolLifeColorId, CoolLifeFamilyId, PaintComboId } from '@/shared/modules/construction/core/constants/cool-life-colors'
 import type { CutMode } from '@/shared/modules/construction/core/constants/cut-modes'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
-import type { AcTons, AirSealingOption, CoveringWearKind, CrawlInsulation, DuctMaterial, ExteriorPaint, FoundationType, GutterOption, HVACComponent, HVACType, InsulationLevel, PaintWearKind, PaintWearLevel, RoofType, Wear, WindowsType } from '@/shared/modules/construction/core/constants/enums'
+import type { AcTons, AirSealingOption, CoveringWearKind, CrawlInsulation, DuctMaterial, ExteriorPaint, FoundationType, GutterOption, HVACComponent, HvacIndoorLocation, HVACType, InsulationLevel, MiniSplitHeadCount, PaintWearKind, PaintWearLevel, RoofType, Wear, WindowsType } from '@/shared/modules/construction/core/constants/enums'
 import type { GutterColorId } from '@/shared/modules/construction/core/constants/gutter-colors'
 import type { HomeMaterialId } from '@/shared/modules/construction/core/constants/home-material-ids'
 import type { InstallStyleId } from '@/shared/modules/construction/core/constants/install-styles'
@@ -273,6 +273,10 @@ export interface HomeMaterialFacts {
   ducts: DuctMaterial | null
   crawlInsulation: CrawlInsulation | null
   acTons: AcTons | null
+  hvacIndoorLocation: HvacIndoorLocation | null
+  proposedHvacIndoorLocation: HvacIndoorLocation | null
+  miniSplitHeads: MiniSplitHeadCount | null
+  proposedMiniSplitHeads: MiniSplitHeadCount | null
   shingleColor: ShingleColorId | null
   paintWear: Partial<Record<PaintWearKind, PaintWearLevel>>
   coveringWear: Partial<Record<CoveringWearKind, PaintWearLevel>>

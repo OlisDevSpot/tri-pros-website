@@ -119,7 +119,7 @@ export function AtticDucts({ lowSlope, heatLoad, material, wear, airHandler, acS
         <MergedBoxes boxes={boots} color={HOME_PALETTE.ductBoot} radius={0.02} emissive={EQUIPMENT_STRAIN.heat.color} materialRef={bootGlow} />
       </group>
       {plenum.length > 0 && (
-        <group userData={systemPartTag(airHandler ? 'air-handler' : 'duct-runs')}>
+        <group userData={systemPartTag(airHandler ? 'blower' : 'duct-runs')}>
           <MergedBoxes boxes={plenum} color={airHandler ? HOME_PALETTE.unit : HOME_PALETTE.ductBoot} radius={0.04} roughness={0.7} emissive={EQUIPMENT_STRAIN.heat.color} materialRef={plenumGlow} />
         </group>
       )}

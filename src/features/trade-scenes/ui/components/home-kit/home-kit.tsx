@@ -34,6 +34,7 @@ import { openedDuctRun } from '@/features/trade-scenes/lib/duct-run-points'
 import { gutterHex } from '@/features/trade-scenes/lib/gutter-hex'
 import { gutterWallStains } from '@/features/trade-scenes/lib/gutter-marks'
 import { gutterOutlets, gutterWetSpans } from '@/features/trade-scenes/lib/gutter-water'
+import { hasDucts } from '@/features/trade-scenes/lib/has-ducts'
 import { hasOutdoorUnit } from '@/features/trade-scenes/lib/has-outdoor-unit'
 import { homeFadeNeeded } from '@/features/trade-scenes/lib/home-fade-needed'
 import { homeFloorY } from '@/features/trade-scenes/lib/home-floor-y'
@@ -300,9 +301,8 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
   const stucco = isStuccoFinish(partState(wallParts, 'finish').material)
   const fasciaBoards = fasciaBoardsColor(targets.fasciaReplaced, repainted, paint.trim)
   const garageRoofTone = coveringTone(covering, roofForm === 'low-slope' ? 'membrane' : 'shingle', coveringPart.wear, installedShingleTone(parts, homeMaterials.shingleColor))
-  // The resolver leaves the attic's ducts out for a home whose system has none.
-  const ducted = targets.assemblies['hvac-attic'] !== undefined
   const hvacParts = targets.assemblies['hvac-attic']?.parts ?? NO_PARTS
+  const ducted = hasDucts(hvacParts)
   const floorInsulation = partState(targets.assemblies['crawl-space']?.parts ?? NO_PARTS, 'floor-insulation')
   const gutterColour = gutterHex(homeMaterials, parts.find(part => part.id === 'gutter')?.condition === 'installed')
   const gutterWear = drawnGutterWear(parts)
