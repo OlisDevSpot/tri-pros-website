@@ -5,6 +5,9 @@ export function installKind(part: PartDefinition, existing: string | null, insta
   if (installedRank === undefined) {
     return 'like-for-like'
   }
+  if (existing === null && part.noCutWhereNone) {
+    return 'like-for-like'
+  }
   const existingRank = existing === null ? undefined : part.materials[existing]?.energyRank
   return existingRank === undefined || existingRank < installedRank ? 'saves-energy' : 'like-for-like'
 }

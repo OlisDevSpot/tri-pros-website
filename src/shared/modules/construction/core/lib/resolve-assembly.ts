@@ -121,6 +121,7 @@ export function resolveAssembly(assembly: Assembly, { existing, proposedScopeIds
       const definition = material === null ? null : part.materials[material]
       const replacementCopy = woodReplaced.has(part.id) ? definition?.woodReplacementCopy : undefined
       const copy = replacementCopy ?? baseCopy.get(part.id) ?? copyFor(part, material, condition)
+      const added = installedMaterial !== undefined && (existing.parts[part.id] === undefined || existing.parts[part.id].condition === 'absent')
       const under = installedMaterial && addedTo.has(part.id) ? existing.parts[part.id]?.material ?? null : null
       return {
         id: part.id,
@@ -129,6 +130,7 @@ export function resolveAssembly(assembly: Assembly, { existing, proposedScopeIds
         ...(part.edge ? { edge: true as const } : {}),
         ...(replacementCopy ? { woodReplaced: true as const } : {}),
         ...(reused ? { reused: true as const } : {}),
+        ...(added ? { added: true as const } : {}),
         material,
         condition,
         ...(wear ? { wear } : {}),

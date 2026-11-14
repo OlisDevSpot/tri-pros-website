@@ -19,6 +19,7 @@ import { redeckAllowed } from '@/shared/modules/construction/core/lib/redeck-all
 import { resolveAssembly } from '@/shared/modules/construction/core/lib/resolve-assembly'
 import { resolveHomeMaterials } from '@/shared/modules/construction/core/lib/resolve-home-materials'
 import { roofFormOf } from '@/shared/modules/construction/core/lib/roof-form-of'
+import { hasPart, scopeFitsHome } from '@/shared/modules/construction/core/lib/scope-fits-home'
 
 export interface PartOffer {
   assemblyId: AssemblyId
@@ -51,7 +52,7 @@ const ROOF_SCOPE_IDS: ReadonlySet<string> = new Set(Object.values(SCOPES_BY_EXIS
 export function partOffers(assemblyId: AssemblyId): PartOffer[] {
   const byPart = new Map<string, ScopeId[]>()
   for (const [scopeId, entry] of Object.entries(SCOPE_INSTALLS)) {
-    const part = entry?.assembly === assemblyId ? entry.installs[0]?.part : undefined
+    const part = entry?.assembly === assemblyId ? (entry.filedUnder ?? entry.installs[0]?.part) : undefined
     if (part !== undefined) {
       byPart.set(part, [...byPart.get(part) ?? [], scopeId as ScopeId])
     }
@@ -118,9 +119,10 @@ function followsWhatIsThere(offer: PartOffer, ctx: Pick<OfferContext, 'existing'
   return onEmpty.filter(id => requiredUpgrade(id, part, existing) !== 'not-offered')
 }
 
-export function offeredScopes(offer: PartOffer, ctx: OfferContext): { scopeIds: ScopeId[], blocked: ScopeBlockedReason | null } {
+export function offeredScopes(row: PartOffer, ctx: OfferContext): { scopeIds: ScopeId[], blocked: ScopeBlockedReason | null } {
+  const offer = { ...row, scopeIds: row.scopeIds.filter(id => scopeFitsHome(SCOPE_INSTALLS[id]!, ctx.existing)) }
   // A part the home lacks (gutters on a roof with none) is still offered under a new roof: there is nothing new to protect.
-  const homeHasPart = ctx.existing.some(part => part.id === offer.partId && part.condition !== 'absent')
+  const homeHasPart = hasPart(ctx.existing, offer.partId)
   if (ctx.wear === 'new' && homeHasPart) {
     return { scopeIds: [], blocked: 'already-new' }
   }

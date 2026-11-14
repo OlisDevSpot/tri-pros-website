@@ -1,6 +1,7 @@
 import type { YearBuiltRange } from '@/shared/constants/enums/customers'
 import type { AssemblyId } from '@/shared/modules/construction/core/constants/assembly-ids'
 import type { WrittenBenefitKind } from '@/shared/modules/construction/core/constants/benefit-kinds'
+import type { BillCategory } from '@/shared/modules/construction/core/constants/bill-categories'
 import type { BillCutAddOnId } from '@/shared/modules/construction/core/constants/bill-cut-add-ons'
 import type { CoolLifeColorId, CoolLifeFamilyId, PaintComboId } from '@/shared/modules/construction/core/constants/cool-life-colors'
 import type { CutMode } from '@/shared/modules/construction/core/constants/cut-modes'
@@ -67,6 +68,8 @@ interface PartMaterialFields {
   water?: { demand?: number, passThrough?: number }
   // Higher saves more energy; a material without one never saves.
   energyRank?: number
+  // The bills this material runs on: where an installed material's base cut lands, and the bill the home pays that side on when it is today's. Absent means every bill its trade cuts.
+  bills?: readonly BillCategory[]
   // Installing this material also installs `with` on `part` when that part currently holds one of `replaces`.
   needsBase?: { part: string, replaces: readonly string[], with: string, copy: PartCopy }
   // What the part says once a scope takes the old roof off to it and the build keeps it, with its bad sections replaced.
@@ -89,6 +92,8 @@ export interface PartDefinition {
   absentCopy?: PartCopy
   // Collects shed water at the roof's edge instead of sitting in the rain path.
   edge?: true
+  // A new one where the home had none brings comfort it never had, which can only raise a bill, so it earns no cut.
+  noCutWhereNone?: true
 }
 
 export interface Assembly {
@@ -132,12 +137,18 @@ export interface ResolvedPart {
   water: { demand?: number, passThrough?: number } | null
   // What the installed material is laid over, when its install adds to the part instead of replacing it.
   over?: string
+  // Installed where today has none.
+  added?: true
 }
 
 export interface ScopeInstall {
   assembly: AssemblyId
   // The catalog owns a scope's trade; it is copied here because the core cannot read the catalog, and the scope check holds the two equal.
   trade: TradeSlug
+  // The part the scope is sold on when that is not the first install's; core says nothing of build rows, the scene files the offer under it.
+  filedUnder?: string
+  // A replacement needs what it replaces, and a first install needs the home to have none.
+  onlyWhere?: { has?: readonly string[], lacks?: readonly string[] }
   // Parts the scope bares and keeps, replacing their rotted wood on the way.
   replacesWood?: readonly string[]
   installs: readonly {
