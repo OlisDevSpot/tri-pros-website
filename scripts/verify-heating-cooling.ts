@@ -2,6 +2,11 @@ import type { TradeSceneInputs } from '@/features/trade-scenes/types'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
 import type { Assembly, ExistingConditions, HomeFacts, HomeMaterialFacts, PropertyProfile, ResolvedPart, ScopeInstall, Weather } from '@/shared/modules/construction/core/types'
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { createRemodelRoiDefaults, createTradePicks } from '@/features/calculators/remodel-roi-calculator/constants/form-defaults'
+import { projectRemodelRoi } from '@/features/calculators/remodel-roi-calculator/lib/project-remodel-roi'
+import { resolveRemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/lib/resolve-config'
+import { TRADE_OUTCOMES } from '@/features/meeting-flow/constants/trade-outcomes'
 import { HOME_SCENE_DEFAULTS } from '@/features/trade-scenes/constants/home-scene-defaults'
 import { hasDucts } from '@/features/trade-scenes/lib/has-ducts'
 import { propertyPatch } from '@/features/trade-scenes/lib/property-patch'
@@ -15,6 +20,7 @@ import { ASSEMBLIES } from '@/shared/modules/construction/core/constants/assembl
 import { HOME_MATERIAL_FACTS_UNSET } from '@/shared/modules/construction/core/constants/home-materials'
 import { SCOPE_IDS } from '@/shared/modules/construction/core/constants/scope-ids'
 import { inferRoofAtticExistingConditions } from '@/shared/modules/construction/core/lib/assemblies/roof-attic/infer-existing-conditions'
+import { billsPaid } from '@/shared/modules/construction/core/lib/bills-paid'
 import { installKind } from '@/shared/modules/construction/core/lib/install-kind'
 import { resolveAssembly } from '@/shared/modules/construction/core/lib/resolve-assembly'
 import { resolveHomeMaterials } from '@/shared/modules/construction/core/lib/resolve-home-materials'
@@ -193,5 +199,65 @@ for (const id of ['blower', 'furnace', 'coil', 'plenum', 'duct-runs', 'registers
   assert.equal(part?.condition, 'installed', `a new system installs its ${id}`)
   assert.equal(part?.added, true, `a wall home gains its ${id}`)
 }
+
+// Cooling earns on the electric bill and heating on gas, new ducts land only on a bill the home already pays, and no bill goes up
+const split = SCOPE_IDS.splitSystemReplacement
+const ductsScope = SCOPE_IDS.airDuctsReplacement
+const centralBothProperty: Partial<PropertyProfile> = { hvacType: 'central', hvacComponents: 'both' }
+const centralFurnaceProperty: Partial<PropertyProfile> = { hvacType: 'central', hvacComponents: 'furnace' }
+const centralAcProperty: Partial<PropertyProfile> = { hvacType: 'central', hvacComponents: 'ac' }
+const cutsTable: [string, Partial<PropertyProfile>, string[], number, number][] = [
+  ['central both', centralBothProperty, [split], 0.25, 0.2],
+  ['central both', centralBothProperty, [SCOPE_IDS.acReplacement], 0.25, 0],
+  ['central both', centralBothProperty, [SCOPE_IDS.furnaceReplacement], 0, 0.2],
+  ['central furnace', centralFurnaceProperty, [split], 0, 0.2],
+  ['central ac', centralAcProperty, [split], 0.25, 0],
+  ['central both', centralBothProperty, [split, ductsScope], 0.2875, 0.24],
+  ['central furnace', centralFurnaceProperty, [split, ductsScope], 0, 0.24],
+  ['central ac', centralAcProperty, [split, ductsScope], 0.2875, 0],
+  ['central both', centralBothProperty, [SCOPE_IDS.acReplacement, ductsScope], 0.2875, 0.05],
+  ['central both', centralBothProperty, [ductsScope], 0.05, 0.05],
+  ['central furnace', centralFurnaceProperty, [ductsScope], 0, 0.05],
+  ['wall-mounted', { hvacType: 'wall-mounted' }, [SCOPE_IDS.splitSystemNewCut], 0, 0],
+  ['central both', centralBothProperty, [SCOPE_IDS.miniSplitInstallation], 0, 0],
+  ['package-unit', { hvacType: 'package-unit' }, [SCOPE_IDS.packageUnitReplacement], 0.25, 0.2],
+  ['package-unit', { hvacType: 'package-unit' }, [SCOPE_IDS.packageUnitReplacement, ductsScope], 0.2875, 0.24],
+]
+for (const [home, property, scopes, electric, gas] of cutsTable) {
+  const cuts = scene(property, { scopes, view: 'proposed' }).savings.cuts
+  const build = scopes.map(id => scopeName[id]).join(' + ')
+  near(cuts.electric.combined, electric, `${home}, ${build}: the electric cut`)
+  near(cuts.gas.combined, gas, `${home}, ${build}: the gas cut`)
+  for (const category of ['electric', 'gas'] as const) {
+    assert.ok(cuts[category].after <= cuts[category].bill, `${home}, ${build}: the ${category} bill never goes up`)
+  }
+}
+const wallCuts = scene({ hvacType: 'wall-mounted' }, { scopes: [SCOPE_IDS.splitSystemNewCut], view: 'proposed', efficiencyUpgrades: ['r8-ducts'] }).savings.cuts
+near(wallCuts.electric.combined, 0, 'a new system with R-8 ducts on a wall home: the electric cut')
+near(wallCuts.gas.combined, 0, 'a new system with R-8 ducts on a wall home: the gas cut')
+
+const todayParts = (property: Partial<PropertyProfile>) => hvacPartsOf(scene(property))
+const hvacAssembly = ASSEMBLIES['hvac-attic']
+assert.deepEqual([...billsPaid(todayParts(centralBothProperty), hvacAssembly) ?? []].sort(), ['electric', 'gas'], 'a central furnace and A/C pays both bills')
+assert.deepEqual([...billsPaid(todayParts(centralFurnaceProperty), hvacAssembly) ?? []], ['gas'], 'a furnace alone pays gas')
+assert.deepEqual([...billsPaid(todayParts(centralAcProperty), hvacAssembly) ?? []], ['electric'], 'A/C alone pays electric')
+assert.equal(billsPaid(todayParts({ hvacType: 'package-unit' }), hvacAssembly), null, 'a package unit pays every bill')
+
+const roiConfig = resolveRemodelRoiConfig()
+const roiValues = createRemodelRoiDefaults(roiConfig)
+roiValues.bills.electric.now = 380
+roiValues.bills.gas.now = 90
+roiValues.trades.hvac = { ducts: true, current: { ...createTradePicks().hvac.current, ageYears: 15 } }
+const roiCuts = projectRemodelRoi(roiValues, roiConfig).cuts
+const sceneFull = scene(centralBothProperty, { scopes: [split, ductsScope], view: 'proposed' }).savings.cuts
+near(roiCuts.electric.combined, sceneFull.electric.combined, 'the calculator\'s HVAC with ducts cuts electric as the scene\'s full system does')
+near(roiCuts.gas.combined, sceneFull.gas.combined, 'and gas')
+
+assert.ok(TRADE_OUTCOMES.hvac.includes('off the electric bill'), 'the HVAC outcome puts the cut on the electric bill')
+assert.ok(!TRADE_OUTCOMES.hvac.includes('off cooling'), 'and no longer says it comes off cooling')
+const painPointsSource = readFileSync(new URL('../src/pain-points.ts', import.meta.url), 'utf8')
+const hvacStatement = painPointsSource.match(/outcomeStatement:\s*`(A new high-efficiency system[^`]*(?:\$\{[^}]*\}[^`]*)*)`/)?.[1] ?? ''
+assert.ok(hvacStatement.length > 0, 'the HVAC pain point has a high-efficiency outcome statement')
+assert.ok(!/\d+\s*%/.test(hvacStatement.replace(/\$\{formatRowClaim\(tradeCutPercent\([^)]*\)\)\}/g, '').replace(/\$\{tradeCutPercent\([^)]*\)\}/g, '')), 'the HVAC pain point types no percent of its own')
 
 console.log('verify-heating-cooling: ok')
