@@ -4,7 +4,7 @@ import type { HvacIndoorLocation } from '@/shared/modules/construction/core/cons
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 
 import { CONDENSER_LINE_SET, LOW_SLOPE_DUCTS } from '@/features/trade-scenes/constants/home-details'
-import { BACK_INNER, EQUIPMENT, HOME_FLOOR_Y, HOUSE, PARTITIONS_X, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
+import { EQUIPMENT, HOME_FLOOR_Y, HOUSE, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
 
 const [PLENUM_X, PLENUM_Y, PLENUM_Z] = EQUIPMENT.plenum.position
 const CEILING_Y = WALL_TOP_Y - HOUSE.ceilingThickness
@@ -42,55 +42,42 @@ const ATTIC: IndoorUnitPlacement = {
   trunk: [EQUIPMENT.plenum.position],
 }
 
-// Working numbers, set by screenshot. The closet stands against the back wall on the living room's side of the kitchen
-// partition, which is its right wall, between the sofa and the partition. Its door stands open against the partition.
+// Working numbers, set by screenshot. The closet stands in the bedroom against the left wall, between the wall's low heat
+// lane and its window's, with the condenser just outside: clear of every arrow, the bed and the window. It opens toward the
+// front, where the rooms are seen from, its bifold door folded back against the jamb away from the wall.
 const CLOSET_WALL = HOUSE.partitionThickness
-const CLOSET_RIGHT = PARTITIONS_X[1] - HOUSE.partitionThickness / 2
-const CLOSET_INSIDE = { width: 0.7, depth: 0.9 } as const
-const CLOSET_LEFT = CLOSET_RIGHT - CLOSET_INSIDE.width
-const CLOSET_FRONT = BACK_INNER + CLOSET_INSIDE.depth
-const CLOSET_DOOR = { width: 0.63, height: 2.05, leaf: 0.035, clear: 0.002 } as const
-const CLOSET_DOOR_LEFT = CLOSET_RIGHT - CLOSET_DOOR.width
-const CLOSET_HEADER_Y = HOUSE.floorY + CLOSET_DOOR.height
-const CLOSET_DEPTH_OVERALL = CLOSET_INSIDE.depth + CLOSET_WALL
+const LEFT_INNER = -HOUSE.halfLength + HOUSE.wallThickness
+const CLOSET_SPAN = { back: -1.02, front: -0.27 } as const
+const CLOSET_DEPTH = 0.85
+const CLOSET_INSIDE = { back: CLOSET_SPAN.back + CLOSET_WALL, front: CLOSET_SPAN.front - CLOSET_WALL, side: LEFT_INNER + CLOSET_DEPTH } as const
+const CLOSET_HEADER_Y = HOUSE.floorY + 2.05
+const CLOSET_FULL_HEIGHT = CEILING_Y - HOUSE.floorY
+const CLOSET_MID_Y = (HOUSE.floorY + CEILING_Y) / 2
+const BIFOLD = { thickness: 0.12, reach: 0.22, height: 2.0 } as const
+const CLOSET_OUTER_X = CLOSET_INSIDE.side + CLOSET_WALL
 
 const CLOSET_WALLS: readonly BoxSpec[] = [
-  {
-    size: [CLOSET_WALL, CEILING_Y - HOUSE.floorY, CLOSET_DEPTH_OVERALL],
-    position: [CLOSET_LEFT - CLOSET_WALL / 2, (HOUSE.floorY + CEILING_Y) / 2, BACK_INNER + CLOSET_DEPTH_OVERALL / 2],
-  },
-  {
-    size: [CLOSET_DOOR_LEFT - CLOSET_LEFT, CEILING_Y - HOUSE.floorY, CLOSET_WALL],
-    position: [(CLOSET_LEFT + CLOSET_DOOR_LEFT) / 2, (HOUSE.floorY + CEILING_Y) / 2, CLOSET_FRONT + CLOSET_WALL / 2],
-  },
-  {
-    size: [CLOSET_DOOR.width, CEILING_Y - CLOSET_HEADER_Y, CLOSET_WALL],
-    position: [CLOSET_DOOR_LEFT + CLOSET_DOOR.width / 2, (CLOSET_HEADER_Y + CEILING_Y) / 2, CLOSET_FRONT + CLOSET_WALL / 2],
-  },
-  {
-    size: [CLOSET_DOOR.leaf, CLOSET_DOOR.height - 0.02, CLOSET_DOOR.width - 0.01],
-    position: [CLOSET_RIGHT - CLOSET_DOOR.clear - CLOSET_DOOR.leaf / 2, HOUSE.floorY + (CLOSET_DOOR.height - 0.02) / 2, CLOSET_FRONT + CLOSET_WALL + (CLOSET_DOOR.width - 0.01) / 2],
-  },
+  { size: [CLOSET_OUTER_X - LEFT_INNER, CLOSET_FULL_HEIGHT, CLOSET_WALL], position: [(LEFT_INNER + CLOSET_OUTER_X) / 2, CLOSET_MID_Y, CLOSET_SPAN.back + CLOSET_WALL / 2] },
+  { size: [CLOSET_WALL, CLOSET_FULL_HEIGHT, CLOSET_SPAN.front - CLOSET_SPAN.back], position: [CLOSET_INSIDE.side + CLOSET_WALL / 2, CLOSET_MID_Y, (CLOSET_SPAN.back + CLOSET_SPAN.front) / 2] },
+  { size: [CLOSET_INSIDE.side - LEFT_INNER, CEILING_Y - CLOSET_HEADER_Y, CLOSET_WALL], position: [(LEFT_INNER + CLOSET_INSIDE.side) / 2, (CLOSET_HEADER_Y + CEILING_Y) / 2, CLOSET_INSIDE.front + CLOSET_WALL / 2] },
+  { size: [BIFOLD.thickness, BIFOLD.height, BIFOLD.reach], position: [CLOSET_INSIDE.side - BIFOLD.thickness / 2, HOUSE.floorY + BIFOLD.height / 2, CLOSET_SPAN.front + BIFOLD.reach / 2 - CLOSET_WALL] },
 ]
 
-// The upright unit stands toward the back of the closet, its plenum through the ceiling into the attic or the joist space.
-const CLOSET_SECTION = [0.55, 0.62] as const
-const CLOSET_X = (CLOSET_LEFT + CLOSET_RIGHT) / 2
-const CLOSET_Z = BACK_INNER + 0.18 + CLOSET_SECTION[1] / 2
+// The upright unit stands toward the left wall, leaving room behind it for the lines, its plenum through the ceiling into
+// the attic or the joist space.
+const CLOSET_SECTION = [0.62, 0.5] as const
+const CLOSET_X = LEFT_INNER + 0.12 + CLOSET_SECTION[0] / 2
+const CLOSET_Z = (CLOSET_INSIDE.back + CLOSET_INSIDE.front) / 2
 const PLENUM_RISE = 0.1
 const CLOSET_CABINET = { blower: 0.55, furnace: 0.7, coil: 0.55 } as const
 const CLOSET_LENGTHS = { ...CLOSET_CABINET, plenum: WALL_TOP_Y + PLENUM_RISE - HOUSE.floorY - CLOSET_CABINET.blower - CLOSET_CABINET.furnace - CLOSET_CABINET.coil }
 const CLOSET_COIL_Y = HOUSE.floorY + CLOSET_CABINET.blower + CLOSET_CABINET.furnace + CLOSET_CABINET.coil / 2
 
-// Out through the wall behind the coil, down the back wall's outside, round the back corner and along the left wall to the
-// condenser's lines.
-const CLOSET_LINE_X = CLOSET_X + 0.2
-const BACK_FACE = -HOUSE.halfDepth - LINE_OUT
+// Out through the wall behind the coil, down the left wall's outside, and along it to the condenser's lines.
 const CLOSET_LINE_SET: readonly Vec3[] = [
-  [CLOSET_LINE_X, CLOSET_COIL_Y, BACK_INNER + 0.04],
-  [CLOSET_LINE_X, CLOSET_COIL_Y, BACK_FACE],
-  [CLOSET_LINE_X, LINE_RUN_Y, BACK_FACE],
-  [LEFT_FACE, LINE_RUN_Y, BACK_FACE],
+  [LEFT_INNER + 0.05, CLOSET_COIL_Y, CLOSET_Z],
+  [LEFT_FACE, CLOSET_COIL_Y, CLOSET_Z],
+  [LEFT_FACE, LINE_RUN_Y, CLOSET_Z],
   [LEFT_FACE, LINE_RUN_Y, LINE_Z],
 ]
 
@@ -107,20 +94,23 @@ function closet(trunk: readonly Vec3[]): IndoorUnitPlacement {
   }
 }
 
-// Working numbers, set by screenshot. Out of the plenum's top the trunk turns toward the room, clear of the rafters low over
-// the back wall, crosses behind the runs to the right and comes into today's plenum spot from behind. Under a flat roof it
-// stays in the joist space and joins the runs where they start today.
+// Working numbers, set by screenshot. Out of the plenum's top the trunk turns back behind the bedroom's run, clear of the
+// bedroom's can, and comes into today's plenum spot from behind, the face no run leaves from. Under a flat roof it keeps to
+// the joist space and joins the runs where they start today.
 const LOW_SLOPE_RUN_Y = EQUIPMENT.ductRuns.reduce((sum, run) => sum + run[0][1], 0) / EQUIPMENT.ductRuns.length - LOW_SLOPE_DUCTS.drop
+const TRUNK_BEHIND_Z = -2.05
 const CLOSET_PITCHED = closet([
-  [CLOSET_X, WALL_TOP_Y + 0.12, CLOSET_Z + 0.35],
-  [1.6, WALL_TOP_Y + 0.16, -2.75],
-  [PLENUM_X, WALL_TOP_Y + 0.3, -2.6],
+  [CLOSET_X, WALL_TOP_Y + 0.2, CLOSET_Z - 0.55],
+  [-4.9, WALL_TOP_Y + 0.28, -1.75],
+  [-1.3, WALL_TOP_Y + 0.33, TRUNK_BEHIND_Z],
+  [PLENUM_X, WALL_TOP_Y + 0.36, TRUNK_BEHIND_Z],
   EQUIPMENT.plenum.position,
 ])
 const CLOSET_LOW_SLOPE = closet([
-  [CLOSET_X, WALL_TOP_Y + 0.12, CLOSET_Z + 0.35],
-  [1.6, WALL_TOP_Y + 0.14, -2.75],
-  [PLENUM_X, LOW_SLOPE_RUN_Y, -2.45],
+  [CLOSET_X, WALL_TOP_Y + 0.13, CLOSET_Z - 0.55],
+  [-4.9, WALL_TOP_Y + 0.14, -1.75],
+  [-1.3, LOW_SLOPE_RUN_Y, TRUNK_BEHIND_Z],
+  [PLENUM_X, LOW_SLOPE_RUN_Y, TRUNK_BEHIND_Z],
   [PLENUM_X, LOW_SLOPE_RUN_Y, PLENUM_Z],
 ])
 

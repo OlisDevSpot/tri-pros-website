@@ -238,8 +238,7 @@ export const WINDOW_FRAMES = {
 export const EQUIPMENT = {
   condenser: { position: [-7.25, 0, -2.1] as const, pad: [1.0, 0.08, 1.3] as const },
   meter: { position: [-HOUSE.halfLength - 0.02, HOUSE.floorY + 1.15, 2.7] as const },
-  // Beside the sofa, clear of the HVAC closet a home may have at the kitchen partition.
-  thermostat: { position: [1.3, HOUSE.floorY + 1.45, BACK_INNER + HOUSE.paintThickness] as const },
+  thermostat: { position: [1.85, HOUSE.floorY + 1.45, BACK_INNER + HOUSE.paintThickness] as const },
   // Both sit in the bedroom's back wall, facing the open front, so the opening view looks straight at them.
   // Through the wall beside the bed: [width, height, depth through the wall], and how far it stands out behind the house.
   wallUnit: { x: -2.6, y: HOUSE.floorY + 1.2, size: [0.68, 0.4, 0.5] as const, outside: 0.1 },

@@ -9,15 +9,18 @@ import { createRemodelRoiDefaults, createTradePicks } from '@/features/calculato
 import { projectRemodelRoi } from '@/features/calculators/remodel-roi-calculator/lib/project-remodel-roi'
 import { resolveRemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/lib/resolve-config'
 import { TRADE_OUTCOMES } from '@/features/meeting-flow/constants/trade-outcomes'
+import { HEAT_ARROW_LOOK } from '@/features/trade-scenes/constants/heat-arrow-look'
 import { CONDENSER_LINE_SET, THERMOSTAT_BOX } from '@/features/trade-scenes/constants/home-details'
 import { FURNISHING_BOXES, HOME_FURNITURE } from '@/features/trade-scenes/constants/home-furnishings'
 import { BACK_INNER, EQUIPMENT, HOME_FLOOR_Y, HOUSE } from '@/features/trade-scenes/constants/home-geometry'
 import { HOME_SCENE_DEFAULTS } from '@/features/trade-scenes/constants/home-scene-defaults'
 import { INDOOR_UNIT_PLACEMENTS } from '@/features/trade-scenes/constants/indoor-unit-placements'
 import { HOME_PRIMARY_ASSEMBLY } from '@/features/trade-scenes/constants/scene-controls'
+import { ceilingOpenings } from '@/features/trade-scenes/lib/ceiling-openings'
 import { drawnHvac } from '@/features/trade-scenes/lib/drawn-hvac'
 import { ductRunPoints } from '@/features/trade-scenes/lib/duct-run-points'
 import { hasDucts } from '@/features/trade-scenes/lib/has-ducts'
+import { homeHeatLanes } from '@/features/trade-scenes/lib/home-heat-lanes'
 import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
 import { atticHoldsUnit, indoorLocation } from '@/features/trade-scenes/lib/indoor-location'
 import { indoorSide } from '@/features/trade-scenes/lib/indoor-side'
@@ -455,7 +458,34 @@ for (const form of ROOF_FORMS) {
     assert.ok(boxes.every(box => !overlaps(space, box)), `${form}: the closet stands clear of the ${kind}`)
   }
   assert.ok(!overlaps(space, thermostatBox), `${form}: the closet stands clear of the thermostat`)
-  assert.ok(Math.abs(Math.min(...closet.map(wall => wall.position[2] - wall.size[2] / 2)) - BACK_INNER) < 1e-6, `${form}: the closet stands against the back wall`)
+  const againstOutside = [Math.abs(low[0]! + innerX), Math.abs(high[0]! - innerX), Math.abs(low[2]! - BACK_INNER)].some(gap => gap < 1e-6)
+  assert.ok(againstOutside, `${form}: the closet stands against an outside wall`)
+}
+// The closet and its unit stand clear of every heat arrow the house draws, open or Complete, in either season: an arrow is
+// drawn about its lane, half its length either way
+const arrowReach = HEAT_ARROW_LOOK.size.home / 2
+const pointToBox = (point: Vec3, { size, position }: BoxSpec) => Math.hypot(...point.map((value, axis) => Math.max(0, Math.abs(value - position[axis]!) - size[axis]! / 2)))
+for (const form of ROOF_FORMS) {
+  const lanes = (['summer', 'winter'] as const).flatMap((season) => {
+    const heat = scene({ roofType: form === 'pitched' ? 'shingle' : 'flat' }, { weather: season }).heat
+    assert.ok(heat !== null, `${form} ${season}: the home has heat to draw`)
+    return (['partly-open', 'complete'] as const).flatMap(view => homeHeatLanes(form, { ...heat, atticFanRunning: true }, season, view, null, ceilingOpenings(true)))
+  })
+  assert.ok(lanes.length > 0, `${form}: the house draws heat lanes`)
+  const placement = indoorUnitPlacement('closet', form)!
+  const boxes = [...placement.closet, ...indoorUnitBoxes(placement, { furnace: true, coil: true }).map(section => section.box)]
+  let nearest = Infinity
+  for (const { points } of lanes) {
+    points.slice(1).forEach((to, index) => {
+      const from = points[index]!
+      const steps = Math.max(1, Math.ceil(distance(from, to) / 0.02))
+      for (let step = 0; step <= steps; step++) {
+        const point: Vec3 = [from[0] + (to[0] - from[0]) * step / steps, from[1] + (to[1] - from[1]) * step / steps, from[2] + (to[2] - from[2]) * step / steps]
+        nearest = Math.min(nearest, ...boxes.map(box => pointToBox(point, box)))
+      }
+    })
+  }
+  assert.ok(nearest >= arrowReach, `${form}: the closet stands ${nearest.toFixed(3)} m from the nearest heat lane, inside an arrow's ${arrowReach} m reach`)
 }
 const lowSlopeStarts = ductRunPoints('low-slope', EQUIPMENT.ductRadius, 0).map(run => run[0]!)
 const [flatTrunkX, flatTrunkY, flatTrunkZ] = indoorUnitPlacement('closet', 'low-slope')!.trunk.at(-1)!
