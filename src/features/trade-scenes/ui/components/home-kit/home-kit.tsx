@@ -24,6 +24,7 @@ import { WEATHER_SKIES } from '@/features/trade-scenes/constants/weather-skies'
 import { LookInsideFadeContext } from '@/features/trade-scenes/contexts/look-inside-fade-context'
 import { useLotSlot } from '@/features/trade-scenes/contexts/lot-slot-context'
 import { useSceneCursorHover } from '@/features/trade-scenes/contexts/scene-cursor-hover-context'
+import { useDrawnHvac } from '@/features/trade-scenes/hooks/use-drawn-hvac'
 import { useEmphasizePart } from '@/features/trade-scenes/hooks/use-emphasize-part'
 import { useSceneScan } from '@/features/trade-scenes/hooks/use-scene-scan'
 import { useSceneTapClaim } from '@/features/trade-scenes/hooks/use-scene-tap-claim'
@@ -35,7 +36,6 @@ import { gutterHex } from '@/features/trade-scenes/lib/gutter-hex'
 import { gutterWallStains } from '@/features/trade-scenes/lib/gutter-marks'
 import { gutterOutlets, gutterWetSpans } from '@/features/trade-scenes/lib/gutter-water'
 import { hasDucts } from '@/features/trade-scenes/lib/has-ducts'
-import { hasOutdoorUnit } from '@/features/trade-scenes/lib/has-outdoor-unit'
 import { homeFadeNeeded } from '@/features/trade-scenes/lib/home-fade-needed'
 import { homeFloorY } from '@/features/trade-scenes/lib/home-floor-y'
 import { homeHeatLanes } from '@/features/trade-scenes/lib/home-heat-lanes'
@@ -320,7 +320,8 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
   const leaks = useMemo(() => airSealed ? [] : ceilingOpenings(ducted), [airSealed, ducted])
   const openHeatLanes = useMemo(() => heat !== null && season !== null ? homeHeatLanes(roofForm, heat, season, 'partly-open', covering, leaks) : [], [roofForm, heat, season, covering, leaks])
   const completeHeatLanes = useMemo(() => heat !== null && season !== null ? homeHeatLanes(roofForm, heat, season, 'complete', covering, leaks) : [], [roofForm, heat, season, covering, leaks])
-  const side = indoorSide(weather, property.hvacType, property.hvacComponents)
+  const hvac = useDrawnHvac()
+  const side = indoorSide(weather, hvac.duties)
   // The condenser cools; on a winter night the furnace or the unit's heater carries the load instead.
   const coolingLoad = side === 'cooling' ? targets.equipmentLoad : 0
   const partPaint = useMemo(() => held !== null && heat !== null ? partPaintTemperatures(held.shown, heat) : NO_PART_PAINT, [held, heat])
@@ -401,9 +402,9 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
       {/* On the ground whatever the foundation, ghosted with the house. */}
       <group ref={groundLevel} onClick={partTap} userData={HOME_GHOST_TAG}>
         <SpotPinsLayer rides="ground" />
-        {hasOutdoorUnit(property.hvacType, property.hvacComponents) && (
+        {hvac.outdoor !== null && (
           <group userData={thermalTag(side ?? 'interior')}>
-            <CondenserUnit load={coolingLoad} burst={burst} wear={partState(hvacParts, 'condenser').wear} scale={acScale} onTap={spotTap('equipment', 'ground')} hover={hover} />
+            <CondenserUnit load={coolingLoad} burst={burst} wear={hvac.outdoor.wear} scale={acScale} onTap={spotTap('equipment', 'ground')} hover={hover} />
           </group>
         )}
         {gutterWear !== null && <DownspoutFeet form={roofForm} gutter={{ wear: gutterWear, hex: gutterColour }} />}
@@ -455,9 +456,8 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
           <group onClick={packageUnitTap} {...packageUnitHover}>
             <HomeEquipment
               hvacType={property.hvacType}
-              hvacComponents={property.hvacComponents}
+              side={side}
               lowSlope={lowSlope}
-              weather={weather}
               load={targets.equipmentLoad}
               meterSpeed={targets.meterSpeed}
               setpoint={setpoint}

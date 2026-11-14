@@ -5,12 +5,10 @@ import type { Group } from 'three'
 import type { PartState } from '@/features/trade-scenes/lib/part-state'
 import type { SystemLit } from '@/features/trade-scenes/types'
 import type { SceneBurst } from '@/shared/components/scene/types'
-import type { HVACComponent, HVACType } from '@/shared/modules/construction/core/constants/enums'
-import type { Weather } from '@/shared/modules/construction/core/types'
+import type { HVACType } from '@/shared/modules/construction/core/constants/enums'
 
 import { EQUIPMENT_STRAIN } from '@/features/trade-scenes/constants/home-life'
 import { facesSummerSun } from '@/features/trade-scenes/lib/faces-summer-sun'
-import { indoorSide } from '@/features/trade-scenes/lib/indoor-side'
 import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
 import { AtticDucts } from '@/features/trade-scenes/ui/components/home-kit/attic-ducts'
 import { ElectricMeter } from '@/features/trade-scenes/ui/components/home-kit/electric-meter'
@@ -24,9 +22,9 @@ const METER_ZONE = facesSummerSun(-1, 0) ? 'sunlit' : 'exterior'
 
 interface HomeEquipmentProps {
   hvacType: HVACType | null
-  hvacComponents: HVACComponent | null
+  // What the indoor side carries this weather, from the systems that run on the side on show.
+  side: 'heating' | 'cooling' | null
   lowSlope: boolean
-  weather: Weather
   /** 0..1, how hard the equipment works against the heat through the ceiling. */
   load: number
   meterSpeed: number
@@ -43,10 +41,9 @@ interface HomeEquipmentProps {
   lit: SystemLit | null
 }
 
-export function HomeEquipment({ hvacType, hvacComponents, lowSlope, weather, load, meterSpeed, setpoint, burst, ducts, ductRuns, packageUnit, acScale, ducted, lit }: HomeEquipmentProps) {
+export function HomeEquipment({ hvacType, side, lowSlope, load, meterSpeed, setpoint, burst, ducts, ductRuns, packageUnit, acScale, ducted, lit }: HomeEquipmentProps) {
   // Unknown draws as central, the common SoCal system.
   const type = hvacType ?? 'central'
-  const side = indoorSide(weather, hvacType, hvacComponents)
   // On a winter night the furnace or the unit's heater carries the load and glows with it. A system with no side for this
   // weather carries nothing, so an AC alone never glows heat and a furnace alone never cools.
   const heatLoad = side === 'heating' ? load : 0

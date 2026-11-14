@@ -1,15 +1,13 @@
-import type { HVACComponent, HVACType } from '@/shared/modules/construction/core/constants/enums'
+import type { HvacDuties } from '@/features/trade-scenes/types'
 import type { Weather } from '@/shared/modules/construction/core/types'
 
 // What the indoor side carries for the thermal camera: heat on a winter night, cold air on a summer afternoon, nothing in a
-// storm or when the system has no such side (a furnace alone never cools, an AC alone never heats). A package unit does both
-// whatever the Equipment choice says, which a leftover answer from a split system must not override.
-export function indoorSide(weather: Weather, hvacType: HVACType | null, hvacComponents: HVACComponent | null): 'heating' | 'cooling' | null {
-  const components = hvacType === 'package-unit' ? null : hvacComponents
-  if (weather === 'winter' && components !== 'ac') {
+// storm or when no running system has that duty (a furnace alone never cools, an A/C alone never heats).
+export function indoorSide(weather: Weather, duties: HvacDuties): 'heating' | 'cooling' | null {
+  if (weather === 'winter' && duties.heats) {
     return 'heating'
   }
-  if (weather === 'summer' && components !== 'furnace') {
+  if (weather === 'summer' && duties.cools) {
     return 'cooling'
   }
   return null

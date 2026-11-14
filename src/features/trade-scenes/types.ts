@@ -15,6 +15,7 @@ import type { PANE_LOOKS } from '@/features/trade-scenes/constants/system-part-l
 import type { SYSTEM_PARTS } from '@/features/trade-scenes/constants/system-parts'
 import type { AREA_GROUP_IDS, GROUND_SYSTEM_IDS, YARD_IDS, YARD_SYSTEM_IDS } from '@/features/trade-scenes/constants/yards'
 import type { OfferBlockedReason, PartOffer } from '@/features/trade-scenes/lib/part-offers'
+import type { PartState } from '@/features/trade-scenes/lib/part-state'
 import type { RibbonStyle } from '@/shared/components/scene/constants/ribbon-styles'
 import type { ThermalSeason, ThermalStyle } from '@/shared/components/scene/constants/thermal-palettes'
 import type { PieceLayout, SceneRenderer } from '@/shared/components/scene/types'
@@ -24,7 +25,7 @@ import type { AssemblyId } from '@/shared/modules/construction/core/constants/as
 import type { BenefitKind } from '@/shared/modules/construction/core/constants/benefit-kinds'
 import type { Climate } from '@/shared/modules/construction/core/constants/climate-presets'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
-import type { CoveringWearKind, FoundationType, HVACType, PaintWearKind, PaintWearLevel, Wear } from '@/shared/modules/construction/core/constants/enums'
+import type { CoveringWearKind, FoundationType, HvacIndoorLocation, HVACType, PaintWearKind, PaintWearLevel, Wear } from '@/shared/modules/construction/core/constants/enums'
 import type { HomeMaterialId } from '@/shared/modules/construction/core/constants/home-material-ids'
 import type { InstallStyleId } from '@/shared/modules/construction/core/constants/install-styles'
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
@@ -209,6 +210,28 @@ export interface SceneTargets {
 
 // What the home kit reads from the scene inputs: a narrower slice than the whole inputs, so a peel drag never redraws the house.
 export type HomeKitInputs = Pick<TradeSceneInputs, 'property' | 'weather' | 'homeMaterials' | 'homeView'> & { climate: Climate }
+
+// What the heating & cooling on show can run: Today and Build each answer it from their own systems.
+export interface HvacDuties {
+  cools: boolean
+  heats: boolean
+}
+
+// Heating & cooling as the side on show draws it. An idle system stands where it was and runs nothing.
+export interface DrawnHvac {
+  indoor: { location: HvacIndoorLocation, blower: PartState, furnace: PartState | null, coil: PartState | null } | null
+  // Where the indoor unit stood before the build moved it, drawn empty.
+  vacated: HvacIndoorLocation | null
+  outdoor: (PartState & { kind: 'condenser' | 'heat-pump' }) | null
+  lineSet: boolean
+  packageUnit: PartState | null
+  ducts: PartState | null
+  registers: boolean
+  wallUnit: { kind: 'wall-furnace' | 'wall-unit', idle: boolean } | null
+  windowUnit: { idle: boolean } | null
+  miniSplit: { heads: number, idle: boolean, wear: number } | null
+  duties: HvacDuties
+}
 
 // Each kind's share of the Worn look, 1 at Moderate.
 export type CoveringShares = Record<CoveringWearKind, number>

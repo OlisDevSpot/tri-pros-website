@@ -1,5 +1,6 @@
 import type { TradeSceneInputs } from '@/features/trade-scenes/types'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
+import type { HVACComponent, HVACType } from '@/shared/modules/construction/core/constants/enums'
 import type { Assembly, ExistingConditions, HomeFacts, HomeMaterialFacts, PropertyProfile, ResolvedPart, ScopeInstall, Weather } from '@/shared/modules/construction/core/types'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -8,7 +9,11 @@ import { projectRemodelRoi } from '@/features/calculators/remodel-roi-calculator
 import { resolveRemodelRoiConfig } from '@/features/calculators/remodel-roi-calculator/lib/resolve-config'
 import { TRADE_OUTCOMES } from '@/features/meeting-flow/constants/trade-outcomes'
 import { HOME_SCENE_DEFAULTS } from '@/features/trade-scenes/constants/home-scene-defaults'
+import { drawnHvac } from '@/features/trade-scenes/lib/drawn-hvac'
 import { hasDucts } from '@/features/trade-scenes/lib/has-ducts'
+import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
+import { atticHoldsUnit } from '@/features/trade-scenes/lib/indoor-location'
+import { indoorSide } from '@/features/trade-scenes/lib/indoor-side'
 import { propertyPatch } from '@/features/trade-scenes/lib/property-patch'
 import { resolveScene } from '@/features/trade-scenes/lib/resolve-scene'
 import { sceneChangeSlots } from '@/features/trade-scenes/lib/scene-change-slots'
@@ -259,5 +264,125 @@ const painPointsSource = readFileSync(new URL('../src/pain-points.ts', import.me
 const hvacStatement = painPointsSource.match(/outcomeStatement:\s*`(A new high-efficiency system[^`]*(?:\$\{[^}]*\}[^`]*)*)`/)?.[1] ?? ''
 assert.ok(hvacStatement.length > 0, 'the HVAC pain point has a high-efficiency outcome statement')
 assert.ok(!/\d+\s*%/.test(hvacStatement.replace(/\$\{formatRowClaim\(tradeCutPercent\([^)]*\)\)\}/g, '').replace(/\$\{tradeCutPercent\([^)]*\)\}/g, '')), 'the HVAC pain point types no percent of its own')
+
+// What heating & cooling draws and runs follows the resolved parts of the side on show
+function drawn(property: Partial<PropertyProfile>, options: SceneOptions = {}) {
+  const targets = scene(property, options)
+  const materials = { ...HOME_MATERIAL_FACTS_UNSET, ...options.materials }
+  return drawnHvac(hvacPartsOf(targets), { ...HOME_SCENE_DEFAULTS.property, ...property }, materials, options.view ?? 'existing', homeRoofForm(targets.assemblies['roof-attic']?.form), options.scopes ?? [])
+}
+const build = (scopes: string[], materials: Partial<HomeMaterialFacts> = {}): SceneOptions => ({ scopes, view: 'proposed', materials })
+const both = { cools: true, heats: true }
+const heatsOnly = { cools: false, heats: true }
+const coolsOnly = { cools: true, heats: false }
+const flat: Partial<PropertyProfile> = { roofType: 'flat' }
+const wallFurnace: Partial<PropertyProfile> = { hvacType: 'wall-mounted', hvacComponents: 'furnace' }
+
+const unknownToday = drawn({})
+assert.equal(unknownToday.indoor?.location, 'attic', 'an unknown system stands its indoor unit in the attic')
+assert.ok(unknownToday.indoor?.blower.material !== null && unknownToday.indoor?.furnace !== null && unknownToday.indoor?.coil !== null, 'an unknown system has a blower, furnace and coil')
+assert.equal(unknownToday.outdoor?.kind, 'condenser', 'an unknown system has a condenser')
+assert.ok(unknownToday.lineSet && unknownToday.registers, 'an unknown system has its line set and registers')
+assert.deepEqual(unknownToday.duties, both, 'an unknown system heats and cools')
+
+const furnaceToday = drawn(centralFurnaceProperty)
+assert.equal(furnaceToday.indoor?.coil, null, 'a furnace alone draws no coil')
+assert.equal(furnaceToday.outdoor, null, 'a furnace alone draws no condenser')
+assert.equal(furnaceToday.lineSet, false, 'a furnace alone draws no line set')
+assert.deepEqual(furnaceToday.duties, heatsOnly, 'a furnace alone only heats')
+const furnaceSplit = drawn(centralFurnaceProperty, build([split]))
+assert.ok(furnaceSplit.indoor?.coil !== null && furnaceSplit.outdoor?.kind === 'condenser', 'a whole system on a furnace-only home draws the coil and condenser it adds')
+assert.deepEqual(furnaceSplit.duties, both, 'and the home then heats and cools')
+
+const acToday = drawn(centralAcProperty)
+assert.equal(acToday.indoor?.furnace, null, 'A/C alone draws no furnace')
+assert.deepEqual(acToday.duties, coolsOnly, 'A/C alone only cools')
+
+const wallToday = drawn(wallFurnace)
+assert.deepEqual(wallToday.wallUnit, { kind: 'wall-furnace', idle: false }, 'a wall furnace runs')
+assert.equal(wallToday.indoor, null, 'a wall furnace home has no indoor unit')
+assert.deepEqual(wallToday.duties, heatsOnly, 'a wall furnace only heats')
+const wallNewCut = drawn(wallFurnace, build([SCOPE_IDS.splitSystemNewCut]))
+assert.deepEqual(wallNewCut.wallUnit, { kind: 'wall-furnace', idle: true }, 'a new system leaves the wall furnace idle')
+assert.equal(wallNewCut.indoor?.location, 'attic', 'a new system stands in the attic under a pitched roof')
+assert.deepEqual(wallNewCut.duties, both, 'and the new system heats and cools')
+assert.equal(drawn({ ...wallFurnace, ...flat }, build([SCOPE_IDS.splitSystemNewCut])).indoor?.location, 'closet', 'a new system under a flat roof stands in a closet')
+assert.deepEqual(drawn({ hvacType: 'wall-mounted', hvacComponents: 'both' }).wallUnit, { kind: 'wall-unit', idle: false }, 'a wall unit that heats and cools is a wall unit')
+
+assert.deepEqual(drawn({ hvacType: 'portable' }).windowUnit, { idle: false }, 'a portable home draws its window unit')
+
+const miniToday = drawn({ hvacType: 'mini-split' }, { materials: { miniSplitHeads: '3' } })
+assert.equal(miniToday.miniSplit?.heads, 3, 'a mini-split home draws its own head count')
+assert.equal(miniToday.miniSplit?.idle, false, 'and its heads run')
+assert.deepEqual(miniToday.duties, both, 'mini-splits heat and cool')
+assert.equal(drawn({ hvacType: 'mini-split' }).miniSplit?.heads, 1, 'an unset head count is one head')
+
+const miniAdded = drawn(centralBothProperty, build([SCOPE_IDS.miniSplitInstallation], { proposedMiniSplitHeads: '2' }))
+assert.ok(miniAdded.indoor !== null, 'mini-splits added to a central home keep its indoor unit')
+assert.equal(miniAdded.miniSplit?.heads, 2, 'the build draws its own head count')
+assert.equal(miniAdded.miniSplit?.idle, false, 'and the added heads run')
+assert.equal(drawn(centralBothProperty).miniSplit, null, 'a central home draws no mini-splits of its own')
+
+const packageToday = drawn({ hvacType: 'package-unit' })
+assert.ok(packageToday.packageUnit !== null, 'a package unit is drawn')
+assert.equal(packageToday.indoor, null, 'a package unit has no indoor unit')
+assert.deepEqual(packageToday.duties, both, 'a package unit heats and cools')
+
+assert.equal(drawn(flat, { materials: { hvacIndoorLocation: 'attic' } }).indoor?.location, 'closet', 'a flat roof\'s joist space holds no indoor unit')
+assert.equal(drawn(flat).indoor?.location, 'closet', 'a flat roof guesses a closet')
+assert.equal(drawn({}, { materials: { hvacIndoorLocation: 'garage' } }).indoor?.location, 'closet', 'a location with no placement draws in the closet')
+const closetHome = { hvacIndoorLocation: 'closet', proposedHvacIndoorLocation: 'attic' } as const
+const moved = drawn({}, build([split], closetHome))
+assert.equal(moved.indoor?.location, 'attic', 'a whole system moved to the attic stands there in the build')
+assert.equal(moved.vacated, 'closet', 'and leaves its closet empty')
+const movedToday = drawn({}, { scopes: [split], materials: closetHome })
+assert.equal(movedToday.indoor?.location, 'closet', 'Today keeps the unit where it stands')
+assert.equal(movedToday.vacated, null, 'and vacates nothing')
+const notMoved = drawn({}, build([], closetHome))
+assert.equal(notMoved.indoor?.location, 'closet', 'without a whole system the unit stays where it stands')
+assert.equal(notMoved.vacated, null, 'and vacates nothing')
+assert.equal(atticHoldsUnit('pitched'), true, 'a pitched roof\'s attic holds an indoor unit')
+assert.equal(atticHoldsUnit('low-slope'), false, 'a flat roof\'s does not')
+
+for (const hvacType of ['wall-mounted', 'portable', 'mini-split'] as const) {
+  assert.equal(drawn({ hvacType }).ducts, null, `${hvacType}: no ducts drawn`)
+}
+assert.ok(drawn({ hvacType: 'wall-mounted' }, build([SCOPE_IDS.splitSystemNewCut])).ducts !== null, 'a new system draws its ducts')
+assert.ok(drawn({}).ducts !== null, 'a central home draws its ducts')
+
+// The indoor side each pair of today's type and components carried before its systems were drawn, as [summer, winter]
+const sidesBefore: [HVACType | null, HVACComponent | null, 'cooling' | null, 'heating' | null][] = [
+  [null, null, 'cooling', 'heating'],
+  [null, 'furnace', null, 'heating'],
+  [null, 'ac', 'cooling', null],
+  [null, 'both', 'cooling', 'heating'],
+  ['central', null, 'cooling', 'heating'],
+  ['central', 'furnace', null, 'heating'],
+  ['central', 'ac', 'cooling', null],
+  ['central', 'both', 'cooling', 'heating'],
+  ['wall-mounted', null, 'cooling', 'heating'],
+  ['wall-mounted', 'furnace', null, 'heating'],
+  ['wall-mounted', 'ac', 'cooling', null],
+  ['wall-mounted', 'both', 'cooling', 'heating'],
+  ['portable', null, 'cooling', 'heating'],
+  ['portable', 'furnace', null, 'heating'],
+  ['portable', 'ac', 'cooling', null],
+  ['portable', 'both', 'cooling', 'heating'],
+  ['package-unit', null, 'cooling', 'heating'],
+  ['package-unit', 'furnace', 'cooling', 'heating'],
+  ['package-unit', 'ac', 'cooling', 'heating'],
+  ['package-unit', 'both', 'cooling', 'heating'],
+]
+for (const [hvacType, hvacComponents, summer, winter] of sidesBefore) {
+  const { duties } = drawn({ hvacType, hvacComponents })
+  const pair = `${hvacType ?? 'unknown'} + ${hvacComponents ?? 'unset'}`
+  assert.equal(indoorSide('summer', duties), summer, `${pair}: the summer side is unchanged`)
+  assert.equal(indoorSide('winter', duties), winter, `${pair}: the winter side is unchanged`)
+  assert.equal(indoorSide('normal', duties), null, `${pair}: a normal day runs nothing`)
+  assert.equal(indoorSide('rain', duties), null, `${pair}: a storm runs nothing`)
+}
+for (const hvacComponents of [null, 'furnace', 'ac', 'both'] as const) {
+  assert.deepEqual(drawn({ hvacType: 'mini-split', hvacComponents }).duties, both, `mini-split + ${hvacComponents ?? 'unset'}: mini-splits heat and cool whatever the components say`)
+}
 
 console.log('verify-heating-cooling: ok')
