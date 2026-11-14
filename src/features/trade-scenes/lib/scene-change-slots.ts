@@ -20,6 +20,7 @@ import { hvacSystemChoice, hvacSystemPatch } from '@/features/trade-scenes/lib/h
 import { atticHoldsUnit, indoorLocation, indoorUnitLocations, moveToAtticOffered } from '@/features/trade-scenes/lib/indoor-location'
 import { requiredUpgrades } from '@/features/trade-scenes/lib/keep-pick-options'
 import { existingDuctChoices, hasAcUnit, roofTypeChoices, showsEquipment } from '@/features/trade-scenes/lib/material-option-choices'
+import { miniSplitHeadCount } from '@/features/trade-scenes/lib/mini-split-head-count'
 import { fasciaRotInForce } from '@/features/trade-scenes/lib/paint-wear-in-force'
 import { upgradeRowState } from '@/features/trade-scenes/lib/upgrade-row-state'
 import { upgradeRows } from '@/features/trade-scenes/lib/upgrade-rows'
@@ -89,7 +90,7 @@ function materialSlots(id: HomeMaterialId, material: ResolvedHomeMaterial, state
         own.push(existingSlot('ac-tons', HOME_MATERIALS_COPY.acSize, optionsOf(acTonnages, AC_TON_LABELS), homeMaterials.acTons, value => ({ kind: 'fact', patch: { acTons: value as AcTons } })))
       }
       if (property.hvacType === 'mini-split') {
-        own.push(existingSlot('mini-split-heads', HOME_MATERIALS_COPY.miniSplitHeads, optionsOf(miniSplitHeadCounts, MINI_SPLIT_HEAD_COUNT_LABELS), homeMaterials.miniSplitHeads, value => ({ kind: 'fact', patch: { miniSplitHeads: value as MiniSplitHeadCount } })))
+        own.push(existingSlot('mini-split-heads', HOME_MATERIALS_COPY.miniSplitHeads, optionsOf(miniSplitHeadCounts, MINI_SPLIT_HEAD_COUNT_LABELS), miniSplitHeadCount(homeMaterials, 'existing'), value => ({ kind: 'fact', patch: { miniSplitHeads: value as MiniSplitHeadCount } })))
       }
       break
     case 'ducts':

@@ -5,6 +5,7 @@ import type { HomeMaterialFacts, PropertyProfile, ResolvedPart } from '@/shared/
 
 import { hasDucts } from '@/features/trade-scenes/lib/has-ducts'
 import { indoorLocation } from '@/features/trade-scenes/lib/indoor-location'
+import { miniSplitHeadCount } from '@/features/trade-scenes/lib/mini-split-head-count'
 import { partState } from '@/features/trade-scenes/lib/part-state'
 import { isCentralSystem } from '@/shared/modules/construction/core/lib/hvac-system'
 
@@ -42,9 +43,8 @@ export function drawnHvac(parts: readonly ResolvedPart[], property: PropertyProf
 
   // Heads the build installs run whatever else stands; the home's own fall idle under a new central system.
   const headsInstalled = heads?.condition === 'installed'
-  const headCount = headsInstalled ? materials.proposedMiniSplitHeads ?? materials.miniSplitHeads : materials.miniSplitHeads
   const miniSplit = heads !== undefined && heads.material !== null
-    ? { heads: Number(headCount ?? '1'), idle: takenOver && !headsInstalled, wear: partState(parts, 'mini-split-heads').wear }
+    ? { heads: Number(miniSplitHeadCount(materials, headsInstalled ? 'proposed' : 'existing')), idle: takenOver && !headsInstalled, wear: partState(parts, 'mini-split-heads').wear }
     : null
 
   const duties = union(

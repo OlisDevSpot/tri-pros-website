@@ -30,6 +30,7 @@ import { atticHoldsUnit, indoorLocation, moveToAtticOffered } from '@/features/t
 import { indoorSide } from '@/features/trade-scenes/lib/indoor-side'
 import { indoorUnitBoxes, indoorUnitLineSet } from '@/features/trade-scenes/lib/indoor-unit-boxes'
 import { indoorUnitPlacement } from '@/features/trade-scenes/lib/indoor-unit-placement'
+import { miniSplitHeadCount } from '@/features/trade-scenes/lib/mini-split-head-count'
 import { propertyPatch } from '@/features/trade-scenes/lib/property-patch'
 import { repairsRows } from '@/features/trade-scenes/lib/repairs-rows'
 import { resolveScene } from '@/features/trade-scenes/lib/resolve-scene'
@@ -609,5 +610,12 @@ for (const id of ['coil', 'refrigerant-lines', 'condenser']) {
 assert.ok(!addedIds(furnaceSplitRows).includes('furnace'), 'a new furnace over the old one is not added')
 assert.equal(systemPartRows('attic', scene({}, build([SCOPE_IDS.radiantBarrier]))).find(row => row.id === 'radiant-barrier')?.added, true, 'a radiant barrier on a home with none reads Added')
 assert.equal(PART_COPY.added, 'Added')
+
+// The head count the rep sees pressed is the count the scene draws, set or not
+const shownHeads = (side: 'existing' | 'proposed', materials: Partial<HomeMaterialFacts>) => miniSplitHeadCount({ ...HOME_MATERIAL_FACTS_UNSET, ...materials }, side)
+assert.equal(slotIn(inputs({ hvacType: 'mini-split' }), 'mini-split-heads')?.current, String(drawn({ hvacType: 'mini-split' }).miniSplit?.heads), 'with no count set, Today\'s heads read the count drawn')
+assert.equal(shownHeads('proposed', {}), String(drawn(centralBothProperty, build([SCOPE_IDS.miniSplitInstallation])).miniSplit?.heads), 'with no count set, the build\'s heads read the count drawn')
+assert.equal(shownHeads('proposed', { miniSplitHeads: '3' }), String(drawn({ hvacType: 'mini-split' }, build([SCOPE_IDS.miniSplitInstallation], { miniSplitHeads: '3' })).miniSplit?.heads), 'the build keeps the home\'s own count until the rep picks another')
+assert.equal(shownHeads('proposed', { miniSplitHeads: '3', proposedMiniSplitHeads: '2' }), String(drawn({ hvacType: 'mini-split' }, build([SCOPE_IDS.miniSplitInstallation], { miniSplitHeads: '3', proposedMiniSplitHeads: '2' })).miniSplit?.heads), 'a picked count is the count drawn')
 
 console.log('verify-heating-cooling: ok')
