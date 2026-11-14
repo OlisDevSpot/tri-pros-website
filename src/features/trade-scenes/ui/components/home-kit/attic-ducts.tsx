@@ -1,5 +1,6 @@
 'use client'
 
+import type { PartState } from '@/features/trade-scenes/lib/part-state'
 import type { BoxSpec, SystemLit, Vec3 } from '@/features/trade-scenes/types'
 import type { DuctMaterial } from '@/shared/modules/construction/core/constants/enums'
 
@@ -31,10 +32,9 @@ import { useOwnedGeometry } from '@/shared/components/scene/hooks/use-owned-geom
 interface AtticDuctsProps {
   lowSlope: boolean
   heatLoad: number
-  material: string | null
-  wear: number
-  /** Whether a furnace-and-coil sits in the attic; a package unit has none, its air comes down from the roof. */
-  airHandler: boolean
+  ducts: PartState
+  /** Whether an indoor unit sits in the attic; a package unit has none, its air comes down from the roof. */
+  indoor: boolean
   /** The package unit's size, which sets where its drop comes down. */
   acScale: number
   // The system up close; heating & cooling opens one run into its system parts.
@@ -63,7 +63,8 @@ function ductRuns(points: readonly (readonly Vec3[])[], radius: number): TubeGeo
 }
 
 // On a winter night the furnace's warm air shows as a glow at the plenum and at each register, as strong as the load.
-export function AtticDucts({ lowSlope, heatLoad, material, wear, airHandler, acScale, lit }: AtticDuctsProps) {
+export function AtticDucts({ lowSlope, heatLoad, ducts, indoor, acScale, lit }: AtticDuctsProps) {
+  const { material, wear } = ducts
   const bootGlow = useHeatGlow(heatLoad)
   const plenumGlow = useHeatGlow(heatLoad)
   const renewed = hungDuctMaterial(material)
@@ -95,7 +96,7 @@ export function AtticDucts({ lowSlope, heatLoad, material, wear, airHandler, acS
     if (lowSlope) {
       return []
     }
-    if (airHandler) {
+    if (indoor) {
       return [{ size: EQUIPMENT.plenum.size, position: EQUIPMENT.plenum.position }]
     }
     const top = Math.max(TRUNK.top, ...points.map(run => run[0][1] + radius))
@@ -103,7 +104,7 @@ export function AtticDucts({ lowSlope, heatLoad, material, wear, airHandler, acS
       { size: [PLENUM_WIDTH, top - TRUNK.bottom, PLENUM_DEPTH], position: [PLENUM_X, (TRUNK.bottom + top) / 2, PLENUM_Z] },
       packageUnitDrop(packageUnitPlacement(false, acScale)),
     ]
-  }, [lowSlope, airHandler, points, radius, acScale])
+  }, [lowSlope, indoor, points, radius, acScale])
 
   // The straps, the boots and a package unit's trunk and drop are all the duct runs' install; on a central system the
   // plenum box is the air handler itself.
@@ -119,8 +120,8 @@ export function AtticDucts({ lowSlope, heatLoad, material, wear, airHandler, acS
         <MergedBoxes boxes={boots} color={HOME_PALETTE.ductBoot} radius={0.02} emissive={EQUIPMENT_STRAIN.heat.color} materialRef={bootGlow} />
       </group>
       {plenum.length > 0 && (
-        <group userData={systemPartTag(airHandler ? 'blower' : 'duct-runs')}>
-          <MergedBoxes boxes={plenum} color={airHandler ? HOME_PALETTE.unit : HOME_PALETTE.ductBoot} radius={0.04} roughness={0.7} emissive={EQUIPMENT_STRAIN.heat.color} materialRef={plenumGlow} />
+        <group userData={systemPartTag(indoor ? 'blower' : 'duct-runs')}>
+          <MergedBoxes boxes={plenum} color={indoor ? HOME_PALETTE.unit : HOME_PALETTE.ductBoot} radius={0.04} roughness={0.7} emissive={EQUIPMENT_STRAIN.heat.color} materialRef={plenumGlow} />
         </group>
       )}
     </group>

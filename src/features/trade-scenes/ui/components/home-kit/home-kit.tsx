@@ -35,7 +35,6 @@ import { openedDuctRun } from '@/features/trade-scenes/lib/duct-run-points'
 import { gutterHex } from '@/features/trade-scenes/lib/gutter-hex'
 import { gutterWallStains } from '@/features/trade-scenes/lib/gutter-marks'
 import { gutterOutlets, gutterWetSpans } from '@/features/trade-scenes/lib/gutter-water'
-import { hasDucts } from '@/features/trade-scenes/lib/has-ducts'
 import { homeFadeNeeded } from '@/features/trade-scenes/lib/home-fade-needed'
 import { homeFloorY } from '@/features/trade-scenes/lib/home-floor-y'
 import { homeHeatLanes } from '@/features/trade-scenes/lib/home-heat-lanes'
@@ -302,7 +301,6 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
   const fasciaBoards = fasciaBoardsColor(targets.fasciaReplaced, repainted, paint.trim)
   const garageRoofTone = coveringTone(covering, roofForm === 'low-slope' ? 'membrane' : 'shingle', coveringPart.wear, installedShingleTone(parts, homeMaterials.shingleColor))
   const hvacParts = targets.assemblies['hvac-attic']?.parts ?? NO_PARTS
-  const ducted = hasDucts(hvacParts)
   const floorInsulation = partState(targets.assemblies['crawl-space']?.parts ?? NO_PARTS, 'floor-insulation')
   const gutterColour = gutterHex(homeMaterials, parts.find(part => part.id === 'gutter')?.condition === 'installed')
   const gutterWear = drawnGutterWear(parts)
@@ -317,10 +315,11 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
   const sealing = parts.find(part => part.id === 'air-sealing')
   const airSealed = sealing !== undefined && sealing.material !== null
   const dusty = sealing !== undefined && !airSealed
+  const hvac = useDrawnHvac()
+  const ducted = hvac.ducts !== null
   const leaks = useMemo(() => airSealed ? [] : ceilingOpenings(ducted), [airSealed, ducted])
   const openHeatLanes = useMemo(() => heat !== null && season !== null ? homeHeatLanes(roofForm, heat, season, 'partly-open', covering, leaks) : [], [roofForm, heat, season, covering, leaks])
   const completeHeatLanes = useMemo(() => heat !== null && season !== null ? homeHeatLanes(roofForm, heat, season, 'complete', covering, leaks) : [], [roofForm, heat, season, covering, leaks])
-  const hvac = useDrawnHvac()
   const side = indoorSide(weather, hvac.duties)
   // The condenser cools; on a winter night the furnace or the unit's heater carries the load instead.
   const coolingLoad = side === 'cooling' ? targets.equipmentLoad : 0
@@ -455,7 +454,7 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
           )}
           <group onClick={packageUnitTap} {...packageUnitHover}>
             <HomeEquipment
-              hvacType={property.hvacType}
+              hvac={hvac}
               side={side}
               lowSlope={lowSlope}
               load={targets.equipmentLoad}
@@ -463,10 +462,7 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
               setpoint={setpoint}
               burst={burst}
               ducts={ducts}
-              ductRuns={ductRuns}
-              packageUnit={partState(hvacParts, 'package-unit')}
               acScale={acScale}
-              ducted={ducted}
               lit={held}
             />
           </group>
