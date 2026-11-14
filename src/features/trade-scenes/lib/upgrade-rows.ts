@@ -11,6 +11,7 @@ import { SCOPE_INSTALLS } from '@/shared/modules/construction/core/constants/sco
 import { installKind } from '@/shared/modules/construction/core/lib/install-kind'
 import { installedMaterialId } from '@/shared/modules/construction/core/lib/installed-material'
 import { resolveHomeMaterials } from '@/shared/modules/construction/core/lib/resolve-home-materials'
+import { scopeFitsHome } from '@/shared/modules/construction/core/lib/scope-fits-home'
 
 // The scene credits an install only when it beats what the home has there, with the efficiency upgrades applied, so the row says the same.
 // An upgrade the scope cannot go without counts before it is picked, so a top off over R-30 reads as the R-38 it will be.
@@ -34,27 +35,25 @@ function kindOf(scopeId: ScopeId, existing: readonly ResolvedPart[], efficiencyU
 export function upgradeRows(facts: HomeFacts, picks: readonly string[], efficiencyUpgrades: readonly EfficiencyUpgradeId[]): HomeSystemRows[] {
   const { property } = facts
   const home = resolveHomeMaterials(facts)
-  const unitless = property.hvacType === 'wall-mounted' || property.hvacType === 'portable'
 
   return HOME_SYSTEMS.flatMap(({ id, rows }): HomeSystemRows[] => {
-    if (id === 'heating-cooling' && unitless) {
-      // Nothing is offered for a wall or portable unit, but the system keeps its place so the rep sees why.
-      const [{ part }] = rows
-      const offer = partOffers('hvac-attic').find(candidate => candidate.partId === part)
-      const existing = existingParts('hvac-attic', facts).find(candidate => candidate.id === part)
-      return offer && existing ? [{ id, rows: [{ part, offer, existing, material: 'heating-cooling' as const, scopeIds: [], blocked: 'no-offer-for-unit' as const, kinds: {} }] }] : []
-    }
     const built = rows.flatMap(({ assembly, part }) => {
-      const offer = partOffers(assembly).find(candidate => candidate.partId === part)
+      const filed = partOffers(assembly).find(candidate => candidate.partId === part)
       if (!(ASSEMBLIES[assembly].appliesTo?.(property) ?? true)) {
         return []
       }
       const existingAssembly = existingParts(assembly, facts)
       const existing = existingAssembly.find(candidate => candidate.id === part)
-      if (!offer || !existing) {
+      if (!filed || !existing) {
         return []
       }
+      // Narrowed once, so the row's switches, kinds and picks see only this home's jobs: a new system files under the
+      // blower on every home, and would otherwise hand a central home's system row a second R-8 switch.
+      const offer = { ...filed, scopeIds: filed.scopeIds.filter(scopeId => scopeFitsHome(SCOPE_INSTALLS[scopeId]!, existingAssembly)) }
       const { scopeIds, blocked } = offeredScopes(offer, { roofType: property.roofType, picks, existing: existingAssembly, assemblyId: assembly, wear: partWear(assembly, part, home, existingAssembly), efficiencyUpgrades })
+      if (offer.scopeIds.length === 0 && blocked === null) {
+        return []
+      }
       return [{
         part,
         offer,

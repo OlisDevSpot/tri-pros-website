@@ -343,9 +343,10 @@ const levelWear = state({ property: { ...sixties, insulationLevel: 'r11' }, home
 assert.equal(propertyPatch(levelWear, { insulationLevel: 'r30' }, YEAR).homeMaterials.wear['attic-insulation'], undefined, 'an explicit insulation level that moves the option clears its wear')
 assert.equal(propertyPatch(levelWear, { insulationLevel: 'r11' }, YEAR).homeMaterials.wear['attic-insulation'], 'good', 'the same level keeps it')
 const unitGroup = upgradeRows({ property: { ...sixties, hvacType: 'wall-mounted' }, materials: HOME_MATERIAL_FACTS_UNSET, year: YEAR }, [], []).find(system => system.id === 'heating-cooling')!
-assert.deepEqual(unitGroup.rows.map(row => row.blocked), ['no-offer-for-unit'])
+assert.deepEqual(unitGroup.rows.map(row => row.offer.partId), ['blower', 'mini-split-heads'], 'a wall unit: a new system and mini-splits')
+assert.deepEqual(unitGroup.rows.map(row => row.blocked), [null, null], 'a wall unit: nothing blocked')
 const packageGroup = upgradeRows({ property: { ...sixties, hvacType: 'package-unit', hvacComponents: 'furnace' }, materials: HOME_MATERIAL_FACTS_UNSET, year: YEAR }, [], []).find(system => system.id === 'heating-cooling')!
-assert.deepEqual(packageGroup.rows.map(row => row.offer.partId), ['package-unit', 'duct-runs'], 'a package unit: its own row, no split system')
+assert.deepEqual(packageGroup.rows.map(row => row.offer.partId), ['package-unit', 'duct-runs', 'mini-split-heads'], 'a package unit: its own row, no split system')
 for (const roofType of roofTypes) {
   const covering = upgradeRows({ property: profile({ roofType }), materials: HOME_MATERIAL_FACTS_UNSET, year: YEAR }, [], []).find(system => system.id === 'roof')?.rows.find(row => row.offer.partId === 'covering')
   assert.deepEqual(covering?.scopeIds ?? [], SCOPES_BY_EXISTING_ROOF[roofType].filter(id => SCOPE_INSTALLS[id]!.installs[0]!.part === 'covering'), `R81 holds for ${roofType}`)

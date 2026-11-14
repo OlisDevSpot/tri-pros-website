@@ -14,8 +14,13 @@ export const SCOPE_IDS = {
   coolLifeRepaint: '9d60ca1b-548b-824a-8aef-81f1e29b9b34',
   waterBasedRepaint: '4020ca1b-548b-82d2-96c2-81068068e903',
   splitSystemReplacement: '6450ca1b-548b-830a-ac5e-018e7fd3064a',
+  acReplacement: 'e450ca1b-548b-8269-adc7-019776a6acf7',
+  furnaceReplacement: '88d0ca1b-548b-82b2-bb26-017081659f61',
+  splitSystemNewCut: '8aa0ca1b-548b-82dd-9148-81d0b51076bf',
   packageUnitReplacement: '9460ca1b-548b-8375-8d63-814dddf36b71',
   airDuctsReplacement: 'bc50ca1b-548b-8366-9ef9-811c2f36877f',
+  miniSplitInstallation: 'dcb0ca1b-548b-8303-9f65-01730423e685',
+  miniSplitKit: '3190ca1b-548b-805f-8d87-f51275832424',
   crawlSpaceInsulation: '02f0ca1b-548b-82e6-8fa5-8118eff44429',
 } as const
 

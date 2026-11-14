@@ -3604,9 +3604,9 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   assert.equal(drawnFor('air-gap')(installedDouble), false, 'argon fills a new window\'s gap')
   assert.equal(drawnFor('air-gap')(wornDouble), true, 'an old double-pane has a plain air gap')
 
-  // Captured before the rename: Modify's build slots keep their ids.
+  // One build slot id per build row: the system card and the change words look a row up by it.
   const BUILD_SLOT_IDS = ['build:covering', 'build:deck', 'build:gutter', 'build:radiant-barrier', 'build:attic-insulation', 'build:air-sealing', 'build:attic-fan', 'build:glazing', 'build:paint', 'build:blower', 'build:package-unit', 'build:duct-runs', 'build:mini-split-heads', 'build:floor-insulation']
-  assert.deepEqual(HOME_SYSTEMS.flatMap(({ rows }) => rows.map(({ part }) => `build:${part}`)), BUILD_SLOT_IDS, 'the build slot ids are unchanged')
+  assert.deepEqual(HOME_SYSTEMS.flatMap(({ rows }) => rows.map(({ part }) => `build:${part}`)), BUILD_SLOT_IDS, 'the build rows keep their slot ids')
   assert.deepEqual(BUILD_ROW_PART_IDS.map(part => `build:${part}`), BUILD_SLOT_IDS)
 }
 

@@ -37,7 +37,15 @@ export const SCOPE_INSTALLS: Partial<Record<string, ScopeInstall>> = {
   [SCOPE_IDS.waterBasedRepaint]: { assembly: 'exterior-wall', trade: 'exterior-paint-stucco-and-siding', installs: [{ part: 'paint', material: 'standard' }] },
   // A full system, so a furnace-only home gains a condenser.
   [SCOPE_IDS.splitSystemReplacement]: { assembly: 'hvac-attic', trade: 'hvac', onlyWhere: { has: ['blower'] }, installs: [{ part: 'blower', material: 'new-blower' }, { part: 'furnace', material: 'high-efficiency-furnace' }, { part: 'coil', material: 'high-efficiency-coil' }, { part: 'refrigerant-lines', material: 'copper' }, { part: 'condenser', material: 'high-seer' }] },
+  // Half a system: the blower and furnace stay, so it sits on the system row as a choice beside the whole system.
+  [SCOPE_IDS.acReplacement]: { assembly: 'hvac-attic', trade: 'hvac', filedUnder: 'blower', onlyWhere: { has: ['coil'] }, installs: [{ part: 'coil', material: 'high-efficiency-coil' }, { part: 'refrigerant-lines', material: 'copper' }, { part: 'condenser', material: 'high-seer' }] },
+  // Only where a furnace stands: on an A/C-only home it would add heating the home never had.
+  [SCOPE_IDS.furnaceReplacement]: { assembly: 'hvac-attic', trade: 'hvac', onlyWhere: { has: ['furnace'] }, installs: [{ part: 'blower', material: 'new-blower' }, { part: 'furnace', material: 'high-efficiency-furnace' }] },
+  [SCOPE_IDS.splitSystemNewCut]: { assembly: 'hvac-attic', trade: 'hvac', onlyWhere: { lacks: ['blower'] }, installs: [{ part: 'blower', material: 'new-blower' }, { part: 'furnace', material: 'high-efficiency-furnace' }, { part: 'coil', material: 'high-efficiency-coil' }, { part: 'plenum', material: 'sheet-metal' }, { part: 'duct-runs', material: 'r6-silver-flex', swapsWith: { 'r8-ducts': 'r8-flex' } }, { part: 'registers', material: 'grille' }, { part: 'thermostat', material: 'thermostat' }, { part: 'refrigerant-lines', material: 'copper' }, { part: 'condenser', material: 'high-seer' }] },
   [SCOPE_IDS.packageUnitReplacement]: { assembly: 'hvac-attic', trade: 'hvac', installs: [{ part: 'package-unit', material: 'high-efficiency-package' }] },
   [SCOPE_IDS.airDuctsReplacement]: { assembly: 'hvac-attic', trade: 'hvac', onlyWhere: { has: ['duct-runs'] }, installs: [{ part: 'duct-runs', material: 'r6-silver-flex', swapsWith: { 'r8-ducts': 'r8-flex' } }] },
+  [SCOPE_IDS.miniSplitInstallation]: { assembly: 'hvac-attic', trade: 'hvac', installs: [{ part: 'mini-split-heads', material: 'wall-head' }, { part: 'mini-split-outdoor', material: 'mini-split-condenser' }] },
+  // The kit is the same system bought as a kit, so it draws the same.
+  [SCOPE_IDS.miniSplitKit]: { assembly: 'hvac-attic', trade: 'hvac', installs: [{ part: 'mini-split-heads', material: 'wall-head' }, { part: 'mini-split-outdoor', material: 'mini-split-condenser' }] },
   [SCOPE_IDS.crawlSpaceInsulation]: { assembly: 'crawl-space', trade: 'foundation-and-crawl-space', installs: [{ part: 'floor-insulation', material: 'batts-r19' }] },
 }

@@ -1,10 +1,16 @@
 import type { TradeSceneInputs } from '@/features/trade-scenes/types'
-import type { Assembly, ExistingConditions, HomeMaterialFacts, PropertyProfile, ResolvedPart, ScopeInstall, Weather } from '@/shared/modules/construction/core/types'
+import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
+import type { Assembly, ExistingConditions, HomeFacts, HomeMaterialFacts, PropertyProfile, ResolvedPart, ScopeInstall, Weather } from '@/shared/modules/construction/core/types'
 import assert from 'node:assert/strict'
 import { HOME_SCENE_DEFAULTS } from '@/features/trade-scenes/constants/home-scene-defaults'
 import { hasDucts } from '@/features/trade-scenes/lib/has-ducts'
+import { propertyPatch } from '@/features/trade-scenes/lib/property-patch'
 import { resolveScene } from '@/features/trade-scenes/lib/resolve-scene'
+import { sceneChangeSlots } from '@/features/trade-scenes/lib/scene-change-slots'
 import { resolveInputsOf, selectResolveInputs } from '@/features/trade-scenes/lib/scene-resolve-inputs'
+import { scopePick } from '@/features/trade-scenes/lib/scope-pick'
+import { upgradeRowState } from '@/features/trade-scenes/lib/upgrade-row-state'
+import { upgradeRows } from '@/features/trade-scenes/lib/upgrade-rows'
 import { ASSEMBLIES } from '@/shared/modules/construction/core/constants/assemblies'
 import { HOME_MATERIAL_FACTS_UNSET } from '@/shared/modules/construction/core/constants/home-materials'
 import { SCOPE_IDS } from '@/shared/modules/construction/core/constants/scope-ids'
@@ -67,9 +73,9 @@ assert.equal(roofWith([SCOPE_IDS.radiantBarrier]).find(part => part.id === 'radi
 assert.equal(roofWith([SCOPE_IDS.roofTearOff]).find(part => part.id === 'covering')?.added, undefined, 'a new covering over an old one is not added')
 
 // The indoor unit is its components, and every home has heating & cooling
-interface SceneOptions { scopes?: string[], view?: TradeSceneInputs['view'], weather?: Weather, materials?: Partial<HomeMaterialFacts> }
-function scene(property: Partial<PropertyProfile>, { scopes = [], view = 'existing', weather = 'normal', materials = {} }: SceneOptions = {}) {
-  const state: TradeSceneInputs = { ...HOME_SCENE_DEFAULTS, property: { ...HOME_SCENE_DEFAULTS.property, ...property }, proposedScopeIds: scopes, view, weather, homeMaterials: { ...HOME_MATERIAL_FACTS_UNSET, ...materials } }
+interface SceneOptions { scopes?: string[], view?: TradeSceneInputs['view'], weather?: Weather, materials?: Partial<HomeMaterialFacts>, efficiencyUpgrades?: EfficiencyUpgradeId[] }
+function scene(property: Partial<PropertyProfile>, { scopes = [], view = 'existing', weather = 'normal', materials = {}, efficiencyUpgrades = HOME_SCENE_DEFAULTS.efficiencyUpgrades }: SceneOptions = {}) {
+  const state: TradeSceneInputs = { ...HOME_SCENE_DEFAULTS, property: { ...HOME_SCENE_DEFAULTS.property, ...property }, proposedScopeIds: scopes, view, weather, homeMaterials: { ...HOME_MATERIAL_FACTS_UNSET, ...materials }, efficiencyUpgrades }
   return resolveScene(resolveInputsOf(selectResolveInputs(state)), resolveTradeBillCuts(), 2026)
 }
 const hvacPartsOf = (targets: ReturnType<typeof scene>) => targets.assemblies['hvac-attic']?.parts ?? []
@@ -120,5 +126,72 @@ assert.equal(hasDucts(hvacPartsOf(scene({}, { scopes: [SCOPE_IDS.splitSystemRepl
 const ductRunDetail = (targets: ReturnType<typeof scene>) => hvacPartsOf(targets).find(part => part.id === 'duct-runs')?.detail ?? ''
 assert.ok(ductRunDetail(scene({}, { scopes: [SCOPE_IDS.airDuctsReplacement], view: 'proposed' })).endsWith('supported the way code requires.'), 'new ducts say why they hang')
 assert.ok(!ductRunDetail(scene({}, { materials: { ducts: 'r6-silver-flex' } })).endsWith('supported the way code requires.'), 'a home\'s own R-6 ducts are not hung')
+
+// Every heating & cooling build draws what it installs and is offered only where it fits the home
+const scopeName = Object.fromEntries(Object.entries(SCOPE_IDS).map(([name, id]) => [id, name]))
+const inputs = (property: Partial<PropertyProfile>, patch: Partial<TradeSceneInputs> = {}): TradeSceneInputs => ({ ...HOME_SCENE_DEFAULTS, property: { ...HOME_SCENE_DEFAULTS.property, ...property }, ...patch })
+const factsOf = (state: TradeSceneInputs): HomeFacts => ({ property: state.property, materials: state.homeMaterials, year: 2026 })
+const hvacRows = (state: TradeSceneInputs) => upgradeRows(factsOf(state), state.proposedScopeIds, state.efficiencyUpgrades).find(system => system.id === 'heating-cooling')?.rows ?? []
+const rowOf = (state: TradeSceneInputs, part: string) => hvacRows(state).find(row => row.part === part)!
+const offersOf = (property: Partial<PropertyProfile>) => hvacRows(inputs(property)).map(row => ({ part: row.part, scopeIds: row.scopeIds.map(id => scopeName[id]) }))
+const minis = { part: 'mini-split-heads', scopeIds: ['miniSplitInstallation', 'miniSplitKit'] }
+const ducts = { part: 'duct-runs', scopeIds: ['airDuctsReplacement'] }
+const offersTable: [string, Partial<PropertyProfile>, { part: string, scopeIds: string[] }[]][] = [
+  ['central both', { hvacType: 'central', hvacComponents: 'both' }, [{ part: 'blower', scopeIds: ['splitSystemReplacement', 'acReplacement', 'furnaceReplacement'] }, ducts, minis]],
+  ['central furnace', { hvacType: 'central', hvacComponents: 'furnace' }, [{ part: 'blower', scopeIds: ['splitSystemReplacement', 'furnaceReplacement'] }, ducts, minis]],
+  ['central ac', { hvacType: 'central', hvacComponents: 'ac' }, [{ part: 'blower', scopeIds: ['splitSystemReplacement', 'acReplacement'] }, ducts, minis]],
+  ['unknown', { hvacType: null, hvacComponents: null }, [{ part: 'blower', scopeIds: ['splitSystemReplacement', 'acReplacement', 'furnaceReplacement'] }, ducts, minis]],
+  ['wall-mounted', { hvacType: 'wall-mounted' }, [{ part: 'blower', scopeIds: ['splitSystemNewCut'] }, minis]],
+  ['portable', { hvacType: 'portable' }, [{ part: 'blower', scopeIds: ['splitSystemNewCut'] }, minis]],
+  ['mini-split', { hvacType: 'mini-split' }, [{ part: 'blower', scopeIds: ['splitSystemNewCut'] }, minis]],
+  ['package-unit', { hvacType: 'package-unit' }, [{ part: 'package-unit', scopeIds: ['packageUnitReplacement'] }, ducts, minis]],
+]
+for (const [name, property, expected] of offersTable) {
+  assert.deepEqual(offersOf(property), expected, `${name}: the heating & cooling rows offer what fits the home`)
+  for (const system of upgradeRows(factsOf(inputs(property)), [], [])) {
+    for (const row of system.rows) {
+      assert.ok(row.scopeIds.length > 0 || row.blocked !== null, `${name}: the ${row.part} row offers something or says why not`)
+    }
+  }
+  const state = inputs(property)
+  const targets = resolveScene(resolveInputsOf(selectResolveInputs(state)), resolveTradeBillCuts(), 2026)
+  for (const buildSlot of sceneChangeSlots(state, targets, 2026).filter(candidate => candidate.id.startsWith('build:'))) {
+    const labels = buildSlot.options.map(option => option.label)
+    assert.equal(new Set(labels).size, labels.length, `${name}: ${buildSlot.id} names each job once`)
+  }
+}
+
+const centralBothHome = inputs({ hvacType: 'central', hvacComponents: 'both' })
+const splitPicked = inputs(centralBothHome.property, { proposedScopeIds: [SCOPE_IDS.splitSystemReplacement] })
+assert.deepEqual(scopePick(splitPicked, rowOf(splitPicked, 'blower').offer, SCOPE_IDS.acReplacement).proposedScopeIds, [SCOPE_IDS.acReplacement], 'A/C replacement takes the place of a whole system')
+
+const centralPicks = inputs(centralBothHome.property, { proposedScopeIds: [SCOPE_IDS.splitSystemReplacement, SCOPE_IDS.airDuctsReplacement] })
+assert.deepEqual(propertyPatch(centralPicks, { hvacType: 'wall-mounted', hvacComponents: 'furnace' }, 2026).proposedScopeIds, [], 'a home that turns out to have a wall unit drops the system and ducts picks')
+const newCutPicked = inputs({ hvacType: 'wall-mounted' }, { proposedScopeIds: [SCOPE_IDS.splitSystemNewCut] })
+assert.deepEqual(propertyPatch(newCutPicked, { hvacType: 'central' }, 2026).proposedScopeIds, [], 'a home that turns out to be central drops a new system')
+
+const wallHome = inputs({ hvacType: 'wall-mounted' })
+assert.equal(upgradeRowState(rowOf(wallHome, 'blower'), [], []).holdsR8, true, 'a wall home\'s new system holds the R-8 step')
+assert.equal(upgradeRowState(rowOf(centralBothHome, 'blower'), [], []).holdsR8, false, 'a central home\'s system row holds no R-8 step')
+assert.equal(upgradeRowState(rowOf(centralBothHome, 'duct-runs'), [], []).holdsR8, true, 'a central home\'s ducts row holds it')
+const newCutR8 = hvacPartsOf(scene({ hvacType: 'wall-mounted' }, { scopes: [SCOPE_IDS.splitSystemNewCut], view: 'proposed', efficiencyUpgrades: ['r8-ducts'] }))
+assert.equal(newCutR8.find(part => part.id === 'duct-runs')?.material, 'r8-flex', 'a new system with R-8 lays R-8 ducts')
+
+const withPatch = (state: TradeSceneInputs, patch: Partial<TradeSceneInputs>): TradeSceneInputs => ({ ...state, ...patch })
+const newCutOn = withPatch(wallHome, scopePick(wallHome, rowOf(wallHome, 'blower').offer, SCOPE_IDS.splitSystemNewCut))
+const r8On = withPatch(newCutOn, { efficiencyUpgrades: [...newCutOn.efficiencyUpgrades, 'r8-ducts'] })
+const miniOn = withPatch(r8On, scopePick(r8On, rowOf(r8On, 'mini-split-heads').offer, SCOPE_IDS.miniSplitInstallation))
+assert.ok(miniOn.efficiencyUpgrades.includes('r8-ducts'), 'a later pick keeps the new system\'s R-8')
+const todayEdited = withPatch(miniOn, propertyPatch(miniOn, { hvacComponents: 'ac' }, 2026))
+assert.ok(todayEdited.efficiencyUpgrades.includes('r8-ducts'), 'a Today edit keeps the new system\'s R-8')
+const newCutOff = withPatch(todayEdited, scopePick(todayEdited, rowOf(todayEdited, 'blower').offer, null))
+assert.ok(!newCutOff.efficiencyUpgrades.includes('r8-ducts'), 'unpicking the new system drops its R-8')
+
+const newCutBuild = hvacPartsOf(scene({ hvacType: 'wall-mounted' }, { scopes: [SCOPE_IDS.splitSystemNewCut], view: 'proposed' }))
+for (const id of ['blower', 'furnace', 'coil', 'plenum', 'duct-runs', 'registers', 'refrigerant-lines', 'condenser']) {
+  const part = newCutBuild.find(candidate => candidate.id === id)
+  assert.equal(part?.condition, 'installed', `a new system installs its ${id}`)
+  assert.equal(part?.added, true, `a wall home gains its ${id}`)
+}
 
 console.log('verify-heating-cooling: ok')
