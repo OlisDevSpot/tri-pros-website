@@ -32,6 +32,7 @@ import { atticInsulationTop } from '@/features/trade-scenes/lib/attic-insulation
 import { ceilingOpenings } from '@/features/trade-scenes/lib/ceiling-openings'
 import { coveringWearInForce } from '@/features/trade-scenes/lib/covering-wear-in-force'
 import { openedDuctRun } from '@/features/trade-scenes/lib/duct-run-points'
+import { emphasizedParts } from '@/features/trade-scenes/lib/emphasized-parts'
 import { gutterHex } from '@/features/trade-scenes/lib/gutter-hex'
 import { gutterWallStains } from '@/features/trade-scenes/lib/gutter-marks'
 import { gutterOutlets, gutterWetSpans } from '@/features/trade-scenes/lib/gutter-water'
@@ -160,7 +161,7 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
   const [heldFrom, setHeldFrom] = useState(lit)
   if (heldFrom !== lit) {
     setHeldFrom(lit)
-    setHeld(lit ?? (held === null ? null : { ...held, emphasized: null }))
+    setHeld(lit ?? (held === null ? null : { ...held, emphasized: null, emphasizedParts: emphasizedParts(null) }))
   }
   const cutawaySystem = held !== null && isCutawaySystem(held.system) ? held.system : null
   const faceSystem = held !== null && isCutawayFaceSystem(held.system) ? held.system : null
@@ -482,7 +483,7 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
             )}
           </group>
         </group>
-        <PartAnchorsLayer form={form} lit={lit} ductRun={ductRun} />
+        <PartAnchorsLayer form={form} lit={lit} ductRun={ductRun} location={hvac.indoor?.location ?? 'attic'} />
         <SpotPinsLayer rides="lift" />
         {/* Up close on the roof or the attic the readings pin on the steps instead, with the flows. */}
         {thermal && targets.heat !== null && cutawaySystem === null && <ReadingLabels form={form} />}

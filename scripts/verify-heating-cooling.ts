@@ -2,6 +2,7 @@ import type { IndoorUnitPlacement } from '@/features/trade-scenes/lib/indoor-uni
 import type { BoxSpec, SceneChangeSlot, SceneChangeSlotId, TradeSceneInputs, Vec3 } from '@/features/trade-scenes/types'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
 import type { HVACComponent, HVACType } from '@/shared/modules/construction/core/constants/enums'
+import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 import type { Assembly, ExistingConditions, HomeFacts, HomeMaterialFacts, PropertyProfile, ResolvedPart, ScopeInstall, Weather } from '@/shared/modules/construction/core/types'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -12,25 +13,33 @@ import { TRADE_OUTCOMES } from '@/features/meeting-flow/constants/trade-outcomes
 import { HEAT_ARROW_LOOK } from '@/features/trade-scenes/constants/heat-arrow-look'
 import { CONDENSER_LINE_SET, THERMOSTAT_BOX } from '@/features/trade-scenes/constants/home-details'
 import { FURNISHING_BOXES, HOME_FURNITURE } from '@/features/trade-scenes/constants/home-furnishings'
-import { BACK_INNER, EQUIPMENT, HOME_FLOOR_Y, HOUSE } from '@/features/trade-scenes/constants/home-geometry'
+import { BACK_INNER, EQUIPMENT, HOME_FLOOR_Y, HOUSE, ROOMS, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
 import { HVAC_INDOOR_LOCATION_LABELS, HVAC_SYSTEM_CHOICE_LABELS, MINI_SPLIT_HEAD_COUNT_LABELS, PART_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
 import { HOME_SCENE_DEFAULTS } from '@/features/trade-scenes/constants/home-scene-defaults'
 import { HVAC_SYSTEM_CHOICES } from '@/features/trade-scenes/constants/home-systems'
 import { INDOOR_UNIT_PLACEMENTS } from '@/features/trade-scenes/constants/indoor-unit-placements'
+import { LOOK_INSIDE, PART_PIECES } from '@/features/trade-scenes/constants/look-inside'
 import { HOME_PRIMARY_ASSEMBLY } from '@/features/trade-scenes/constants/scene-controls'
+import { lookInsideView, partLookInsideView, SYSTEM_CAMERA_VIEWS } from '@/features/trade-scenes/constants/system-camera-views'
 import { applySceneChange } from '@/features/trade-scenes/lib/apply-scene-change'
 import { ceilingOpenings } from '@/features/trade-scenes/lib/ceiling-openings'
 import { drawnHvac } from '@/features/trade-scenes/lib/drawn-hvac'
 import { ductRunPoints } from '@/features/trade-scenes/lib/duct-run-points'
+import { emphasizedParts } from '@/features/trade-scenes/lib/emphasized-parts'
 import { hasDucts } from '@/features/trade-scenes/lib/has-ducts'
 import { homeHeatLanes } from '@/features/trade-scenes/lib/home-heat-lanes'
+import { homeLift } from '@/features/trade-scenes/lib/home-lift'
 import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
+import { hvacFocusOf } from '@/features/trade-scenes/lib/hvac-focus-of'
 import { hvacSystemChoice, hvacSystemPatch } from '@/features/trade-scenes/lib/hvac-system-choice'
 import { atticHoldsUnit, indoorLocation, moveToAtticOffered } from '@/features/trade-scenes/lib/indoor-location'
 import { indoorSide } from '@/features/trade-scenes/lib/indoor-side'
 import { indoorUnitBoxes, indoorUnitLineSet } from '@/features/trade-scenes/lib/indoor-unit-boxes'
 import { indoorUnitPlacement } from '@/features/trade-scenes/lib/indoor-unit-placement'
+import { homeSpotContext } from '@/features/trade-scenes/lib/keep-look-inside'
+import { listedRows } from '@/features/trade-scenes/lib/listed-rows'
 import { miniSplitHeadCount } from '@/features/trade-scenes/lib/mini-split-head-count'
+import { packageUnitPlacement } from '@/features/trade-scenes/lib/package-unit-placement'
 import { propertyPatch } from '@/features/trade-scenes/lib/property-patch'
 import { repairsRows } from '@/features/trade-scenes/lib/repairs-rows'
 import { resolveScene } from '@/features/trade-scenes/lib/resolve-scene'
@@ -38,7 +47,12 @@ import { sceneChangeSlots } from '@/features/trade-scenes/lib/scene-change-slots
 import { resolveInputsOf, selectResolveInputs } from '@/features/trade-scenes/lib/scene-resolve-inputs'
 import { scopePick } from '@/features/trade-scenes/lib/scope-pick'
 import { searchSceneChanges } from '@/features/trade-scenes/lib/search-scene-changes'
+import { systemLit } from '@/features/trade-scenes/lib/system-lit'
+import { systemPartFocus } from '@/features/trade-scenes/lib/system-part-focus'
+import { systemPartOpacity } from '@/features/trade-scenes/lib/system-part-opacity'
+import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
 import { systemPartRows } from '@/features/trade-scenes/lib/system-parts-shown'
+import { canLookInside, systemsAtSpot } from '@/features/trade-scenes/lib/systems-at-spot'
 import { upgradeRowState } from '@/features/trade-scenes/lib/upgrade-row-state'
 import { upgradeRows } from '@/features/trade-scenes/lib/upgrade-rows'
 import { workDetailsKind } from '@/features/trade-scenes/lib/work-details-kind'
@@ -617,5 +631,107 @@ assert.equal(slotIn(inputs({ hvacType: 'mini-split' }), 'mini-split-heads')?.cur
 assert.equal(shownHeads('proposed', {}), String(drawn(centralBothProperty, build([SCOPE_IDS.miniSplitInstallation])).miniSplit?.heads), 'with no count set, the build\'s heads read the count drawn')
 assert.equal(shownHeads('proposed', { miniSplitHeads: '3' }), String(drawn({ hvacType: 'mini-split' }, build([SCOPE_IDS.miniSplitInstallation], { miniSplitHeads: '3' })).miniSplit?.heads), 'the build keeps the home\'s own count until the rep picks another')
 assert.equal(shownHeads('proposed', { miniSplitHeads: '3', proposedMiniSplitHeads: '2' }), String(drawn({ hvacType: 'mini-split' }, build([SCOPE_IDS.miniSplitInstallation], { miniSplitHeads: '3', proposedMiniSplitHeads: '2' })).miniSplit?.heads), 'a picked count is the count drawn')
+
+// A flat roof's central home stored with its unit in the attic stands it in the closet
+const flatCentralAttic = { ...HOME_MATERIAL_FACTS_UNSET, hvacIndoorLocation: 'attic' } as const
+assert.equal(indoorLocation(flatCentralAttic, 'low-slope', 'existing', [], true), 'closet', 'Today reads a flat roof\'s stored attic as the closet')
+assert.equal(drawn(flatCentral, { materials: { hvacIndoorLocation: 'attic' } }).indoor?.location, 'closet', 'and draws its indoor unit there')
+
+// Heating & cooling opens on the indoor unit, walks its parts in the sales order, and the roof spot offers it where the
+// system's air is in the attic
+const focusOf = (property: Partial<PropertyProfile>, options: SceneOptions = {}) => hvacFocusOf(drawn(property, options))
+function unitCentre(location: 'attic' | 'closet', form: RoofForm): Vec3 {
+  const boxes = indoorUnitBoxes(indoorUnitPlacement(location, form)!, { furnace: true, coil: true }).map(section => section.box)
+  const [low, high] = [Math.min, Math.max].map(pick => [0, 1, 2].map(axis => pick(...boxes.map(({ position, size }) => position[axis]! + (pick === Math.min ? -1 : 1) * size[axis]! / 2))))
+  return [0, 1, 2].map(axis => (low![axis]! + high![axis]!) / 2) as unknown as Vec3
+}
+const raised = (point: Vec3, lift: number): Vec3 => [point[0], point[1] + lift, point[2]]
+const hvacTarget = (form: RoofForm, property: Partial<PropertyProfile>, options: SceneOptions = {}, lift = 0) => SYSTEM_CAMERA_VIEWS['heating-cooling'](form, 'landscape', lift, { focus: focusOf(property, options), scale: 1 }).target
+const closetOptions = { materials: { hvacIndoorLocation: 'closet' } } as const
+for (const lift of [0, homeLift('raised')]) {
+  assert.ok(distance(hvacTarget('pitched', {}, {}, lift), raised(unitCentre('attic', 'pitched'), lift)) < 0.1, `lift ${lift}: an unknown system's view looks at its attic indoor unit`)
+  assert.ok(distance(hvacTarget('pitched', pitchedCentral, closetOptions, lift), raised(unitCentre('closet', 'pitched'), lift)) < 0.1, `lift ${lift}: a closet home's view looks at its closet unit`)
+  assert.ok(distance(hvacTarget('low-slope', flatCentral, {}, lift), raised(unitCentre('closet', 'low-slope'), lift)) < 0.1, `lift ${lift}: a flat roof's central home looks at its closet unit`)
+  assert.deepEqual(hvacTarget('pitched', { hvacType: 'package-unit' }, {}, lift), raised(packageUnitPlacement(false, 1).position, lift), `lift ${lift}: a package unit is looked at where it stands on the roof`)
+  const [wallX, wallY] = hvacTarget('pitched', wallFurnace, {}, lift)
+  assert.ok(Math.abs(wallX - EQUIPMENT.wallUnit.x) < 1e-9 && Math.abs(wallY - EQUIPMENT.wallUnit.y - lift) < 1e-9, `lift ${lift}: a wall home is looked at its wall unit`)
+}
+assert.deepEqual(focusOf({}), { kind: 'indoor', location: 'attic' })
+assert.deepEqual(focusOf(wallFurnace, build([SCOPE_IDS.splitSystemNewCut])), { kind: 'indoor', location: 'attic' }, 'a new system\'s build looks at its new indoor unit')
+assert.deepEqual(focusOf(wallFurnace), { kind: 'wall-unit' })
+assert.deepEqual(focusOf({ hvacType: 'portable' }), { kind: 'window-unit' })
+assert.deepEqual(focusOf({ hvacType: 'mini-split' }), { kind: 'mini-split-head' })
+assert.deepEqual(focusOf({ hvacType: 'package-unit' }), { kind: 'package' })
+assert.deepEqual(focusOf(centralBothProperty, build([SCOPE_IDS.miniSplitInstallation])), { kind: 'indoor', location: 'attic' }, 'heads added to a central home leave the view on its indoor unit')
+
+// The condenser's pad framing as up close drew it for every central system before the indoor unit took the view.
+const PAD_LOOK = {
+  landscape: { position: [-7.350458708934556, 1.8716857135675684, 1.8744381811742148], target: [-7.25, 0, -2.1], fov: 34 },
+  narrow: { position: [-7.350458708934556, 1.8716857135675684, 1.8744381811742148], target: [-7.25, 0, -2.1], fov: 34 },
+  portrait: { position: [-7.3881307247850145, 2.5735678561554063, 3.3648524991145448], target: [-7.25, 0, -2.1], fov: 34 },
+} as const
+for (const form of ROOF_FORMS) {
+  const property = form === 'pitched' ? {} : flatCentral
+  for (const shape of ['landscape', 'narrow', 'portrait'] as const) {
+    for (const lift of [0, homeLift('raised')]) {
+      const hvac = { focus: focusOf(property), scale: 1 }
+      assert.notDeepEqual(lookInsideView('heating-cooling', form, shape, lift, hvac), PAD_LOOK[shape], `${form} ${shape} lift ${lift}: up close on a central system no longer frames the condenser's pad`)
+      for (const part of ['condenser', 'refrigerant-lines'] as const) {
+        const look = partLookInsideView('heating-cooling', part, form, shape, lift, hvac)!
+        assert.deepEqual(look, PAD_LOOK[shape], `${form} ${shape} lift ${lift}: the ${part} picked swings to the condenser's pad`)
+      }
+    }
+  }
+}
+
+const spotAt = (form: RoofForm, hvacType: HVACType | null, picks: string[] = [], hvacComponents: HVACComponent | null = null) => ({ form, picks, hvacType, hvacComponents })
+assert.deepEqual(systemsAtSpot('roof', spotAt('pitched', null)), ['roof', 'attic', 'heating-cooling'], 'a pitched home\'s ducted system is offered at the roof')
+assert.deepEqual(systemsAtSpot('roof', spotAt('pitched', 'package-unit')), ['roof', 'attic', 'heating-cooling'], 'so is a package unit\'s, whose trunk is in the attic')
+assert.deepEqual(systemsAtSpot('roof', spotAt('low-slope', null)), ['roof'], 'a flat roof never offers heating & cooling')
+assert.deepEqual(systemsAtSpot('roof', spotAt('low-slope', null, [SCOPE_IDS.roofTorchDown, SCOPE_IDS.roofRedeck])), ['roof', 'attic'], 'not even with its joists opened')
+assert.deepEqual(systemsAtSpot('roof', spotAt('pitched', 'wall-mounted')), ['roof', 'attic'], 'a wall home has nothing in the attic')
+assert.deepEqual(systemsAtSpot('roof', spotAt('pitched', 'wall-mounted', [SCOPE_IDS.splitSystemNewCut])), ['roof', 'attic', 'heating-cooling'], 'until a new system puts its plenum there')
+assert.deepEqual(systemsAtSpot('equipment', spotAt('pitched', 'central', [], 'furnace')), [], 'a furnace alone has nothing outside')
+assert.deepEqual(systemsAtSpot('equipment', spotAt('pitched', 'central', [split], 'furnace')), ['heating-cooling'], 'a whole system puts a condenser outside')
+assert.deepEqual(systemsAtSpot('equipment', spotAt('pitched', null)), ['heating-cooling'], 'an unknown system has its condenser')
+assert.deepEqual(systemsAtSpot('equipment', spotAt('pitched', 'mini-split')), ['heating-cooling'], 'mini-splits have their outdoor unit')
+assert.deepEqual(systemsAtSpot('equipment', spotAt('pitched', 'portable', [SCOPE_IDS.miniSplitInstallation])), ['heating-cooling'], 'so do mini-splits a build adds')
+assert.deepEqual(systemsAtSpot('equipment', spotAt('pitched', 'wall-mounted')), [], 'a wall unit has no outdoor unit of its own')
+assert.equal(canLookInside('heating-cooling', spotAt('pitched', 'wall-mounted')), false, 'a wall home has nothing to look inside')
+assert.equal(canLookInside('heating-cooling', spotAt('pitched', 'central', [], 'furnace')), true, 'a furnace alone is looked inside from the roof')
+assert.equal(canLookInside('heating-cooling', spotAt('low-slope', 'central', [], 'furnace')), false, 'except under a flat roof, where nothing outside offers it')
+assert.equal(canLookInside('heating-cooling', spotAt('low-slope', 'central')), true, 'a flat roof\'s A/C offers it at its condenser')
+assert.deepEqual(homeSpotContext(inputs({ hvacType: 'central', hvacComponents: 'ac' })).hvacComponents, 'ac', 'the spots read the home\'s components')
+
+assert.deepEqual([...emphasizedParts('coil')].sort(), ['coil', 'condenser', 'refrigerant-lines'], 'the coil lights the line set and the condenser with it')
+assert.deepEqual([...emphasizedParts('plenum')], ['plenum'], 'any other part lights alone')
+assert.equal(emphasizedParts(null).size, 0, 'no emphasis lights nothing on its own')
+const rowsFor = (property: Partial<PropertyProfile>, options: SceneOptions = {}) => systemPartRows('heating-cooling', scene(property, options))
+const coilLit = systemLit('heating-cooling', rowsFor({}), 'coil')
+for (const [part, opacity] of [['coil', 1], ['refrigerant-lines', 1], ['condenser', 1], ['plenum', LOOK_INSIDE.dimmedOpacity], ['blower', LOOK_INSIDE.dimmedOpacity]] as const) {
+  assert.equal(systemPartOpacity(systemPartTag(part), false, coilLit, LOOK_INSIDE.ghostOpacity), opacity, `with the coil picked, the ${part} reads at ${opacity}`)
+}
+assert.equal(systemPartOpacity(systemPartTag('coil'), false, systemLit('heating-cooling', rowsFor({}), 'condenser'), LOOK_INSIDE.ghostOpacity), LOOK_INSIDE.dimmedOpacity, 'the pairing runs one way: the condenser picked dims the coil')
+
+const ductPieces: readonly string[] = PART_PIECES['duct-runs']
+const walked = listedRows(rowsFor({}, build([split, ductsScope]))).map(row => row.id).filter(id => !ductPieces.includes(id))
+assert.deepEqual(walked, ['blower', 'furnace', 'coil', 'plenum', 'duct-runs', 'registers', 'thermostat', 'refrigerant-lines', 'condenser'], 'the system is walked in the sales order')
+
+const allIds = rowsFor({}).map(row => row.id)
+for (const location of ['attic', 'closet'] as const) {
+  for (const form of ROOF_FORMS) {
+    const sections = indoorUnitBoxes(indoorUnitPlacement(location, form)!, { furnace: true, coil: true })
+    for (const { id, box } of sections) {
+      assert.deepEqual(systemPartFocus('heating-cooling', form, id, 0, allIds, [], location), box.position, `${location}, ${form}: the ${id}'s pin rests on its section`)
+    }
+    const acOnly = indoorUnitBoxes(indoorUnitPlacement(location, form)!, { furnace: false, coil: true })
+    const acIds = allIds.filter(id => id !== 'furnace')
+    assert.deepEqual(systemPartFocus('heating-cooling', form, 'coil', 0, acIds, [], location), acOnly.find(section => section.id === 'coil')!.box.position, `${location}, ${form}: with no furnace the coil's pin follows it toward the return`)
+  }
+}
+assert.deepEqual(systemPartFocus('heating-cooling', 'pitched', 'thermostat', 0, allIds, []), EQUIPMENT.thermostat.position, 'the thermostat\'s pin is on the thermostat')
+const registerPin = systemPartFocus('heating-cooling', 'pitched', 'registers', 0, allIds, [])!
+const livingGrille = ceilingOpenings(true).find(opening => opening.kind === 'boot' && opening.at[0] > ROOMS.living.from && opening.at[0] < ROOMS.living.to)!
+assert.ok(registerPin[0] === livingGrille.at[0] && registerPin[2] === livingGrille.at[1] && registerPin[1] < WALL_TOP_Y - HOUSE.ceilingThickness, 'the registers\' pin is on the living room\'s grille, under the ceiling')
 
 console.log('verify-heating-cooling: ok')

@@ -6,7 +6,7 @@ import type { ArrowLane, BenefitsState, BoxSpec, CeilingOpening, CompleteWallLan
 import type { CameraFraming, PieceLayout, RainColumn } from '@/shared/components/scene/types'
 import type { Climate } from '@/shared/modules/construction/core/constants/climate-presets'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
-import type { PaintWearLevel, Wear } from '@/shared/modules/construction/core/constants/enums'
+import type { HVACType, PaintWearLevel, Wear } from '@/shared/modules/construction/core/constants/enums'
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 import type { ScopeId } from '@/shared/modules/construction/core/constants/scope-ids'
 import type { ExistingConditions, HeatWeather, HomeMaterialFacts, PaintPick, PropertyProfile, ResolvedPart, Weather } from '@/shared/modules/construction/core/types'
@@ -78,6 +78,7 @@ import { cutawayBarrierBounceEnd, cutawayHeatLanes, cutawayReadingSpots } from '
 import { cutawayCrossings, cutawayRainPath, cutawayRibbonWidths, cutawayRotSpots } from '@/features/trade-scenes/lib/cutaway-rain-path'
 import { deckRotSpots } from '@/features/trade-scenes/lib/deck-rot-spots'
 import { downspoutBoxes, downspoutFeet, downspoutOutlet, gableDownspouts } from '@/features/trade-scenes/lib/downspout-boxes'
+import { drawnHvac } from '@/features/trade-scenes/lib/drawn-hvac'
 import { dripEdgeBoxes, eaveLipBox } from '@/features/trade-scenes/lib/drip-edge-boxes'
 import { ductRunPoints, openedDuctRun } from '@/features/trade-scenes/lib/duct-run-points'
 import { ductStrapBoxes } from '@/features/trade-scenes/lib/duct-strap-boxes'
@@ -85,6 +86,7 @@ import { ductsHang } from '@/features/trade-scenes/lib/ducts-hang'
 import { EAVE_DRIP } from '@/features/trade-scenes/lib/eave-drip'
 import { eavesTrimDetail } from '@/features/trade-scenes/lib/eaves-trim-detail'
 import { efficiencyUpgradePatch } from '@/features/trade-scenes/lib/efficiency-upgrade-patch'
+import { emphasizedParts } from '@/features/trade-scenes/lib/emphasized-parts'
 import { eraCodeLine } from '@/features/trade-scenes/lib/era-code-line'
 import { escapeStep } from '@/features/trade-scenes/lib/escape-step'
 import { fasciaNewLengths, fasciaReplacedBoxes, fasciaRotLeft } from '@/features/trade-scenes/lib/fascia-replaced-boxes'
@@ -114,6 +116,9 @@ import { homePanBox } from '@/features/trade-scenes/lib/home-pan-box'
 import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
 import { framingGrid, SHAKE, SHINGLE, TILE } from '@/features/trade-scenes/lib/home-roof-layout'
 import { houseOpen } from '@/features/trade-scenes/lib/house-open'
+import { hvacFocusOf } from '@/features/trade-scenes/lib/hvac-focus-of'
+import { indoorUnitBoxes } from '@/features/trade-scenes/lib/indoor-unit-boxes'
+import { indoorUnitPlacement } from '@/features/trade-scenes/lib/indoor-unit-placement'
 import { insideHouse } from '@/features/trade-scenes/lib/inside-house'
 import { installedShingleTone } from '@/features/trade-scenes/lib/installed-shingle-tone'
 import { keepEfficiencyUpgrades } from '@/features/trade-scenes/lib/keep-efficiency-upgrades'
@@ -525,6 +530,17 @@ assert.equal(roofAttic(coolOff).parts.find(part => part.id === 'covering')?.mate
 
 const YEAR = 2026
 const at = (patch: Partial<TradeSceneInputs>) => resolveScene(inputs(patch), cuts, YEAR)
+// Heating & cooling's view of a home with `hvacType` under `form`'s roof, looking at what Today draws doing its work.
+const hvacFocusCache = new Map<string, ReturnType<typeof hvacFocusOf>>()
+function hvacOf(form: RoofForm, hvacType: HVACType | null, scale = 1) {
+  const key = `${form} ${hvacType}`
+  if (!hvacFocusCache.has(key)) {
+    const property = profile({ hvacType, roofType: form === 'low-slope' ? 'flat' : 'shingle' })
+    const scene = at({ property })
+    hvacFocusCache.set(key, hvacFocusOf(drawnHvac(scene.assemblies['hvac-attic']?.parts ?? [], property, HOME_MATERIAL_FACTS_UNSET, 'existing', homeRoofForm(scene.assemblies['roof-attic']?.form), [])))
+  }
+  return { focus: hvacFocusCache.get(key)!, scale }
+}
 // The pins of a system with no duct piece showing never read the opened run.
 const NO_RUN: Vec3[] = []
 const shownOf = (system: HomeSystemId, scene: ReturnType<typeof at>) => systemLit(system, systemPartRows(system, scene), null).shown
@@ -1781,7 +1797,7 @@ for (const run of EQUIPMENT.ductRuns) {
     const [unitL, unitH, unitD] = PACKAGE_UNIT.size
     const lidCorners = [-1, 1].flatMap(sx => [-1, 1].map(sz => [x + sx * (unitL + 0.06) * scale / 2, top + (unitH + 0.04) * scale, z + sz * (unitD + 0.06) * scale / 2] as const))
     for (const shape of ['landscape', 'narrow', 'portrait'] as const) {
-      const { position: camera } = SYSTEM_CAMERA_VIEWS['heating-cooling']('pitched', shape, 0, { type: 'package-unit', scale })
+      const { position: camera } = SYSTEM_CAMERA_VIEWS['heating-cooling']('pitched', shape, 0, hvacOf('pitched', 'package-unit', scale))
       for (const corner of [...corners, ...lidCorners]) {
         const length = Math.hypot(camera[0] - corner[0], camera[1] - corner[1], camera[2] - corner[2])
         const steps = Math.ceil(length / 0.02)
@@ -1800,12 +1816,15 @@ for (const run of EQUIPMENT.ductRuns) {
 
     for (const form of ROOF_FORMS) {
       for (const lift of [0, 0.6]) {
-        const packaged = SYSTEM_CAMERA_VIEWS['heating-cooling'](form, 'landscape', lift, { type: 'package-unit', scale })
+        const packaged = SYSTEM_CAMERA_VIEWS['heating-cooling'](form, 'landscape', lift, hvacOf(form, 'package-unit', scale))
         const [ux, uy, uz] = packageUnitPlacement(form === 'low-slope', scale).position
         assert.deepEqual(packaged.target, [ux, uy + lift, uz], `${form} at scale ${scale}: heating & cooling looks at the package unit`)
+        const location = form === 'pitched' ? 'attic' : 'closet'
+        const unit = indoorUnitBoxes(indoorUnitPlacement(location, form)!, { furnace: true, coil: true }).map(section => section.box)
+        const inUnit = (point: readonly number[]) => unit.some(({ position, size }) => [0, 1, 2].every(axis => Math.abs(point[axis]! - (axis === 1 ? lift : 0) - position[axis]!) <= size[axis]! / 2))
         for (const type of [null, 'central'] as const) {
-          const central = SYSTEM_CAMERA_VIEWS['heating-cooling'](form, 'landscape', lift, { type, scale })
-          assert.deepEqual(central.target, EQUIPMENT.condenser.position, `${form} ${type}: heating & cooling looks at the condenser's pad`)
+          const central = SYSTEM_CAMERA_VIEWS['heating-cooling'](form, 'landscape', lift, hvacOf(form, type, scale))
+          assert.ok(inUnit(central.target), `${form} ${type}: heating & cooling looks at the ${location} indoor unit`)
         }
       }
     }
@@ -1946,7 +1965,7 @@ for (const foundation of ['slab', 'raised'] as const) {
     for (const system of LOOK_INSIDE_SYSTEM_IDS) {
       for (const shape of ['landscape', 'narrow', 'portrait'] as const) {
         for (const type of ['central', 'package-unit'] as const) {
-          const framing = lookInsideView(system, form, shape, lift, { type, scale: 1 })
+          const framing = lookInsideView(system, form, shape, lift, hvacOf(form, type))
           const label = `${foundation} ${form} ${system} ${shape} ${type}`
           inPanBox(box, framing.target, `${label}: up close`)
           const ids = SYSTEM_PARTS.filter(entry => (entry.systems as readonly HomeSystemId[]).includes(system)).map(entry => entry.id)
@@ -3553,19 +3572,19 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
 
   const partsByAssembly = (scene: ReturnType<typeof resolveScene>) => Object.fromEntries(Object.entries(scene.assemblies).map(([id, target]) => [id, target.parts]))
 
-  const lowSlope = { form: 'low-slope', hvacType: 'central' } as const
+  const lowSlope = { form: 'low-slope', hvacType: 'central', hvacComponents: null } as const
   assert.deepEqual(systemsAtSpot('roof', { ...lowSlope, picks: [] }), ['roof'], 'a flat roof alone')
   assert.deepEqual(systemsAtSpot('roof', { ...lowSlope, picks: [TORCH_DOWN] }), ['roof'], 'a torch down keeps the deck on')
   assert.deepEqual(systemsAtSpot('roof', { ...lowSlope, picks: [TORCH_DOWN, REDECK] }), ['roof', 'attic'], 'a redeck opens the joists')
-  assert.deepEqual(systemsAtSpot('roof', { form: 'pitched', picks: [], hvacType: null }), ['roof', 'attic'], 'a pitched roof opens the attic')
-  assert.deepEqual(systemsAtSpot('window', { form: 'pitched', picks: [], hvacType: null }), ['windows'])
-  assert.deepEqual(systemsAtSpot('equipment', { form: 'pitched', picks: [], hvacType: 'package-unit' }), ['heating-cooling'])
-  assert.deepEqual(systemsAtSpot('equipment', { form: 'pitched', picks: [], hvacType: 'portable' }), [], 'a portable unit has no equipment spot')
-  assert.equal(canLookInside('heating-cooling', { form: 'pitched', picks: [], hvacType: 'wall-mounted' }), false, 'a wall unit has nothing to look inside')
-  assert.equal(canLookInside('heating-cooling', { form: 'pitched', picks: [], hvacType: null }), true)
-  assert.deepEqual(systemsAtSpot('wall', { form: 'pitched', picks: [], hvacType: null }), ['walls'])
-  assert.ok(canLookInside('walls', { form: 'pitched', picks: [], hvacType: null }))
-  assert.ok(canLookInside('walls', { form: 'low-slope', picks: [], hvacType: 'portable' }), 'walls open on every home')
+  assert.deepEqual(systemsAtSpot('roof', { form: 'pitched', picks: [], hvacType: null, hvacComponents: null }), ['roof', 'attic', 'heating-cooling'], 'a pitched roof opens the attic')
+  assert.deepEqual(systemsAtSpot('window', { form: 'pitched', picks: [], hvacType: null, hvacComponents: null }), ['windows'])
+  assert.deepEqual(systemsAtSpot('equipment', { form: 'pitched', picks: [], hvacType: 'package-unit', hvacComponents: null }), ['heating-cooling'])
+  assert.deepEqual(systemsAtSpot('equipment', { form: 'pitched', picks: [], hvacType: 'portable', hvacComponents: null }), [], 'a portable unit has no equipment spot')
+  assert.equal(canLookInside('heating-cooling', { form: 'pitched', picks: [], hvacType: 'wall-mounted', hvacComponents: null }), false, 'a wall unit has nothing to look inside')
+  assert.equal(canLookInside('heating-cooling', { form: 'pitched', picks: [], hvacType: null, hvacComponents: null }), true)
+  assert.deepEqual(systemsAtSpot('wall', { form: 'pitched', picks: [], hvacType: null, hvacComponents: null }), ['walls'])
+  assert.ok(canLookInside('walls', { form: 'pitched', picks: [], hvacType: null, hvacComponents: null }))
+  assert.ok(canLookInside('walls', { form: 'low-slope', picks: [], hvacType: 'portable', hvacComponents: null }), 'walls open on every home')
   const houseShellCode = readFileSync('src/features/trade-scenes/ui/components/home-kit/house-shell.tsx', 'utf8')
   assert.ok(/onClick=\{onWindowTap\}/.test(houseShellCode) && /onClick=\{onWallTap\}/.test(houseShellCode), 'the glass and frame take their own tap, the wall its own')
   assert.equal(canLookInside('attic', { ...lowSlope, picks: [TORCH_DOWN] }), false, 'a flat roof\'s attic opens only with a redeck')
@@ -3614,7 +3633,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
 {
   const partsByAssembly = (scene: ReturnType<typeof resolveScene>) => Object.fromEntries(Object.entries(scene.assemblies).map(([id, target]) => [id, target.parts]))
   const dry = at({ property: profile({ roofType: 'shingle' }), weather: 'normal', view: 'existing' })
-  const roofLit = (emphasized: SystemLit['emphasized'] = null): SystemLit => ({ system: 'roof', shown: new Set(systemPartsShown('roof', partsByAssembly(dry), systemStory(dry)).map(entry => entry.id)), emphasized })
+  const roofLit = (emphasized: SystemLit['emphasized'] = null): SystemLit => ({ system: 'roof', shown: new Set(systemPartsShown('roof', partsByAssembly(dry), systemStory(dry)).map(entry => entry.id)), emphasized, emphasizedParts: emphasizedParts(emphasized) })
   const ghost = LOOK_INSIDE.ghostOpacity
   assert.equal(ghost, HOME_GHOST_OPACITY, 'up close ghosts the house as the old close-up did')
   assert.ok(roofLit().shown.has('deck') && !roofLit().shown.has('ceiling'), 'the fixture: a dry roof shows its deck, not the ceiling')
@@ -3840,7 +3859,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
       assert.deepEqual(readingAnchors(form, focus), READING_ANCHORS[form], `${form} ${focus ?? 'nothing'} in focus: the whole home's readings`)
     }
     for (const shape of ['landscape', 'narrow', 'portrait'] as const) {
-      const { target } = SYSTEM_CAMERA_VIEWS.windows(form, shape, 0, { type: 'central', scale: 1 })
+      const { target } = SYSTEM_CAMERA_VIEWS.windows(form, shape, 0, hvacOf(form, 'central'))
       assert.ok(onWindow(target, [LOOK_INSIDE_WINDOW.wall]) && Math.abs(target[0] - LOOK_INSIDE_WINDOW.opening.along) <= LOOK_INSIDE_WINDOW.opening.width / 2, `${form} ${shape}: the windows' view aims at the front window`)
     }
   }
@@ -3924,7 +3943,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
       for (const type of ['central', 'package-unit'] as const) {
         for (const shape of ['landscape', 'narrow', 'portrait'] as const) {
           for (const lift of [homeLift('slab'), homeLift('raised')]) {
-            const hvac = { type, scale: 1 }
+            const hvac = hvacOf(form, type)
             const view = SYSTEM_CAMERA_VIEWS[system](form, shape, lift, hvac)
             const inside = lookInsideView(system, form, shape, lift, hvac)
             const label = `${form} ${system} ${type} ${shape} lift ${lift.toFixed(2)}`
@@ -3956,8 +3975,9 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
             }
             assert.ok(lb < la * 0.9, `${label}: up close comes nearer (${lb.toFixed(2)} against ${la.toFixed(2)})`)
             assert.ok(lb >= HOME_ORBIT.minDistance, `${label}: up close stands within the orbit's reach (${lb.toFixed(2)} m)`)
-            const pad = system === 'heating-cooling' && type === 'central'
-            if (system !== 'attic' && system !== 'walls' && system !== 'windows' && !pad) {
+            // Up close on a central home's indoor unit swings round to see its sections side on.
+            const indoor = system === 'heating-cooling' && type === 'central'
+            if (system !== 'attic' && system !== 'walls' && system !== 'windows' && !indoor) {
               a.forEach((value, axis) => near(b[axis] / lb, value / la, 1e-9, `${label}: along the same bearing, axis ${axis}`))
             }
             // The front window is looked at from the front yard, turned off its normal so pulled apart it spreads across the
@@ -3989,9 +4009,11 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
                 assert.ok(pz >= 0 || py < underRafters(pz), `${label}: the sight line clears the back slope's rafters at z ${pz.toFixed(2)} (y ${py.toFixed(2)} against ${underRafters(pz).toFixed(2)})`)
               }
             }
-            // The pad sits between the house and the lot's left wall: up close stands inside that wall, never behind it.
-            if (pad) {
-              assert.ok(inside.position[0] > LOT.left + LOT.wall.thickness, `${label}: up close stands inside the lot's left wall (x ${inside.position[0].toFixed(2)})`)
+            // The pad sits between the house and the lot's left wall: the condenser's look on a pick stands inside that wall,
+            // never behind it.
+            if (indoor) {
+              const pad = partLookInsideView('heating-cooling', 'condenser', form, shape, lift, hvac)!
+              assert.ok(pad.position[0] > LOT.left + LOT.wall.thickness, `${label}: the condenser up close stands inside the lot's left wall (x ${pad.position[0].toFixed(2)})`)
             }
           }
         }
@@ -4000,7 +4022,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   }
   assert.ok(underRoof >= 12, `the sight-line check reaches every view of a target under the near slope, the attic's among them (${underRoof})`)
   // The check is not vacuous: the attic seen straight in along its system's bearing, as before, crosses the near slope.
-  const straightIn = SYSTEM_CAMERA_VIEWS.attic('pitched', 'landscape', 0, { type: null, scale: 1 })
+  const straightIn = SYSTEM_CAMERA_VIEWS.attic('pitched', 'landscape', 0, hvacOf('pitched', null))
   assert.ok(slopeCrossing({ ...straightIn, position: [0, 1, 2].map(axis => straightIn.target[axis] + (straightIn.position[axis] - straightIn.target[axis]) * 0.62) as [number, number, number] }) !== null, 'the attic straight in looks through the near slope')
 
   // Every system part shown up close has its own spot on the house for its pin and the camera's lean, apart from the others.
@@ -4126,7 +4148,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
     for (const { label, scene } of windowCases) {
       const rows = listedRows(systemPartRows('windows', scene))
       const ids = systemPartRows('windows', scene).map(row => row.id)
-      const { position, target } = lookInsideView('windows', form, 'landscape', homeLift('slab'), { type: 'central', scale: 1 })
+      const { position, target } = lookInsideView('windows', form, 'landscape', homeLift('slab'), hvacOf(form, 'central'))
       const sight = [0, 1, 2].map(axis => target[axis] - position[axis])
       const norm = Math.hypot(...sight)
       const dir = sight.map(value => value / norm)
@@ -4669,9 +4691,9 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
     const gableStarts = stepStarts('attic', 'pitched', floorSteps, 1)
     assert.ok(gableStarts.get('ceiling')! > -(HOUSE.halfLength - HOUSE.wallThickness) && gableStarts.get('attic-insulation')! < PARTITIONS_X[0], 'a gable\'s attic steps open in its left room')
     for (const shape of ['landscape', 'narrow', 'portrait'] as const) {
-      const flatView = lookInsideView('attic', 'low-slope', shape, 0, { type: 'package-unit', scale: 1 })
+      const flatView = lookInsideView('attic', 'low-slope', shape, 0, hvacOf('low-slope', 'package-unit'))
       assert.ok(flatView.target[0] > HOUSE.cutX && flatView.target[0] < HOUSE.cutX + 2 * STEP_DEPTHS.attic, `${shape}: a flat roof's attic is looked at by the kitchen wall (${flatView.target[0].toFixed(2)})`)
-      const gableView = lookInsideView('attic', 'pitched', shape, 0, { type: 'central', scale: 1 })
+      const gableView = lookInsideView('attic', 'pitched', shape, 0, hvacOf('pitched', 'central'))
       assert.ok(gableView.target[0] < PARTITIONS_X[0], `${shape}: a gable's attic is looked at in its left room (${gableView.target[0].toFixed(2)})`)
     }
     const unsealed = shownOf('attic', at({ property: profile({ roofType: 'shingle', hvacType: 'central' }) }))
@@ -4774,7 +4796,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   assert.equal(openPeel('attic', 0), 1, 'the attic stands fully open, whatever the store\'s peel')
   assert.equal(openPeel('roof', 0.3), 0.3, 'the roof follows its peel')
   // Up close on the attic the cans, boots and vents light with the ceiling they pierce; anywhere else they ghost.
-  const litOf = (system: HomeSystemId, shown: SystemPartId[]): SystemLit => ({ system, shown: new Set(shown), emphasized: null })
+  const litOf = (system: HomeSystemId, shown: SystemPartId[]): SystemLit => ({ system, shown: new Set(shown), emphasized: null, emphasizedParts: emphasizedParts(null) })
   assert.equal(ceilingOpeningPart(litOf('attic', ['attic-insulation', 'ceiling'])), 'ceiling', 'with the ceiling they pierce')
   assert.equal(ceilingOpeningPart(litOf('attic', ['attic-insulation'])), null, 'no ceiling up close, nothing to light them with')
   assert.equal(ceilingOpeningPart(litOf('roof', ['covering', 'ceiling'])), null, 'the roof leaves them to the ghost')
@@ -4782,7 +4804,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   // A pick on the attic fan, behind the attic's own view, turns to face its gable from inside the attic, over the lifted near
   // slope, within the orbit's reach.
   for (const shape of ['landscape', 'narrow', 'portrait'] as const) {
-    const fan = partLookInsideView('attic', 'attic-fan', 'pitched', shape, 0, { type: 'central', scale: 1 })!
+    const fan = partLookInsideView('attic', 'attic-fan', 'pitched', shape, 0, hvacOf('pitched', 'central'))!
     const [px, , pz] = fan.position
     near(fan.target[0], ATTIC_FAN_SPOT.position[0], 1e-9, `${shape}: the fan pick looks at the fan`)
     assert.ok(px > ATTIC_FAN_SPOT.position[0] && px < HOUSE.cutX && pz > HOUSE.atticFrontZ && pz < HOUSE.halfDepth, `${shape}: from inside the attic, over the lifted near slope ([${fan.position.map(v => v.toFixed(2)).join(', ')}])`)
@@ -4805,7 +4827,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
       return [from[0] + (to[0] - from[0]) * step / 8, from[1] + (to[1] - from[1]) * step / 8, from[2] + (to[2] - from[2]) * step / 8]
     })))
     for (const shape of ['landscape', 'portrait'] as const) {
-      const { position } = lookInsideView('attic', 'pitched', shape, 0, { type: 'central', scale: 1 })
+      const { position } = lookInsideView('attic', 'pitched', shape, 0, hvacOf('pitched', 'central'))
       for (const mark of marks) {
         for (let step = 1; step < 200; step++) {
           const point = [0, 1, 2].map(axis => position[axis] + (mark[axis] - position[axis]) * step / 200)
@@ -4815,7 +4837,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
       }
     }
   }
-  assert.equal(partLookInsideView('attic', 'attic-insulation', 'pitched', 'landscape', 0, { type: 'central', scale: 1 }), null, 'a part on the attic\'s own run leans the system\'s view instead')
+  assert.equal(partLookInsideView('attic', 'attic-insulation', 'pitched', 'landscape', 0, hvacOf('pitched', 'central')), null, 'a part on the attic\'s own run leans the system\'s view instead')
   // No step starts past where its part is drawn, or the part would vanish from its own step: on every roof form, in both
   // systems, for every set of parts the system could show. The near slope's parts run out to the rake; its rafters stop at
   // the last one on the grid; the attic floor, a flat roof's parts and its joists stop at the end wall's inside face.
@@ -4982,9 +5004,9 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
             for (const [kind, cut] of [['existing', existing], ['built', built]] as const) {
               const spots = cutawayReadingSpots('pitched', cut.target.parts, cut.steps)
               for (const [id, spot] of Object.entries(spots)) {
-                const [x] = stageNdc(lookInsideView('attic', 'pitched', 'landscape', 0, { type: 'central', scale: 1 }), spot, 'landscape')
+                const [x] = stageNdc(lookInsideView('attic', 'pitched', 'landscape', 0, hvacOf('pitched', 'central')), spot, 'landscape')
                 assert.ok(x <= -0.15, `${what} ${kind}: on a wide stage the ${id} reading reads in full left of the card (NDC x ${x.toFixed(3)})`)
-                const [px, py] = stageNdc(lookInsideView('attic', 'pitched', 'portrait', 0, { type: 'central', scale: 1 }), spot, 'portrait')
+                const [px, py] = stageNdc(lookInsideView('attic', 'pitched', 'portrait', 0, hvacOf('pitched', 'central')), spot, 'portrait')
                 assert.ok(Math.abs(px) < 1 && py > -1 && py < cardEdge, `${what} ${kind}: on a phone the ${id} reading stands in frame, below the card (NDC ${px.toFixed(3)}, ${py.toFixed(3)})`)
               }
               const [x, , z] = spots.ceiling

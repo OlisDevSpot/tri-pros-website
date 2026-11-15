@@ -1,4 +1,5 @@
 import type { PlantPlacement } from '@/features/trade-scenes/constants/lot-plants'
+import type { HvacFocus } from '@/features/trade-scenes/lib/hvac-focus-of'
 import type { BoxSpec, NeighbourHouse, Vec3 } from '@/features/trade-scenes/types'
 import type { CameraFraming } from '@/shared/components/scene/types'
 import type { Weather } from '@/shared/modules/construction/core/types'
@@ -19,7 +20,7 @@ import { COVERING_COLORS } from '@/features/trade-scenes/constants/home-palette'
 import { LOOK_INSIDE_SYSTEM_IDS } from '@/features/trade-scenes/constants/home-systems'
 import { FAR_PLANT_SPECIES, PLANT_PLACEMENTS, PLANT_SPECIES } from '@/features/trade-scenes/constants/lot-plants'
 import { NEIGHBOUR_HOUSES, NEIGHBOUR_LOOK } from '@/features/trade-scenes/constants/neighbourhood'
-import { lookInsideView, SYSTEM_CAMERA_VIEWS } from '@/features/trade-scenes/constants/system-camera-views'
+import { lookInsideView, partLookInsideView, SYSTEM_CAMERA_VIEWS } from '@/features/trade-scenes/constants/system-camera-views'
 import { WEAR_AMOUNT } from '@/features/trade-scenes/constants/wear-looks'
 import { SKY_IMAGE, SKY_RIG, WEATHER_SKIES } from '@/features/trade-scenes/constants/weather-skies'
 import { facesSummerSun } from '@/features/trade-scenes/lib/faces-summer-sun'
@@ -161,6 +162,8 @@ assert.throws(() => segmentHitsBox([0, 0, 3], [0, 0, 3], new Box3(new Vector3(-1
   assert.ok(tilted.max.y > 1.4, `a tilted run's bounds reach its raised end (${tilted.max.y})`)
 }
 
+// A central home's indoor unit stands in the attic under a gable and in a closet under a flat roof.
+const indoorFocus = (form: 'pitched' | 'low-slope'): HvacFocus => ({ kind: 'indoor', location: form === 'pitched' ? 'attic' : 'closet' })
 const viewLines: { label: string, framing: CameraFraming }[] = [
   { label: 'the wide opening view', framing: HOME_FRAMINGS.wide },
   { label: 'the tall opening view', framing: HOME_FRAMINGS.tall },
@@ -169,7 +172,7 @@ const viewLines: { label: string, framing: CameraFraming }[] = [
 for (const form of ['pitched', 'low-slope'] as const) {
   for (const foundation of ['slab', 'raised'] as const) {
     for (const system of ['roof', 'attic', 'foundation'] as const) {
-      viewLines.push({ label: `${form} ${foundation} ${system}'s view`, framing: SYSTEM_CAMERA_VIEWS[system](form, 'landscape', homeLift(foundation), { type: 'central', scale: 1 }) })
+      viewLines.push({ label: `${form} ${foundation} ${system}'s view`, framing: SYSTEM_CAMERA_VIEWS[system](form, 'landscape', homeLift(foundation), { focus: indoorFocus(form), scale: 1 }) })
     }
   }
 }
@@ -178,15 +181,16 @@ viewLines.push({ label: 'the crawl view', framing: liftedFraming(CRAWL_FRAMING, 
 for (const form of ['pitched', 'low-slope'] as const) {
   for (const foundation of ['slab', 'raised'] as const) {
     for (const scale of Object.values(AC_SCALE)) {
-      viewLines.push({ label: `${form} ${foundation} package unit at scale ${scale}: heating & cooling`, framing: SYSTEM_CAMERA_VIEWS['heating-cooling'](form, 'landscape', homeLift(foundation), { type: 'package-unit', scale }) })
+      viewLines.push({ label: `${form} ${foundation} package unit at scale ${scale}: heating & cooling`, framing: SYSTEM_CAMERA_VIEWS['heating-cooling'](form, 'landscape', homeLift(foundation), { focus: { kind: 'package' }, scale }) })
     }
-    // Up close on each system, for either outdoor unit. The pad's own system view stands outside the lot's left wall, so it is
-    // not walked; up close on the pad comes inside the wall, so that one is.
+    // Up close on each system, for a central home and a package unit. The condenser's pad has no system view of its own to
+    // walk, and its own system view stands outside the lot's left wall; its look on a pick comes inside the wall, so that one is.
     for (const system of LOOK_INSIDE_SYSTEM_IDS) {
-      for (const type of system === 'heating-cooling' ? ['central', 'package-unit'] as const : ['central'] as const) {
-        viewLines.push({ label: `${form} ${foundation} ${type}: up close on ${system}`, framing: lookInsideView(system, form, 'landscape', homeLift(foundation), { type, scale: 1 }) })
+      for (const focus of system === 'heating-cooling' ? [indoorFocus(form), { kind: 'package' } as const] : [indoorFocus(form)]) {
+        viewLines.push({ label: `${form} ${foundation} ${focus.kind}: up close on ${system}`, framing: lookInsideView(system, form, 'landscape', homeLift(foundation), { focus, scale: 1 }) })
       }
     }
+    viewLines.push({ label: `${form} ${foundation}: the condenser picked up close`, framing: partLookInsideView('heating-cooling', 'condenser', form, 'landscape', homeLift(foundation), { focus: indoorFocus(form), scale: 1 })! })
   }
 }
 

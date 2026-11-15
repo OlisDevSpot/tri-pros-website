@@ -25,7 +25,7 @@ import type { AssemblyId } from '@/shared/modules/construction/core/constants/as
 import type { BenefitKind } from '@/shared/modules/construction/core/constants/benefit-kinds'
 import type { Climate } from '@/shared/modules/construction/core/constants/climate-presets'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
-import type { CoveringWearKind, FoundationType, HvacIndoorLocation, HVACType, PaintWearKind, PaintWearLevel, Wear } from '@/shared/modules/construction/core/constants/enums'
+import type { CoveringWearKind, FoundationType, HVACComponent, HvacIndoorLocation, HVACType, PaintWearKind, PaintWearLevel, Wear } from '@/shared/modules/construction/core/constants/enums'
 import type { HomeMaterialId } from '@/shared/modules/construction/core/constants/home-material-ids'
 import type { InstallStyleId } from '@/shared/modules/construction/core/constants/install-styles'
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
@@ -801,6 +801,7 @@ export interface HomeSpotContext {
   form: RoofForm
   picks: readonly string[]
   hvacType: HVACType | null
+  hvacComponents: HVACComponent | null
 }
 
 // What a shared system part is lit for in each of its systems.
@@ -833,11 +834,13 @@ export interface SystemPartTagData {
   overFront?: true
 }
 
-// The system up close: the system parts it keeps solid, and the one a tap keeps whole while the rest of it dims.
+// The system up close: the system parts it keeps solid, and the one a tap picks, which with the parts its story is told with
+// stays whole while the rest of the system dims.
 export interface SystemLit {
   system: HomeSystemId
   shown: ReadonlySet<SystemPartId>
   emphasized: SystemPartId | null
+  emphasizedParts: ReadonlySet<SystemPartId>
 }
 
 export type RoofShape = 'gable' | 'hip' | 'flat'

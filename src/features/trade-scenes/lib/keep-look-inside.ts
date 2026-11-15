@@ -5,9 +5,11 @@ import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
 import { canLookInside } from '@/features/trade-scenes/lib/systems-at-spot'
 import { roofFormOf } from '@/shared/modules/construction/core/lib/roof-form-of'
 
-// What a system's spot reads off the scene: the form the house is drawn with, the build's picks and the system type.
+// What a system's spot reads off the scene: the form the house is drawn with, the build's picks, and the system type and its
+// components.
 export function homeSpotContext(state: Pick<TradeSceneInputs, 'property' | 'proposedScopeIds'>): HomeSpotContext {
-  return { form: homeRoofForm(roofFormOf(state.property.roofType)), picks: state.proposedScopeIds, hvacType: state.property.hvacType }
+  const { roofType, hvacType, hvacComponents } = state.property
+  return { form: homeRoofForm(roofFormOf(roofType)), picks: state.proposedScopeIds, hvacType, hvacComponents }
 }
 
 // A change that leaves the picked system with nothing to look inside (a flat roof losing its redeck, a wall unit for
