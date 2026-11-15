@@ -1,5 +1,7 @@
 'use client'
 
+import type { HomeThermalZone } from '@/features/trade-scenes/constants/home-thermal-zones'
+import type { HvacRunningPart } from '@/features/trade-scenes/lib/hvac-running'
 import type { IndoorUnitSection } from '@/features/trade-scenes/lib/indoor-unit-boxes'
 import type { IndoorUnitPlacement, IndoorUnitSectionId } from '@/features/trade-scenes/lib/indoor-unit-placement'
 import type { BoxSpec, TradeSceneInputs, Vec3 } from '@/features/trade-scenes/types'
@@ -13,8 +15,10 @@ import { HOME_PALETTE } from '@/features/trade-scenes/constants/home-palette'
 import { INDOOR_UNIT_LOOK, SUPPLY_JUNCTION } from '@/features/trade-scenes/constants/indoor-unit-placements'
 import { useHeatGlow } from '@/features/trade-scenes/hooks/use-heat-glow'
 import { homeFloorY } from '@/features/trade-scenes/lib/home-floor-y'
+import { runningZone } from '@/features/trade-scenes/lib/hvac-running'
 import { indoorUnitBoxes, indoorUnitLineSet, indoorUnitTrunk } from '@/features/trade-scenes/lib/indoor-unit-boxes'
 import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
+import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
 import { MergedBoxes } from '@/features/trade-scenes/ui/components/home-kit/merged-boxes'
 import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
 import { useOwnedGeometry } from '@/shared/components/scene/hooks/use-owned-geometry'
@@ -28,6 +32,10 @@ interface IndoorUnitProps {
   heatLoad: number
   // Sets the box a closet's trunk feeds the runs from.
   form: RoofForm
+  running: ReadonlySet<HvacRunningPart>
+  side: 'heating' | 'cooling' | null
+  // The air the unit stands in: the attic's, or the room's for a closet.
+  still: HomeThermalZone
 }
 
 // Spelled out, so each section's tag names its part where it is written.
@@ -39,6 +47,9 @@ const SECTION_TAGS = {
 } as const satisfies Record<IndoorUnitSectionId, unknown>
 const LINE_SET_TAG = systemPartTag('refrigerant-lines')
 const TRUNK_TAG = systemPartTag('duct-runs')
+
+// The plenum and the trunk carry whatever air the blower moves; the line set runs with the condenser.
+const RUNS_WITH = { blower: 'blower', furnace: 'furnace', coil: 'coil', plenum: 'blower' } as const satisfies Record<IndoorUnitSectionId, HvacRunningPart>
 
 function selectFoundation(state: TradeSceneInputs) {
   return state.property.foundationType
@@ -76,8 +87,8 @@ function tube(points: readonly Vec3[] | null, radius: number, taut: boolean): Bu
 }
 
 // The blower, the furnace, the coil and the plenum in the order the air passes through them, each its own part. The furnace
-// carries the heat glow on a winter night.
-export function IndoorUnit({ placement, furnace, coil, lineSet, heatLoad, form }: IndoorUnitProps) {
+// carries the heat glow on a winter night. Each section reads as the air it carries only while its season runs it.
+export function IndoorUnit({ placement, furnace, coil, lineSet, heatLoad, form, running, side, still }: IndoorUnitProps) {
   const glow = useHeatGlow(heatLoad)
   const sections = useMemo(() => indoorUnitBoxes(placement, { furnace, coil }), [placement, furnace, coil])
   const drawn = useMemo(() => sections.map(section => ({ id: section.id, boxes: seamed(placement, section) })), [placement, sections])
@@ -92,29 +103,39 @@ export function IndoorUnit({ placement, furnace, coil, lineSet, heatLoad, form }
   const trunkGeometry = useOwnedGeometry(() => tube(trunk, INDOOR_UNIT_LOOK.trunkRadius, false), [trunk])
   const lineGeometry = useOwnedGeometry(() => tube(lines, INDOOR_UNIT_LOOK.lineRadius, true), [lines])
 
+  const airZone = thermalTag(runningZone(running.has('blower'), side, still))
+
   return (
     <group>
-      <MergedBoxes boxes={coreBoxes} color={HOME_PALETTE.unitGrille} roughness={0.8} />
+      <group userData={airZone}>
+        <MergedBoxes boxes={coreBoxes} color={HOME_PALETTE.unitGrille} roughness={0.8} />
+      </group>
       {drawn.map(({ id, boxes }) => (
-        <group key={id} userData={SECTION_TAGS[id]}>
-          {id === 'furnace'
-            ? <MergedBoxes boxes={boxes} color={HOME_PALETTE.unit} radius={0.02} roughness={0.7} emissive={EQUIPMENT_STRAIN.heat.color} materialRef={glow} />
-            : <MergedBoxes boxes={boxes} color={HOME_PALETTE.unit} radius={0.02} roughness={0.7} />}
+        <group key={id} userData={thermalTag(runningZone(running.has(RUNS_WITH[id]), side, still))}>
+          <group userData={SECTION_TAGS[id]}>
+            {id === 'furnace'
+              ? <MergedBoxes boxes={boxes} color={HOME_PALETTE.unit} radius={0.02} roughness={0.7} emissive={EQUIPMENT_STRAIN.heat.color} materialRef={glow} />
+              : <MergedBoxes boxes={boxes} color={HOME_PALETTE.unit} radius={0.02} roughness={0.7} />}
+          </group>
         </group>
       ))}
       {trunk !== null && (
-        <group userData={TRUNK_TAG}>
-          <mesh geometry={trunkGeometry}>
-            <meshStandardMaterial color={HOME_PALETTE.ductBoot} roughness={0.7} />
-          </mesh>
-          <MergedBoxes boxes={junction} color={HOME_PALETTE.ductBoot} radius={0.03} roughness={0.7} />
+        <group userData={airZone}>
+          <group userData={TRUNK_TAG}>
+            <mesh geometry={trunkGeometry}>
+              <meshStandardMaterial color={HOME_PALETTE.ductBoot} roughness={0.7} />
+            </mesh>
+            <MergedBoxes boxes={junction} color={HOME_PALETTE.ductBoot} radius={0.03} roughness={0.7} />
+          </group>
         </group>
       )}
       {lines !== null && (
-        <group userData={LINE_SET_TAG}>
-          <mesh geometry={lineGeometry}>
-            <meshStandardMaterial color={HOME_PALETTE.felt} roughness={0.9} />
-          </mesh>
+        <group userData={thermalTag(runningZone(running.has('outdoor'), side, still))}>
+          <group userData={LINE_SET_TAG}>
+            <mesh geometry={lineGeometry}>
+              <meshStandardMaterial color={HOME_PALETTE.felt} roughness={0.9} />
+            </mesh>
+          </group>
         </group>
       )}
     </group>

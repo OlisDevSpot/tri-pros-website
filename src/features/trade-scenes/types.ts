@@ -230,6 +230,8 @@ export interface DrawnHvac {
   wallUnit: { kind: 'wall-furnace' | 'wall-unit', idle: boolean } | null
   windowUnit: { idle: boolean } | null
   miniSplit: { heads: number, idle: boolean, wear: number } | null
+  // What the wall or window unit does while it runs, idle or not; a home has one of them or neither.
+  wallOrWindowDuties: HvacDuties
   duties: HvacDuties
 }
 

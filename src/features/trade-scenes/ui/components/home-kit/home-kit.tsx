@@ -41,6 +41,7 @@ import { homeFloorY } from '@/features/trade-scenes/lib/home-floor-y'
 import { homeHeatLanes } from '@/features/trade-scenes/lib/home-heat-lanes'
 import { homePaintTemperatures } from '@/features/trade-scenes/lib/home-paint-temperatures'
 import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
+import { hvacRunning, runningZone } from '@/features/trade-scenes/lib/hvac-running'
 import { indoorSide } from '@/features/trade-scenes/lib/indoor-side'
 import { installedShingleTone } from '@/features/trade-scenes/lib/installed-shingle-tone'
 import { isCutawayFaceSystem, isCutawaySystem } from '@/features/trade-scenes/lib/is-cutaway-system'
@@ -322,8 +323,9 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
   const openHeatLanes = useMemo(() => heat !== null && season !== null ? homeHeatLanes(roofForm, heat, season, 'partly-open', covering, leaks) : [], [roofForm, heat, season, covering, leaks])
   const completeHeatLanes = useMemo(() => heat !== null && season !== null ? homeHeatLanes(roofForm, heat, season, 'complete', covering, leaks) : [], [roofForm, heat, season, covering, leaks])
   const side = indoorSide(weather, hvac.duties)
-  // The condenser cools; on a winter night the furnace or the unit's heater carries the load instead.
-  const coolingLoad = side === 'cooling' ? targets.equipmentLoad : 0
+  const running = useMemo(() => hvacRunning(hvac, weather), [hvac, weather])
+  // The condenser carries the load only while its season runs it.
+  const outdoorLoad = running.has('outdoor') ? targets.equipmentLoad : 0
   const partPaint = useMemo(() => held !== null && heat !== null ? partPaintTemperatures(held.shown, heat) : NO_PART_PAINT, [held, heat])
   const ductRuns = useMemo(() => partState(hvacParts, 'duct-runs'), [hvacParts])
   const ductRun = useMemo(() => openedDuctRun(ductRuns, roofForm), [ductRuns, roofForm])
@@ -403,8 +405,8 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
       <group ref={groundLevel} onClick={partTap} userData={HOME_GHOST_TAG}>
         <SpotPinsLayer rides="ground" />
         {hvac.outdoor !== null && (
-          <group userData={thermalTag(side ?? 'interior')}>
-            <CondenserUnit load={coolingLoad} burst={burst} wear={hvac.outdoor.wear} scale={acScale} onTap={spotTap('equipment', 'ground')} hover={hover} />
+          <group userData={thermalTag(runningZone(running.has('outdoor'), side, 'interior'))}>
+            <CondenserUnit load={outdoorLoad} burst={burst} wear={hvac.outdoor.wear} scale={acScale} onTap={spotTap('equipment', 'ground')} hover={hover} />
           </group>
         )}
         {gutterWear !== null && <DownspoutFeet form={roofForm} gutter={{ wear: gutterWear, hex: gutterColour }} />}
@@ -457,6 +459,7 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
             <HomeEquipment
               hvac={hvac}
               side={side}
+              running={running}
               lowSlope={lowSlope}
               load={targets.equipmentLoad}
               meterSpeed={targets.meterSpeed}

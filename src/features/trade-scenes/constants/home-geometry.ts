@@ -246,6 +246,10 @@ export const EQUIPMENT = {
   // Most of the box hangs outside, the way a window unit sits on the sill with its condenser behind the house; `inside` of it
   // stands in from the wall's centre line.
   windowUnit: { x: -4.34, size: [0.6, 0.42, 0.6] as const, inside: 0.24 },
+  // Heat only, so nothing goes outside: flat on the living room's side of the bedroom partition, low where its warm air
+  // rises into the room, in front of the doorway. [through the wall, height, along the wall]. Working numbers, set by
+  // screenshot.
+  wallFurnace: { position: [PARTITIONS_X[0] + HOUSE.partitionThickness / 2 + 0.09, HOUSE.floorY + 0.12 + 0.425, 0.5] as const, size: [0.18, 0.85, 0.5] as const },
   // Toward the ridge, where the attic has the headroom for it under the rafters, standing just clear of the joists.
   plenum: { position: [-0.6, WALL_TOP_Y + 0.385, -1.55] as const, size: [0.7, 0.45, 0.7] as const },
   ductRadius: 0.11,

@@ -93,6 +93,8 @@ function heatingCoolingView(form: RoofForm, shape: StageShape, lift: number, { f
       return viewOf(indoorUnitCentre(focus.location, form), shape, lift, focus.location === 'attic' ? 0 : CLOSET_VIEW_TURN)
     case 'mini-split-head':
       return viewOf(LIVING_ROOM_HEAD_TARGET, shape, lift)
+    case 'wall-furnace':
+      return viewOf(EQUIPMENT.wallFurnace.position, shape, lift)
     case 'wall-unit':
       return viewOf(WALL_UNIT_TARGET, shape, lift)
     case 'window-unit':

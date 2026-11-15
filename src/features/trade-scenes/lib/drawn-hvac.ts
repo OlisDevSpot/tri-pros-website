@@ -47,11 +47,15 @@ export function drawnHvac(parts: readonly ResolvedPart[], property: PropertyProf
     ? { heads: Number(miniSplitHeadCount(materials, headsInstalled ? 'proposed' : 'existing')), idle: takenOver && !headsInstalled, wear: partState(parts, 'mini-split-heads').wear }
     : null
 
+  const wallOrWindowDuties = wallUnit !== null
+    ? { cools: wallUnit.kind === 'wall-unit', heats: wallUnit.kind === 'wall-furnace' || components !== 'ac' }
+    : windowUnit !== null ? { cools: components !== 'furnace', heats: components !== 'ac' } : NONE
+  const wallOrWindowIdle = (wallUnit ?? windowUnit)?.idle ?? true
+
   const duties = union(
     blower === null ? NONE : { cools: coil !== null && condenser !== null, heats: furnace !== null },
     packageUnit === null ? NONE : BOTH,
-    wallUnit === null || wallUnit.idle ? NONE : { cools: wallUnit.kind === 'wall-unit', heats: wallUnit.kind === 'wall-furnace' || components !== 'ac' },
-    windowUnit === null || windowUnit.idle ? NONE : { cools: components !== 'furnace', heats: components !== 'ac' },
+    wallOrWindowIdle ? NONE : wallOrWindowDuties,
     miniSplit === null || miniSplit.idle ? NONE : BOTH,
   )
 
@@ -66,6 +70,7 @@ export function drawnHvac(parts: readonly ResolvedPart[], property: PropertyProf
     wallUnit,
     windowUnit,
     miniSplit,
+    wallOrWindowDuties,
     duties,
   }
 }

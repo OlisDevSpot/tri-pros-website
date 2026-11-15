@@ -6,6 +6,7 @@ export type HvacFocus
   = | { kind: 'indoor', location: HvacIndoorLocation }
     | { kind: 'package' }
     | { kind: 'mini-split-head' }
+    | { kind: 'wall-furnace' }
     | { kind: 'wall-unit' }
     | { kind: 'window-unit' }
 
@@ -22,7 +23,7 @@ export function hvacFocusOf(drawn: DrawnHvac): HvacFocus {
     return { kind: 'mini-split-head' }
   }
   if (drawn.wallUnit !== null) {
-    return { kind: 'wall-unit' }
+    return { kind: drawn.wallUnit.kind }
   }
   return { kind: 'window-unit' }
 }

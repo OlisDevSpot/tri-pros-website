@@ -13,7 +13,7 @@ import { TRADE_OUTCOMES } from '@/features/meeting-flow/constants/trade-outcomes
 import { HEAT_ARROW_LOOK } from '@/features/trade-scenes/constants/heat-arrow-look'
 import { CONDENSER_LINE_SET, THERMOSTAT_BOX } from '@/features/trade-scenes/constants/home-details'
 import { FURNISHING_BOXES, HOME_FURNITURE } from '@/features/trade-scenes/constants/home-furnishings'
-import { BACK_INNER, EQUIPMENT, HOME_FLOOR_Y, HOUSE, ROOMS, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
+import { BACK_INNER, EQUIPMENT, HOME_FLOOR_Y, HOUSE, PARTITION_DOOR, PARTITIONS_X, ROOMS, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
 import { HVAC_INDOOR_LOCATION_LABELS, HVAC_SYSTEM_CHOICE_LABELS, MINI_SPLIT_HEAD_COUNT_LABELS, PART_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
 import { HOME_SCENE_DEFAULTS } from '@/features/trade-scenes/constants/home-scene-defaults'
 import { HVAC_SYSTEM_CHOICES } from '@/features/trade-scenes/constants/home-systems'
@@ -31,6 +31,7 @@ import { homeHeatLanes } from '@/features/trade-scenes/lib/home-heat-lanes'
 import { homeLift } from '@/features/trade-scenes/lib/home-lift'
 import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
 import { hvacFocusOf } from '@/features/trade-scenes/lib/hvac-focus-of'
+import { hvacRunning } from '@/features/trade-scenes/lib/hvac-running'
 import { hvacSystemChoice, hvacSystemPatch } from '@/features/trade-scenes/lib/hvac-system-choice'
 import { atticHoldsUnit, indoorLocation, moveToAtticOffered } from '@/features/trade-scenes/lib/indoor-location'
 import { indoorSide } from '@/features/trade-scenes/lib/indoor-side'
@@ -314,6 +315,7 @@ const heatsOnly = { cools: false, heats: true }
 const coolsOnly = { cools: true, heats: false }
 const flat: Partial<PropertyProfile> = { roofType: 'flat' }
 const wallFurnace: Partial<PropertyProfile> = { hvacType: 'wall-mounted', hvacComponents: 'furnace' }
+const wallUnitHome: Partial<PropertyProfile> = { hvacType: 'wall-mounted', hvacComponents: 'both' }
 
 const unknownToday = drawn({})
 assert.equal(unknownToday.indoor?.location, 'attic', 'an unknown system stands its indoor unit in the attic')
@@ -488,15 +490,16 @@ for (const form of ROOF_FORMS) {
 // drawn about its lane, half its length either way
 const arrowReach = HEAT_ARROW_LOOK.size.home / 2
 const pointToBox = (point: Vec3, { size, position }: BoxSpec) => Math.hypot(...point.map((value, axis) => Math.max(0, Math.abs(value - position[axis]!) - size[axis]! / 2)))
-for (const form of ROOF_FORMS) {
+function everyHeatLane(form: RoofForm) {
   const lanes = (['summer', 'winter'] as const).flatMap((season) => {
     const heat = scene({ roofType: form === 'pitched' ? 'shingle' : 'flat' }, { weather: season }).heat
     assert.ok(heat !== null, `${form} ${season}: the home has heat to draw`)
     return (['partly-open', 'complete'] as const).flatMap(view => homeHeatLanes(form, { ...heat, atticFanRunning: true }, season, view, null, ceilingOpenings(true)))
   })
   assert.ok(lanes.length > 0, `${form}: the house draws heat lanes`)
-  const placement = indoorUnitPlacement('closet', form)!
-  const boxes = [...placement.closet, ...indoorUnitBoxes(placement, { furnace: true, coil: true }).map(section => section.box)]
+  return lanes
+}
+function nearestLane(lanes: ReturnType<typeof everyHeatLane>, boxes: readonly BoxSpec[]): number {
   let nearest = Infinity
   for (const { points } of lanes) {
     points.slice(1).forEach((to, index) => {
@@ -508,6 +511,12 @@ for (const form of ROOF_FORMS) {
       }
     })
   }
+  return nearest
+}
+for (const form of ROOF_FORMS) {
+  const placement = indoorUnitPlacement('closet', form)!
+  const boxes = [...placement.closet, ...indoorUnitBoxes(placement, { furnace: true, coil: true }).map(section => section.box)]
+  const nearest = nearestLane(everyHeatLane(form), boxes)
   assert.ok(nearest >= arrowReach, `${form}: the closet stands ${nearest.toFixed(3)} m from the nearest heat lane, inside an arrow's ${arrowReach} m reach`)
 }
 const lowSlopeStarts = ductRunPoints('low-slope', EQUIPMENT.ductRadius, 0).map(run => run[0]!)
@@ -653,12 +662,14 @@ for (const lift of [0, homeLift('raised')]) {
   assert.ok(distance(hvacTarget('pitched', pitchedCentral, closetOptions, lift), raised(unitCentre('closet', 'pitched'), lift)) < 0.1, `lift ${lift}: a closet home's view looks at its closet unit`)
   assert.ok(distance(hvacTarget('low-slope', flatCentral, {}, lift), raised(unitCentre('closet', 'low-slope'), lift)) < 0.1, `lift ${lift}: a flat roof's central home looks at its closet unit`)
   assert.deepEqual(hvacTarget('pitched', { hvacType: 'package-unit' }, {}, lift), raised(packageUnitPlacement(false, 1).position, lift), `lift ${lift}: a package unit is looked at where it stands on the roof`)
-  const [wallX, wallY] = hvacTarget('pitched', wallFurnace, {}, lift)
-  assert.ok(Math.abs(wallX - EQUIPMENT.wallUnit.x) < 1e-9 && Math.abs(wallY - EQUIPMENT.wallUnit.y - lift) < 1e-9, `lift ${lift}: a wall home is looked at its wall unit`)
+  const [wallX, wallY] = hvacTarget('pitched', wallUnitHome, {}, lift)
+  assert.ok(Math.abs(wallX - EQUIPMENT.wallUnit.x) < 1e-9 && Math.abs(wallY - EQUIPMENT.wallUnit.y - lift) < 1e-9, `lift ${lift}: a wall unit home is looked at its wall unit`)
+  assert.ok(distance(hvacTarget('pitched', wallFurnace, {}, lift), raised(EQUIPMENT.wallFurnace.position, lift)) < 1e-9, `lift ${lift}: a wall furnace home is looked at its wall furnace`)
 }
 assert.deepEqual(focusOf({}), { kind: 'indoor', location: 'attic' })
 assert.deepEqual(focusOf(wallFurnace, build([SCOPE_IDS.splitSystemNewCut])), { kind: 'indoor', location: 'attic' }, 'a new system\'s build looks at its new indoor unit')
-assert.deepEqual(focusOf(wallFurnace), { kind: 'wall-unit' })
+assert.deepEqual(focusOf(wallFurnace), { kind: 'wall-furnace' })
+assert.deepEqual(focusOf(wallUnitHome), { kind: 'wall-unit' })
 assert.deepEqual(focusOf({ hvacType: 'portable' }), { kind: 'window-unit' })
 assert.deepEqual(focusOf({ hvacType: 'mini-split' }), { kind: 'mini-split-head' })
 assert.deepEqual(focusOf({ hvacType: 'package-unit' }), { kind: 'package' })
@@ -733,5 +744,63 @@ assert.deepEqual(systemPartFocus('heating-cooling', 'pitched', 'thermostat', 0, 
 const registerPin = systemPartFocus('heating-cooling', 'pitched', 'registers', 0, allIds, [])!
 const livingGrille = ceilingOpenings(true).find(opening => opening.kind === 'boot' && opening.at[0] > ROOMS.living.from && opening.at[0] < ROOMS.living.to)!
 assert.ok(registerPin[0] === livingGrille.at[0] && registerPin[2] === livingGrille.at[1] && registerPin[1] < WALL_TOP_Y - HOUSE.ceilingThickness, 'the registers\' pin is on the living room\'s grille, under the ceiling')
+
+// Each component runs in its own season, and a wall or window unit a new system leaves stays off
+const runningOf = (weather: Weather, property: Partial<PropertyProfile>, options: SceneOptions = {}) => [...hvacRunning(drawn(property, options), weather)].sort()
+assert.deepEqual(runningOf('summer', {}), ['blower', 'coil', 'outdoor'], 'an unknown system cools with its blower, coil and condenser in summer')
+assert.deepEqual(runningOf('winter', {}), ['blower', 'furnace'], 'and heats with its blower and furnace in winter')
+assert.deepEqual(runningOf('normal', {}), [], 'a normal day runs nothing')
+assert.deepEqual(runningOf('rain', {}), [], 'nor does a storm')
+assert.deepEqual(runningOf('summer', centralFurnaceProperty), [], 'a furnace alone runs nothing in summer')
+assert.deepEqual(runningOf('winter', centralFurnaceProperty), ['blower', 'furnace'], 'and heats in winter')
+assert.deepEqual(runningOf('winter', centralAcProperty), [], 'A/C alone runs nothing in winter')
+assert.deepEqual(runningOf('summer', centralAcProperty), ['blower', 'coil', 'outdoor'], 'and cools in summer')
+assert.deepEqual(runningOf('summer', centralFurnaceProperty, build([split])), ['blower', 'coil', 'outdoor'], 'a whole system on a furnace-only home cools with what it adds')
+assert.deepEqual(runningOf('winter', wallFurnace), ['wall-unit'], 'a wall furnace heats in winter')
+assert.deepEqual(runningOf('summer', wallFurnace), [], 'and never cools')
+assert.deepEqual(runningOf('winter', wallFurnace, build([SCOPE_IDS.splitSystemNewCut])), ['blower', 'furnace'], 'a new system heats while the wall furnace it leaves stays off')
+assert.deepEqual(runningOf('summer', wallFurnace, build([SCOPE_IDS.splitSystemNewCut])), ['blower', 'coil', 'outdoor'], 'and cools')
+assert.deepEqual(runningOf('summer', wallUnitHome), ['wall-unit'], 'a wall unit cools in summer')
+assert.deepEqual(runningOf('winter', wallUnitHome), ['wall-unit'], 'and heats in winter')
+const wallAc: Partial<PropertyProfile> = { hvacType: 'wall-mounted', hvacComponents: 'ac' }
+assert.deepEqual(runningOf('winter', wallAc), [], 'a wall unit that only cools runs nothing in winter')
+assert.deepEqual(runningOf('winter', wallAc, build([SCOPE_IDS.miniSplitInstallation])), ['mini-split'], 'not even beside heads that heat')
+assert.deepEqual(runningOf('summer', wallAc, build([SCOPE_IDS.miniSplitInstallation])), ['mini-split', 'wall-unit'], 'heads added beside a wall unit run with it')
+assert.deepEqual(runningOf('summer', { hvacType: 'portable' }), ['window-unit'], 'a window unit cools in summer')
+assert.deepEqual(runningOf('winter', { hvacType: 'portable', hvacComponents: 'ac' }), [], 'a window unit that only cools runs nothing in winter')
+assert.deepEqual(runningOf('summer', { hvacType: 'portable' }, build([SCOPE_IDS.splitSystemNewCut])), ['blower', 'coil', 'outdoor'], 'a new system leaves the window unit off')
+for (const weather of ['summer', 'winter'] as const) {
+  assert.deepEqual(runningOf(weather, { hvacType: 'mini-split' }), ['mini-split'], `mini-splits run in ${weather}`)
+  assert.deepEqual(runningOf(weather, { hvacType: 'package-unit' }), ['package'], `a package unit runs in ${weather}`)
+}
+assert.deepEqual(runningOf('normal', { hvacType: 'package-unit' }), [], 'a package unit rests on a normal day')
+
+// The wall furnace stands low on a partition, inside the house and clear of the doorway, the closet, the furnishings and
+// every heat arrow
+const wallFurnaceBox: BoxSpec = { size: EQUIPMENT.wallFurnace.size, position: EQUIPMENT.wallFurnace.position }
+{
+  const [x, y, z] = wallFurnaceBox.position
+  const [width, height, depth] = wallFurnaceBox.size
+  assert.ok(Math.abs(x) + width / 2 <= innerX && z - depth / 2 >= BACK_INNER && z + depth / 2 <= HOUSE.halfDepth && y - height / 2 >= HOUSE.floorY, 'the wall furnace stands inside the house')
+  const partition = PARTITIONS_X.find(plane => Math.min(Math.abs(x - width / 2 - plane), Math.abs(x + width / 2 - plane)) <= HOUSE.partitionThickness / 2 + 1e-9)
+  assert.ok(partition !== undefined, 'the wall furnace stands against a partition')
+  assert.ok(Math.abs(x - partition) >= width / 2, 'on one side of it, never through it')
+  assert.ok(Math.abs(z - PARTITION_DOOR.along) >= (depth + PARTITION_DOOR.width) / 2, 'and clear of its doorway')
+}
+for (const piece of HOME_FURNITURE) {
+  assert.ok(!overlaps(wallFurnaceBox, furnitureBox(piece)), `the wall furnace stands clear of the ${piece.id}`)
+}
+for (const [kind, boxes] of Object.entries(FURNISHING_BOXES)) {
+  assert.ok(boxes.every(box => !overlaps(wallFurnaceBox, box)), `the wall furnace stands clear of the ${kind}`)
+}
+assert.ok(!overlaps(wallFurnaceBox, thermostatBox), 'the wall furnace stands clear of the thermostat')
+for (const form of ROOF_FORMS) {
+  const placement = indoorUnitPlacement('closet', form)!
+  for (const box of [...placement.closet, ...indoorUnitBoxes(placement, { furnace: true, coil: true }).map(section => section.box)]) {
+    assert.ok(!overlaps(wallFurnaceBox, box), `${form}: the wall furnace stands clear of the closet`)
+  }
+  const nearest = nearestLane(everyHeatLane(form), [wallFurnaceBox])
+  assert.ok(nearest >= arrowReach, `${form}: the wall furnace stands ${nearest.toFixed(3)} m from the nearest heat lane, inside an arrow's ${arrowReach} m reach`)
+}
 
 console.log('verify-heating-cooling: ok')
