@@ -1,4 +1,5 @@
 import type { HomeThermalZone } from '@/features/trade-scenes/constants/home-thermal-zones'
+import type { IndoorUnitSectionId } from '@/features/trade-scenes/lib/indoor-unit-placement'
 import type { DrawnHvac, HvacDuties } from '@/features/trade-scenes/types'
 import type { Weather } from '@/shared/modules/construction/core/types'
 
@@ -46,4 +47,20 @@ export function hvacRunning(drawn: DrawnHvac, weather: Weather): ReadonlySet<Hva
 // The thermal camera's reading for a component: the air it carries while it runs, else the air it stands in.
 export function runningZone(runs: boolean, side: 'heating' | 'cooling' | null, still: HomeThermalZone): HomeThermalZone {
   return runs && side !== null ? side : still
+}
+
+// The air in each stretch of the indoor unit, from the return to the plenum. The blower moves the rooms' own air in, neither
+// heated nor cooled yet, so it never reads as the stage that works on it: only a furnace or coil its season runs reads warm
+// or cold, the plenum sends on what leaves them, and a stage the season leaves idle reads the air it stands in.
+export function indoorAirZone(stretch: IndoorUnitSectionId | 'return', running: ReadonlySet<HvacRunningPart>, side: 'heating' | 'cooling' | null, still: HomeThermalZone): HomeThermalZone {
+  switch (stretch) {
+    case 'return':
+    case 'blower':
+      return running.has('blower') && side !== null ? 'interior' : still
+    case 'furnace':
+    case 'coil':
+      return runningZone(running.has(stretch), side, still)
+    case 'plenum':
+      return runningZone(running.has('blower'), side, still)
+  }
 }

@@ -205,7 +205,13 @@ for (const form of ['pitched', 'low-slope'] as const) {
     for (const focus of hvacFocuses) {
       for (const shape of ['landscape', 'narrow', 'portrait'] as const) {
         const name = focus.kind === 'indoor' ? `${focus.location} indoor unit` : focus.kind
-        viewLines.push({ label: `${form} ${foundation} ${shape} ${name}: heating & cooling`, framing: SYSTEM_CAMERA_VIEWS['heating-cooling'](form, shape, homeLift(foundation), { focus, scale: 1 }) })
+        const label = `${form} ${foundation} ${shape} ${name}: heating & cooling`
+        const framing = SYSTEM_CAMERA_VIEWS['heating-cooling'](form, shape, homeLift(foundation), { focus, scale: 1 })
+        viewLines.push({ label, framing })
+        // Past a side wall the camera looks over the fence and the gate before it reaches the house; the front is open to
+        // the street.
+        const [x, , z] = framing.position
+        assert.ok(x > LOT.left && x < LOT.right && z > LOT.back, `${label}: the camera stands between the lot's side walls (x ${x.toFixed(2)})`)
       }
     }
   }

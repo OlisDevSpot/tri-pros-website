@@ -21,30 +21,30 @@ const SYSTEM_VIEW_FOV = 34
 const [homeX, homeY, homeZ] = HOME_FRAMINGS.wide.position
 const [aimX, aimY, aimZ] = HOME_FRAMINGS.wide.target
 
+// The bearing the home's own view comes from, about the vertical: a `turn` of this much looks square at the back wall through
+// the open front.
+const SQUARE_ON = Math.atan2(homeX - aimX, homeZ - aimZ)
+
 // `turn` swings the bearing about the target's vertical, as up close's does, for a system the home's own bearing would see
-// through a wall.
-function viewOf(target: readonly [number, number, number], shape: StageShape, lift: number, turn = 0): CameraFraming {
+// through a wall; `elevation`, where given, sets the angle above level in place of the home view's, at the same distance.
+function viewOf(target: readonly [number, number, number], shape: StageShape, lift: number, turn = 0, elevation: number | null = null): CameraFraming {
   const [x, y, z] = target
   const nearer = SYSTEM_VIEW_NEARER[shape]
-  const [dx, dz] = [(homeX - aimX) / nearer, (homeZ - aimZ) / nearer]
+  const [dx, dy, dz] = [(homeX - aimX) / nearer, (homeY - aimY) / nearer, (homeZ - aimZ) / nearer]
   const [sin, cos] = [Math.sin(-turn), Math.cos(-turn)]
-  return liftedFraming({ position: [x + dx * cos + dz * sin, y + (homeY - aimY) / nearer, z - dx * sin + dz * cos], target: [x, y, z], fov: SYSTEM_VIEW_FOV }, lift)
+  const [ax, az] = [dx * cos + dz * sin, -dx * sin + dz * cos]
+  if (elevation === null) {
+    return liftedFraming({ position: [x + ax, y + dy, z + az], target: [x, y, z], fov: SYSTEM_VIEW_FOV }, lift)
+  }
+  const distance = Math.hypot(dx, dy, dz)
+  const across = distance * Math.cos(elevation) / Math.hypot(ax, az)
+  return liftedFraming({ position: [x + ax * across, y + distance * Math.sin(elevation), z + az * across], target: [x, y, z], fov: SYSTEM_VIEW_FOV }, lift)
 }
 
 // A package unit stands behind the ridge on the far slope, so its view keeps the home's bearing and distance but rises
 // until every sight line to the curb's back foot clears the ridge cap: about 34 degrees, against the home view's 12.
 // A working number, set by eye.
 const OVER_THE_RIDGE = 0.6
-
-function overTheRidgeViewOf(target: readonly [number, number, number], shape: StageShape, lift: number): CameraFraming {
-  const [x, y, z] = target
-  const nearer = SYSTEM_VIEW_NEARER[shape]
-  const [dx, dy, dz] = [(homeX - aimX) / nearer, (homeY - aimY) / nearer, (homeZ - aimZ) / nearer]
-  const distance = Math.hypot(dx, dy, dz)
-  const ground = Math.hypot(dx, dz)
-  const across = distance * Math.cos(OVER_THE_RIDGE) / ground
-  return liftedFraming({ position: [x + dx * across, y + distance * Math.sin(OVER_THE_RIDGE), z + dz * across], target: [x, y, z], fov: SYSTEM_VIEW_FOV }, lift)
-}
 
 // The windows' view looks at the window that comes apart up close, on its lower pane at its inside face, where the arrows
 // cross it; the whole home's window reading and spot stay on a window every home view draws. Working numbers, set by screenshot.
@@ -75,9 +75,18 @@ function indoorUnitCentre(location: HvacIndoorLocation, form: RoofForm): Vec3 {
 }
 
 // The wall unit and the window unit are looked at on the back wall's inside, where the room sees them: the wall unit at its
-// own height, the window unit on its window's sill.
+// own height, the window unit on its window's sill. The window unit stands near the bedroom's left wall, which the home's
+// own bearing looks through, so its view looks square at the back wall through the open front.
 const WALL_UNIT_TARGET: Vec3 = [EQUIPMENT.wallUnit.x, EQUIPMENT.wallUnit.y, BACK_INNER]
 const WINDOW_UNIT_TARGET: Vec3 = [EQUIPMENT.windowUnit.x, HOUSE.floorY + HOUSE_WALLS.back.openings[0].sill + EQUIPMENT.windowUnit.size[1] / 2, BACK_INNER]
+// A head hangs high on the back wall, under the ceiling's uncut back half, so a view that looks down on it sees the attic
+// floor. Its view looks square at the wall `below` the head, low enough that the sight line to the head passes under the
+// ceiling's cut, with the room's furniture under it. Working numbers, set by screenshot.
+const HEAD_VIEW = { below: 0.65, elevation: 0.08 } as const
+const HEAD_VIEW_TARGET: Vec3 = [MINI_SPLIT_HEADS[0].position[0], MINI_SPLIT_HEADS[0].position[1] - HEAD_VIEW.below, MINI_SPLIT_HEADS[0].position[2]]
+// The wall furnace faces along the house into its room, side on to the home's bearing, so its view swings round into that
+// room through the open front, this far off square on the side its face looks to. A working number, set by screenshot.
+const WALL_FURNACE_VIEW_SWING = 0.8
 // The closet stands against the left wall, which the home's own bearing looks through, so its view swings round to the open
 // front and looks in past the bedroom. A working number, set by screenshot.
 const CLOSET_VIEW_TURN = -0.64
@@ -85,17 +94,17 @@ const CLOSET_VIEW_TURN = -0.64
 function heatingCoolingView(form: RoofForm, shape: StageShape, lift: number, { focus, scale }: HomeHvac): CameraFraming {
   switch (focus.kind) {
     case 'package':
-      return (form === 'low-slope' ? viewOf : overTheRidgeViewOf)(packageUnitPlacement(form === 'low-slope', scale).position, shape, lift)
+      return viewOf(packageUnitPlacement(form === 'low-slope', scale).position, shape, lift, 0, form === 'low-slope' ? null : OVER_THE_RIDGE)
     case 'indoor':
       return viewOf(indoorUnitCentre(focus.location, form), shape, lift, focus.location === 'attic' ? 0 : CLOSET_VIEW_TURN)
     case 'mini-split-head':
-      return viewOf(MINI_SPLIT_HEADS[0].position, shape, lift)
+      return viewOf(HEAD_VIEW_TARGET, shape, lift, SQUARE_ON, HEAD_VIEW.elevation)
     case 'wall-furnace':
-      return viewOf(EQUIPMENT.wallFurnace.position, shape, lift)
+      return viewOf(EQUIPMENT.wallFurnace.position, shape, lift, SQUARE_ON - EQUIPMENT.wallFurnace.facing * WALL_FURNACE_VIEW_SWING)
     case 'wall-unit':
       return viewOf(WALL_UNIT_TARGET, shape, lift)
     case 'window-unit':
-      return viewOf(WINDOW_UNIT_TARGET, shape, lift)
+      return viewOf(WINDOW_UNIT_TARGET, shape, lift, SQUARE_ON)
   }
 }
 

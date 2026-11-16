@@ -15,7 +15,7 @@ import { HOME_PALETTE } from '@/features/trade-scenes/constants/home-palette'
 import { INDOOR_UNIT_LOOK, SUPPLY_JUNCTION } from '@/features/trade-scenes/constants/indoor-unit-placements'
 import { useHeatGlow } from '@/features/trade-scenes/hooks/use-heat-glow'
 import { homeFloorY } from '@/features/trade-scenes/lib/home-floor-y'
-import { runningZone } from '@/features/trade-scenes/lib/hvac-running'
+import { indoorAirZone, runningZone } from '@/features/trade-scenes/lib/hvac-running'
 import { indoorUnitBoxes, indoorUnitLineSet, indoorUnitReturnDuct, indoorUnitTrunk } from '@/features/trade-scenes/lib/indoor-unit-boxes'
 import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
 import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
@@ -48,9 +48,6 @@ const SECTION_TAGS = {
 const LINE_SET_TAG = systemPartTag('refrigerant-lines')
 const TRUNK_TAG = systemPartTag('duct-runs')
 const RETURN_TAG = systemPartTag('return')
-
-// The plenum and the trunk carry whatever air the blower moves; the line set runs with the condenser.
-const RUNS_WITH = { blower: 'blower', furnace: 'furnace', coil: 'coil', plenum: 'blower' } as const satisfies Record<IndoorUnitSectionId, HvacRunningPart>
 
 function selectFoundation(state: TradeSceneInputs) {
   return state.property.foundationType
@@ -106,9 +103,9 @@ export function IndoorUnit({ placement, furnace, coil, lineSet, heatLoad, form, 
   const returnDuct = useMemo(() => indoorUnitReturnDuct(placement, sections), [placement, sections])
   const returnGeometry = useOwnedGeometry(() => tube(returnDuct.length > 0 ? returnDuct : null, INDOOR_UNIT_LOOK.returnRadius, false), [returnDuct])
 
+  // The trunk carries whatever air the blower moves; the line set runs with the condenser.
   const airZone = thermalTag(runningZone(running.has('blower'), side, still))
-  // The return carries the rooms' own air back to the blower, neither heated nor cooled yet.
-  const returnZone = thermalTag(running.has('blower') && side !== null ? 'interior' : still)
+  const returnZone = thermalTag(indoorAirZone('return', running, side, still))
 
   return (
     <group>
@@ -116,7 +113,7 @@ export function IndoorUnit({ placement, furnace, coil, lineSet, heatLoad, form, 
         <MergedBoxes boxes={coreBoxes} color={HOME_PALETTE.unitGrille} roughness={0.8} />
       </group>
       {drawn.map(({ id, boxes }) => (
-        <group key={id} userData={thermalTag(runningZone(running.has(RUNS_WITH[id]), side, still))}>
+        <group key={id} userData={thermalTag(indoorAirZone(id, running, side, still))}>
           <group userData={SECTION_TAGS[id]}>
             {id === 'furnace'
               ? <MergedBoxes boxes={boxes} color={HOME_PALETTE.unit} radius={0.02} roughness={0.7} emissive={EQUIPMENT_STRAIN.heat.color} materialRef={glow} />

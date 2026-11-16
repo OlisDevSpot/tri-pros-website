@@ -13,7 +13,7 @@ import { TRADE_OUTCOMES } from '@/features/meeting-flow/constants/trade-outcomes
 import { HEAT_ARROW_LOOK } from '@/features/trade-scenes/constants/heat-arrow-look'
 import { CONDENSER_LINE_SET, THERMOSTAT_BOX } from '@/features/trade-scenes/constants/home-details'
 import { FURNISHING_BOXES, HOME_FURNITURE } from '@/features/trade-scenes/constants/home-furnishings'
-import { ATTIC_SPANS, BACK_INNER, EQUIPMENT, HOME_FLOOR_Y, HOUSE, HOUSE_WALLS, MINI_SPLIT_HEAD_SIZE, MINI_SPLIT_HEADS, MINI_SPLIT_LINE_SIZE, MINI_SPLIT_OUTDOOR, PARTITION_DOOR, PARTITIONS_X, ROOMS, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
+import { ATTIC_SPANS, BACK_INNER, EQUIPMENT, HOME_FLOOR_Y, HOME_ORBIT, HOUSE, HOUSE_WALLS, MINI_SPLIT_HEAD_SIZE, MINI_SPLIT_HEADS, MINI_SPLIT_LINE_SIZE, MINI_SPLIT_OUTDOOR, PARTITION_DOOR, PARTITIONS_X, ROOMS, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
 import { LOT } from '@/features/trade-scenes/constants/home-lot'
 import { HVAC_COMPONENT_LABELS, HVAC_INDOOR_LOCATION_LABELS, HVAC_SYSTEM_CHOICE_LABELS, MINI_SPLIT_HEAD_COUNT_LABELS, PART_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
 import { HOME_SCENE_DEFAULTS } from '@/features/trade-scenes/constants/home-scene-defaults'
@@ -33,7 +33,7 @@ import { homeHeatLanes } from '@/features/trade-scenes/lib/home-heat-lanes'
 import { homeLift } from '@/features/trade-scenes/lib/home-lift'
 import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
 import { hvacFocusOf } from '@/features/trade-scenes/lib/hvac-focus-of'
-import { hvacRunning, runningZone } from '@/features/trade-scenes/lib/hvac-running'
+import { hvacRunning, indoorAirZone, runningZone } from '@/features/trade-scenes/lib/hvac-running'
 import { hvacSystemChoice, hvacSystemPatch } from '@/features/trade-scenes/lib/hvac-system-choice'
 import { atticHoldsUnit, indoorLocation, moveToAtticOffered } from '@/features/trade-scenes/lib/indoor-location'
 import { indoorSide } from '@/features/trade-scenes/lib/indoor-side'
@@ -958,7 +958,9 @@ const firstHead = headBox(MINI_SPLIT_HEADS[0])
 for (const form of ROOF_FORMS) {
   assert.deepEqual(systemPartFocus('heating-cooling', form, 'mini-split-heads', 0, miniIds, []), firstHead.position, `${form}: the heads' pin rests on the first head`)
   assert.deepEqual(systemPartFocus('heating-cooling', form, 'mini-split-outdoor', 0, miniIds, []), MINI_SPLIT_OUTDOOR.position, `${form}: the outdoor unit's pin rests on the unit`)
-  assert.deepEqual(SYSTEM_CAMERA_VIEWS['heating-cooling'](form, 'landscape', 0, { focus: { kind: 'mini-split-head' }, scale: 1 }).target, MINI_SPLIT_HEADS[0].position, `${form}: a mini-split home is looked at on its first head`)
+  const [headX, headY, headZ] = MINI_SPLIT_HEADS[0].position
+  const [aimX, aimY, aimZ] = SYSTEM_CAMERA_VIEWS['heating-cooling'](form, 'landscape', 0, { focus: { kind: 'mini-split-head' }, scale: 1 }).target
+  assert.ok(aimX === headX && aimZ === headZ && aimY < headY && aimY > HOUSE.floorY, `${form}: a mini-split home is looked at on its first head's wall, under the head`)
 }
 
 // A central system is a furnace alone or a furnace with A/C, never A/C alone: one stored as A/C resolves, offers, cuts and
@@ -1181,6 +1183,79 @@ for (const { id, copy } of heatPumpMaterials) {
   for (const text of [copy.label, copy.detail]) {
     assert.ok(!NO_HEAT_PUMP_CLAIM.test(text), `${id}: claims no credit, rebate, mandate or saving: ${text}`)
   }
+}
+
+// Heating & cooling's view of a unit inside the house sees it from the room it stands in: through the open front, never
+// through a wall or partition, the unit's face toward the camera, and a head on the back wall under the ceiling's cut
+const CEILING_UNDERSIDE = WALL_TOP_Y - HOUSE.ceilingThickness
+const INNER_FRONT = HOUSE.halfDepth - HOUSE.wallThickness
+// Every point of the sight line inside the house's walls lies in the room the unit stands in, so it crosses no wall or
+// partition on the way; it comes in through the open front.
+function sightStaysInRoom(from: Vec3, to: Vec3, room: { from: number, to: number }): boolean {
+  const steps = 400
+  for (let step = 0; step <= steps; step++) {
+    const [x, , z] = [0, 1, 2].map(axis => from[axis]! + (to[axis]! - from[axis]!) * step / steps)
+    if (z < INNER_FRONT && (x! < room.from || x! > room.to)) {
+      return false
+    }
+  }
+  return true
+}
+const headTopFront: Vec3 = [MINI_SPLIT_HEADS[0].position[0], MINI_SPLIT_HEADS[0].position[1] + MINI_SPLIT_HEAD_SIZE[1] / 2, MINI_SPLIT_HEADS[0].position[2] - MINI_SPLIT_HEADS[0].outward * MINI_SPLIT_HEAD_SIZE[2]]
+for (const form of ROOF_FORMS) {
+  for (const shape of ['landscape', 'narrow', 'portrait'] as const) {
+    for (const lift of [homeLift('slab'), homeLift('raised')]) {
+      const label = `${form} ${shape} lift ${lift.toFixed(2)}`
+      const viewOf = (focus: 'mini-split-head' | 'wall-furnace' | 'window-unit') => {
+        const { position, target, fov } = SYSTEM_CAMERA_VIEWS['heating-cooling'](form, shape, lift, { focus: { kind: focus }, scale: 1 })
+        const lower = (point: readonly number[]): Vec3 => [point[0]!, point[1]! - lift, point[2]!]
+        return { position: lower(position), target: lower(target), fov }
+      }
+      const head = viewOf('mini-split-head')
+      assert.ok(sightStaysInRoom(head.position, headTopFront, roomAt(headTopFront[0])), `${label}: the head is seen from inside its own room`)
+      const cut = (HOUSE.atticFrontZ - head.position[2]) / (headTopFront[2] - head.position[2])
+      const atCut = head.position[1] + (headTopFront[1] - head.position[1]) * cut
+      assert.ok(cut > 0 && cut < 1 && atCut < CEILING_UNDERSIDE, `${label}: the sight line to the head's top passes under the ceiling's cut (${atCut.toFixed(3)} m against ${CEILING_UNDERSIDE})`)
+      const away = head.position.map((value, axis) => value - head.target[axis]!)
+      const polar = Math.acos(away[1]! / Math.hypot(...away))
+      assert.ok(polar <= HOME_ORBIT.maxPolarAngle, `${label}: the head's view stands above the orbit's lowest angle, so a touch never moves it (${polar.toFixed(3)})`)
+      const toHead = headTopFront.map((value, axis) => value - head.position[axis]!)
+      const toAim = head.target.map((value, axis) => value - head.position[axis]!)
+      const off = Math.acos(toHead.reduce((sum, value, axis) => sum + value * toAim[axis]!, 0) / Math.hypot(...toHead) / Math.hypot(...toAim))
+      assert.ok(off < head.fov / 2 * Math.PI / 180 * 0.8, `${label}: the head stands well inside the frame`)
+
+      const furnace = viewOf('wall-furnace')
+      const { facing, position: furnaceAt } = EQUIPMENT.wallFurnace
+      assert.ok((furnace.position[0] - furnaceAt[0]) * facing > 0, `${label}: the wall furnace is looked at from the side its face looks to`)
+      const furnaceRoom = roomAt(furnaceAt[0] + facing * 0.5)
+      const furnaceFace: Vec3 = [furnaceAt[0] + facing * (EQUIPMENT.wallFurnace.size[0] / 2 + 0.01), furnaceAt[1], furnaceAt[2]]
+      assert.ok(sightStaysInRoom(furnace.position, furnaceFace, furnaceRoom), `${label}: the wall furnace's face is seen from inside its room`)
+
+      const windowUnit = viewOf('window-unit')
+      assert.ok(sightStaysInRoom(windowUnit.position, windowUnit.target, roomAt(EQUIPMENT.windowUnit.x)), `${label}: the window unit is seen from inside its room`)
+      for (const [name, view] of [['head', head], ['wall furnace', furnace], ['window unit', windowUnit]] as const) {
+        assert.ok(view.position[0] > LOT.left && view.position[0] < LOT.right, `${label}: the ${name}'s view stands between the lot's side walls`)
+      }
+    }
+  }
+}
+
+// Each stretch of the indoor unit reads the air in it: the room's air through the blower, warm or cold only where its season
+// runs the furnace or the coil and after them, and the air it stands in where the season leaves it idle
+function airOf(property: Partial<PropertyProfile>, weather: 'summer' | 'winter' | 'normal', options: SceneOptions = {}) {
+  const unit = drawn(property, { ...options, weather })
+  const running = hvacRunning(unit, weather)
+  const side = indoorSide(weather, unit.duties)
+  return Object.fromEntries((['return', 'blower', 'furnace', 'coil', 'plenum'] as const).map(stretch => [stretch, indoorAirZone(stretch, running, side, 'attic')]))
+}
+assert.deepEqual(airOf({}, 'summer'), { return: 'interior', blower: 'interior', furnace: 'attic', coil: 'cooling', plenum: 'cooling' }, 'in summer the coil and the air after it read cold, the idle furnace the attic')
+assert.deepEqual(airOf({}, 'winter'), { return: 'interior', blower: 'interior', furnace: 'heating', coil: 'attic', plenum: 'heating' }, 'in winter the furnace and the air after it read warm, the idle coil the attic')
+assert.deepEqual(airOf({}, 'normal'), { return: 'attic', blower: 'attic', furnace: 'attic', coil: 'attic', plenum: 'attic' }, 'a unit standing still reads the attic')
+assert.deepEqual(airOf(centralBothProperty, 'winter', build([heatPump])), { return: 'interior', blower: 'interior', furnace: 'attic', coil: 'heating', plenum: 'heating' }, 'a heat pump\'s coil and the air after it read warm in winter')
+assert.deepEqual(airOf(centralBothProperty, 'summer', build([heatPump])), { return: 'interior', blower: 'interior', furnace: 'attic', coil: 'cooling', plenum: 'cooling' }, 'and cold in summer')
+for (const [name, air] of [['summer', airOf({}, 'summer')], ['winter', airOf({}, 'winter')], ['a heat pump\'s winter', airOf(centralBothProperty, 'winter', build([heatPump]))]] as const) {
+  const stage = air.furnace === 'heating' ? air.furnace : air.coil
+  assert.notEqual(air.blower, stage, `${name}: the blower never reads as the stage that warms or cools the air`)
 }
 
 console.log('verify-heating-cooling: ok')
