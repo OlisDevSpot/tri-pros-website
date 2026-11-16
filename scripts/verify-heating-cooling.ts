@@ -251,7 +251,8 @@ for (const id of ['return', 'blower', 'furnace', 'coil', 'plenum', 'duct-runs', 
   assert.equal(part?.added, true, `a wall home gains its ${id}`)
 }
 
-// Cooling earns on the electric bill and heating on gas, new ducts land only on a bill the home already pays, and no bill goes up
+// Cooling earns on the electric bill and heating on gas, new ducts land only on a bill the home pays both before and after
+// the build, and no bill goes up
 const split = SCOPE_IDS.splitSystemReplacement
 const ductsScope = SCOPE_IDS.airDuctsReplacement
 const centralBothProperty: Partial<PropertyProfile> = { hvacType: 'central', hvacComponents: 'both' }
@@ -1093,6 +1094,8 @@ assert.equal(heatPumpMovable.unavailable, null, 'a pitched closet home with a he
 const heatPumpCuts: [string, Partial<PropertyProfile>, string[], number, number][] = [
   ['central both', centralBothProperty, [heatPump], 0.25, 0],
   ['central furnace', centralFurnaceProperty, [heatPump], 0, 0],
+  ['central both', centralBothProperty, [heatPump, ductsScope], 0.2875, 0],
+  ['central furnace', centralFurnaceProperty, [heatPump, ductsScope], 0, 0],
   ['wall-mounted', wallFurnace, [heatPumpNew], 0, 0],
 ]
 for (const [home, property, scopes, electric, gas] of heatPumpCuts) {

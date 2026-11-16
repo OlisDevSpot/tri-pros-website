@@ -2,7 +2,7 @@ import type { ShaderMaterial } from 'three'
 import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 import type { HomePaintKey } from '@/features/trade-scenes/constants/home-thermal-zones'
 import type { SystemAction } from '@/features/trade-scenes/lib/system-actions'
-import type { ArrowLane, BenefitsState, BoxSpec, CeilingOpening, CompleteWallLane, CoveringWear, CutawaySteps, CutawaySystemId, FasciaRotSpot, FasciaRun, GutterRun, HomeReadings, HomeShell, HomeSystemId, HouseWall, PeelingBoxes, RoofHeatLane, SceneChange, SceneResolveInputs, StageShape, StainBox, SurfaceStains, SystemLit, SystemPart, SystemPartId, SystemPartTagData, TappedSpot, TradeSceneInputs, Vec3, WallHeatLane, WallOpening } from '@/features/trade-scenes/types'
+import type { ArrowLane, BenefitsState, BoxSpec, CeilingOpening, CompleteWallLane, CoveringWear, CutawaySteps, CutawaySystemId, FasciaRotSpot, FasciaRun, GutterRun, HomeReadings, HomeShell, HomeSpotContext, HomeSystemId, HouseWall, PeelingBoxes, RoofHeatLane, SceneChange, SceneResolveInputs, StageShape, StainBox, SurfaceStains, SystemLit, SystemPart, SystemPartId, SystemPartTagData, TappedSpot, TradeSceneInputs, Vec3, WallHeatLane, WallOpening } from '@/features/trade-scenes/types'
 import type { CameraFraming, PieceLayout, RainColumn } from '@/shared/components/scene/types'
 import type { Climate } from '@/shared/modules/construction/core/constants/climate-presets'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
@@ -3590,7 +3590,28 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   assert.equal(canLookInside('attic', { ...lowSlope, picks: [TORCH_DOWN] }), false, 'a flat roof\'s attic opens only with a redeck')
   assert.equal(canLookInside('attic', { ...lowSlope, picks: [TORCH_DOWN, REDECK] }), true)
   assert.deepEqual(HOME_SYSTEM_IDS.map(id => SPOT_OF[id]), ['roof', 'roof', 'window', 'wall', 'equipment', 'foundation'], 'every system has a spot')
-  assert.deepEqual(systemsAtSpot('foundation', { form: 'pitched', picks: [], hvacType: null }), ['foundation'], 'the foundation is its own spot')
+  assert.deepEqual(systemsAtSpot('foundation', { form: 'pitched', picks: [], hvacType: null, hvacComponents: null }), ['foundation'], 'the foundation is its own spot')
+  // Every Look-inside system opens from some spot on a home that has it to show: a ducted or outdoor system under either roof,
+  // a flat roof's attic once its joists are opened. A home with only a wall or window unit has no heating & cooling to look
+  // inside until a build puts a system in.
+  const offeredAnywhere = (ctx: HomeSpotContext) => new Set(HOME_SPOT_IDS.flatMap(spot => systemsAtSpot(spot, ctx)))
+  const representativeHomes: [string, HomeSpotContext][] = [
+    ...(['central', 'package-unit', 'mini-split', null] as const).flatMap((hvacType): [string, HomeSpotContext][] => [
+      [`pitched ${hvacType}`, { form: 'pitched', picks: [], hvacType, hvacComponents: null }],
+      [`flat ${hvacType} with a redeck`, { form: 'low-slope', picks: [TORCH_DOWN, REDECK], hvacType, hvacComponents: null }],
+    ]),
+    ['pitched furnace alone', { form: 'pitched', picks: [], hvacType: 'central', hvacComponents: 'furnace' }],
+    ...(['wall-mounted', 'portable'] as const).map((hvacType): [string, HomeSpotContext] => [`pitched ${hvacType} with a new system`, { form: 'pitched', picks: [SCOPE_IDS.splitSystemNewCut], hvacType, hvacComponents: null }]),
+  ]
+  for (const [name, ctx] of representativeHomes) {
+    const offered = offeredAnywhere(ctx)
+    for (const system of LOOK_INSIDE_SYSTEM_IDS) {
+      assert.ok(offered.has(system), `${name}: ${system} opens from some spot`)
+    }
+  }
+  for (const hvacType of ['wall-mounted', 'portable'] as const) {
+    assert.deepEqual([...offeredAnywhere({ form: 'pitched', picks: [], hvacType, hvacComponents: null })].sort(), LOOK_INSIDE_SYSTEM_IDS.filter(id => id !== 'heating-cooling').sort(), `${hvacType}: every other system still opens from some spot`)
+  }
 
   // A part two systems share shows in each only for the story it tells there.
   const shownIds = (system: HomeSystemId, scene: ReturnType<typeof resolveScene>) => systemPartsShown(system, partsByAssembly(scene), systemStory(scene)).map(entry => entry.id)

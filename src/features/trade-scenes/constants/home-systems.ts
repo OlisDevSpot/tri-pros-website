@@ -1,4 +1,4 @@
-import type { BuildRowPartId, HomeSpotId, HomeSystemId } from '@/features/trade-scenes/types'
+import type { BuildRowPartId, HomeSystemId } from '@/features/trade-scenes/types'
 import type { AssemblyId } from '@/shared/modules/construction/core/constants/assembly-ids'
 
 export const HOME_SYSTEM_IDS = ['roof', 'attic', 'windows', 'walls', 'heating-cooling', 'foundation'] as const

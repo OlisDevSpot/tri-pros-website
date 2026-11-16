@@ -191,6 +191,23 @@ for (const form of ['pitched', 'low-slope'] as const) {
       }
     }
     viewLines.push({ label: `${form} ${foundation}: the condenser picked up close`, framing: partLookInsideView('heating-cooling', 'condenser', form, 'landscape', homeLift(foundation), { focus: indoorFocus(form), scale: 1 })! })
+    // Heating & cooling's own view of every system that can do the home's work, on every stage shape: a tall stage stands
+    // its camera further out, toward the lot's walls.
+    const hvacFocuses: HvacFocus[] = [
+      { kind: 'indoor', location: 'attic' },
+      { kind: 'indoor', location: 'closet' },
+      { kind: 'package' },
+      { kind: 'wall-furnace' },
+      { kind: 'wall-unit' },
+      { kind: 'window-unit' },
+      { kind: 'mini-split-head' },
+    ]
+    for (const focus of hvacFocuses) {
+      for (const shape of ['landscape', 'narrow', 'portrait'] as const) {
+        const name = focus.kind === 'indoor' ? `${focus.location} indoor unit` : focus.kind
+        viewLines.push({ label: `${form} ${foundation} ${shape} ${name}: heating & cooling`, framing: SYSTEM_CAMERA_VIEWS['heating-cooling'](form, shape, homeLift(foundation), { focus, scale: 1 }) })
+      }
+    }
   }
 }
 

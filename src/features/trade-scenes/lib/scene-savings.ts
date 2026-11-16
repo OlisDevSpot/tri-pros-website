@@ -49,6 +49,11 @@ function landed({ resolved, home, proposedScopeIds }: SceneSavingsInput, install
   const credited = new Set<string>()
 
   for (const { assembly, parts, existing } of resolved) {
+    // New ducts save only on a bill the home pays that side on both today and after the build, so a furnace-only home never
+    // earns them on electric, and a home whose heat pump takes the furnace out never earns them on gas.
+    const paidToday = billsPaid(Object.entries(existing.parts).map(([id, entry]) => ({ id, ...entry })), assembly)
+    const paidAfter = billsPaid(parts, assembly)
+    const addOnLands = (category: SavingsCategory) => (paidToday?.has(category) ?? true) && (paidAfter?.has(category) ?? true)
     for (const part of parts) {
       if (part.condition !== 'installed' || part.material === null) {
         continue
@@ -58,10 +63,7 @@ function landed({ resolved, home, proposedScopeIds }: SceneSavingsInput, install
       if (!scope || !definition) {
         continue
       }
-      // New ducts save only on a bill the home already pays that side on, so a furnace-only home never earns them on electric.
-      const paid = billsPaid(Object.entries(existing.parts).map(([id, entry]) => ({ id, ...entry })), assembly)
       const baseLands = (category: SavingsCategory) => definition.materials[part.material!].bills?.includes(category) ?? true
-      const addOnLands = (category: SavingsCategory) => paid?.has(category) ?? true
       const saves = (material: string) => installKind(definition, existing.parts[part.id]?.material ?? null, material) === 'saves-energy'
       const { cut, stepUp } = definition.materials[part.material]
       // A step up earns the base only over a home below where it steps up from, so topping off R-30 to R-38 earns the step alone.
