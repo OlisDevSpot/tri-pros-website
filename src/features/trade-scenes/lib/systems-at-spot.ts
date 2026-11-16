@@ -3,7 +3,7 @@ import type { HomeSpotContext, HomeSpotId, HomeSystemId } from '@/features/trade
 import { HOME_SPOT_IDS, LOOK_INSIDE_SYSTEM_IDS } from '@/features/trade-scenes/constants/home-systems'
 import { SCOPE_INSTALLS } from '@/shared/modules/construction/core/constants/scope-installs'
 import { atticReachable } from '@/shared/modules/construction/core/lib/attic-reachable'
-import { isCentralSystem, isDuctedSystem } from '@/shared/modules/construction/core/lib/hvac-system'
+import { centralComponents, isCentralSystem, isDuctedSystem } from '@/shared/modules/construction/core/lib/hvac-system'
 
 function picksInstall(picks: readonly string[], parts: readonly string[]): boolean {
   return picks.some(pick => SCOPE_INSTALLS[pick]?.installs.some(install => parts.includes(install.part)) ?? false)
@@ -17,7 +17,7 @@ function airInAttic(ctx: HomeSpotContext): boolean {
 
 // Today or a pick stands an outdoor unit beside the house: a package unit, mini-splits, or a central system that cools.
 function outdoorUnit(ctx: HomeSpotContext): boolean {
-  const today = ctx.hvacType === 'package-unit' || ctx.hvacType === 'mini-split' || (isCentralSystem(ctx.hvacType) && ctx.hvacComponents !== 'furnace')
+  const today = ctx.hvacType === 'package-unit' || ctx.hvacType === 'mini-split' || (isCentralSystem(ctx.hvacType) && centralComponents(ctx.hvacComponents) !== 'furnace')
   return today || picksInstall(ctx.picks, ['condenser', 'mini-split-outdoor'])
 }
 

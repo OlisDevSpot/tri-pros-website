@@ -33,17 +33,19 @@ import { homeHeatLanes } from '@/features/trade-scenes/lib/home-heat-lanes'
 import { homeLift } from '@/features/trade-scenes/lib/home-lift'
 import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
 import { hvacFocusOf } from '@/features/trade-scenes/lib/hvac-focus-of'
-import { hvacRunning } from '@/features/trade-scenes/lib/hvac-running'
+import { hvacRunning, runningZone } from '@/features/trade-scenes/lib/hvac-running'
 import { hvacSystemChoice, hvacSystemPatch } from '@/features/trade-scenes/lib/hvac-system-choice'
 import { atticHoldsUnit, indoorLocation, moveToAtticOffered } from '@/features/trade-scenes/lib/indoor-location'
 import { indoorSide } from '@/features/trade-scenes/lib/indoor-side'
 import { indoorUnitBoxes, indoorUnitLineSet } from '@/features/trade-scenes/lib/indoor-unit-boxes'
 import { indoorUnitPlacement } from '@/features/trade-scenes/lib/indoor-unit-placement'
+import { keepEfficiencyUpgrades } from '@/features/trade-scenes/lib/keep-efficiency-upgrades'
 import { homeSpotContext } from '@/features/trade-scenes/lib/keep-look-inside'
 import { listedRows } from '@/features/trade-scenes/lib/listed-rows'
 import { miniSplitHeadCount } from '@/features/trade-scenes/lib/mini-split-head-count'
 import { lineSetBoxes, miniSplitLineSet } from '@/features/trade-scenes/lib/mini-split-line-set'
 import { packageUnitPlacement } from '@/features/trade-scenes/lib/package-unit-placement'
+import { partRowWord } from '@/features/trade-scenes/lib/part-row-word'
 import { propertyPatch } from '@/features/trade-scenes/lib/property-patch'
 import { repairsRows } from '@/features/trade-scenes/lib/repairs-rows'
 import { resolveScene } from '@/features/trade-scenes/lib/resolve-scene'
@@ -66,6 +68,7 @@ import { hvacIndoorLocations, miniSplitHeadCounts } from '@/shared/modules/const
 import { HOME_MATERIAL_FACTS_UNSET } from '@/shared/modules/construction/core/constants/home-materials'
 import { ROOF_FORMS } from '@/shared/modules/construction/core/constants/roof-forms'
 import { SCOPE_IDS } from '@/shared/modules/construction/core/constants/scope-ids'
+import { UPGRADE_REGISTRY } from '@/shared/modules/construction/core/constants/upgrade-registry'
 import { inferRoofAtticExistingConditions } from '@/shared/modules/construction/core/lib/assemblies/roof-attic/infer-existing-conditions'
 import { billsPaid } from '@/shared/modules/construction/core/lib/bills-paid'
 import { centralComponents } from '@/shared/modules/construction/core/lib/hvac-system'
@@ -191,13 +194,13 @@ const offersOf = (property: Partial<PropertyProfile>) => hvacRows(inputs(propert
 const minis = { part: 'mini-split-heads', scopeIds: ['miniSplitInstallation', 'miniSplitKit'] }
 const ducts = { part: 'duct-runs', scopeIds: ['airDuctsReplacement'] }
 const offersTable: [string, Partial<PropertyProfile>, { part: string, scopeIds: string[] }[]][] = [
-  ['central both', { hvacType: 'central', hvacComponents: 'both' }, [{ part: 'blower', scopeIds: ['splitSystemReplacement', 'acReplacement', 'furnaceReplacement'] }, ducts, minis]],
-  ['central furnace', { hvacType: 'central', hvacComponents: 'furnace' }, [{ part: 'blower', scopeIds: ['splitSystemReplacement', 'furnaceReplacement'] }, ducts, minis]],
-  ['central ac', { hvacType: 'central', hvacComponents: 'ac' }, [{ part: 'blower', scopeIds: ['splitSystemReplacement', 'acReplacement', 'furnaceReplacement'] }, ducts, minis]],
-  ['unknown', { hvacType: null, hvacComponents: null }, [{ part: 'blower', scopeIds: ['splitSystemReplacement', 'acReplacement', 'furnaceReplacement'] }, ducts, minis]],
-  ['wall-mounted', { hvacType: 'wall-mounted' }, [{ part: 'blower', scopeIds: ['splitSystemNewCut'] }, minis]],
-  ['portable', { hvacType: 'portable' }, [{ part: 'blower', scopeIds: ['splitSystemNewCut'] }, minis]],
-  ['mini-split', { hvacType: 'mini-split' }, [{ part: 'blower', scopeIds: ['splitSystemNewCut'] }, minis]],
+  ['central both', { hvacType: 'central', hvacComponents: 'both' }, [{ part: 'blower', scopeIds: ['splitSystemReplacement', 'acReplacement', 'furnaceReplacement', 'heatPumpReplacement'] }, ducts, minis]],
+  ['central furnace', { hvacType: 'central', hvacComponents: 'furnace' }, [{ part: 'blower', scopeIds: ['splitSystemReplacement', 'furnaceReplacement', 'heatPumpReplacement'] }, ducts, minis]],
+  ['central ac', { hvacType: 'central', hvacComponents: 'ac' }, [{ part: 'blower', scopeIds: ['splitSystemReplacement', 'acReplacement', 'furnaceReplacement', 'heatPumpReplacement'] }, ducts, minis]],
+  ['unknown', { hvacType: null, hvacComponents: null }, [{ part: 'blower', scopeIds: ['splitSystemReplacement', 'acReplacement', 'furnaceReplacement', 'heatPumpReplacement'] }, ducts, minis]],
+  ['wall-mounted', { hvacType: 'wall-mounted' }, [{ part: 'blower', scopeIds: ['splitSystemNewCut', 'heatPumpNewCut'] }, minis]],
+  ['portable', { hvacType: 'portable' }, [{ part: 'blower', scopeIds: ['splitSystemNewCut', 'heatPumpNewCut'] }, minis]],
+  ['mini-split', { hvacType: 'mini-split' }, [{ part: 'blower', scopeIds: ['splitSystemNewCut', 'heatPumpNewCut'] }, minis]],
   ['package-unit', { hvacType: 'package-unit' }, [{ part: 'package-unit', scopeIds: ['packageUnitReplacement'] }, ducts, minis]],
 ]
 for (const [name, property, expected] of offersTable) {
@@ -1022,5 +1025,104 @@ assert.equal(roomAt(0), ROOMS.living)
 assert.equal(roomAt(4), ROOMS.kitchen)
 assert.equal(roomAt(-HOUSE.halfLength), ROOMS.bedroom, 'inside the left end wall is the bedroom')
 assert.equal(roomAt(HOUSE.halfLength), ROOMS.kitchen, 'inside the right end wall is the kitchen')
+
+// A heat pump replaces a central system or installs new where there is none: a blower and coil with no furnace, and one
+// outdoor unit that heats and cools. A replacement takes the furnace out, and its heating earns no cut on either bill
+const heatPump = SCOPE_IDS.heatPumpReplacement
+const heatPumpNew = SCOPE_IDS.heatPumpNewCut
+const systemRowOffers = (property: Partial<PropertyProfile>) => offersOf(property).find(row => row.part === 'blower')?.scopeIds ?? []
+assert.ok(systemRowOffers(centralBothProperty).includes('heatPumpReplacement'), 'a central home\'s system row offers a heat pump replacement')
+assert.ok(!systemRowOffers(centralBothProperty).includes('heatPumpNewCut'), 'and never a new heat pump')
+assert.ok(systemRowOffers(wallFurnace).includes('heatPumpNewCut'), 'a wall home\'s system row offers a new heat pump')
+assert.ok(!systemRowOffers(wallFurnace).includes('heatPumpReplacement'), 'and never a heat pump replacement')
+assert.ok(!offersOf({ hvacType: 'package-unit' }).some(row => row.scopeIds.some(id => id === 'heatPumpReplacement' || id === 'heatPumpNewCut')), 'a package unit is offered no heat pump')
+assert.deepEqual(scopePick(splitPicked, rowOf(splitPicked, 'blower').offer, heatPump).proposedScopeIds, [heatPump], 'a heat pump takes the place of a whole system')
+const wallNewCutPicked = inputs(wallFurnace, { proposedScopeIds: [SCOPE_IDS.splitSystemNewCut] })
+assert.deepEqual(scopePick(wallNewCutPicked, rowOf(wallNewCutPicked, 'blower').offer, heatPumpNew).proposedScopeIds, [heatPumpNew], 'a new heat pump takes the place of a new system')
+for (const [name, property] of [['central both', centralBothProperty], ['wall-mounted', wallFurnace], ['package-unit', { hvacType: 'package-unit' }]] as const) {
+  for (const buildSlot of slotsFor(inputs(property)).filter(candidate => candidate.id.startsWith('build:'))) {
+    const labels = buildSlot.options.map(option => option.label)
+    assert.equal(new Set(labels).size, labels.length, `${name}: ${buildSlot.id} names each job once`)
+  }
+}
+assert.ok(slotIn(inputs(centralBothProperty), 'build:blower')?.options.some(option => option.value === heatPump && option.label === 'Heat pump'), 'a central home names the heat pump Heat pump')
+assert.ok(slotIn(inputs(wallFurnace), 'build:blower')?.options.some(option => option.value === heatPumpNew && option.label === 'Heat pump'), 'and so does a wall home')
+
+const heatPumpTargets = scene(centralBothProperty, build([heatPump]))
+const heatPumpParts = hvacPartsOf(heatPumpTargets)
+const takenOut = heatPumpParts.find(part => part.id === 'furnace')
+assert.equal(takenOut?.material, null, 'a heat pump replacement takes the furnace out')
+assert.equal(takenOut?.condition, 'installed', 'as work the build does')
+assert.equal(takenOut?.label, 'Furnace taken out')
+assert.equal(takenOut?.detail, 'The heat pump heats the home, so the gas furnace, its flue and its gas line come out.')
+assert.equal(takenOut?.removed, true, 'the furnace is marked taken out')
+assert.equal(takenOut?.added, undefined, 'and never added')
+assert.deepEqual(['blower', 'coil', 'refrigerant-lines', 'condenser', 'thermostat'].map(id => heatPumpParts.find(part => part.id === id)?.material), ['new-blower', 'high-efficiency-coil', 'copper', 'heat-pump', 'thermostat'], 'a heat pump replacement installs its blower, coil, line set, outdoor unit and thermostat')
+assert.equal(heatPumpParts.find(part => part.id === 'condenser')?.label, 'Heat pump outdoor unit')
+const takenOutRow = systemPartRows('heating-cooling', heatPumpTargets).find(row => row.id === 'furnace')!
+assert.equal(partRowWord(takenOutRow), 'Taken out', 'its row reads Taken out, never New')
+assert.equal(PART_COPY.removed, 'Taken out')
+assert.equal(partRowWord(systemPartRows('heating-cooling', heatPumpTargets).find(row => row.id === 'coil')!), PART_COPY.condition.installed, 'a part the heat pump replaces reads New')
+assert.equal(partRowWord(furnaceSplitRows.find(row => row.id === 'coil')!), PART_COPY.added, 'a part a build adds still reads Added')
+const heatPumpLit = systemLit('heating-cooling', systemPartRows('heating-cooling', heatPumpTargets), 'furnace')
+assert.ok(!heatPumpLit.shown.has('furnace'), 'a furnace taken out is listed but never drawn up close')
+assert.equal(heatPumpLit.emphasized, null, 'so nothing leans at it')
+assert.deepEqual(systemPartFocus('heating-cooling', 'pitched', 'coil', 0, heatPumpLit.shown, [], 'attic'), indoorUnitBoxes(indoorUnitPlacement('attic', 'pitched')!, { furnace: false, coil: true }).find(section => section.id === 'coil')!.box.position, 'the coil\'s pin rests on the coil where the closed-up unit draws it')
+
+const skipCopy = { label: 'Gone', detail: 'Taken out.' }
+const removable = { ...fixture, parts: fixture.parts.map(part => ({ ...part, materials: { ...part.materials, gone: { copy: skipCopy, removes: true } } })) } as unknown as Assembly
+const removedFrom = resolveAssembly(removable, { existing: homeWith(null, 'old'), proposedScopeIds: ['s'], view: 'proposed' }, installsFor([{ part: 'a', material: 'gone' }, { part: 'b', material: 'gone' }]))
+assert.deepEqual(removedFrom.find(part => part.id === 'a'), resolved(null, 'old').find(part => part.id === 'a'), 'a part the build takes out where the home has none stays absent')
+assert.deepEqual(removedFrom.find(part => part.id === 'b'), { id: 'b', group: 'g', role: 'equipment', removed: true, material: null, condition: 'installed', label: 'Gone', detail: 'Taken out.', thermal: null, water: null }, 'a part the home has is taken out with its own copy')
+assert.deepEqual(resolveAssembly(removable, { existing: homeWith(null, 'old'), proposedScopeIds: ['s'], view: 'existing' }, installsFor([{ part: 'b', material: 'gone' }])), resolved(null, 'old'), 'Today takes nothing out')
+
+const wallHeatPump = hvacPartsOf(scene(wallFurnace, build([heatPumpNew])))
+assert.equal(wallHeatPump.find(part => part.id === 'furnace')?.condition, 'absent', 'a new heat pump on a wall home brings no furnace')
+assert.equal(wallHeatPump.find(part => part.id === 'furnace')?.removed, undefined, 'and takes none out')
+for (const id of ['return', 'blower', 'coil', 'plenum', 'duct-runs', 'registers', 'refrigerant-lines', 'condenser']) {
+  assert.equal(wallHeatPump.find(part => part.id === id)?.added, true, `a new heat pump on a wall home adds its ${id}`)
+}
+assert.equal(wallHeatPump.find(part => part.id === 'condenser')?.material, 'heat-pump', 'its outdoor unit is a heat pump')
+assert.equal(hvacPartsOf(scene(wallFurnace, { ...build([heatPumpNew]), efficiencyUpgrades: ['r8-ducts'] })).find(part => part.id === 'duct-runs')?.material, 'r8-flex', 'a new heat pump with R-8 lays R-8 ducts')
+assert.ok(ductRunDetail(scene(wallFurnace, { ...build([heatPumpNew]), efficiencyUpgrades: ['r8-ducts'] })).endsWith('supported the way code requires.'), 'its R-8 ducts say why they hang')
+assert.deepEqual(keepEfficiencyUpgrades(['r8-ducts'], [heatPumpNew]), ['r8-ducts'], 'a new heat pump keeps its R-8')
+assert.equal(workDetailsKind(heatPump), 'indoor-unit', 'a heat pump replacement can move its unit')
+const heatPumpMovable = moveSlot(closetHomeState(pitchedCentral, [heatPump]))
+assert.equal(heatPumpMovable.unavailable, null, 'a pitched closet home with a heat pump replacement can move its unit to the attic')
+
+const heatPumpCuts: [string, Partial<PropertyProfile>, string[], number, number][] = [
+  ['central both', centralBothProperty, [heatPump], 0.25, 0],
+  ['central furnace', centralFurnaceProperty, [heatPump], 0, 0],
+  ['wall-mounted', wallFurnace, [heatPumpNew], 0, 0],
+]
+for (const [home, property, scopes, electric, gas] of heatPumpCuts) {
+  const cuts = scene(property, { scopes, view: 'proposed' }).savings.cuts
+  const name = `${home}, ${scopes.map(id => scopeName[id]).join(' + ')}`
+  near(cuts.electric.combined, electric, `${name}: the electric cut`)
+  near(cuts.gas.combined, gas, `${name}: the gas cut`)
+}
+
+const heatPumpDrawn = drawn(centralBothProperty, build([heatPump]))
+assert.equal(heatPumpDrawn.outdoor?.kind, 'heat-pump', 'a heat pump draws its own outdoor unit')
+assert.equal(heatPumpDrawn.indoor?.furnace, null, 'and no furnace')
+assert.ok((heatPumpDrawn.indoor?.coil ?? null) !== null, 'but a coil')
+assert.deepEqual(heatPumpDrawn.duties, both, 'and it heats and cools')
+assert.equal(drawn(centralBothProperty, { scopes: [heatPump] }).outdoor?.kind, 'condenser', 'Today keeps its condenser')
+assert.deepEqual(drawn(wallFurnace, build([heatPumpNew])).duties, both, 'a new heat pump heats and cools a wall home')
+for (const [name, property, scopes] of [['central both', centralBothProperty, [heatPump]], ['wall-mounted', wallFurnace, [heatPumpNew]]] as const) {
+  for (const weather of ['summer', 'winter'] as const) {
+    assert.deepEqual(runningOf(weather, property, build([...scopes])), ['blower', 'coil', 'outdoor'], `${name}: a heat pump runs its blower, coil and outdoor unit in ${weather}`)
+  }
+}
+const winterHeatPump = drawn(centralBothProperty, { ...build([heatPump]), weather: 'winter' })
+assert.equal(runningZone(hvacRunning(winterHeatPump, 'winter').has('coil'), indoorSide('winter', winterHeatPump.duties), 'attic'), 'heating', 'a heat pump\'s coil reads warm in winter')
+
+const heatPumpEntries = [UPGRADE_REGISTRY[heatPump], UPGRADE_REGISTRY[heatPumpNew]]
+for (const entry of heatPumpEntries) {
+  assert.deepEqual(entry.benefits.map(benefit => [benefit.kind, benefit.title]), [['looks-and-use', 'One outdoor unit heats and cools'], ['protection', 'No flame in the house'], ['looks-and-use', 'A rate plan for heat pump homes'], ['warranty', 'Goodman heat pump']], `${entry.name}: says what a heat pump is`)
+  for (const text of [entry.name, ...entry.benefits.flatMap(benefit => [benefit.title, benefit.detail])]) {
+    assert.ok(!/tax credit|rebate|required|%/i.test(text), `${entry.name}: claims no credit, rebate, mandate or saving: ${text}`)
+  }
+}
 
 console.log('verify-heating-cooling: ok')

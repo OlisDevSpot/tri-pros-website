@@ -325,7 +325,7 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
   const completeHeatLanes = useMemo(() => heat !== null && season !== null ? homeHeatLanes(roofForm, heat, season, 'complete', covering, leaks) : [], [roofForm, heat, season, covering, leaks])
   const side = indoorSide(weather, hvac.duties)
   const running = useMemo(() => hvacRunning(hvac, weather), [hvac, weather])
-  // The condenser carries the load only while its season runs it.
+  // The outdoor unit carries the load only while its season runs it: a condenser in summer, a heat pump in either.
   const outdoorLoad = running.has('outdoor') ? targets.equipmentLoad : 0
   const partPaint = useMemo(() => held !== null && heat !== null ? partPaintTemperatures(held.shown, heat) : NO_PART_PAINT, [held, heat])
   const ductRuns = useMemo(() => partState(hvacParts, 'duct-runs'), [hvacParts])
@@ -407,7 +407,7 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
         <SpotPinsLayer rides="ground" />
         {hvac.outdoor !== null && (
           <group userData={thermalTag(runningZone(running.has('outdoor'), side, 'interior'))}>
-            <CondenserUnit load={outdoorLoad} burst={burst} wear={hvac.outdoor.wear} scale={acScale} onTap={spotTap('equipment', 'ground')} hover={hover} />
+            <CondenserUnit kind={hvac.outdoor.kind} load={outdoorLoad} heating={side === 'heating'} burst={burst} wear={hvac.outdoor.wear} scale={acScale} onTap={spotTap('equipment', 'ground')} hover={hover} />
           </group>
         )}
         {hvac.miniSplit !== null && <MiniSplitOutdoor running={running.has('mini-split')} wear={hvac.miniSplit.wear} onTap={spotTap('equipment')} />}

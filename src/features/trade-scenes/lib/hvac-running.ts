@@ -11,15 +11,16 @@ function covers({ cools, heats }: HvacDuties, weather: 'summer' | 'winter'): boo
 }
 
 // What runs on the side on show this weather. The indoor unit runs only the sections the season needs: the blower and
-// coil with the condenser to cool, the blower and furnace to heat. Every other system runs whole in a season its duties
-// cover, unless a new central system has left it idle. A normal day or a storm runs nothing.
+// coil with the condenser to cool, the blower and furnace to heat, and a heat pump's blower, coil and outdoor unit in
+// either season, its loop run the other way in winter. Every other system runs whole in a season its duties cover,
+// unless a new central system has left it idle. A normal day or a storm runs nothing.
 export function hvacRunning(drawn: DrawnHvac, weather: Weather): ReadonlySet<HvacRunningPart> {
   if (weather !== 'summer' && weather !== 'winter') {
     return NOTHING
   }
   const running = new Set<HvacRunningPart>()
   const { indoor } = drawn
-  if (indoor !== null && weather === 'summer' && indoor.coil !== null && drawn.outdoor !== null) {
+  if (indoor !== null && indoor.coil !== null && drawn.outdoor !== null && (weather === 'summer' || drawn.outdoor.kind === 'heat-pump')) {
     running.add('blower').add('coil').add('outdoor')
   }
   if (indoor !== null && weather === 'winter' && indoor.furnace !== null) {

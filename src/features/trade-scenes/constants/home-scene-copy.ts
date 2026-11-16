@@ -74,6 +74,8 @@ export const PART_COPY = {
   condition: { retained: 'Kept', worn: 'Original', installed: 'New', absent: 'Missing' } satisfies Record<PartCondition, string>,
   // In place of the condition, on a part the build puts in where the home had none.
   added: 'Added',
+  // In place of the condition, on a part the build takes out.
+  removed: 'Taken out',
 } as const
 
 // Placeholder copy until the owner's copy pass and the disclosure sign-off. The figures are claims made to a homeowner, so
@@ -164,7 +166,7 @@ export const PART_LABELS: Record<string, string> = {
 
 export const SCOPES_AND_ADDONS_COPY = {
   noChange: 'No change',
-  verbs: { overlay: 'Overlay', torchDown: 'Torch down', tearOff: 'Tear-off', tileReset: 'Tile reset', redeck: 'Redeck', add: 'Add', topOff: 'Top off', replace: 'Replace', seal: 'Seal', new: 'New', repaint: 'Repaint', wholeSystem: 'Whole system', acOnly: 'A/C only', furnaceOnly: 'Furnace only', newSystem: 'New system', installed: 'Installed', kit: 'Kit' },
+  verbs: { overlay: 'Overlay', torchDown: 'Torch down', tearOff: 'Tear-off', tileReset: 'Tile reset', redeck: 'Redeck', add: 'Add', topOff: 'Top off', replace: 'Replace', seal: 'Seal', new: 'New', repaint: 'Repaint', wholeSystem: 'Whole system', acOnly: 'A/C only', furnaceOnly: 'Furnace only', newSystem: 'New system', heatPump: 'Heat pump', installed: 'Installed', kit: 'Kit' },
   blocked: { 'roof-not-set': 'Set the roof under Property facts', 'nothing-on-roof': 'Nothing offered on a metal roof yet', 'needs-tear-off': 'Needs a tear-off: an overlay keeps the old roof on', 'needs-redeck': 'Needs a redeck: the insulation is under the deck', 'already-new': 'Already new', 'already-sealed': 'Already air sealed' },
   notSet: 'Not set',
 } as const

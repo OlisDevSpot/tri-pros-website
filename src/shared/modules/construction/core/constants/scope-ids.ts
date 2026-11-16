@@ -17,6 +17,8 @@ export const SCOPE_IDS = {
   acReplacement: 'e450ca1b-548b-8269-adc7-019776a6acf7',
   furnaceReplacement: '88d0ca1b-548b-82b2-bb26-017081659f61',
   splitSystemNewCut: '8aa0ca1b-548b-82dd-9148-81d0b51076bf',
+  heatPumpReplacement: '4160ca1b-548b-819e-a910-ea397cc25800',
+  heatPumpNewCut: '4160ca1b-548b-81f1-84f9-d141be573ad1',
   packageUnitReplacement: '9460ca1b-548b-8375-8d63-814dddf36b71',
   airDuctsReplacement: 'bc50ca1b-548b-8366-9ef9-811c2f36877f',
   miniSplitInstallation: 'dcb0ca1b-548b-8303-9f65-01730423e685',

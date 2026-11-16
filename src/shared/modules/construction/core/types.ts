@@ -74,6 +74,8 @@ interface PartMaterialFields {
   needsBase?: { part: string, replaces: readonly string[], with: string, copy: PartCopy }
   // What the part says once a scope takes the old roof off to it and the build keeps it, with its bad sections replaced.
   woodReplacementCopy?: PartCopy
+  // Installing it takes the part out: the build leaves nothing there, and the copy says what came out.
+  removes?: true
 }
 
 // A saving install earns its trade's base cut, or `cut`, an add-on of its scope's trade, in its place. A step up earns both, each
@@ -139,6 +141,8 @@ export interface ResolvedPart {
   over?: string
   // Installed where today has none.
   added?: true
+  // Taken out by the build: no material, yet work the build does.
+  removed?: true
 }
 
 export interface ScopeInstall {

@@ -9,7 +9,8 @@ import { miniSplitHeadCount } from '@/features/trade-scenes/lib/mini-split-head-
 import { partState } from '@/features/trade-scenes/lib/part-state'
 import { isCentralSystem } from '@/shared/modules/construction/core/lib/hvac-system'
 
-function drawnPart(parts: readonly ResolvedPart[], id: string): PartState | null {
+// A part counts when it holds a material: absent, or taken out by the build, it is not drawn.
+function countedPart(parts: readonly ResolvedPart[], id: string): PartState | null {
   const part = parts.find(entry => entry.id === id)
   return part !== undefined && part.material !== null ? partState(parts, id) : null
 }
@@ -25,12 +26,13 @@ const BOTH: HvacDuties = { cools: true, heats: true }
 // window unit is no part of the assembly, so it is drawn from the home and stands idle once a central system takes over.
 export function drawnHvac(parts: readonly ResolvedPart[], property: PropertyProfile, materials: HomeMaterialFacts, view: 'existing' | 'proposed', form: RoofForm, picks: readonly string[]): DrawnHvac {
   const components = property.hvacComponents
-  const blower = drawnPart(parts, 'blower')
-  const furnace = drawnPart(parts, 'furnace')
-  const coil = drawnPart(parts, 'coil')
-  const condenser = drawnPart(parts, 'condenser')
-  const packageUnit = drawnPart(parts, 'package-unit')
-  const heads = parts.find(part => part.id === 'mini-split-heads')
+  const blower = countedPart(parts, 'blower')
+  const furnace = countedPart(parts, 'furnace')
+  const coil = countedPart(parts, 'coil')
+  const condenser = countedPart(parts, 'condenser')
+  const heatPump = condenser?.material === 'heat-pump'
+  const packageUnit = countedPart(parts, 'package-unit')
+  const heads = countedPart(parts, 'mini-split-heads')
   const takenOver = blower !== null
 
   const central = isCentralSystem(property.hvacType)
@@ -42,18 +44,19 @@ export function drawnHvac(parts: readonly ResolvedPart[], property: PropertyProf
   const windowUnit = property.hvacType === 'portable' ? { idle: takenOver } : null
 
   // Heads the build installs run whatever else stands; the home's own fall idle under a new central system.
-  const headsInstalled = heads?.condition === 'installed'
-  const miniSplit = heads !== undefined && heads.material !== null
-    ? { heads: Number(miniSplitHeadCount(materials, headsInstalled ? 'proposed' : 'existing')), idle: takenOver && !headsInstalled, wear: partState(parts, 'mini-split-heads').wear }
+  const headsInstalled = parts.some(part => part.id === 'mini-split-heads' && part.condition === 'installed')
+  const miniSplit = heads !== null
+    ? { heads: Number(miniSplitHeadCount(materials, headsInstalled ? 'proposed' : 'existing')), idle: takenOver && !headsInstalled, wear: heads.wear }
     : null
 
   const wallOrWindowDuties = wallUnit !== null
-    ? { cools: wallUnit.kind === 'wall-unit', heats: wallUnit.kind === 'wall-furnace' || components !== 'ac' }
+    ? { cools: wallUnit.kind === 'wall-unit', heats: components !== 'ac' }
     : windowUnit !== null ? { cools: components !== 'furnace', heats: components !== 'ac' } : NONE
   const wallOrWindowIdle = (wallUnit ?? windowUnit)?.idle ?? true
 
   const duties = union(
-    blower === null ? NONE : { cools: coil !== null && condenser !== null, heats: furnace !== null },
+    // A heat pump heats through the coil, run the other way.
+    blower === null ? NONE : { cools: coil !== null && condenser !== null, heats: furnace !== null || (heatPump && coil !== null) },
     packageUnit === null ? NONE : BOTH,
     wallOrWindowIdle ? NONE : wallOrWindowDuties,
     miniSplit === null || miniSplit.idle ? NONE : BOTH,
@@ -62,11 +65,11 @@ export function drawnHvac(parts: readonly ResolvedPart[], property: PropertyProf
   return {
     indoor,
     vacated,
-    outdoor: condenser === null ? null : { ...condenser, kind: 'condenser' },
-    lineSet: drawnPart(parts, 'refrigerant-lines') !== null,
+    outdoor: condenser === null ? null : { ...condenser, kind: heatPump ? 'heat-pump' : 'condenser' },
+    lineSet: countedPart(parts, 'refrigerant-lines') !== null,
     packageUnit,
     ducts: hasDucts(parts) ? partState(parts, 'duct-runs') : null,
-    registers: drawnPart(parts, 'registers') !== null,
+    registers: countedPart(parts, 'registers') !== null,
     wallUnit,
     windowUnit,
     miniSplit,

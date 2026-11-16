@@ -4,7 +4,7 @@ import type { PropertyProfile } from '@/shared/modules/construction/core/types'
 
 import { PROFILE_ROOF_TYPES } from '@/features/trade-scenes/constants/scene-controls'
 import { ductMaterials } from '@/shared/modules/construction/core/constants/enums'
-import { isCentralSystem } from '@/shared/modules/construction/core/lib/hvac-system'
+import { centralComponents, isCentralSystem } from '@/shared/modules/construction/core/lib/hvac-system'
 import { roofFormOf } from '@/shared/modules/construction/core/lib/roof-form-of'
 
 // A set form offers only its own coverings, so the covering never contradicts it; an unset form offers every one.
@@ -19,7 +19,7 @@ export function existingDuctChoices(): DuctMaterial[] {
 
 // A package unit cools from the roof, so it has an AC size without an outdoor unit on the ground; a furnace alone has none.
 export function hasAcUnit(property: PropertyProfile): boolean {
-  return (isCentralSystem(property.hvacType) && property.hvacComponents !== 'furnace') || property.hvacType === 'package-unit'
+  return (isCentralSystem(property.hvacType) && centralComponents(property.hvacComponents) !== 'furnace') || property.hvacType === 'package-unit'
 }
 
 // An unknown system draws as central, so its equipment can still be set.

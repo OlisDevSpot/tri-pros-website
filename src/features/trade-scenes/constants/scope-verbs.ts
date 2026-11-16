@@ -22,6 +22,9 @@ export const SCOPE_VERBS = {
   [SCOPE_IDS.acReplacement]: 'acOnly',
   [SCOPE_IDS.furnaceReplacement]: 'furnaceOnly',
   [SCOPE_IDS.splitSystemNewCut]: 'newSystem',
+  // One name for both: a home is offered only the one that fits it.
+  [SCOPE_IDS.heatPumpReplacement]: 'heatPump',
+  [SCOPE_IDS.heatPumpNewCut]: 'heatPump',
   [SCOPE_IDS.packageUnitReplacement]: 'replace',
   [SCOPE_IDS.airDuctsReplacement]: 'replace',
   [SCOPE_IDS.miniSplitInstallation]: 'installed',
