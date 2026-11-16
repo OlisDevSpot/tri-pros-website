@@ -5,7 +5,7 @@ import type { HvacIndoorLocation } from '@/shared/modules/construction/core/cons
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 
 import { HOME_ANCHORS, READING_ANCHORS } from '@/features/trade-scenes/constants/home-anchors'
-import { ATTIC_FAN_SPOT, BACK_INNER, EQUIPMENT, FASCIA_CENTRE, FRONT_WALL, HOME_FRAMINGS, HOUSE, HOUSE_WALLS, LOW_SLOPE, PARAPET_TOP, RAFTER_ORIGIN_Y, ROOF_HALF_LENGTH, ROOMS, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
+import { ATTIC_FAN_SPOT, BACK_INNER, EQUIPMENT, FASCIA_CENTRE, FRONT_WALL, HOME_FRAMINGS, HOUSE, HOUSE_WALLS, LOW_SLOPE, MINI_SPLIT_HEADS, PARAPET_TOP, RAFTER_ORIGIN_Y, ROOF_HALF_LENGTH, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
 import { LOOK_INSIDE_WALL, LOOK_INSIDE_WINDOW, STEP_CUTS } from '@/features/trade-scenes/constants/look-inside'
 import { indoorUnitBoxes } from '@/features/trade-scenes/lib/indoor-unit-boxes'
 import { indoorUnitPlacement } from '@/features/trade-scenes/lib/indoor-unit-placement'
@@ -82,9 +82,6 @@ const WINDOW_UNIT_TARGET: Vec3 = [EQUIPMENT.windowUnit.x, HOUSE.floorY + HOUSE_W
 // front and looks in past the bedroom. A working number, set by screenshot.
 const CLOSET_VIEW_TURN = -0.64
 
-// Until the heads have places of their own, the living room's is looked for on its back wall, high where a head hangs.
-const LIVING_ROOM_HEAD_TARGET: Vec3 = [(ROOMS.living.from + ROOMS.living.to) / 2, HOUSE.floorY + 2.1, BACK_INNER]
-
 function heatingCoolingView(form: RoofForm, shape: StageShape, lift: number, { focus, scale }: HomeHvac): CameraFraming {
   switch (focus.kind) {
     case 'package':
@@ -92,7 +89,7 @@ function heatingCoolingView(form: RoofForm, shape: StageShape, lift: number, { f
     case 'indoor':
       return viewOf(indoorUnitCentre(focus.location, form), shape, lift, focus.location === 'attic' ? 0 : CLOSET_VIEW_TURN)
     case 'mini-split-head':
-      return viewOf(LIVING_ROOM_HEAD_TARGET, shape, lift)
+      return viewOf(MINI_SPLIT_HEADS[0].position, shape, lift)
     case 'wall-furnace':
       return viewOf(EQUIPMENT.wallFurnace.position, shape, lift)
     case 'wall-unit':

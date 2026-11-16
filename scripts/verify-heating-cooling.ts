@@ -1,5 +1,5 @@
 import type { IndoorUnitPlacement } from '@/features/trade-scenes/lib/indoor-unit-placement'
-import type { BoxSpec, SceneChangeSlot, SceneChangeSlotId, TradeSceneInputs, Vec3 } from '@/features/trade-scenes/types'
+import type { BoxSpec, HouseWall, SceneChangeSlot, SceneChangeSlotId, TradeSceneInputs, Vec3 } from '@/features/trade-scenes/types'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
 import type { HVACComponent, HVACType } from '@/shared/modules/construction/core/constants/enums'
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
@@ -13,7 +13,8 @@ import { TRADE_OUTCOMES } from '@/features/meeting-flow/constants/trade-outcomes
 import { HEAT_ARROW_LOOK } from '@/features/trade-scenes/constants/heat-arrow-look'
 import { CONDENSER_LINE_SET, THERMOSTAT_BOX } from '@/features/trade-scenes/constants/home-details'
 import { FURNISHING_BOXES, HOME_FURNITURE } from '@/features/trade-scenes/constants/home-furnishings'
-import { BACK_INNER, EQUIPMENT, HOME_FLOOR_Y, HOUSE, PARTITION_DOOR, PARTITIONS_X, ROOMS, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
+import { BACK_INNER, EQUIPMENT, HOME_FLOOR_Y, HOUSE, HOUSE_WALLS, MINI_SPLIT_HEAD_SIZE, MINI_SPLIT_HEADS, MINI_SPLIT_LINE_SIZE, MINI_SPLIT_OUTDOOR, PARTITION_DOOR, PARTITIONS_X, ROOMS, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
+import { LOT } from '@/features/trade-scenes/constants/home-lot'
 import { HVAC_INDOOR_LOCATION_LABELS, HVAC_SYSTEM_CHOICE_LABELS, MINI_SPLIT_HEAD_COUNT_LABELS, PART_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
 import { HOME_SCENE_DEFAULTS } from '@/features/trade-scenes/constants/home-scene-defaults'
 import { HVAC_SYSTEM_CHOICES } from '@/features/trade-scenes/constants/home-systems'
@@ -23,6 +24,7 @@ import { HOME_PRIMARY_ASSEMBLY } from '@/features/trade-scenes/constants/scene-c
 import { lookInsideView, partLookInsideView, SYSTEM_CAMERA_VIEWS } from '@/features/trade-scenes/constants/system-camera-views'
 import { applySceneChange } from '@/features/trade-scenes/lib/apply-scene-change'
 import { ceilingOpenings } from '@/features/trade-scenes/lib/ceiling-openings'
+import { downspoutBoxes } from '@/features/trade-scenes/lib/downspout-boxes'
 import { drawnHvac } from '@/features/trade-scenes/lib/drawn-hvac'
 import { ductRunPoints } from '@/features/trade-scenes/lib/duct-run-points'
 import { emphasizedParts } from '@/features/trade-scenes/lib/emphasized-parts'
@@ -40,6 +42,7 @@ import { indoorUnitPlacement } from '@/features/trade-scenes/lib/indoor-unit-pla
 import { homeSpotContext } from '@/features/trade-scenes/lib/keep-look-inside'
 import { listedRows } from '@/features/trade-scenes/lib/listed-rows'
 import { miniSplitHeadCount } from '@/features/trade-scenes/lib/mini-split-head-count'
+import { lineSetBoxes, miniSplitLineSet } from '@/features/trade-scenes/lib/mini-split-line-set'
 import { packageUnitPlacement } from '@/features/trade-scenes/lib/package-unit-placement'
 import { propertyPatch } from '@/features/trade-scenes/lib/property-patch'
 import { repairsRows } from '@/features/trade-scenes/lib/repairs-rows'
@@ -782,9 +785,9 @@ const wallFurnaceBox: BoxSpec = { size: EQUIPMENT.wallFurnace.size, position: EQ
   const [x, y, z] = wallFurnaceBox.position
   const [width, height, depth] = wallFurnaceBox.size
   assert.ok(Math.abs(x) + width / 2 <= innerX && z - depth / 2 >= BACK_INNER && z + depth / 2 <= HOUSE.halfDepth && y - height / 2 >= HOUSE.floorY, 'the wall furnace stands inside the house')
-  const partition = PARTITIONS_X.find(plane => Math.min(Math.abs(x - width / 2 - plane), Math.abs(x + width / 2 - plane)) <= HOUSE.partitionThickness / 2 + 1e-9)
-  assert.ok(partition !== undefined, 'the wall furnace stands against a partition')
-  assert.ok(Math.abs(x - partition) >= width / 2, 'on one side of it, never through it')
+  const { partition, facing } = EQUIPMENT.wallFurnace
+  const face = PARTITIONS_X[partition] + facing * HOUSE.partitionThickness / 2
+  assert.ok(Math.abs(x - facing * width / 2 - face) < 1e-9, 'the wall furnace stands flush on its partition\'s face, on the side it faces, never through it')
   assert.ok(Math.abs(z - PARTITION_DOOR.along) >= (depth + PARTITION_DOOR.width) / 2, 'and clear of its doorway')
 }
 for (const piece of HOME_FURNITURE) {
@@ -801,6 +804,129 @@ for (const form of ROOF_FORMS) {
   }
   const nearest = nearestLane(everyHeatLane(form), [wallFurnaceBox])
   assert.ok(nearest >= arrowReach, `${form}: the wall furnace stands ${nearest.toFixed(3)} m from the nearest heat lane, inside an arrow's ${arrowReach} m reach`)
+}
+
+// Mini-split heads hang high on each room's outside wall, and one outdoor unit in the left side yard feeds each of them
+// through its own run along the outside walls
+assert.deepEqual(MINI_SPLIT_HEADS.map(head => head.room), ['living', 'bedroom', 'kitchen'], 'the heads fill the rooms living room, bedroom, kitchen')
+const [headAlong, headHeight, headOut] = MINI_SPLIT_HEAD_SIZE
+const headBox = ({ position: [x, y, z], outward }: (typeof MINI_SPLIT_HEADS)[number]): BoxSpec => ({ size: MINI_SPLIT_HEAD_SIZE, position: [x, y, z - outward * headOut / 2] })
+const innerFace = (wall: HouseWall) => wall.line - wall.outward * HOUSE.wallThickness / 2
+const wallUnitBox: BoxSpec = { size: EQUIPMENT.wallUnit.size, position: [EQUIPMENT.wallUnit.x, EQUIPMENT.wallUnit.y, -HOUSE.halfDepth - EQUIPMENT.wallUnit.outside + EQUIPMENT.wallUnit.size[2] / 2] }
+const windowUnitBox: BoxSpec = {
+  size: EQUIPMENT.windowUnit.size,
+  position: [EQUIPMENT.windowUnit.x, HOUSE.floorY + HOUSE_WALLS.back.openings[0].sill + EQUIPMENT.windowUnit.size[1] / 2, HOUSE_WALLS.back.line + EQUIPMENT.windowUnit.inside - EQUIPMENT.windowUnit.size[2] / 2],
+}
+const lanesByForm = { 'pitched': everyHeatLane('pitched'), 'low-slope': everyHeatLane('low-slope') } as const satisfies Record<RoofForm, unknown>
+const closetBoxes = ROOF_FORMS.flatMap((form) => {
+  const placement = indoorUnitPlacement('closet', form)!
+  return [...placement.closet, ...indoorUnitBoxes(placement, { furnace: true, coil: true }).map(section => section.box)]
+})
+for (const head of MINI_SPLIT_HEADS) {
+  const [x, y, z] = head.position
+  const name = `the ${head.room} head`
+  const walls = Object.values(HOUSE_WALLS).filter((wall: HouseWall) => {
+    const across = wall.run === 'x' ? z : x
+    const along = wall.run === 'x' ? x : z
+    return wall.outward === head.outward && Math.abs(across - innerFace(wall)) <= 0.05 && along >= wall.from && along <= wall.to
+  })
+  assert.equal(walls.length, 1, `${name} hangs on an outside wall's inside face`)
+  const wall: HouseWall = walls[0]!
+  assert.equal(wall.run, 'x', `${name} hangs on a wall running along x, the way its size is laid`)
+  const room = ROOMS[head.room]
+  assert.ok(x - headAlong / 2 >= room.from && x + headAlong / 2 <= room.to, `${name} stands inside its room`)
+  assert.ok(y - headHeight / 2 > HOUSE.floorY + PARTITION_DOOR.head && y + headHeight / 2 < WALL_TOP_Y - HOUSE.ceilingThickness, `${name} hangs high, under the ceiling`)
+  for (const opening of wall.openings) {
+    const apart = Math.abs(x - opening.along) >= (headAlong + opening.width) / 2 + 0.1
+    assert.ok(apart || y - headHeight / 2 >= HOUSE.floorY + opening.head + 0.05, `${name} stands clear of the window at ${opening.along}`)
+  }
+  const box = headBox(head)
+  for (const [what, other] of [['wall unit', wallUnitBox], ['window unit', windowUnitBox], ['thermostat', thermostatBox], ['wall furnace', wallFurnaceBox]] as const) {
+    assert.ok(!overlaps(box, other), `${name} stands clear of the ${what}`)
+  }
+  for (const piece of HOME_FURNITURE) {
+    assert.ok(!overlaps(box, furnitureBox(piece)), `${name} stands clear of the ${piece.id}`)
+  }
+  for (const [kind, boxes] of Object.entries(FURNISHING_BOXES)) {
+    assert.ok(boxes.every(other => !overlaps(box, other)), `${name} stands clear of the ${kind}`)
+  }
+  assert.ok(closetBoxes.every(other => !overlaps(box, other)), `${name} stands clear of the closet`)
+  for (const form of ROOF_FORMS) {
+    const nearest = nearestLane(lanesByForm[form], [box])
+    assert.ok(nearest >= arrowReach, `${form}: ${name} stands ${nearest.toFixed(3)} m from the nearest heat lane, inside an arrow's ${arrowReach} m reach`)
+  }
+}
+
+const outdoorBox: BoxSpec = { size: MINI_SPLIT_OUTDOOR.size, position: MINI_SPLIT_OUTDOOR.position }
+{
+  const [x, y, z] = outdoorBox.position
+  const [depth, height] = outdoorBox.size
+  assert.ok(Math.abs(y - height / 2) < 1e-9, 'the outdoor unit stands on the ground')
+  assert.ok(x + depth / 2 < -HOUSE.halfLength && x - depth / 2 > LOT.left, 'the outdoor unit stands in the left side yard')
+  const house: BoxSpec = { size: [HOUSE.halfLength * 2, 4, HOUSE.halfDepth * 2], position: [0, 2, 0] }
+  assert.ok(!overlaps(outdoorBox, house), 'the outdoor unit stands clear of the house')
+  const [padX, , padZ] = EQUIPMENT.condenser.position
+  const [padWidth, , padDepth] = EQUIPMENT.condenser.pad
+  // The pad and the column the condenser stands in on it, at its largest size.
+  const condenserColumn: BoxSpec = { size: [padWidth, 3, padDepth], position: [padX, 1.5, padZ] }
+  assert.ok(!overlaps(outdoorBox, condenserColumn), 'the outdoor unit stands clear of the condenser\'s pad')
+  assert.ok(Math.hypot(x - padX, z - padZ) < 2.5, 'near it')
+  for (const form of ROOF_FORMS) {
+    for (const foundation of ['slab', 'raised'] as const) {
+      // The lanes ride with the house; the unit stands on the lawn, so in the house's frame it sits lower as the floor rises.
+      const lifted: BoxSpec = { size: outdoorBox.size, position: [x, y - homeLift(foundation), z] }
+      const nearest = nearestLane(lanesByForm[form], [lifted])
+      assert.ok(nearest >= arrowReach, `${form} ${foundation}: the outdoor unit stands ${nearest.toFixed(3)} m from the nearest heat lane, inside an arrow's ${arrowReach} m reach`)
+    }
+  }
+}
+
+assert.equal(miniSplitLineSet(2).length, 2, 'two heads, two runs')
+const lineReach = MINI_SPLIT_LINE_SIZE / 2
+const backOpenings = HOUSE_WALLS.back.openings
+for (const floor of ['slab', 'raised'] as const) {
+  const floorY = HOME_FLOOR_Y[floor]
+  const runs = miniSplitLineSet(MINI_SPLIT_HEADS.length, floorY)
+  assert.deepEqual(MINI_SPLIT_HEADS.map((_, index) => miniSplitLineSet(index + 1, floorY).length), [1, 2, 3], `${floor}: a run for each head`)
+  runs.forEach((run, index) => {
+    const head = MINI_SPLIT_HEADS[index]!
+    const name = `${floor}: the ${head.room} head's run`
+    const [startX, startY, startZ] = run[0]!
+    const groundStart: Vec3 = [startX, startY + floorY - HOUSE.floorY, startZ]
+    assert.ok(pointToBox(groundStart, outdoorBox) < 1e-9, `${name} leaves the outdoor unit`)
+    assert.ok(pointToBox(run.at(-1)!, headBox(head)) < 1e-9, `${name} ends behind its head`)
+    assert.ok(run.slice(1).every((point, at) => point.filter((value, axis) => Math.abs(value - run[at]![axis]!) > 1e-9).length === 1), `${name} runs straight along the walls, one axis at a time`)
+    assert.ok(run.slice(0, -1).every(([px, , pz]) => Math.abs(px) >= HOUSE.halfLength || Math.abs(pz) >= HOUSE.halfDepth), `${name} keeps outside the house until it comes through the wall behind its head`)
+    for (let at = 1; at < run.length; at++) {
+      const [from, to] = [run[at - 1]!, run[at]!]
+      if (from[1] !== to[1] || from[2] !== to[2] || Math.abs(from[2] + HOUSE.halfDepth) > lineReach + 1e-9) {
+        continue
+      }
+      const [low, high] = [Math.min(from[0], to[0]), Math.max(from[0], to[0])]
+      for (const opening of backOpenings) {
+        const crosses = high > opening.along - opening.width / 2 && low < opening.along + opening.width / 2
+        assert.ok(!crosses || from[1] - lineReach >= HOUSE.floorY + opening.head + 0.05, `${name} passes over the back window at ${opening.along}`)
+      }
+    }
+  })
+  const lines = lineSetBoxes(runs, MINI_SPLIT_LINE_SIZE)
+  for (const form of ROOF_FORMS) {
+    const downspouts = downspoutBoxes(form)
+    assert.ok(lines.every(line => downspouts.every(spout => !overlaps(line, spout))), `${form} ${floor}: the runs pass clear of the downspouts`)
+    const nearest = nearestLane(lanesByForm[form], lines)
+    assert.ok(nearest >= arrowReach, `${form} ${floor}: the runs pass ${nearest.toFixed(3)} m from the nearest heat lane, inside an arrow's ${arrowReach} m reach`)
+    const closetLines = indoorUnitPlacement('closet', form)!.lineSet
+    assert.ok(lines.every(line => closetLines.every(point => pointToBox(point, line) > CONDENSER_LINE_SET.size)), `${form} ${floor}: the runs keep clear of the closet's line set`)
+  }
+  assert.ok(lines.every(line => !overlaps(line, wallUnitBox) && !overlaps(line, windowUnitBox)), `${floor}: the runs keep clear of the wall and window units`)
+}
+
+const miniIds = rowsFor({ hvacType: 'mini-split' }).map(row => row.id)
+const firstHead = headBox(MINI_SPLIT_HEADS[0])
+for (const form of ROOF_FORMS) {
+  assert.deepEqual(systemPartFocus('heating-cooling', form, 'mini-split-heads', 0, miniIds, []), firstHead.position, `${form}: the heads' pin rests on the first head`)
+  assert.deepEqual(systemPartFocus('heating-cooling', form, 'mini-split-outdoor', 0, miniIds, []), MINI_SPLIT_OUTDOOR.position, `${form}: the outdoor unit's pin rests on the unit`)
+  assert.deepEqual(SYSTEM_CAMERA_VIEWS['heating-cooling'](form, 'landscape', 0, { focus: { kind: 'mini-split-head' }, scale: 1 }).target, MINI_SPLIT_HEADS[0].position, `${form}: a mini-split home is looked at on its first head`)
 }
 
 console.log('verify-heating-cooling: ok')

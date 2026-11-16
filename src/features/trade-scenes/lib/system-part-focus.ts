@@ -3,7 +3,7 @@ import type { HvacIndoorLocation } from '@/shared/modules/construction/core/cons
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 
 import { CEILING_OPENING_LOOK } from '@/features/trade-scenes/constants/home-details'
-import { ATTIC_FAN_SPOT, COVERING_BASE, EQUIPMENT, GUTTER_BACK, GUTTER_Y, HOUSE, HOUSE_WALLS, LOW_SLOPE, LOW_SLOPE_DECK_Y, LOW_SLOPE_ROOF_Y, RAFTER_ORIGIN_Y, RIDGE_Y, ROOMS, SLOPE_LENGTH, WALL_TOP_Y, WINDOW_FRAMES } from '@/features/trade-scenes/constants/home-geometry'
+import { ATTIC_FAN_SPOT, COVERING_BASE, EQUIPMENT, GUTTER_BACK, GUTTER_Y, HOUSE, HOUSE_WALLS, LOW_SLOPE, LOW_SLOPE_DECK_Y, LOW_SLOPE_ROOF_Y, MINI_SPLIT_HEAD_SIZE, MINI_SPLIT_HEADS, MINI_SPLIT_OUTDOOR, RAFTER_ORIGIN_Y, RIDGE_Y, ROOMS, SLOPE_LENGTH, WALL_TOP_Y, WINDOW_FRAMES } from '@/features/trade-scenes/constants/home-geometry'
 import { LEAK } from '@/features/trade-scenes/constants/home-life'
 import { ATTIC_HEAT_LINE, DUCT_PIN_RISE, LOOK_INSIDE_WINDOW, PART_PIECES, STEP_CUTS, STEP_DEPTHS } from '@/features/trade-scenes/constants/look-inside'
 import { WINDOW_SEAL_LOOKS } from '@/features/trade-scenes/constants/system-part-looks'
@@ -90,6 +90,11 @@ const INDOOR_SECTION_IDS = ['blower', 'furnace', 'coil', 'plenum'] as const sati
 // The living room's grille, on its face under the ceiling where the run's boot comes through.
 const [LIVING_BOOT_X, , LIVING_BOOT_Z] = EQUIPMENT.ductRuns.map(run => run[run.length - 1]).find(([x]) => x > ROOMS.living.from && x < ROOMS.living.to)!
 const LIVING_ROOM_GRILLE: Vec3 = [LIVING_BOOT_X, CEILING_Y - 0.01, LIVING_BOOT_Z]
+// Every mini-split home has the first head, so the heads are pointed at the middle of it.
+const FIRST_HEAD: Vec3 = (() => {
+  const { position: [x, y, z], outward } = MINI_SPLIT_HEADS[0]
+  return [x, y, z - outward * MINI_SPLIT_HEAD_SIZE[2] / 2]
+})()
 // Where each system part sits on the house at rest, before the foundation lifts it: the whole window glass, which its spot
 // points at, and the equipment. Working numbers, set by eye.
 const SHARED_POINTS: Partial<Record<SystemPartId, Vec3>> = {
@@ -99,8 +104,8 @@ const SHARED_POINTS: Partial<Record<SystemPartId, Vec3>> = {
   'duct-runs': ductC[1],
   'registers': LIVING_ROOM_GRILLE,
   'thermostat': EQUIPMENT.thermostat.position,
-  'mini-split-heads': CONDENSER_POINT,
-  'mini-split-outdoor': CONDENSER_POINT,
+  'mini-split-heads': FIRST_HEAD,
+  'mini-split-outdoor': MINI_SPLIT_OUTDOOR.position,
 }
 
 // The roof's and the attic's, and the package unit's, by roof form: on a gable the layers stand in section at the near

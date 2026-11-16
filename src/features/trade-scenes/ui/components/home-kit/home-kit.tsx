@@ -68,6 +68,7 @@ import { HomeThermalPaint } from '@/features/trade-scenes/ui/components/home-kit
 import { HouseRoof } from '@/features/trade-scenes/ui/components/home-kit/house-roof'
 import { HouseShell } from '@/features/trade-scenes/ui/components/home-kit/house-shell'
 import { Lot } from '@/features/trade-scenes/ui/components/home-kit/lot'
+import { MiniSplitOutdoor } from '@/features/trade-scenes/ui/components/home-kit/mini-split-outdoor'
 import { PartAnchorsLayer } from '@/features/trade-scenes/ui/components/home-kit/part-anchors-layer'
 import { ReadingLabels } from '@/features/trade-scenes/ui/components/home-kit/reading-labels'
 import { Residents } from '@/features/trade-scenes/ui/components/home-kit/residents'
@@ -409,6 +410,7 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
             <CondenserUnit load={outdoorLoad} burst={burst} wear={hvac.outdoor.wear} scale={acScale} onTap={spotTap('equipment', 'ground')} hover={hover} />
           </group>
         )}
+        {hvac.miniSplit !== null && <MiniSplitOutdoor running={running.has('mini-split')} wear={hvac.miniSplit.wear} onTap={spotTap('equipment')} />}
         {gutterWear !== null && <DownspoutFeet form={roofForm} gutter={{ wear: gutterWear, hex: gutterColour }} />}
         {raining && (
           <group userData={thermalTag(OWN_PAINT)}>

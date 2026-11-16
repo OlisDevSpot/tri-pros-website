@@ -3729,13 +3729,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   // The wall is looked inside whole: the house tags its paint and the pieces it draws on the wall's parts (its finish, its
   // trim), and none of the parts within it.
   const inTheWall = (entry: (typeof upClose)[number]) => (entry.systems as readonly HomeSystemId[]).includes('walls') && entry.id === entry.part && entry.id !== 'paint'
-  // Listed on the card before the house draws them; each leaves this list when its drawing lands.
-  const NOT_DRAWN_YET: readonly string[] = ['mini-split-heads', 'mini-split-outdoor']
-  for (const id of NOT_DRAWN_YET) {
-    assert.ok(upClose.some(entry => entry.id === id), `${id}: a part not drawn yet is still listed up close`)
-    assert.ok(!kitTagged.has(id), `${id}: tagged by the house now, so it leaves the not-drawn list`)
-  }
-  for (const { id } of upClose.filter(entry => entry.id === entry.part && !inTheWall(entry) && !NOT_DRAWN_YET.includes(entry.id))) {
+  for (const { id } of upClose.filter(entry => entry.id === entry.part && !inTheWall(entry))) {
     assert.ok(kitTagged.has(id), `${id}: the house tags it`)
   }
   assert.ok(kitTagged.has('paint') && kitTagged.has('eaves-trim') && !upClose.some(entry => inTheWall(entry) && kitTagged.has(entry.id)), 'the wall is tagged by its paint and its pieces alone')

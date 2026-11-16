@@ -16,6 +16,7 @@ import { AtticDucts } from '@/features/trade-scenes/ui/components/home-kit/attic
 import { ElectricMeter } from '@/features/trade-scenes/ui/components/home-kit/electric-meter'
 import { HvacCloset } from '@/features/trade-scenes/ui/components/home-kit/hvac-closet'
 import { IndoorUnit } from '@/features/trade-scenes/ui/components/home-kit/indoor-unit'
+import { MiniSplitHeads } from '@/features/trade-scenes/ui/components/home-kit/mini-split-heads'
 import { PackageUnit } from '@/features/trade-scenes/ui/components/home-kit/package-unit'
 import { Registers } from '@/features/trade-scenes/ui/components/home-kit/registers'
 import { Thermostat } from '@/features/trade-scenes/ui/components/home-kit/thermostat'
@@ -98,6 +99,8 @@ export function HomeEquipment({ hvac, side, running, lowSlope, load, meterSpeed,
             : <WallUnit load={loadOf('wall-unit')} heatLoad={heatLoadOf('wall-unit')} burst={burst} />}
         </group>
       )}
+      {/* The outdoor unit stands on the lawn with the condenser; its lines ride with the walls they are fixed to. */}
+      {hvac.miniSplit !== null && <MiniSplitHeads heads={hvac.miniSplit.heads} running={running.has('mini-split')} side={side} />}
       {hvac.windowUnit !== null && (
         <group userData={unitZone('window-unit')}>
           <WindowUnit load={loadOf('window-unit')} heatLoad={heatLoadOf('window-unit')} burst={burst} />

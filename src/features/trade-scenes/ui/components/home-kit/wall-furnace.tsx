@@ -2,7 +2,7 @@
 
 import type { BoxSpec } from '@/features/trade-scenes/types'
 
-import { EQUIPMENT, PARTITIONS_X } from '@/features/trade-scenes/constants/home-geometry'
+import { EQUIPMENT } from '@/features/trade-scenes/constants/home-geometry'
 import { EQUIPMENT_STRAIN } from '@/features/trade-scenes/constants/home-life'
 import { HOME_PALETTE } from '@/features/trade-scenes/constants/home-palette'
 import { useHeatGlow } from '@/features/trade-scenes/hooks/use-heat-glow'
@@ -12,9 +12,7 @@ interface WallFurnaceProps {
   heatLoad: number
 }
 
-const { position: [x, y, z], size: [depth, height, width] } = EQUIPMENT.wallFurnace
-// The cabinet's back is on the partition, so its face looks away from it, into the room.
-const FACING = Math.sign(x - PARTITIONS_X[0])
+const { position: [x, y, z], size: [depth, height, width], facing: FACING } = EQUIPMENT.wallFurnace
 const FACE_X = x + FACING * depth / 2
 
 const BODY: BoxSpec[] = [{ size: [depth, height, width], position: [x, y, z] }]
