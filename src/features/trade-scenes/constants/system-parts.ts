@@ -41,6 +41,8 @@ export const SYSTEM_PARTS = [
   { id: 'glazing', assembly: 'windows', part: 'glazing', systems: ['windows'], listed: false },
 
   // Heating & cooling lists in the order a rep walks a customer through it, not inside out.
+  // The walk starts where the air comes in.
+  { id: 'return', assembly: 'hvac-attic', part: 'return', systems: ['heating-cooling'] },
   { id: 'package-unit', assembly: 'hvac-attic', part: 'package-unit', systems: ['heating-cooling'] },
   { id: 'blower', assembly: 'hvac-attic', part: 'blower', systems: ['heating-cooling'] },
   { id: 'furnace', assembly: 'hvac-attic', part: 'furnace', systems: ['heating-cooling'] },

@@ -9,6 +9,7 @@ export const HVAC_ATTIC = {
   forms: ['split', 'package'],
   parts: [
     { id: 'registers', group: 'ducts', role: 'equipment', materials: { grille: { copy: { label: 'Registers', detail: 'Where the air comes into each room.' } } } },
+    { id: 'return', group: 'ducts', role: 'equipment', forms: ['split'], materials: { 'return-grille': { copy: { label: 'Return', detail: 'The big grille where the blower pulls the room air back into the system.' } } } },
     { id: 'blower', group: 'equipment', role: 'equipment', forms: ['split'], materials: {
       'standard-blower': { copy: { label: 'Blower', detail: 'The fan that pushes the air through the furnace, the coil and the ducts.' }, conditionCopy: { worn: { label: 'Aging blower', detail: 'An older blower moves less air for the same electricity.' } } },
       'new-blower': { copy: { label: 'New blower', detail: 'Pushes the air through the furnace, the coil and the ducts.' } },

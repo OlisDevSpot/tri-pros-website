@@ -21,6 +21,9 @@ export interface IndoorUnitPlacement {
   closet: readonly BoxSpec[]
   // Where the plenum's air meets today's duct runs, so the runs, boots and their checks do not move.
   trunk: readonly Vec3[]
+  // Where the room air comes back in: the grille, the way its face looks into the room, and the duct from its back to the
+  // blower at the return end. A closet's grille is on the closet itself, so its air needs no duct.
+  returnAir: { grille: BoxSpec, facing: Vec3, duct: readonly Vec3[] }
 }
 
 export function indoorUnitPlacement(location: HvacIndoorLocation, form: RoofForm): IndoorUnitPlacement | null {

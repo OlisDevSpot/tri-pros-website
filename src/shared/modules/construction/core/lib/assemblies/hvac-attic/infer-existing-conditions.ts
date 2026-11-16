@@ -16,6 +16,7 @@ export function inferHvacAtticExistingConditions({ property }: HomeFacts, home: 
     basis: basisOfMaterials(property, home, ['heating-cooling', 'ducts']),
     parts: {
       'registers': isDuctedSystem(property.hvacType) ? { material: 'grille', condition: 'retained' } : ABSENT,
+      'return': central ? { material: 'return-grille', condition: 'retained' } : ABSENT,
       'blower': aging('standard-blower', central),
       'furnace': aging('standard-furnace', central),
       'coil': aging('standard-coil', cools),

@@ -19,6 +19,7 @@ import { IndoorUnit } from '@/features/trade-scenes/ui/components/home-kit/indoo
 import { MiniSplitHeads } from '@/features/trade-scenes/ui/components/home-kit/mini-split-heads'
 import { PackageUnit } from '@/features/trade-scenes/ui/components/home-kit/package-unit'
 import { Registers } from '@/features/trade-scenes/ui/components/home-kit/registers'
+import { ReturnGrille } from '@/features/trade-scenes/ui/components/home-kit/return-grille'
 import { Thermostat } from '@/features/trade-scenes/ui/components/home-kit/thermostat'
 import { WallFurnace } from '@/features/trade-scenes/ui/components/home-kit/wall-furnace'
 import { WallUnit } from '@/features/trade-scenes/ui/components/home-kit/wall-unit'
@@ -81,6 +82,7 @@ export function HomeEquipment({ hvac, side, running, lowSlope, load, meterSpeed,
       </group>
       {placement?.upright === true && unit}
       {placement !== null && <HvacCloset walls={placement.closet} />}
+      {placement !== null && <ReturnGrille returnAir={placement.returnAir} />}
       {vacated !== null && <HvacCloset walls={vacated.closet} />}
       {hvac.registers && (
         <group userData={thermalTag(runningZone(airMoving, side, 'interior'))}>

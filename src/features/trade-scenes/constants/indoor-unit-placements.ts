@@ -23,6 +23,22 @@ const ATTIC_LENGTHS = { blower: 0.42, furnace: 0.38, coil: 0.32, plenum: EQUIPME
 const ATTIC_BASE_Z = PLENUM_Z + ATTIC_LENGTHS.blower + ATTIC_LENGTHS.furnace + ATTIC_LENGTHS.coil + ATTIC_LENGTHS.plenum / 2
 const ATTIC_COIL_Z = ATTIC_BASE_Z - ATTIC_LENGTHS.blower - ATTIC_LENGTHS.furnace - ATTIC_LENGTHS.coil / 2
 
+// A ceiling return wider than any supply grille, in the living room beside the cabinet's return end and behind the ceiling's
+// cut, clear of the supply grilles; its duct climbs out of the blanket and comes into the blower's side at the return end.
+// Working numbers, set by screenshot.
+const RETURN_GRILLE = { size: [0.7, 0.012, 0.45] as Vec3, x: PLENUM_X - 0.65, z: -0.32 } as const
+const RETURN_INTO_BLOWER_Z = ATTIC_BASE_Z - 0.12
+const ATTIC_RETURN: IndoorUnitPlacement['returnAir'] = {
+  grille: { size: RETURN_GRILLE.size, position: [RETURN_GRILLE.x, CEILING_Y - RETURN_GRILLE.size[1] / 2, RETURN_GRILLE.z] },
+  facing: [0, -1, 0],
+  duct: [
+    [RETURN_GRILLE.x, WALL_TOP_Y, RETURN_GRILLE.z],
+    [RETURN_GRILLE.x, WALL_TOP_Y + 0.25, RETURN_GRILLE.z],
+    [PLENUM_X - ATTIC_SECTION[0] / 2 - 0.16, PLENUM_Y, RETURN_INTO_BLOWER_Z],
+    [PLENUM_X - ATTIC_SECTION[0] / 2, PLENUM_Y, RETURN_INTO_BLOWER_Z],
+  ],
+}
+
 // From the coil's side the lines rise over the runs leaving the plenum's left face, cross the attic to the gable, and come
 // down the left wall's outside to meet the condenser's. Working numbers, set by screenshot.
 const ATTIC: IndoorUnitPlacement = {
@@ -40,6 +56,7 @@ const ATTIC: IndoorUnitPlacement = {
   ],
   closet: [],
   trunk: [EQUIPMENT.plenum.position],
+  returnAir: ATTIC_RETURN,
 }
 
 // Working numbers, set by screenshot. The closet stands in the bedroom against the left wall, between the wall's low heat
@@ -81,6 +98,15 @@ const CLOSET_LINE_SET: readonly Vec3[] = [
   [LEFT_FACE, LINE_RUN_Y, LINE_Z],
 ]
 
+// The air comes in low through the closet's side wall, at the blower in the bottom of the upright unit. Working numbers, set
+// by screenshot.
+const CLOSET_RETURN_GRILLE: Vec3 = [0.012, 0.35, 0.5]
+const CLOSET_RETURN: IndoorUnitPlacement['returnAir'] = {
+  grille: { size: CLOSET_RETURN_GRILLE, position: [CLOSET_OUTER_X + CLOSET_RETURN_GRILLE[0] / 2, HOUSE.floorY + CLOSET_CABINET.blower / 2, CLOSET_Z] },
+  facing: [1, 0, 0],
+  duct: [],
+}
+
 function closet(trunk: readonly Vec3[]): IndoorUnitPlacement {
   return {
     upright: true,
@@ -91,6 +117,7 @@ function closet(trunk: readonly Vec3[]): IndoorUnitPlacement {
     lineSet: CLOSET_LINE_SET,
     closet: CLOSET_WALLS,
     trunk,
+    returnAir: CLOSET_RETURN,
   }
 }
 
@@ -128,4 +155,4 @@ export const SUPPLY_JUNCTION: Readonly<Record<RoofForm, Vec3>> = {
 }
 
 // Working numbers, set by screenshot: the gap that shows between two sections, the supply trunk's radius, and the line set's.
-export const INDOOR_UNIT_LOOK = { seam: 0.012, trunkRadius: 0.09, lineRadius: CONDENSER_LINE_SET.size / 2 } as const
+export const INDOOR_UNIT_LOOK = { seam: 0.012, trunkRadius: 0.09, returnRadius: 0.12, lineRadius: CONDENSER_LINE_SET.size / 2 } as const

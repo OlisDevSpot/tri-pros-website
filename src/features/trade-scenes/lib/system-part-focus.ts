@@ -175,9 +175,12 @@ function pieceFocus(id: SystemPartId, peel: number, shown: ReadonlySet<SystemPar
 }
 
 // A section of the indoor unit at its centre where `location` stands it, closed up as the house draws it round a furnace or a
-// coil the system lacks.
+// coil the system lacks; the return on its grille, where the room air goes in.
 function indoorSectionFocus(id: SystemPartId, form: RoofForm, location: HvacIndoorLocation, shown: ReadonlySet<SystemPartId>): Vec3 | null {
   const placement = indoorUnitPlacement(location, form)
+  if (placement !== null && id === 'return') {
+    return placement.returnAir.grille.position
+  }
   if (placement === null || !(INDOOR_SECTION_IDS as readonly SystemPartId[]).includes(id)) {
     return null
   }

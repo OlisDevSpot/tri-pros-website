@@ -44,7 +44,7 @@ export const HOME_MATERIALS: Record<HomeMaterialId, HomeMaterialDefinition> = {
   'heating-cooling': {
     trade: 'hvac',
     repairs: true,
-    parts: ['blower', 'furnace', 'coil', 'plenum', 'thermostat', 'refrigerant-lines', 'condenser', 'package-unit', 'mini-split-heads', 'mini-split-outdoor'].map(part => ({ assembly: 'hvac-attic' as const, part })),
+    parts: ['return', 'blower', 'furnace', 'coil', 'plenum', 'thermostat', 'refrigerant-lines', 'condenser', 'package-unit', 'mini-split-heads', 'mini-split-outdoor'].map(part => ({ assembly: 'hvac-attic' as const, part })),
     repairsEndWith: ['blower', 'furnace', 'coil', 'refrigerant-lines', 'condenser', 'package-unit'].map(part => ({ assembly: 'hvac-attic' as const, part })),
     bands: { all: [3, 8, 12, 15] },
     replaceable: null,

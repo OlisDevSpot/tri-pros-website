@@ -47,6 +47,7 @@ const SECTION_TAGS = {
 } as const satisfies Record<IndoorUnitSectionId, unknown>
 const LINE_SET_TAG = systemPartTag('refrigerant-lines')
 const TRUNK_TAG = systemPartTag('duct-runs')
+const RETURN_TAG = systemPartTag('return')
 
 // The plenum and the trunk carry whatever air the blower moves; the line set runs with the condenser.
 const RUNS_WITH = { blower: 'blower', furnace: 'furnace', coil: 'coil', plenum: 'blower' } as const satisfies Record<IndoorUnitSectionId, HvacRunningPart>
@@ -102,8 +103,12 @@ export function IndoorUnit({ placement, furnace, coil, lineSet, heatLoad, form, 
   const lines = useMemo(() => (lineSet ? indoorUnitLineSet(placement, sections, floorY) : null), [lineSet, placement, sections, floorY])
   const trunkGeometry = useOwnedGeometry(() => tube(trunk, INDOOR_UNIT_LOOK.trunkRadius, false), [trunk])
   const lineGeometry = useOwnedGeometry(() => tube(lines, INDOOR_UNIT_LOOK.lineRadius, true), [lines])
+  const returnDuct = placement.returnAir.duct
+  const returnGeometry = useOwnedGeometry(() => tube(returnDuct.length > 0 ? returnDuct : null, INDOOR_UNIT_LOOK.returnRadius, false), [returnDuct])
 
   const airZone = thermalTag(runningZone(running.has('blower'), side, still))
+  // The return carries the rooms' own air back to the blower, neither heated nor cooled yet.
+  const returnZone = thermalTag(running.has('blower') && side !== null ? 'interior' : still)
 
   return (
     <group>
@@ -119,6 +124,15 @@ export function IndoorUnit({ placement, furnace, coil, lineSet, heatLoad, form, 
           </group>
         </group>
       ))}
+      {returnDuct.length > 0 && (
+        <group userData={returnZone}>
+          <group userData={RETURN_TAG}>
+            <mesh geometry={returnGeometry}>
+              <meshStandardMaterial color={HOME_PALETTE.duct} roughness={0.8} />
+            </mesh>
+          </group>
+        </group>
+      )}
       {trunk !== null && (
         <group userData={airZone}>
           <group userData={TRUNK_TAG}>
