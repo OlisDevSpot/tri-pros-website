@@ -15,7 +15,7 @@ import { CONDENSER_LINE_SET, THERMOSTAT_BOX } from '@/features/trade-scenes/cons
 import { FURNISHING_BOXES, HOME_FURNITURE } from '@/features/trade-scenes/constants/home-furnishings'
 import { BACK_INNER, EQUIPMENT, HOME_FLOOR_Y, HOUSE, HOUSE_WALLS, MINI_SPLIT_HEAD_SIZE, MINI_SPLIT_HEADS, MINI_SPLIT_LINE_SIZE, MINI_SPLIT_OUTDOOR, PARTITION_DOOR, PARTITIONS_X, ROOMS, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
 import { LOT } from '@/features/trade-scenes/constants/home-lot'
-import { HVAC_INDOOR_LOCATION_LABELS, HVAC_SYSTEM_CHOICE_LABELS, MINI_SPLIT_HEAD_COUNT_LABELS, PART_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
+import { HVAC_COMPONENT_LABELS, HVAC_INDOOR_LOCATION_LABELS, HVAC_SYSTEM_CHOICE_LABELS, MINI_SPLIT_HEAD_COUNT_LABELS, PART_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
 import { HOME_SCENE_DEFAULTS } from '@/features/trade-scenes/constants/home-scene-defaults'
 import { HVAC_SYSTEM_CHOICES } from '@/features/trade-scenes/constants/home-systems'
 import { INDOOR_UNIT_PLACEMENTS } from '@/features/trade-scenes/constants/indoor-unit-placements'
@@ -67,6 +67,7 @@ import { ROOF_FORMS } from '@/shared/modules/construction/core/constants/roof-fo
 import { SCOPE_IDS } from '@/shared/modules/construction/core/constants/scope-ids'
 import { inferRoofAtticExistingConditions } from '@/shared/modules/construction/core/lib/assemblies/roof-attic/infer-existing-conditions'
 import { billsPaid } from '@/shared/modules/construction/core/lib/bills-paid'
+import { centralComponents } from '@/shared/modules/construction/core/lib/hvac-system'
 import { installKind } from '@/shared/modules/construction/core/lib/install-kind'
 import { resolveAssembly } from '@/shared/modules/construction/core/lib/resolve-assembly'
 import { resolveHomeMaterials } from '@/shared/modules/construction/core/lib/resolve-home-materials'
@@ -138,7 +139,7 @@ const centralBoth = ['registers', 'blower', 'furnace', 'coil', 'plenum', 'duct-r
 assert.deepEqual(presentIds({ hvacType: 'central', hvacComponents: 'both' }), centralBoth, 'a central furnace and A/C has every split component')
 assert.deepEqual(presentIds({}), centralBoth, 'an unknown system is a central furnace and A/C')
 assert.deepEqual(presentIds({ hvacType: 'central', hvacComponents: 'furnace' }), ['registers', 'blower', 'furnace', 'plenum', 'duct-runs', 'thermostat'], 'a furnace alone has no coil, line set or condenser')
-assert.deepEqual(presentIds({ hvacType: 'central', hvacComponents: 'ac' }), ['registers', 'blower', 'coil', 'plenum', 'duct-runs', 'thermostat', 'refrigerant-lines', 'condenser'], 'A/C alone has no furnace')
+assert.deepEqual(presentIds({ hvacType: 'central', hvacComponents: 'ac' }), centralBoth, 'a central system stored as A/C alone has its furnace too')
 assert.deepEqual(presentIds({ hvacType: 'wall-mounted' }), ['thermostat'], 'a wall unit has only its thermostat in the assembly')
 assert.deepEqual(presentIds({ hvacType: 'portable' }), ['thermostat'], 'a window unit has only its thermostat in the assembly')
 assert.deepEqual(presentIds({ hvacType: 'package-unit' }), ['registers', 'duct-runs', 'thermostat', 'package-unit'], 'a package unit feeds ducts and registers')
@@ -191,7 +192,7 @@ const ducts = { part: 'duct-runs', scopeIds: ['airDuctsReplacement'] }
 const offersTable: [string, Partial<PropertyProfile>, { part: string, scopeIds: string[] }[]][] = [
   ['central both', { hvacType: 'central', hvacComponents: 'both' }, [{ part: 'blower', scopeIds: ['splitSystemReplacement', 'acReplacement', 'furnaceReplacement'] }, ducts, minis]],
   ['central furnace', { hvacType: 'central', hvacComponents: 'furnace' }, [{ part: 'blower', scopeIds: ['splitSystemReplacement', 'furnaceReplacement'] }, ducts, minis]],
-  ['central ac', { hvacType: 'central', hvacComponents: 'ac' }, [{ part: 'blower', scopeIds: ['splitSystemReplacement', 'acReplacement'] }, ducts, minis]],
+  ['central ac', { hvacType: 'central', hvacComponents: 'ac' }, [{ part: 'blower', scopeIds: ['splitSystemReplacement', 'acReplacement', 'furnaceReplacement'] }, ducts, minis]],
   ['unknown', { hvacType: null, hvacComponents: null }, [{ part: 'blower', scopeIds: ['splitSystemReplacement', 'acReplacement', 'furnaceReplacement'] }, ducts, minis]],
   ['wall-mounted', { hvacType: 'wall-mounted' }, [{ part: 'blower', scopeIds: ['splitSystemNewCut'] }, minis]],
   ['portable', { hvacType: 'portable' }, [{ part: 'blower', scopeIds: ['splitSystemNewCut'] }, minis]],
@@ -257,10 +258,10 @@ const cutsTable: [string, Partial<PropertyProfile>, string[], number, number][] 
   ['central both', centralBothProperty, [SCOPE_IDS.acReplacement], 0.25, 0],
   ['central both', centralBothProperty, [SCOPE_IDS.furnaceReplacement], 0, 0.2],
   ['central furnace', centralFurnaceProperty, [split], 0, 0.2],
-  ['central ac', centralAcProperty, [split], 0.25, 0],
+  ['central ac', centralAcProperty, [split], 0.25, 0.2],
   ['central both', centralBothProperty, [split, ductsScope], 0.2875, 0.24],
   ['central furnace', centralFurnaceProperty, [split, ductsScope], 0, 0.24],
-  ['central ac', centralAcProperty, [split, ductsScope], 0.2875, 0],
+  ['central ac', centralAcProperty, [split, ductsScope], 0.2875, 0.24],
   ['central both', centralBothProperty, [SCOPE_IDS.acReplacement, ductsScope], 0.2875, 0.05],
   ['central both', centralBothProperty, [ductsScope], 0.05, 0.05],
   ['central furnace', centralFurnaceProperty, [ductsScope], 0, 0.05],
@@ -286,7 +287,7 @@ const todayParts = (property: Partial<PropertyProfile>) => hvacPartsOf(scene(pro
 const hvacAssembly = ASSEMBLIES['hvac-attic']
 assert.deepEqual([...billsPaid(todayParts(centralBothProperty), hvacAssembly) ?? []].sort(), ['electric', 'gas'], 'a central furnace and A/C pays both bills')
 assert.deepEqual([...billsPaid(todayParts(centralFurnaceProperty), hvacAssembly) ?? []], ['gas'], 'a furnace alone pays gas')
-assert.deepEqual([...billsPaid(todayParts(centralAcProperty), hvacAssembly) ?? []], ['electric'], 'A/C alone pays electric')
+assert.deepEqual([...billsPaid(todayParts(centralAcProperty), hvacAssembly) ?? []].sort(), ['electric', 'gas'], 'a central system stored as A/C alone pays both bills')
 assert.equal(billsPaid(todayParts({ hvacType: 'package-unit' }), hvacAssembly), null, 'a package unit pays every bill')
 
 const roiConfig = resolveRemodelRoiConfig()
@@ -339,8 +340,8 @@ assert.equal(furnaceSplit.lineSet, true, 'and the line set between them')
 assert.deepEqual(furnaceSplit.duties, both, 'and the home then heats and cools')
 
 const acToday = drawn(centralAcProperty)
-assert.equal(acToday.indoor?.furnace, null, 'A/C alone draws no furnace')
-assert.deepEqual(acToday.duties, coolsOnly, 'A/C alone only cools')
+assert.ok((acToday.indoor?.furnace ?? null) !== null, 'a central system stored as A/C alone draws its furnace')
+assert.deepEqual(acToday.duties, both, 'and heats as well as cools')
 
 const wallToday = drawn(wallFurnace)
 assert.deepEqual(wallToday.wallUnit, { kind: 'wall-furnace', idle: false }, 'a wall furnace runs')
@@ -397,15 +398,16 @@ for (const hvacType of ['wall-mounted', 'portable', 'mini-split'] as const) {
 assert.ok(drawn({ hvacType: 'wall-mounted' }, build([SCOPE_IDS.splitSystemNewCut])).ducts !== null, 'a new system draws its ducts')
 assert.ok(drawn({}).ducts !== null, 'a central home draws its ducts')
 
-// The indoor side each pair of today's type and components carried before its systems were drawn, as [summer, winter]
+// The indoor side each pair of today's type and components carries, as [summer, winter]. A central system stored as A/C
+// alone has its furnace, so it heats too; a wall or window unit stored as A/C only cools
 const sidesBefore: [HVACType | null, HVACComponent | null, 'cooling' | null, 'heating' | null][] = [
   [null, null, 'cooling', 'heating'],
   [null, 'furnace', null, 'heating'],
-  [null, 'ac', 'cooling', null],
+  [null, 'ac', 'cooling', 'heating'],
   [null, 'both', 'cooling', 'heating'],
   ['central', null, 'cooling', 'heating'],
   ['central', 'furnace', null, 'heating'],
-  ['central', 'ac', 'cooling', null],
+  ['central', 'ac', 'cooling', 'heating'],
   ['central', 'both', 'cooling', 'heating'],
   ['wall-mounted', null, 'cooling', 'heating'],
   ['wall-mounted', 'furnace', null, 'heating'],
@@ -423,8 +425,8 @@ const sidesBefore: [HVACType | null, HVACComponent | null, 'cooling' | null, 'he
 for (const [hvacType, hvacComponents, summer, winter] of sidesBefore) {
   const { duties } = drawn({ hvacType, hvacComponents })
   const pair = `${hvacType ?? 'unknown'} + ${hvacComponents ?? 'unset'}`
-  assert.equal(indoorSide('summer', duties), summer, `${pair}: the summer side is unchanged`)
-  assert.equal(indoorSide('winter', duties), winter, `${pair}: the winter side is unchanged`)
+  assert.equal(indoorSide('summer', duties), summer, `${pair}: the summer side`)
+  assert.equal(indoorSide('winter', duties), winter, `${pair}: the winter side`)
   assert.equal(indoorSide('normal', duties), null, `${pair}: a normal day runs nothing`)
   assert.equal(indoorSide('rain', duties), null, `${pair}: a storm runs nothing`)
 }
@@ -449,10 +451,10 @@ for (const location of ['attic', 'closet'] as const) {
       const nearFace = along(placement, section.box.position) - placement.lengths[section.id] / 2
       assert.ok(Math.abs(farFace - nearFace) < 1e-6, `${name}: the ${before.id} meets the ${section.id}`)
     })
-    const acOnly = indoorUnitBoxes(placement, { furnace: false, coil: true })
-    assert.deepEqual(acOnly.map(section => section.id), ['blower', 'coil', 'plenum'], `${name}: a unit with no furnace closes up`)
+    const noFurnace = indoorUnitBoxes(placement, { furnace: false, coil: true })
+    assert.deepEqual(noFurnace.map(section => section.id), ['blower', 'coil', 'plenum'], `${name}: a unit with no furnace, as a heat pump's, closes up`)
     const plenumAt = (sections: typeof whole) => along(placement, sections.find(section => section.id === 'plenum')!.box.position)
-    assert.ok(Math.abs(plenumAt(whole) - plenumAt(acOnly) - placement.lengths.furnace) < 1e-6, `${name}: and its plenum stands nearer the return by the furnace`)
+    assert.ok(Math.abs(plenumAt(whole) - plenumAt(noFurnace) - placement.lengths.furnace) < 1e-6, `${name}: and its plenum stands nearer the return by the furnace`)
   }
 }
 const atticPlenum = indoorUnitBoxes(indoorUnitPlacement('attic', 'pitched')!, { furnace: true, coil: true }).find(section => section.id === 'plenum')!
@@ -738,9 +740,9 @@ for (const location of ['attic', 'closet'] as const) {
     for (const { id, box } of sections) {
       assert.deepEqual(systemPartFocus('heating-cooling', form, id, 0, allIds, [], location), box.position, `${location}, ${form}: the ${id}'s pin rests on its section`)
     }
-    const acOnly = indoorUnitBoxes(indoorUnitPlacement(location, form)!, { furnace: false, coil: true })
-    const acIds = allIds.filter(id => id !== 'furnace')
-    assert.deepEqual(systemPartFocus('heating-cooling', form, 'coil', 0, acIds, [], location), acOnly.find(section => section.id === 'coil')!.box.position, `${location}, ${form}: with no furnace the coil's pin follows it toward the return`)
+    const noFurnace = indoorUnitBoxes(indoorUnitPlacement(location, form)!, { furnace: false, coil: true })
+    const noFurnaceIds = allIds.filter(id => id !== 'furnace')
+    assert.deepEqual(systemPartFocus('heating-cooling', form, 'coil', 0, noFurnaceIds, [], location), noFurnace.find(section => section.id === 'coil')!.box.position, `${location}, ${form}: with no furnace, as a heat pump's, the coil's pin follows it toward the return`)
   }
 }
 assert.deepEqual(systemPartFocus('heating-cooling', 'pitched', 'thermostat', 0, allIds, []), EQUIPMENT.thermostat.position, 'the thermostat\'s pin is on the thermostat')
@@ -756,7 +758,7 @@ assert.deepEqual(runningOf('normal', {}), [], 'a normal day runs nothing')
 assert.deepEqual(runningOf('rain', {}), [], 'nor does a storm')
 assert.deepEqual(runningOf('summer', centralFurnaceProperty), [], 'a furnace alone runs nothing in summer')
 assert.deepEqual(runningOf('winter', centralFurnaceProperty), ['blower', 'furnace'], 'and heats in winter')
-assert.deepEqual(runningOf('winter', centralAcProperty), [], 'A/C alone runs nothing in winter')
+assert.deepEqual(runningOf('winter', centralAcProperty), ['blower', 'furnace'], 'a central system stored as A/C alone heats in winter')
 assert.deepEqual(runningOf('summer', centralAcProperty), ['blower', 'coil', 'outdoor'], 'and cools in summer')
 assert.deepEqual(runningOf('summer', centralFurnaceProperty, build([split])), ['blower', 'coil', 'outdoor'], 'a whole system on a furnace-only home cools with what it adds')
 assert.deepEqual(runningOf('winter', wallFurnace), ['wall-unit'], 'a wall furnace heats in winter')
@@ -928,5 +930,31 @@ for (const form of ROOF_FORMS) {
   assert.deepEqual(systemPartFocus('heating-cooling', form, 'mini-split-outdoor', 0, miniIds, []), MINI_SPLIT_OUTDOOR.position, `${form}: the outdoor unit's pin rests on the unit`)
   assert.deepEqual(SYSTEM_CAMERA_VIEWS['heating-cooling'](form, 'landscape', 0, { focus: { kind: 'mini-split-head' }, scale: 1 }).target, MINI_SPLIT_HEADS[0].position, `${form}: a mini-split home is looked at on its first head`)
 }
+
+// A central system is a furnace alone or a furnace with A/C, never A/C alone: one stored as A/C resolves, offers, cuts and
+// draws as a furnace with A/C, and Today's equipment choice offers only the two
+assert.equal(centralComponents('ac'), 'both', 'a central system stored as A/C alone reads as a furnace with A/C')
+assert.equal(centralComponents('furnace'), 'furnace')
+assert.equal(centralComponents('both'), 'both')
+assert.equal(centralComponents(null), null, 'an unset equipment stays unset')
+for (const hvacType of ['central', null] as const) {
+  const stored: Partial<PropertyProfile> = { hvacType, hvacComponents: 'ac' }
+  const read: Partial<PropertyProfile> = { hvacType, hvacComponents: 'both' }
+  const name = `${hvacType ?? 'unknown'} stored as A/C`
+  assert.deepEqual(hvacPartsOf(scene(stored)), hvacPartsOf(scene(read)), `${name}: resolves as a furnace with A/C`)
+  assert.deepEqual(offersOf(stored), offersOf(read), `${name}: is offered what a furnace with A/C is`)
+  for (const scopes of [[split], [split, ductsScope], [ductsScope], [SCOPE_IDS.acReplacement], [SCOPE_IDS.furnaceReplacement]]) {
+    const build = scopes.map(id => scopeName[id]).join(' + ')
+    assert.deepEqual(scene(stored, { scopes, view: 'proposed' }).savings.cuts, scene(read, { scopes, view: 'proposed' }).savings.cuts, `${name}, ${build}: cuts as a furnace with A/C`)
+    assert.deepEqual(drawn(stored, { scopes, view: 'proposed' }), drawn(read, { scopes, view: 'proposed' }), `${name}, ${build}: draws as a furnace with A/C`)
+  }
+  const equipment = slotIn(inputs(stored), 'hvac-components')
+  assert.deepEqual(valuesOf(equipment), ['furnace', 'both'], `${name}: Today's equipment offers a furnace alone or a furnace with A/C`)
+  assert.deepEqual(equipment?.options.map(option => option.label), [HVAC_COMPONENT_LABELS.furnace, HVAC_COMPONENT_LABELS.both], `${name}: under their own labels`)
+  assert.equal(equipment?.current, 'both', `${name}: reads as a furnace with A/C`)
+}
+const wallAcHome: PropertyProfile = { ...base, hvacType: 'wall-mounted', hvacComponents: 'ac' }
+assert.equal({ ...wallAcHome, ...hvacSystemPatch('central', wallAcHome) }.hvacComponents, 'both', 'a wall unit that only cools, set to central, becomes a furnace with A/C')
+assert.deepEqual(drawn(wallAcHome).wallOrWindowDuties, coolsOnly, 'a wall unit stored as A/C still only cools')
 
 console.log('verify-heating-cooling: ok')

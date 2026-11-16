@@ -1,16 +1,14 @@
 import type { ExistingConditions, ExistingPart, HomeFacts, ResolvedHomeMaterials } from '@/shared/modules/construction/core/types'
 
 import { basisOfMaterials, drawnPart } from '@/shared/modules/construction/core/lib/drawn-part'
-import { isCentralSystem, isDuctedSystem } from '@/shared/modules/construction/core/lib/hvac-system'
+import { centralComponents, isCentralSystem, isDuctedSystem } from '@/shared/modules/construction/core/lib/hvac-system'
 
 const ABSENT: ExistingPart = { material: null, condition: 'absent' }
 
 export function inferHvacAtticExistingConditions({ property }: HomeFacts, home: ResolvedHomeMaterials): ExistingConditions {
   const ducts = home.ducts?.option ?? 'original-flex'
   const central = isCentralSystem(property.hvacType)
-  const components = property.hvacComponents ?? 'both'
-  const heats = central && components !== 'ac'
-  const cools = central && components !== 'furnace'
+  const cools = central && centralComponents(property.hvacComponents) !== 'furnace'
   const miniSplit = property.hvacType === 'mini-split'
   const aging = (material: string, present: boolean): ExistingPart => present ? drawnPart(material, home, 'heating-cooling') : ABSENT
   return {
@@ -19,7 +17,7 @@ export function inferHvacAtticExistingConditions({ property }: HomeFacts, home: 
     parts: {
       'registers': isDuctedSystem(property.hvacType) ? { material: 'grille', condition: 'retained' } : ABSENT,
       'blower': aging('standard-blower', central),
-      'furnace': aging('standard-furnace', heats),
+      'furnace': aging('standard-furnace', central),
       'coil': aging('standard-coil', cools),
       'plenum': central ? { material: 'sheet-metal', condition: 'retained' } : ABSENT,
       'duct-runs': drawnPart(ducts, home, 'ducts'),

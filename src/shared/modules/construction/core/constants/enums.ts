@@ -39,6 +39,8 @@ export type HvacIndoorLocation = (typeof hvacIndoorLocations)[number]
 
 export const hvacComponents = ['furnace', 'ac', 'both'] as const
 export type HVACComponent = (typeof hvacComponents)[number]
+export const centralHvacComponents = ['furnace', 'both'] as const satisfies readonly HVACComponent[]
+export type CentralHvacComponent = (typeof centralHvacComponents)[number]
 
 export const windowsTypes = ['single', 'double'] as const
 export type WindowsType = (typeof windowsTypes)[number]

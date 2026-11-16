@@ -26,12 +26,12 @@ import { upgradeRowState } from '@/features/trade-scenes/lib/upgrade-row-state'
 import { upgradeRows } from '@/features/trade-scenes/lib/upgrade-rows'
 import { customerAgeGroups, householdTypes, yearBuiltRanges } from '@/shared/constants/enums/customers'
 import { CLIMATE_LABELS, CLIMATES } from '@/shared/modules/construction/core/constants/climate-presets'
-import { acTonnages, airSealingOptions, crawlInsulations, exteriorPaints, foundationTypes, gutterOptions, hvacComponents, INSULATION_LEVEL_LABELS, insulationLevels, miniSplitHeadCounts, wears, windowsTypes } from '@/shared/modules/construction/core/constants/enums'
+import { acTonnages, airSealingOptions, centralHvacComponents, crawlInsulations, exteriorPaints, foundationTypes, gutterOptions, INSULATION_LEVEL_LABELS, insulationLevels, miniSplitHeadCounts, wears, windowsTypes } from '@/shared/modules/construction/core/constants/enums'
 import { FASCIA_REPLACEMENT_SCOPE_ID } from '@/shared/modules/construction/core/constants/fascia-replacement'
 import { HOME_MATERIAL_IDS } from '@/shared/modules/construction/core/constants/home-material-ids'
 import { ROOF_FORMS } from '@/shared/modules/construction/core/constants/roof-forms'
 import { SCOPE_INSTALLS } from '@/shared/modules/construction/core/constants/scope-installs'
-import { isCentralSystem } from '@/shared/modules/construction/core/lib/hvac-system'
+import { centralComponents, isCentralSystem } from '@/shared/modules/construction/core/lib/hvac-system'
 import { wearInForce } from '@/shared/modules/construction/core/lib/resolve-home-materials'
 import { roofFormOf } from '@/shared/modules/construction/core/lib/roof-form-of'
 import { wearChoices } from '@/shared/modules/construction/core/lib/wear-choices'
@@ -84,7 +84,7 @@ function materialSlots(id: HomeMaterialId, material: ResolvedHomeMaterial, state
         own.push(existingSlot('hvac-location', HOME_MATERIALS_COPY.indoorUnitLocation, optionsOf(indoorUnitLocations(form), HVAC_INDOOR_LOCATION_LABELS), indoorLocation(homeMaterials, form, 'existing', [], true), value => ({ kind: 'fact', patch: { hvacIndoorLocation: value as HvacIndoorLocation } })))
       }
       if (showsEquipment(property)) {
-        own.push(existingSlot('hvac-components', PROFILE_COPY.hvacComponents, optionsOf(hvacComponents, HVAC_COMPONENT_LABELS), property.hvacComponents, value => ({ kind: 'property', patch: { hvacComponents: value as HVACComponent } })))
+        own.push(existingSlot('hvac-components', PROFILE_COPY.hvacComponents, optionsOf(centralHvacComponents, HVAC_COMPONENT_LABELS), centralComponents(property.hvacComponents), value => ({ kind: 'property', patch: { hvacComponents: value as HVACComponent } })))
       }
       if (hasAcUnit(property)) {
         own.push(existingSlot('ac-tons', HOME_MATERIALS_COPY.acSize, optionsOf(acTonnages, AC_TON_LABELS), homeMaterials.acTons, value => ({ kind: 'fact', patch: { acTons: value as AcTons } })))
