@@ -12,6 +12,8 @@ export interface IndoorUnitPlacement {
   base: Vec3
   // Unit vector from the return toward the plenum, along one axis.
   toward: Vec3
+  // The end that keeps its place when the system lacks a furnace or a coil; the line closes up toward it.
+  anchor: 'return' | 'plenum'
   // Across the line: [x, z] for an upright unit; [across the attic floor, height] for a flat one.
   section: readonly [width: number, depth: number]
   lengths: Readonly<Record<IndoorUnitSectionId, number>>
@@ -22,8 +24,9 @@ export interface IndoorUnitPlacement {
   // Where the plenum's air meets today's duct runs, so the runs, boots and their checks do not move.
   trunk: readonly Vec3[]
   // Where the room air comes back in: the grille, the way its face looks into the room, and the duct from its back to the
-  // blower at the return end. A closet's grille is on the closet itself, so its air needs no duct.
-  returnAir: { grille: BoxSpec, facing: Vec3, duct: readonly Vec3[] }
+  // blower at the return end, `duct` fixed to the grille and `intoBlower` laid for the whole unit, riding with the blower
+  // wherever a missing section moves it. A closet's grille is on the closet itself, so its air needs no duct.
+  returnAir: { grille: BoxSpec, facing: Vec3, duct: readonly Vec3[], intoBlower: readonly Vec3[] }
 }
 
 export function indoorUnitPlacement(location: HvacIndoorLocation, form: RoofForm): IndoorUnitPlacement | null {

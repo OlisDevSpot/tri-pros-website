@@ -16,7 +16,7 @@ import { INDOOR_UNIT_LOOK, SUPPLY_JUNCTION } from '@/features/trade-scenes/const
 import { useHeatGlow } from '@/features/trade-scenes/hooks/use-heat-glow'
 import { homeFloorY } from '@/features/trade-scenes/lib/home-floor-y'
 import { runningZone } from '@/features/trade-scenes/lib/hvac-running'
-import { indoorUnitBoxes, indoorUnitLineSet, indoorUnitTrunk } from '@/features/trade-scenes/lib/indoor-unit-boxes'
+import { indoorUnitBoxes, indoorUnitLineSet, indoorUnitReturnDuct, indoorUnitTrunk } from '@/features/trade-scenes/lib/indoor-unit-boxes'
 import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
 import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
 import { MergedBoxes } from '@/features/trade-scenes/ui/components/home-kit/merged-boxes'
@@ -103,7 +103,7 @@ export function IndoorUnit({ placement, furnace, coil, lineSet, heatLoad, form, 
   const lines = useMemo(() => (lineSet ? indoorUnitLineSet(placement, sections, floorY) : null), [lineSet, placement, sections, floorY])
   const trunkGeometry = useOwnedGeometry(() => tube(trunk, INDOOR_UNIT_LOOK.trunkRadius, false), [trunk])
   const lineGeometry = useOwnedGeometry(() => tube(lines, INDOOR_UNIT_LOOK.lineRadius, true), [lines])
-  const returnDuct = placement.returnAir.duct
+  const returnDuct = useMemo(() => indoorUnitReturnDuct(placement, sections), [placement, sections])
   const returnGeometry = useOwnedGeometry(() => tube(returnDuct.length > 0 ? returnDuct : null, INDOOR_UNIT_LOOK.returnRadius, false), [returnDuct])
 
   const airZone = thermalTag(runningZone(running.has('blower'), side, still))

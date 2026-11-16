@@ -4,14 +4,13 @@ import type { HomeSystemId, TradeSceneInputs } from '@/features/trade-scenes/typ
 
 import { CONTROLS_CLASSES } from '@/features/trade-scenes/constants/controls-classes'
 import { CONTROLS_COPY, HOME_SYSTEM_LABELS, PART_LABELS, QUICK_EDIT_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
-import { HOME_PRIMARY_ASSEMBLY } from '@/features/trade-scenes/constants/scene-controls'
 import { useSceneControls } from '@/features/trade-scenes/contexts/scene-controls-context'
 import { useApplySceneChange } from '@/features/trade-scenes/hooks/use-apply-scene-change'
 import { useSceneTargets } from '@/features/trade-scenes/hooks/use-scene-targets'
 import { currentYear } from '@/features/trade-scenes/lib/current-year'
-import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
 import { moveToAtticOffered } from '@/features/trade-scenes/lib/indoor-location'
 import { sceneChangeSlots } from '@/features/trade-scenes/lib/scene-change-slots'
+import { sceneRoofForm } from '@/features/trade-scenes/lib/scene-roof-form'
 import { systemBuildEntries } from '@/features/trade-scenes/lib/system-build-entries'
 import { upgradeRows } from '@/features/trade-scenes/lib/upgrade-rows'
 import { workDetailsShown } from '@/features/trade-scenes/lib/work-details-kind'
@@ -38,7 +37,7 @@ export function QuickEditBuild({ system, rise }: QuickEditBuildProps) {
   const slotOf = (id: string) => slots.find(slot => slot.id === id)!
   const picks = state.proposedScopeIds
   const rows = upgradeRows({ property: state.property, materials: state.homeMaterials, year }, picks, state.efficiencyUpgrades).find(entry => entry.id === system)?.rows ?? []
-  const moveOffered = moveToAtticOffered(state.homeMaterials, homeRoofForm(targets.assemblies[HOME_PRIMARY_ASSEMBLY]?.form))
+  const moveOffered = moveToAtticOffered(state.homeMaterials, sceneRoofForm(targets))
   const note = (text: string) => <span className="text-xs text-muted-foreground">{text}</span>
 
   // An unset foundation has no rows yet, which reads as nothing in the build, not as a slab.

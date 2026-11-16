@@ -24,10 +24,14 @@ function sizeAlong({ toward, section: [width, depth] }: IndoorUnitPlacement, len
   return toward[0] !== 0 ? [length, depth, width] : [width, depth, length]
 }
 
-// A part the system lacks closes up, so the air's path stays one unbroken line from the return to the plenum.
+const lengthOf = (placement: IndoorUnitPlacement, ids: readonly IndoorUnitSectionId[]) => ids.reduce((sum, id) => sum + placement.lengths[id], 0)
+
+// A part the system lacks closes up toward the placement's anchor, so the air's path stays one unbroken line from the return
+// to the plenum.
 export function indoorUnitBoxes(placement: IndoorUnitPlacement, has: { furnace: boolean, coil: boolean }): IndoorUnitSection[] {
   const ids = AIR_ORDER.filter(id => (id !== 'furnace' || has.furnace) && (id !== 'coil' || has.coil))
-  const starts = ids.map((_, index) => ids.slice(0, index).reduce((sum, id) => sum + placement.lengths[id], 0))
+  const closedUp = placement.anchor === 'plenum' ? lengthOf(placement, AIR_ORDER) - lengthOf(placement, ids) : 0
+  const starts = ids.map((_, index) => closedUp + lengthOf(placement, ids.slice(0, index)))
   return ids.map((id, index) => ({
     id,
     box: { size: sizeAlong(placement, placement.lengths[id]), position: step(placement.base, placement.toward, starts[index]! + placement.lengths[id] / 2) },
@@ -39,8 +43,7 @@ function sectionOf(sections: readonly IndoorUnitSection[], id: IndoorUnitSection
 }
 
 // The supply's path from the plenum's far face to where the runs leave. A trunk is drawn only where the plenum stands short
-// of that spot: a closet's plenum, and an attic unit's once a missing section has pulled it back toward the return. A whole
-// attic unit's plenum stands on the spot, so it has none.
+// of that spot, as a closet's does; an attic unit's plenum always stands on it.
 export function indoorUnitTrunk(placement: IndoorUnitPlacement, sections: readonly IndoorUnitSection[]): Vec3[] | null {
   const plenum = sectionOf(sections, 'plenum')
   const end = placement.trunk.at(-1)
@@ -69,4 +72,14 @@ export function indoorUnitLineSet(placement: IndoorUnitPlacement, sections: read
   const entryY = CONDENSER_LINE_SET.y - (floorY - HOUSE.floorY)
   const drop: Vec3[] = Math.abs(entryY - last[1]) < 1e-6 ? [] : [[last[0], entryY, last[2]]]
   return [[onCoil(0), onCoil(1), onCoil(2)], ...placement.lineSet, ...drop]
+}
+
+// The return duct from the grille into the blower's side, its run into the blower moved as far as a missing section has moved
+// the blower.
+export function indoorUnitReturnDuct(placement: IndoorUnitPlacement, sections: readonly IndoorUnitSection[]): Vec3[] {
+  const { duct, intoBlower } = placement.returnAir
+  const blower = sectionOf(sections, 'blower')
+  const whole = sectionOf(indoorUnitBoxes(placement, { furnace: true, coil: true }), 'blower')!
+  const moved: Vec3 = blower === null ? [0, 0, 0] : [blower.position[0] - whole.position[0], blower.position[1] - whole.position[1], blower.position[2] - whole.position[2]]
+  return [...duct, ...intoBlower.map((point): Vec3 => [point[0] + moved[0], point[1] + moved[1], point[2] + moved[2]])]
 }

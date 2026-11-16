@@ -34,6 +34,8 @@ const ATTIC_RETURN: IndoorUnitPlacement['returnAir'] = {
   duct: [
     [RETURN_GRILLE.x, WALL_TOP_Y, RETURN_GRILLE.z],
     [RETURN_GRILLE.x, WALL_TOP_Y + 0.25, RETURN_GRILLE.z],
+  ],
+  intoBlower: [
     [PLENUM_X - ATTIC_SECTION[0] / 2 - 0.16, PLENUM_Y, RETURN_INTO_BLOWER_Z],
     [PLENUM_X - ATTIC_SECTION[0] / 2, PLENUM_Y, RETURN_INTO_BLOWER_Z],
   ],
@@ -45,6 +47,8 @@ const ATTIC: IndoorUnitPlacement = {
   upright: false,
   base: [PLENUM_X, PLENUM_Y, ATTIC_BASE_Z],
   toward: [0, 0, -1],
+  // The runs leave from today's plenum spot, so a unit short a section keeps its plenum there and closes up toward the return.
+  anchor: 'plenum',
   section: ATTIC_SECTION,
   lengths: ATTIC_LENGTHS,
   lineSet: [
@@ -105,6 +109,7 @@ const CLOSET_RETURN: IndoorUnitPlacement['returnAir'] = {
   grille: { size: CLOSET_RETURN_GRILLE, position: [CLOSET_OUTER_X + CLOSET_RETURN_GRILLE[0] / 2, HOUSE.floorY + CLOSET_CABINET.blower / 2, CLOSET_Z] },
   facing: [1, 0, 0],
   duct: [],
+  intoBlower: [],
 }
 
 function closet(trunk: readonly Vec3[]): IndoorUnitPlacement {
@@ -112,6 +117,7 @@ function closet(trunk: readonly Vec3[]): IndoorUnitPlacement {
     upright: true,
     base: [CLOSET_X, HOUSE.floorY, CLOSET_Z],
     toward: [0, 1, 0],
+    anchor: 'return',
     section: CLOSET_SECTION,
     lengths: CLOSET_LENGTHS,
     lineSet: CLOSET_LINE_SET,
@@ -154,5 +160,6 @@ export const SUPPLY_JUNCTION: Readonly<Record<RoofForm, Vec3>> = {
   'low-slope': [EQUIPMENT.plenum.size[0], 0.2, EQUIPMENT.plenum.size[2]],
 }
 
-// Working numbers, set by screenshot: the gap that shows between two sections, the supply trunk's radius, and the line set's.
+// Working numbers, set by screenshot: the gap that shows between two sections, the supply trunk's radius, the return duct's,
+// and the line set's.
 export const INDOOR_UNIT_LOOK = { seam: 0.012, trunkRadius: 0.09, returnRadius: 0.12, lineRadius: CONDENSER_LINE_SET.size / 2 } as const

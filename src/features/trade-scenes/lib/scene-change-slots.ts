@@ -13,15 +13,15 @@ import { HVAC_SYSTEM_CHOICES } from '@/features/trade-scenes/constants/home-syst
 import { MOVABLE_INDOOR_UNIT_SCOPES } from '@/features/trade-scenes/constants/movable-indoor-unit-scopes'
 import { SAVINGS_CATEGORIES } from '@/features/trade-scenes/constants/savings-categories'
 import { SCENE_CHANGE_WORDS } from '@/features/trade-scenes/constants/scene-change-words'
-import { HOME_PRIMARY_ASSEMBLY, NO_CHANGE_CHOICE } from '@/features/trade-scenes/constants/scene-controls'
+import { NO_CHANGE_CHOICE } from '@/features/trade-scenes/constants/scene-controls'
 import { SCOPE_VERBS } from '@/features/trade-scenes/constants/scope-verbs'
-import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
 import { hvacSystemChoice, hvacSystemPatch } from '@/features/trade-scenes/lib/hvac-system-choice'
 import { atticHoldsUnit, indoorLocation, indoorUnitLocations, moveToAtticOffered } from '@/features/trade-scenes/lib/indoor-location'
 import { requiredUpgrades } from '@/features/trade-scenes/lib/keep-pick-options'
 import { existingDuctChoices, hasAcUnit, roofTypeChoices, showsEquipment } from '@/features/trade-scenes/lib/material-option-choices'
 import { miniSplitHeadCount } from '@/features/trade-scenes/lib/mini-split-head-count'
 import { fasciaRotInForce } from '@/features/trade-scenes/lib/paint-wear-in-force'
+import { sceneRoofForm } from '@/features/trade-scenes/lib/scene-roof-form'
 import { upgradeRowState } from '@/features/trade-scenes/lib/upgrade-row-state'
 import { upgradeRows } from '@/features/trade-scenes/lib/upgrade-rows'
 import { customerAgeGroups, householdTypes, yearBuiltRanges } from '@/shared/constants/enums/customers'
@@ -164,8 +164,9 @@ export function sceneChangeSlots(state: TradeSceneInputs, targets: SceneTargets,
     unavailable: rot ? null : PANEL_COPY.fasciaReplacementHint,
     change: value => ({ kind: 'fascia-replacement', on: value === 'on' }),
   })
-  // A whole new system can stand its unit in the attic; Modify lists the move either way, saying why while it cannot.
-  const form = homeRoofForm(targets.assemblies[HOME_PRIMARY_ASSEMBLY]?.form)
+  // A whole new system can stand its unit in the attic; a central home's Modify lists the move either way, saying why while
+  // it cannot. No other system is offered a build that sets a new indoor unit, so it never lists the move.
+  const form = sceneRoofForm(targets)
   const wholeSystem = state.proposedScopeIds.some(id => MOVABLE_INDOOR_UNIT_SCOPES.includes(id as ScopeId))
   const movable = wholeSystem && moveToAtticOffered(state.homeMaterials, form)
   const moveSlot = slot({
@@ -198,7 +199,7 @@ export function sceneChangeSlots(state: TradeSceneInputs, targets: SceneTargets,
     })),
     ...coolRoof ? [upgradeSlot('cool-roof', coolRoof.coolRoofOffered, coolRoof.coolRoofOn)] : [],
     ...r8.row ? [upgradeSlot('r8-ducts', r8.row === r8.taken, r8.row.r8On)] : [],
-    moveSlot,
+    ...isCentralSystem(property.hvacType) ? [moveSlot] : [],
     ...coolPaint.row ? [upgradeSlot('cool-paint', coolPaint.row === coolPaint.taken, coolPaint.row.coolPaintOn)] : [],
     ...r38.row ? [upgradeSlot('r38-insulation', r38.row === r38.taken, state.efficiencyUpgrades.includes('r38-insulation'))] : [],
     ...batts ? [battsSlot] : [],

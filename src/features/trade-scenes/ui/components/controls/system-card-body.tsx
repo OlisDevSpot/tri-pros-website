@@ -4,13 +4,13 @@ import type { ReactNode } from 'react'
 
 import type { HomeSystemId, TradeSceneInputs } from '@/features/trade-scenes/types'
 import { CONTROLS_COPY, PART_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
-import { HOME_PRIMARY_ASSEMBLY, NO_CHANGE_CHOICE } from '@/features/trade-scenes/constants/scene-controls'
+import { NO_CHANGE_CHOICE } from '@/features/trade-scenes/constants/scene-controls'
 import { useApplySceneChange } from '@/features/trade-scenes/hooks/use-apply-scene-change'
 import { useSceneTargets } from '@/features/trade-scenes/hooks/use-scene-targets'
 import { currentYear } from '@/features/trade-scenes/lib/current-year'
-import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
 import { moveToAtticOffered } from '@/features/trade-scenes/lib/indoor-location'
 import { sceneChangeSlots } from '@/features/trade-scenes/lib/scene-change-slots'
+import { sceneRoofForm } from '@/features/trade-scenes/lib/scene-roof-form'
 import { systemBuildEntries } from '@/features/trade-scenes/lib/system-build-entries'
 import { systemInputSlotIds } from '@/features/trade-scenes/lib/system-input-slots'
 import { upgradeRowBlockedLine } from '@/features/trade-scenes/lib/upgrade-row-state'
@@ -46,7 +46,7 @@ export function SystemCardBody({ system }: SystemCardBodyProps) {
 
   // A whole new system has a choice only where its unit could move to the attic, so elsewhere its menu closes on the pick
   // like any other.
-  const moveOffered = moveToAtticOffered(state.homeMaterials, homeRoofForm(targets.assemblies[HOME_PRIMARY_ASSEMBLY]?.form))
+  const moveOffered = moveToAtticOffered(state.homeMaterials, sceneRoofForm(targets))
 
   const proposed = systemBuildEntries(rows, picks, state.efficiencyUpgrades).flatMap(({ row, kind, switches }): ReactNode[] => {
     const id = `build:${row.part}` as const

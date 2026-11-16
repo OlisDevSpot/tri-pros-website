@@ -3576,7 +3576,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   assert.deepEqual(systemsAtSpot('roof', { ...lowSlope, picks: [] }), ['roof'], 'a flat roof alone')
   assert.deepEqual(systemsAtSpot('roof', { ...lowSlope, picks: [TORCH_DOWN] }), ['roof'], 'a torch down keeps the deck on')
   assert.deepEqual(systemsAtSpot('roof', { ...lowSlope, picks: [TORCH_DOWN, REDECK] }), ['roof', 'attic'], 'a redeck opens the joists')
-  assert.deepEqual(systemsAtSpot('roof', { form: 'pitched', picks: [], hvacType: null, hvacComponents: null }), ['roof', 'attic', 'heating-cooling'], 'a pitched roof opens the attic')
+  assert.deepEqual(systemsAtSpot('roof', { form: 'pitched', picks: [], hvacType: null, hvacComponents: null }), ['roof', 'attic', 'heating-cooling'], 'a pitched roof opens its attic, and heating & cooling for an unknown system, whose air is in the attic')
   assert.deepEqual(systemsAtSpot('window', { form: 'pitched', picks: [], hvacType: null, hvacComponents: null }), ['windows'])
   assert.deepEqual(systemsAtSpot('equipment', { form: 'pitched', picks: [], hvacType: 'package-unit', hvacComponents: null }), ['heating-cooling'])
   assert.deepEqual(systemsAtSpot('equipment', { form: 'pitched', picks: [], hvacType: 'portable', hvacComponents: null }), [], 'a portable unit has no equipment spot')
