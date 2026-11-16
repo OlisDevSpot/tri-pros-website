@@ -47,6 +47,7 @@ import { packageUnitPlacement } from '@/features/trade-scenes/lib/package-unit-p
 import { propertyPatch } from '@/features/trade-scenes/lib/property-patch'
 import { repairsRows } from '@/features/trade-scenes/lib/repairs-rows'
 import { resolveScene } from '@/features/trade-scenes/lib/resolve-scene'
+import { roomAt } from '@/features/trade-scenes/lib/room-at'
 import { sceneChangeSlots } from '@/features/trade-scenes/lib/scene-change-slots'
 import { resolveInputsOf, selectResolveInputs } from '@/features/trade-scenes/lib/scene-resolve-inputs'
 import { scopePick } from '@/features/trade-scenes/lib/scope-pick'
@@ -1014,5 +1015,12 @@ for (const form of ROOF_FORMS) {
     assert.deepEqual(systemPartFocus('heating-cooling', form, 'return', 0, allIds, [], location), indoorUnitPlacement(location, form)!.returnAir.grille.position, `${location}, ${form}: the return's pin rests on its grille`)
   }
 }
+
+// The closet takes the paint of the room it stands in
+assert.equal(roomAt(-4), ROOMS.bedroom)
+assert.equal(roomAt(0), ROOMS.living)
+assert.equal(roomAt(4), ROOMS.kitchen)
+assert.equal(roomAt(-HOUSE.halfLength), ROOMS.bedroom, 'inside the left end wall is the bedroom')
+assert.equal(roomAt(HOUSE.halfLength), ROOMS.kitchen, 'inside the right end wall is the kitchen')
 
 console.log('verify-heating-cooling: ok')

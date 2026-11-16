@@ -38,8 +38,9 @@ function sectionOf(sections: readonly IndoorUnitSection[], id: IndoorUnitSection
   return sections.find(section => section.id === id)?.box ?? null
 }
 
-// The supply's path from the plenum's far face to where the runs leave, or null when the plenum already stands there: a
-// closet's plenum always, and an attic unit's once a missing section has pulled it back toward the return.
+// The supply's path from the plenum's far face to where the runs leave. A trunk is drawn only where the plenum stands short
+// of that spot: a closet's plenum, and an attic unit's once a missing section has pulled it back toward the return. A whole
+// attic unit's plenum stands on the spot, so it has none.
 export function indoorUnitTrunk(placement: IndoorUnitPlacement, sections: readonly IndoorUnitSection[]): Vec3[] | null {
   const plenum = sectionOf(sections, 'plenum')
   const end = placement.trunk.at(-1)
