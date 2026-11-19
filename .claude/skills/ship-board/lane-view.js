@@ -52,7 +52,7 @@
       holds.length ? el("button", { type: "button", class: "chip lb-chip", "data-sel": "lane:" + holds[0] }, "holds up " + plural(holds.length, "lane", "lanes")) : null);
     const box = el("div", { class: "lb-head", "data-section": "header" },
       el("a", { class: "back", href: "#now", text: "← Now" }),
-      el("div", { class: "eyebrow", text: [l.kind, l.branch, l.briefAt ? "checked " + l.briefAt : null].filter(Boolean).join(" · ") }),
+      el("div", { class: "eyebrow", text: [l.kind, l.branch, l.briefAt ? "checked " + shortDate(l.briefAt) : null].filter(Boolean).join(" · ") }),
       el("h2", {}, title, ids ? el("span", { class: "lb-ids", text: " " + ids }) : null),
       b.goal ? el("p", { class: "lb-goal", text: b.goal }) : null,
       chips.children.length ? chips : null);
@@ -282,6 +282,144 @@
     return box;
   }
 
+  const DEL = { "__delete__": true };
+  const isCheck = (d) => d.kind === "check";
+  // Open decisions, then open owner checks, then what is already answered or ticked.
+  const cardRank = (d) => (isCheck(d) ? (d.done ? 3 : 1) : d.answer ? 2 : 0);
+  const byCard = (a, b) => cardRank(a) - cardRank(b) || byOrder(a, b);
+  const drafts = () => (S.drafts ??= {});
+  const copiesOf = (id, scope = document) => [...scope.querySelectorAll(`.lb-card[data-id="${CSS.escape(id)}"]`)];
+  function redrawCards() { renderDecisions(); if (S.lane) renderLaneView(); }
+
+  function fillForm(form, dr) {
+    for (const r of form.querySelectorAll("[name=choice]")) r.checked = dr.choice != null && +r.value === dr.choice;
+    if (form.elements.own) form.elements.own.value = dr.own || "";
+    if (form.elements.note) form.elements.note.value = dr.note || "";
+  }
+
+  // The same doc can be drawn on the lane page, in its side panel and in the Decisions tab; typing in one keeps the others in step.
+  function onDraft(e, form, id) {
+    const dr = (drafts()[id] ??= {});
+    const t = e.target;
+    if (t.name === "choice") { dr.choice = +t.value; dr.own = ""; }
+    else if (t.name === "own") { dr.own = t.value; if (t.value.trim()) dr.choice = null; }
+    else if (t.name === "note") dr.note = t.value;
+    fillForm(form, dr);
+    for (const c of copiesOf(id)) { const f = c.querySelector("form"); if (f && f !== form) fillForm(f, dr); }
+  }
+
+  async function submitAnswer(e, form, d) {
+    e.preventDefault();
+    const own = String(form.elements.own ? form.elements.own.value : "").trim();
+    const picked = form.querySelector("[name=choice]:checked");
+    const choice = own || (picked ? +picked.value : null);
+    if (choice == null) { toast("Pick an option or write your own answer"); return; }
+    const patch = LaneCore.answerPatch(d, choice, form.elements.note ? form.elements.note.value : "", today());
+    const btn = form.querySelector("button[type=submit]");
+    if (btn) btn.disabled = true;
+    const ok = await save("decisions", d.id, patch);
+    if (ok) delete drafts()[d.id];
+    else if (btn && btn.isConnected) btn.disabled = false;
+    if (ok) redrawCards();
+  }
+
+  async function toggleCheck(e, d) {
+    const ok = await save("decisions", d.id, e.target.checked ? { done: true } : { done: DEL });
+    if (!ok) redrawCards();
+  }
+
+  function reopen(btn, d) {
+    const card = btn.closest(".lb-card"), scope = card.closest("#lane-view, #dec-list") || document;
+    const at = copiesOf(d.id, scope).indexOf(card);
+    drafts()[d.id] = { editing: true };
+    redrawCards();
+    const again = copiesOf(d.id, scope)[at];
+    const first = again && again.querySelector("[name=choice], [name=own]");
+    if (first) first.focus();
+  }
+
+  function answeredBody(d, can) {
+    return el("div", { class: "lb-done" },
+      el("p", { class: "lb-a" }, el("span", { class: "lb-lbl", text: "Your answer" + (d.answeredOn ? " · " + shortDate(d.answeredOn) : "") }),
+        el("span", {}, el("b", { text: d.answer }), !d.own && d.recommended === d.answer ? el("em", { class: "lb-pick", text: "Claude's pick" }) : null)),
+      d.note ? el("p", { class: "lb-note" }, el("span", { class: "lb-lbl", text: "Your note" }), d.note) : null,
+      d.reply ? el("p", { class: "lb-reply" }, el("span", { class: "lb-lbl", text: "The agent" + (d.replyOn ? " · " + shortDate(d.replyOn) : "") }), d.reply)
+        : d.appliedOn ? el("p", { class: "lb-wait lb-applied", text: "Answered · applied " + shortDate(d.appliedOn) })
+        : el("p", { class: "lb-wait", text: "Answered · waiting for the agent" }),
+      can ? el("div", { class: "lb-act" }, el("button", { type: "button", onclick: (e) => reopen(e.currentTarget, d) }, "Change answer")) : null);
+  }
+
+  function answerForm(d, can, editing) {
+    const opts = LaneCore.normalizeOptions(d.options);
+    const off = !can;
+    const own = opts.length
+      ? el("input", { type: "text", name: "own", placeholder: "Or say something else…", disabled: off, autocomplete: "off" })
+      : el("textarea", { name: "own", rows: "2", placeholder: "Write your answer", disabled: off });
+    const form = el("form", { class: "lb-form", novalidate: true },
+      editing && d.answer ? el("p", { class: "lb-now" }, el("span", { class: "lb-lbl", text: "Answer now" }), d.answer) : null,
+      opts.length ? el("div", { class: "lb-opts", role: "radiogroup", "aria-label": "Options" }, opts.map((o, i) => el("label", { class: "lb-opt" },
+        el("input", { type: "radio", name: "choice", value: String(i), disabled: off }),
+        el("span", {}, el("span", { class: "lb-ot", text: o.label }), d.recommended === o.label ? el("em", { class: "lb-pick", text: "Claude's pick" }) : null),
+        o.consequence ? el("span", { class: "lb-oc", text: o.consequence }) : null))) : null,
+      el("div", { class: "lb-fields" },
+        el("label", { class: "lb-field" }, el("span", { class: "lb-lbl", text: opts.length ? "Your own answer" : "Your answer" }), own),
+        el("label", { class: "lb-field" }, el("span", { class: "lb-lbl", text: "Note (optional)" }), el("input", { type: "text", name: "note", disabled: off, autocomplete: "off" }))),
+      can ? el("div", { class: "lb-act" },
+        el("button", { class: "primary", type: "submit" }, "Save answer"),
+        editing ? el("button", { type: "button", onclick: () => { delete drafts()[d.id]; redrawCards(); } }, "Keep answer") : null)
+        : el("p", { class: "lb-ro", text: "This view can't save answers" }));
+    fillForm(form, drafts()[d.id] || {});
+    form.addEventListener("input", (e) => onDraft(e, form, d.id));
+    form.addEventListener("change", (e) => onDraft(e, form, d.id));
+    form.addEventListener("submit", (e) => submitAnswer(e, form, d).catch((err) => toast(err.message)));
+    return form;
+  }
+
+  function decisionCard(d, { compact = false } = {}) {
+    const can = !!(S.canWrite && S.db);
+    const problems = LaneCore.validateDecision(d);
+    const dr = drafts()[d.id] || {};
+    const state = isCheck(d) ? (d.done ? "done" : "open") : d.answer && !dr.editing ? "answered" : "open";
+    const card = (...kids) => el("article", { class: "lb-card" + (compact ? " lb-compact" : "") + (isCheck(d) ? " lb-check" : ""), "data-id": d.id, "data-kind": isCheck(d) ? "check" : "decision", "data-state": state }, ...kids);
+    const area = d.area ? el("span", { class: "chip", text: d.area }) : null;
+    const why = d.context ? el("p", { class: "lb-why", text: d.context }) : null;
+    if (problems.length) return card(el("div", { class: "lb-card-h" }, el("h4", { class: "lb-q", text: d.question || d.id }), area), why, el("p", { class: "lb-ro", text: "This doc can't be answered here: " + problems.join("; ") + "." }));
+    if (isCheck(d)) return card(
+      el("label", { class: "lb-tick" },
+        el("input", { type: "checkbox", name: "done", checked: !!d.done, disabled: !can, onchange: (e) => toggleCheck(e, d) }),
+        el("span", { class: "lb-tick-t" }, el("span", { class: "lb-q", text: d.question }), why), area),
+      !can && !d.done ? el("p", { class: "lb-ro", text: "This view can't save answers" }) : null);
+    return card(el("div", { class: "lb-card-h" }, el("h4", { class: "lb-q", text: d.question }), area), why,
+      state === "answered" ? answeredBody(d, can) : answerForm(d, can, !!dr.editing));
+  }
+
+  // A redraw replaces the nodes under the owner's hands: put back open folds, the focused field and its caret.
+  function keepUiState(box, rebuild) {
+    const a = document.activeElement;
+    let focus = null;
+    if (a && a !== document.body && box.contains(a)) {
+      const card = a.closest(".lb-card");
+      const sel = a.closest("[data-sel]");
+      if (card && a.name) focus = { id: card.dataset.id, at: copiesOf(card.dataset.id, box).indexOf(card), name: a.name, value: a.type === "radio" ? a.value : null, s: a.selectionStart, e: a.selectionEnd };
+      else if (sel) focus = { sel: sel.dataset.sel, side: !!a.closest("#lane-inspector") };
+    }
+    const open = new Set([...box.querySelectorAll("details[data-fold]")].filter((d) => d.open).map((d) => d.dataset.fold));
+    rebuild();
+    for (const d of box.querySelectorAll("details[data-fold]")) if (open.has(d.dataset.fold)) d.open = true;
+    if (!focus) return;
+    let t = null;
+    if (focus.id) {
+      const c = copiesOf(focus.id, box)[focus.at];
+      t = c && c.querySelector(`[name="${focus.name}"]` + (focus.value != null ? `[value="${focus.value}"]` : ""));
+    } else {
+      const all = [...box.querySelectorAll(`[data-sel="${CSS.escape(focus.sel)}"]`)];
+      t = all.find((x) => !!x.closest("#lane-inspector") === focus.side) || null;
+    }
+    if (!t || t.disabled) return;
+    t.focus({ preventScroll: true });
+    if (focus.s != null && typeof t.setSelectionRange === "function") try { t.setSelectionRange(focus.s, focus.e); } catch { /* radios and checkboxes have no caret */ }
+  }
+
   function decisionsList(l, ds) {
     const p = pending(ds);
     const n = p.open.length + p.checks.length;
@@ -289,12 +427,9 @@
       el("div", { class: "lb-sec-h" }, el("h3", { text: "Your decisions" }),
         S.decisions && n ? el("small", { text: n + " waiting on you · " + [p.open.length ? plural(p.open.length, "decision", "decisions") : null, p.checks.length ? plural(p.checks.length, "owner check", "owner checks") : null].filter(Boolean).join(", ") }) : null));
     if (!S.decisions) { sec.append(el("p", { class: "note", text: "Loading decisions." })); return sec; }
-    if (!n) { sec.append(el("p", { class: "note", text: "Nothing waiting on you." })); return sec; }
-    sec.append(el("ul", { class: "lb-dlist" },
-      p.open.map((d, i) => el("li", {}, el("button", { type: "button", class: "lb-dq", "data-sel": "decision:" + d.id },
-        el("span", { class: "lb-dn", text: String(i + 1) }), el("span", { class: "lb-q", text: d.question }), d.context ? el("span", { class: "lb-why", text: d.context }) : null))),
-      p.checks.map((d) => el("li", {}, el("button", { type: "button", class: "lb-dq lb-dcheck", "data-sel": "check:" + d.id },
-        el("span", { class: "lb-dn", text: "✓" }), el("span", { class: "lb-q", text: d.question }), d.context ? el("span", { class: "lb-why", text: d.context }) : null)))));
+    const all = (S.decisions || []).filter((d) => d.lane === l.id).sort(byCard);
+    if (!n) sec.append(el("p", { class: "note", text: "Nothing waiting on you." }));
+    if (all.length) sec.append(el("div", { class: "lb-cards" }, all.map((d) => decisionCard(d))));
     return sec;
   }
 
@@ -304,8 +439,8 @@
     if (!agent.length && !decided.length && !ev.length) return null;
     return el("section", { class: "lb-sec", "data-section": "folded" },
       agent.length ? el("div", { class: "lb-sec" }, el("div", { class: "lb-sec-h" }, el("h3", { text: "The agent is handling" }), el("small", { text: "nothing needed from you" })), el("ul", { class: "lb-agent" }, agent.map((t) => el("li", { text: t })))) : null,
-      decided.length ? el("details", { class: "lb-fold" }, el("summary", { text: "Already decided · " + decided.length }), el("ul", { class: "lb-decided" }, decided.map((d) => el("li", {}, el("time", { text: d.date || "" }), el("span", { text: d.text || "" }))))) : null,
-      ev.length ? el("details", { class: "lb-fold" }, el("summary", { text: "How the agent checked this" }), el("div", { class: "lb-ev" }, ev.map((t) => el("span", { text: t })), b.verifiedAt ? el("span", { text: "Verified at " + b.verifiedAt }) : null)) : null);
+      decided.length ? el("details", { class: "lb-fold", "data-fold": "decided" }, el("summary", { text: "Already decided · " + decided.length }), el("ul", { class: "lb-decided" }, decided.map((d) => el("li", {}, el("time", { text: d.date || "" }), el("span", { text: d.text || "" }))))) : null,
+      ev.length ? el("details", { class: "lb-fold", "data-fold": "evidence" }, el("summary", { text: "How the agent checked this" }), el("div", { class: "lb-ev" }, ev.map((t) => el("span", { text: t })), b.verifiedAt ? el("span", { text: "Verified at " + b.verifiedAt }) : null)) : null);
   }
 
   function selButton(sel, ...kids) { return el("button", { type: "button", class: "lb-link", "data-sel": sel }, ...kids); }
@@ -358,7 +493,7 @@
       ...p.open.filter(inStep).map((d) => el("li", {}, selButton("decision:" + d.id, el("b", { text: decisionNo(ds, d.id) + ". " }), d.question))),
       ...p.checks.filter(inStep).map((d) => el("li", {}, selButton("check:" + d.id, el("b", { text: "✓ " }), d.question))),
       ...(withWatch && watchOf(l).length ? [el("li", {}, selButton("watch:0", el("b", { text: "! " }), "Watch out: " + plural(watchOf(l).length, "risk", "risks")))] : [])];
-    return items.length ? [el("span", { class: "lbl", text: "Waiting on you here" }), el("ul", {}, items)] : [];
+    return items.length ? [el("span", { class: "lb-lbl", text: "Waiting on you here" }), el("ul", {}, items)] : [];
   }
 
   function stepPanel(l, ds, id) {
@@ -385,18 +520,11 @@
   }
 
   function decisionPanel(l, ds, id, kind) {
-    const d = (S.decisions || []).find((x) => x.id === id && x.lane === l.id && (kind === "check") === (x.kind === "check"));
+    const d = (S.decisions || []).find((x) => x.id === id && x.lane === l.id && (kind === "check") === isCheck(x));
     if (!d) return null;
-    const opts = LaneCore.normalizeOptions(d.options);
     const no = decisionNo(ds, d.id);
     const label = kind === "check" ? "Owner check" : "Decision" + (no ? " " + no : "");
-    return { label: label + (d.phase ? " · on " + d.phase : ""), body: [
-      el("h4", { text: d.question }),
-      d.context ? el("p", { text: d.context }) : null,
-      d.area ? el("div", { class: "lb-row" }, el("span", { class: "chip", text: d.area })) : null,
-      opts.length ? el("ul", { class: "lb-opts" }, opts.map((o) => el("li", {}, el("b", { text: o.label }), d.recommended === o.label ? el("span", { class: "lb-pick", text: " Claude's pick" }) : null, o.consequence ? el("span", { class: "muted", text: " · " + o.consequence }) : null))) : null,
-      kind === "check" ? el("p", { class: "muted", text: d.done ? "Done." : "Not ticked yet." })
-        : d.answer ? el("p", {}, el("b", { text: "Answered: " }), d.answer) : el("p", { class: "muted", text: opts.length ? "Not answered yet." : "Free-text answer; not answered yet." })] };
+    return { label: label + (d.phase ? " · on " + d.phase : ""), body: [decisionCard(d, { compact: true })] };
   }
 
   function morePanel(l, id) {
@@ -440,7 +568,7 @@
     const kind = S.sel ? S.sel.t : "status";
     if (!r) r = statusPanel(l);
     return el("div", { class: "lb-ib", "data-kind": kind },
-      el("div", { class: "lb-ih" }, el("span", { class: "lbl", text: r.label }), kind !== "status" ? el("button", { type: "button", class: "lb-x", "data-sel": "status:" }, "Back to status") : null),
+      el("div", { class: "lb-ih" }, el("span", { class: "lb-lbl", text: r.label }), kind !== "status" ? el("button", { type: "button", class: "lb-x", "data-sel": "status:" }, "Back to status") : null),
       ...r.body);
   }
 
@@ -465,6 +593,10 @@
   function renderLaneView() {
     const box = $("#lane-view");
     if (!S.lane) return;
+    if (V && V.l.id === S.lane) keepUiState(box, () => drawLane(box)); else drawLane(box);
+  }
+
+  function drawLane(box) {
     if (!S.lanes) { box.replaceChildren(el("div", { class: "loading", text: "Loading lane." })); return; }
     const m = laneMap(), l = m[S.lane];
     if (!l) { V = null; box.replaceChildren(el("a", { class: "back", href: "#now", text: "← Now" }), el("div", { class: "loading", text: "No lane called " + S.lane + "." })); return; }
@@ -508,5 +640,5 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", wire); else wire();
 
-  Object.assign(globalThis, { renderLaneView, laneHeader, whereItStands, blockerMapSvg, areaBars, waitTimeline, decisionsList, inspector });
+  Object.assign(globalThis, { renderLaneView, laneHeader, whereItStands, blockerMapSvg, areaBars, waitTimeline, decisionsList, inspector, decisionCard, keepUiState, byCard });
 })();

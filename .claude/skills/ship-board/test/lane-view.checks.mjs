@@ -226,6 +226,25 @@ export default async function ({ page, hash, viewport, scheme, opt, skillDir }) 
     await backToStatus(page);
   }
 
+  // A snapshot from another session redraws the page; an open fold stays open and a focused map node keeps focus.
+  const fold = await page.evaluate(() => {
+    const d = document.querySelector("#lane-view details.lb-fold");
+    if (d) d.open = true;
+    return d ? d.querySelector("summary").textContent : null;
+  });
+  const focusSel = await page.evaluate(() => document.querySelector("#lane-view .lb-bmap [data-sel]")?.dataset.sel || null);
+  if (focusSel) await page.focus(`#lane-view .lb-bmap [data-sel="${focusSel}"]`);
+  await page.evaluate(async (lane) => {
+    const db = await window.claude.use("db");
+    await db.doc("lanes/" + lane).update({ "session.lastSeen": "2026-11-16T14:58:00Z" });
+  }, lane);
+  await settle(page, 150);
+  if (fold) expect(await page.evaluate((t) => [...document.querySelectorAll("#lane-view details.lb-fold")].some((d) => d.open && d.querySelector("summary").textContent === t), fold), "an open fold stays open across a lane snapshot: " + fold);
+  if (focusSel) {
+    const now = await page.evaluate(() => document.activeElement?.closest?.("[data-sel]")?.dataset.sel || document.activeElement?.tagName);
+    expect(now === focusSel, `a focused map node keeps focus across a lane snapshot (${focusSel} → ${now})`);
+  }
+
   // A selection does not follow you to another lane.
   if (lane === "data-views") {
     const pin = await page.evaluate(() => document.querySelector("#lane-view .lb-map .lb-pin[data-sel^='decision:']")?.dataset.sel || null);

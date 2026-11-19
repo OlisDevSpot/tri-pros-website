@@ -131,13 +131,44 @@ thead th{border-top:0;font:600 12px var(--mono);letter-spacing:.04em;text-transf
 .item.done h4{text-decoration:line-through;text-decoration-color:var(--muted)}
 .item h4{margin:0;font:600 14px var(--body);color:var(--ink)}
 .item input[type=checkbox]{width:18px;height:18px;margin-top:2px;accent-color:var(--done)}
-.dec{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;gap:10px;min-width:0}
-.dec.answered{background:var(--bg)}
-.dec p{margin:0;max-width:78ch}
-.opts{display:grid;gap:6px}
-.opts label{display:flex;flex-direction:row;gap:8px;align-items:flex-start;color:var(--ink);font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
-.opts input{margin-top:4px}
-.rec{font:600 11px var(--mono);color:var(--done);margin-left:6px;text-transform:uppercase;letter-spacing:.04em}
+/* Decision card: one renderer for the lane page, its side panel and the Decisions tab, so it is styled outside #lane-view. */
+.lb-lbl{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.lb-cards{display:grid;gap:12px;min-width:0}
+.lb-dgroup{display:grid;gap:10px;min-width:0}
+.lb-dgroup+.lb-dgroup{margin-top:18px}
+.lb-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;display:grid;gap:10px;min-width:0}
+.lb-card[data-state="answered"],.lb-card[data-state="done"]{background:var(--bg)}
+.lb-card.lb-compact{background:transparent;border:0;padding:0}
+.lb-card p{margin:0}
+.lb-card-h{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline}
+.lb-card .lb-q{flex:1 1 24ch;margin:0;font:650 17px/1.35 var(--display);font-stretch:95%;overflow-wrap:anywhere;text-wrap:pretty}
+.lb-card.lb-compact .lb-q{font-size:16px}
+.lb-card .lb-why{color:var(--muted);font-size:14px;max-width:70ch;overflow-wrap:anywhere}
+.lb-form{display:grid;gap:10px;min-width:0}
+.lb-opts{display:grid;gap:6px}
+.lb-opt{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;align-items:baseline;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font-size:14.5px;cursor:pointer}
+.lb-opt:hover{border-color:var(--accent)}
+.lb-opt:has(input:checked){border-color:var(--accent);background:var(--agent-soft)}
+.lb-opt:has(input:disabled){cursor:default}
+.lb-opt input{grid-row:span 2;align-self:center;width:16px;height:16px;margin:0;accent-color:var(--accent)}
+.lb-ot{font-weight:600;overflow-wrap:anywhere}
+.lb-oc{grid-column:2;font-size:13px;color:var(--muted)}
+.lb-pick{margin-left:6px;font:600 11px var(--mono);font-style:normal;color:var(--done);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.lb-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:10px;align-items:end}
+.lb-field{gap:3px}
+.lb-act{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.lb-ro{font-size:13px;color:var(--muted)}
+.lb-now,.lb-a,.lb-note,.lb-reply{display:grid;gap:2px;font-size:14px;overflow-wrap:anywhere}
+.lb-done{display:grid;gap:10px;min-width:0}
+.lb-a b{font-weight:600;font-size:15px}
+.lb-reply{padding-left:10px;border-left:2px solid var(--agent)}
+.lb-wait{font:500 12px var(--mono);color:var(--you)}
+.lb-wait.lb-applied{color:var(--done)}
+.lb-done .lb-act{justify-content:flex-start}
+.lb-tick{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:start;color:var(--ink);font-size:15px;cursor:pointer}
+.lb-tick input{width:20px;height:20px;margin:3px 0 0;accent-color:var(--done)}
+.lb-tick-t{display:grid;gap:4px;min-width:0}
+.lb-card[data-state="done"] .lb-q{text-decoration:line-through;text-decoration-color:var(--muted)}
 .skill{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;gap:8px;align-content:start;min-width:0}
 .skill .cmd{font:600 16px var(--mono)}
 .skill p{margin:0}
@@ -318,12 +349,6 @@ dl.facts .mono{font-size:13px}
 #lane-view .lb-sec-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 #lane-view .lb-sec-h h3{font:700 19px var(--display);font-stretch:90%}
 #lane-view .lb-sec-h small{color:var(--muted);font-size:13px}
-#lane-view .lb-dlist{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-#lane-view .lb-dq{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 12px;width:100%;padding:12px 14px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);color:inherit;font:inherit;text-align:left;align-items:baseline}
-#lane-view .lb-dq[aria-pressed="true"]{border-color:var(--agent);background:var(--agent-soft)}
-#lane-view .lb-dn{display:inline-grid;place-items:center;min-width:24px;height:24px;padding:0 7px;border-radius:12px;background:var(--you);color:var(--surface);font:700 12px var(--mono);grid-row:span 2;align-self:start}
-#lane-view .lb-q{font:650 16px/1.35 var(--display);font-stretch:95%;overflow-wrap:anywhere}
-#lane-view .lb-why{grid-column:2;color:var(--muted);font-size:14px}
 #lane-view .lb-watch{display:grid;gap:8px;margin:0;padding:0;list-style:none}
 #lane-view .lb-watch li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;font-size:14px;align-items:baseline}
 #lane-view .lb-watch li::before{content:"!";display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--blocked-soft);color:var(--blocked);font:700 12px var(--mono)}
@@ -339,7 +364,6 @@ dl.facts .mono{font-size:13px}
 #lane-view .lb-insp{position:sticky;top:56px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;max-height:calc(100vh - 72px);overflow:auto;min-width:0;overscroll-behavior:contain}
 #lane-view .lb-ib{display:grid;gap:10px;min-width:0}
 #lane-view .lb-ih{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
-#lane-view .lb-ib .lbl{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 #lane-view .lb-x{padding:3px 8px;font-size:12px;flex:none}
 #lane-view .lb-ib h4{font:700 17px/1.25 var(--display);font-stretch:92%;margin:0;overflow-wrap:anywhere}
 #lane-view .lb-ib p{margin:0;font-size:14px;overflow-wrap:anywhere}
@@ -352,8 +376,6 @@ dl.facts .mono{font-size:13px}
 #lane-view .lb-open{font-size:13.5px}
 #lane-view .lb-phl{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:baseline}
 #lane-view .lb-phl b{font:600 12px var(--mono);color:var(--muted)}
-#lane-view .lb-opts li{display:block}
-#lane-view .lb-pick{font:600 11px var(--mono);color:var(--done);text-transform:uppercase;letter-spacing:.04em}
 @container (max-width:860px){
   #lane-view .lb-grid{grid-template-columns:minmax(0,1fr)}
   #lane-view .lb-two{grid-template-columns:minmax(0,1fr)}
@@ -364,6 +386,9 @@ dl.facts .mono{font-size:13px}
   #lane-view .lb-st:first-child{border-radius:var(--r) var(--r) 0 0}
   #lane-view .lb-st:last-child{border-radius:0 0 var(--r) var(--r)}
 }
+/* In dark mode the sheet's shadow vanishes against the panels behind it, so it takes a lit top edge and a slightly lighter surface. */
+@media (prefers-color-scheme:dark){@container (max-width:860px){:root:not([data-theme="light"]) #lane-view .lb-insp{background:color-mix(in srgb,var(--surface) 92%,var(--ink));border-top-color:color-mix(in srgb,var(--muted) 70%,var(--line))}}}
+@container (max-width:860px){:root[data-theme="dark"] #lane-view .lb-insp{background:color-mix(in srgb,var(--surface) 92%,var(--ink));border-top-color:color-mix(in srgb,var(--muted) 70%,var(--line))}}
 @media (max-width:480px){#lane-view .lb-bar{grid-template-columns:minmax(0,120px) minmax(0,1fr) 34px}}
 </style>
 
@@ -582,7 +607,7 @@ dl.facts .mono{font-size:13px}
 <section class="view" id="v-decisions" hidden>
   <div class="block">
     <h2>Decisions waiting on you</h2>
-    <p>Questions from lane sessions and from this flow land here instead of holding a session at its prompt. Pick an answer and save; the session that asked reads it from here.</p>
+    <p>Decisions and owner checks from lane sessions land here, grouped by lane, instead of holding a session at its prompt. Pick an option or write your own answer; the agent reads it from here and replies under it.</p>
   </div>
   <div id="dec-list" class="block"><div class="loading">Loading decisions.</div></div>
 </section>
@@ -596,7 +621,7 @@ dl.facts .mono{font-size:13px}
 const STAGES=[["idea","Idea"],["spec","Spec"],["plan","Plan"],["build","Build"],["review","Self-review"],["preview","PR + preview"],["ready","Ready to merge"],["shipped","Shipped"]];
 const STAGE_I=Object.fromEntries(STAGES.map((s,i)=>[s[0],i]));
 const GROUPS=[["you","Waiting on you","your look, your answer or your merge"],["agent","Agents working","nothing needed from you"],["blocked","Blocked","waiting for another lane to merge"],["parked","Parked","held on purpose, or superseded"],["shipped","Shipped","on prod"]];
-const S={lanes:null,setup:null,decisions:null,skills:null,coll:null,canWrite:true,db:null,editing:null,sel:null};
+const S={lanes:null,setup:null,decisions:null,skills:null,coll:null,canWrite:true,db:null,editing:null,sel:null,drafts:{}};
 const $=s=>document.querySelector(s);
 const el=(t,a={},...kids)=>{const e=document.createElement(t);for(const[k,v]of Object.entries(a)){if(v==null||v===false)continue;if(k==="class")e.className=v;else if(k==="text")e.textContent=v;else if(k.startsWith("on"))e.addEventListener(k.slice(2),v);else e.setAttribute(k,v===true?"":v)}for(const k of kids.flat()){if(k==null||k===false)continue;e.append(k.nodeType?k:document.createTextNode(String(k)))}return e};
 const svgEl=(t,a,txt)=>{const e=document.createElementNS("http://www.w3.org/2000/svg",t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;return e};
@@ -632,10 +657,11 @@ function renderStrip(){const L=(S.lanes||[]).filter(live),m=laneMap();const b=do
   const blocked=L.filter(l=>groupOf(l,m)==="blocked").length,yours=L.filter(l=>l.move==="you").length,prs=L.filter(l=>l.pr).length;
   [L.length,blocked,yours,prs].forEach((n,i)=>b[i].textContent=n)}
 
+function waitingChip(l){const n=S.decisions?LaneCore.openCount(S.decisions,l.id):0;return n?el("span",{class:"chip you",text:n+" waiting on you"}):null}
 function treeRow(l,d,m,parent){
   const g=groupOf(l,m);const rels=relText(l,m,parent);
   const top=el("div",{class:"row-top"},el("span",{class:"row-name",text:l.name||l.id}),
-    el("span",{class:"chip",text:stageLabel(l)}),moveChip(l,g),l.pr?el("span",{class:"chip agent",text:"PR #"+l.pr}):null,
+    el("span",{class:"chip",text:stageLabel(l)}),moveChip(l,g),waitingChip(l),l.pr?el("span",{class:"chip agent",text:"PR #"+l.pr}):null,
     previewChip(l),
     el("span",{class:"chip",title:l.session?.lastSeen?"session last wrote "+l.session.lastSeen:"no session has linked to this lane yet"},el("i",{class:"dot"+(sessionOn(l)?" on":"")}),l.session?.lastSeen?ago(l.session.lastSeen):"no session"));
   const row=el("a",{class:"row "+(d?"child":"root"),href:"#lane-"+l.id,"data-d":d,style:"--d:"+d},top);
@@ -658,8 +684,8 @@ function renderYours(){
   const ul=$("#yours");if(!S.lanes)return;ul.replaceChildren();const m=laneMap();
   for(const l of S.lanes.filter(x=>live(x)&&x.move==="you").sort(byOrder))
     ul.append(el("li",{},el("a",{class:"what",href:"#lane-"+l.id,text:l.name}),el("span",{class:"chip",text:stageLabel(l)}),el("span",{class:"why",text:l.next||""})));
-  const open=(S.decisions||[]).filter(d=>!d.answer).length;
-  if(open)ul.append(el("li",{},el("a",{class:"what",href:"#decisions",text:open+" open decision"+(open>1?"s":"")}),el("span",{class:"chip you",text:"answer"})));
+  const open=LaneCore.openCount(S.decisions||[]);
+  if(open)ul.append(el("li",{},el("a",{class:"what",href:"#decisions",text:open+" waiting on you in Decisions"}),el("span",{class:"chip you",text:"answer"})));
   if(S.setup){const live2=S.setup.filter(s=>s.status!=="declined"&&s.status!=="suggested");const done=live2.filter(s=>s.status==="done").length;const sug=S.setup.filter(s=>s.status==="suggested").length;
     ul.append(el("li",{},el("a",{class:"what",href:"#setup",text:"Provider setup: "+done+" of "+live2.length+" done"}),el("span",{class:"chip",text:sug?sug+" suggested":"setup"}),el("span",{class:"why",text:"GitHub, Vercel, Neon, Google and Orca, in plan order"})))}
   if(!ul.children.length)ul.append(el("li",{},el("span",{class:"muted",text:"Nothing waiting on you."})));
@@ -746,17 +772,14 @@ function renderSetup(){const box=$("#setup-list");if(!S.setup)return;box.replace
         const lead=sug?el("span",{class:"chip you",text:"suggested"}):el("input",{type:"checkbox",id:cid,checked:i.status==="done",disabled:!S.canWrite||i.status==="declined",onchange:e=>save("setup",i.id,{status:e.target.checked?"done":"todo",doneOn:e.target.checked?today():null})});
         const right=sug&&S.canWrite?el("div",{class:"actions"},el("button",{type:"button",onclick:()=>save("setup",i.id,{status:"declined"})},"Decline"),el("button",{class:"primary",type:"button",onclick:()=>save("setup",i.id,{status:"todo"})},"Add to plan")):el("span",{class:"chip"+(i.status==="done"?" done":""),text:i.status==="declined"?"declined":[i.task,i.doneOn].filter(Boolean).join(" · ")});
         return el("div",{class:"item"+(i.status==="done"?" done":"")},lead,el("label",{for:sug?null:cid,style:"display:block"},el("h4",{text:i.title}),i.why?el("p",{text:i.why}):null),right)})))}}
-function renderDecisions(){const box=$("#dec-list");if(!S.decisions)return;box.replaceChildren();const open=S.decisions.filter(d=>!d.answer);const cnt=$("#dec-count");cnt.hidden=!open.length;cnt.textContent=open.length;
-  if(!S.decisions.length){box.append(el("div",{class:"loading",text:"Nothing waiting. New questions from lane sessions appear here."}));return}
-  const sorted=[...open.sort(byOrder),...S.decisions.filter(d=>d.answer).sort(byOrder)];
-  for(const d of sorted){const nm="d-"+d.id;const answered=!!d.answer;
-    const f=el("form",{class:"dec"+(answered?" answered":""),onsubmit:async e=>{e.preventDefault();const fd=new FormData(f);const a=fd.get(nm);if(!a){toast("Pick an answer first");return}await save("decisions",d.id,{answer:a,note:String(fd.get(nm+"-note")||"").trim(),answeredOn:today()})}});
-    f.append(el("div",{class:"lane-h"},el("h3",{text:d.question}),d.area?el("span",{class:"chip",text:d.area}):null,answered?el("span",{class:"chip done",text:"answered "+(d.answeredOn||"")}):null));
-    if(d.context)f.append(el("p",{class:"muted",text:d.context}));
-    f.append(el("div",{class:"opts",role:"radiogroup"},(d.options||[]).map((o,i)=>el("label",{for:nm+"-"+i},el("input",{type:"radio",id:nm+"-"+i,name:nm,value:o,checked:d.answer===o,disabled:!S.canWrite}),el("span",{},o,d.recommended===o?el("span",{class:"rec",text:"recommended"}):null)))));
-    f.append(el("label",{for:nm+"-note"},"Note (optional)",el("textarea",{id:nm+"-note",name:nm+"-note",disabled:!S.canWrite},d.note||"")));
-    if(S.canWrite)f.append(el("div",{class:"actions"},el("button",{class:"primary",type:"submit"},answered?"Change answer":"Save answer")));
-    box.append(f)}}
+function renderDecisions(){const box=$("#dec-list");if(!S.decisions)return;const n=LaneCore.openCount(S.decisions);const cnt=$("#dec-count");cnt.hidden=!n;cnt.textContent=n;
+  if(!S.decisions.length){box.replaceChildren(el("div",{class:"loading",text:"Nothing waiting. New questions from lane sessions appear here."}));return}
+  const m=laneMap(),rank=Object.fromEntries((S.lanes||[]).slice().sort(byOrder).map((l,i)=>[l.id,i]));
+  const groups={};for(const d of S.decisions)(groups[d.lane||""]??=[]).push(d);
+  const ids=Object.keys(groups).sort((a,b)=>(a?1:0)-(b?1:0)||(rank[a]??1e9)-(rank[b]??1e9)||a.localeCompare(b));
+  keepUiState(box,()=>box.replaceChildren(...ids.map(id=>{const ds=groups[id].sort(byCard);const w=LaneCore.openCount(ds);
+    return el("section",{class:"lb-dgroup","data-lane":id},el("div",{class:"group-h"},el("h3",{},id?el("a",{href:"#lane-"+id,text:laneName(m,id)}):"Across all lanes"),el("small",{text:w?w+" waiting on you":"nothing waiting on you"})),
+      el("div",{class:"lb-cards"},ds.map(d=>decisionCard(d))))})))}
 function renderSkills(){const box=$("#skill-list");if(!S.skills)return;box.replaceChildren();if(!S.skills.length){box.append(el("div",{class:"loading",text:"No skills proposed yet."}));return}
   for(const k of S.skills.slice().sort(byOrder)){const st=k.status||"proposed";const cls={approved:"agent",built:"done",proposed:"you"}[st]||"";
     box.append(el("article",{class:"skill"},el("div",{class:"lane-h"},el("span",{class:"cmd",text:k.name}),el("span",{class:"chip "+cls,text:st})),
@@ -877,7 +900,7 @@ function renderAll(){renderLanes();renderSetup();renderDecisions();renderSkills(
   try{const u=await window.claude.use("user");const w=u?await u.can("data.write"):null;if(w===false)S.canWrite=false}catch{}
   const timer=setTimeout(()=>{document.querySelectorAll(".loading").forEach(n=>{if(n.isConnected)n.textContent="The board can't be reached yet; it fills in when the connection returns."})},10000);
   const sub=(col,key,fn)=>db.collection(col).onSnapshot(s=>{if(!s.metadata.fromCache)clearTimeout(timer);S[key]=s.docs.map(d=>({id:d.id,...d.data()}));fn()},e=>{clearTimeout(timer);console.warn(col,e?.code)});
-  sub("lanes","lanes",renderLanes);sub("setup","setup",()=>{renderSetup();renderYours()});sub("decisions","decisions",()=>{renderDecisions();renderYours();if(S.lane)renderLaneView()});sub("skills","skills",()=>{renderSkills();renderFlow()});sub("flow_nodes","flow",renderFlow);sub("flow_changes","changes",renderFlowLog);
+  sub("lanes","lanes",()=>{renderLanes();renderDecisions()});sub("setup","setup",()=>{renderSetup();renderYours()});sub("decisions","decisions",()=>{renderDecisions();renderLanes()});sub("skills","skills",()=>{renderSkills();renderFlow()});sub("flow_nodes","flow",renderFlow);sub("flow_changes","changes",renderFlowLog);
   db.doc("snapshots/collisions").onSnapshot(s=>{if(s.exists){S.coll=s.data();renderMatrix();if(S.lane)renderLaneView()}},e=>console.warn("collisions",e?.code));
 })();
 </script>
