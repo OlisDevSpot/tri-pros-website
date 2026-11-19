@@ -1,0 +1,211 @@
+{
+  "aheadBehind": {
+    "ahead": 21,
+    "behind": 0,
+    "onCurrentProd": true
+  },
+  "decided": [
+    {
+      "date": "2026-10-23",
+      "text": "Customer rows offer only View profile, Schedule meeting and Delete."
+    },
+    {
+      "date": "2026-10-23",
+      "text": "Schedule meeting opens as a pop-up; booking refreshes the customers list."
+    },
+    {
+      "date": "2026-10-16",
+      "text": "Every list view's code lives in one folder."
+    },
+    {
+      "date": "2026-10-14",
+      "text": "Design approved; DV3, DV3a and DV4 ship together."
+    },
+    {
+      "date": "2026-10-12",
+      "text": "Nothing dims during a background refresh; a thin line is the only sign."
+    }
+  ],
+  "files": 227,
+  "goal": "Every records table is built from one shared data-view kit, and the customers table becomes a proper entity table that opens instantly with cached rows.",
+  "lastCommit": {
+    "date": "2026-11-13",
+    "sha": "a6548d23e",
+    "subject": "docs(records): D69 says each customer surface offers at most View Profile, Schedule Meeting and Delete"
+  },
+  "phases": [
+    {
+      "id": "DV0",
+      "name": "Instant return to list pages",
+      "status": "shipped",
+      "step": "prod"
+    },
+    {
+      "id": "DV1",
+      "name": "Edge-to-edge on phones",
+      "status": "shipped",
+      "step": "prod"
+    },
+    {
+      "id": "DV2",
+      "name": "The design, approved 14 Oct",
+      "status": "decided",
+      "step": "prod"
+    },
+    {
+      "id": "DV3",
+      "name": "Shared list kit; meetings and projects on it",
+      "status": "built",
+      "step": "release",
+      "note": "ships with DV3a and DV4"
+    },
+    {
+      "id": "DV3a",
+      "name": "One folder for every list view",
+      "status": "built",
+      "step": "release",
+      "note": "path moves only"
+    },
+    {
+      "id": "DV4",
+      "name": "Customers list rebuilt on the kit",
+      "status": "built",
+      "step": "release",
+      "note": "lead-sources panes too; getCustomers gone"
+    },
+    {
+      "id": "DV5",
+      "name": "Calendars on the kit",
+      "status": "spec",
+      "step": "next",
+      "note": "plan to write"
+    },
+    {
+      "id": "DV6",
+      "name": "Pipeline board on the kit",
+      "status": "spec",
+      "step": "next",
+      "note": "plan to write"
+    },
+    {
+      "id": "DV7",
+      "name": "Permissions rebase (overtaken)",
+      "status": "parked",
+      "step": "parked"
+    },
+    {
+      "id": "DV8",
+      "name": "Proposals list",
+      "status": "idea",
+      "step": "later"
+    },
+    {
+      "id": "DV9",
+      "name": "Bulk actions on every table",
+      "status": "idea",
+      "step": "later"
+    },
+    {
+      "id": "DV10",
+      "name": "Loading screens for the other pages",
+      "status": "idea",
+      "step": "later"
+    },
+    {
+      "id": "DV11",
+      "name": "Dashboard card lists",
+      "status": "idea",
+      "step": "later"
+    }
+  ],
+  "plan": "docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters-part-2.md",
+  "spec": "docs/superpowers/specs/2026-10-07-data-view-surface-design.md",
+  "tracker": "docs/plans/2026-10-12-data-views-epic.md",
+  "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/data-views",
+  "steps": {
+    "prod": "Instant return, edge to edge",
+    "release": "The shared kit + customers",
+    "next": "Calendars and pipeline",
+    "later": "Proposals, bulk, loading, cards"
+  },
+  "stand": "Built, not shipped. Three steps are done on the branch and go to prod together in one PR. No PR yet: an agent is checking it against three other lanes first.",
+  "areas": [
+    {
+      "area": "shared/components",
+      "files": 108,
+      "note": "Mostly DV3a: every list view moved into one folder, shared/components/data-view. Other lanes import these paths, which is why Proposal page waits."
+    },
+    {
+      "area": "docs",
+      "files": 29,
+      "note": "Trackers, specs and plans that cite the moved paths."
+    },
+    {
+      "area": "shared/entities",
+      "files": 17,
+      "note": "The customers entity table and its hooks (DV4)."
+    },
+    {
+      "area": "features/records-management",
+      "files": 15,
+      "note": "Records pages rebuilt on the shared kit (DV3, DV4)."
+    },
+    {
+      "area": "app/(frontend)",
+      "files": 12,
+      "note": "Routes moved onto loading screens."
+    },
+    {
+      "area": "other features",
+      "files": 33,
+      "note": "Lead sources, agent dashboard, schedule, campaigns, proposal flow: imports re-pointed to the moved paths."
+    },
+    {
+      "area": "shared/modules + dal",
+      "files": 10,
+      "note": "Small edits behind the customers table."
+    }
+  ],
+  "timeline": [
+    {
+      "date": "2026-10-12",
+      "label": "Epic started",
+      "note": "The owner re-anchored dashboard work on one structure, an entity shown in a data view."
+    },
+    {
+      "date": "2026-10-14",
+      "label": "Design approved (DV2)",
+      "note": "Ruling: DV3, DV3a and DV4 ship to prod together."
+    },
+    {
+      "date": "2026-10-16",
+      "label": "Every list view's code in one folder",
+      "note": "Ruling for DV3a."
+    },
+    {
+      "date": "2026-10-23",
+      "label": "Last rulings on the build",
+      "note": "D68 and D69: customer rows offer only View profile, Schedule meeting and Delete."
+    },
+    {
+      "date": "2026-11-13",
+      "label": "Moved onto its own branch",
+      "note": "An agent checks it against three lanes before the PR."
+    }
+  ],
+  "builtOn": "2026-10-23",
+  "watch": [
+    "It moves 92 files. Git merges it cleanly with other lanes, but their imports break: merge it before Proposal page and Filter rules.",
+    "Dev hides the instant return; only prod shows it. That is why the prod check is yours."
+  ],
+  "agent": [
+    "Add five terms to the glossary: data view, body, orchestrator, loading screen, pending view",
+    "Point three older plans at the new dashboard home path"
+  ],
+  "evidence": [
+    "Verified at feat/data-views@a6548d23e, 2026-11-13",
+    "21 commits ahead of prod, 0 behind, 227 files changed",
+    "Tracker still says built on local main; work moved to this branch on 2026-11-13"
+  ],
+  "verifiedAt": "feat/data-views@a6548d23e 2026-11-13"
+}

@@ -452,6 +452,7 @@ dl.facts .mono{font-size:13px}
 </div></main>
 <div class="toast" id="toast" role="status"></div>
 
+<script src="lane-core.js"></script>
 <script>
 const STAGES=[["idea","Idea"],["spec","Spec"],["plan","Plan"],["build","Build"],["review","Self-review"],["preview","PR + preview"],["ready","Ready to merge"],["shipped","Shipped"]];
 const STAGE_I=Object.fromEntries(STAGES.map((s,i)=>[s[0],i]));
@@ -461,7 +462,7 @@ const $=s=>document.querySelector(s);
 const el=(t,a={},...kids)=>{const e=document.createElement(t);for(const[k,v]of Object.entries(a)){if(v==null||v===false)continue;if(k==="class")e.className=v;else if(k==="text")e.textContent=v;else if(k.startsWith("on"))e.addEventListener(k.slice(2),v);else e.setAttribute(k,v===true?"":v)}for(const k of kids.flat()){if(k==null||k===false)continue;e.append(k.nodeType?k:document.createTextNode(String(k)))}return e};
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("on"),2200)}
 const byOrder=(a,b)=>(a.order??99)-(b.order??99)||String(a.name||a.title||"").localeCompare(String(b.name||b.title||""));
-const today=()=>new Date().toISOString().slice(0,10);
+const today=()=>LaneCore.localDay(new Date());
 const VIEWS={now:["now"],lane:["lane"],merge:["merge"],flow:["flow"],setup:["setup"],decisions:["decisions"],reference:["bottlenecks","skills","tools"]};
 const ALIAS={board:"now",playbook:"flow",bottlenecks:"reference",skills:"reference",tools:"reference"};
 function route(){
@@ -474,16 +475,14 @@ function route(){
 addEventListener("hashchange",route);
 
 const laneMap=()=>Object.fromEntries((S.lanes||[]).map(l=>[l.id,l]));
-const deps=l=>[...new Set([l.stackedOn,...(l.blockedBy||[])].filter(Boolean))];
-const live=l=>l.stage!=="shipped"&&l.move!=="parked";
-function groupOf(l,m){if(l.stage==="shipped")return"shipped";if(l.move==="parked")return"parked";if(deps(l).some(d=>m[d]&&m[d].stage!=="shipped"))return"blocked";if(l.move==="you")return"you";return"agent"}
+const {deps,activeDeps,groupOf}=LaneCore,live=LaneCore.isLive;
 const laneName=(m,id)=>m[id]?.name||id;
 const stageLabel=l=>STAGES[STAGE_I[l.stage]??0][1];
 function ago(iso){if(!iso)return"";const s=(Date.now()-Date.parse(iso))/1000;if(!isFinite(s))return"";if(s<3600)return Math.max(1,Math.round(s/60))+" min ago";if(s<86400)return Math.round(s/3600)+" h ago";return Math.round(s/86400)+" d ago"}
 const sessionOn=l=>l.session?.lastSeen&&(Date.now()-Date.parse(l.session.lastSeen))<6*3600e3;
 function moveChip(l,g){return g==="blocked"?el("span",{class:"chip blocked",text:"blocked"}):l.move==="you"?el("span",{class:"chip you",text:"your move"}):l.move==="parked"?el("span",{class:"chip",text:"parked"}):el("span",{class:"chip agent",text:"agent"})}
 function relText(l,m,parent){
-  const out=[];const ds=deps(l).filter(d=>m[d]&&m[d].stage!=="shipped");
+  const out=[];const ds=activeDeps(l,m);
   for(const d of ds){const stacked=l.stackedOn===d;const why=(l.blockReason&&l.blockReason[d])||"";out.push({stacked,text:(stacked?"built on ":"waits on ")+laneName(m,d)+(why?": "+why:""),d})}
   return out;
 }
@@ -625,9 +624,9 @@ function editForm(l,m){
 }
 function order(){
   const L=(S.lanes||[]).filter(l=>l.stage!=="shipped"&&l.move!=="parked");const m=Object.fromEntries(L.map(l=>[l.id,l]));
-  const done=new Set(),out=[];const ready=l=>deps(l).every(d=>!m[d]||done.has(d));
+  const done=new Set(),out=[],loop=new Set(LaneCore.findCycle(L));const ready=l=>deps(l).every(d=>!m[d]||done.has(d));
   const score=l=>-(STAGE_I[l.stage]??0)*10+(l.order??50)/10;
-  while(out.length<L.length){const c=L.filter(l=>!done.has(l.id)&&ready(l)).sort((a,b)=>score(a)-score(b));if(!c.length){L.filter(l=>!done.has(l.id)).forEach(l=>{out.push({l,cycle:true});done.add(l.id)});break}out.push({l:c[0]});done.add(c[0].id)}
+  while(out.length<L.length){const c=L.filter(l=>!done.has(l.id)&&ready(l)).sort((a,b)=>score(a)-score(b));if(!c.length){L.filter(l=>!done.has(l.id)).forEach(l=>{out.push({l,cycle:loop.has(l.id)});done.add(l.id)});break}out.push({l:c[0]});done.add(c[0].id)}
   return out;
 }
 function renderTrain(){const ol=$("#train");ol.replaceChildren();const m=laneMap();const o=order();
