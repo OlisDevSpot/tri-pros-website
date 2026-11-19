@@ -14,7 +14,7 @@ Auto-loaded every session. Address book + commands. Keep it short.
 
 ```bash
 pnpm dev              # Dev server behind a router: stops after DEV_IDLE_MIN idle (5), wakes on the next request, restarts above DEV_MEM_LIMIT_GB (6). Use the PORT URL; the :PORT+1000 line in Next output is internal.
-pnpm review <branch|folder>   # Point the review slot (.worktrees/review, :3001) at a lane's latest commit; Oliver's dev server there shows it
+pnpm review <branch|folder>   # Point the review slot (.worktrees/review, :3001) at a lane's latest commit; Oliver's dev server there shows it. Run it from the main checkout
 pnpm dev:mobile       # Dev + ngrok tunnel + QR (mobile testing)
 pnpm tunnel           # ngrok tunnel only
 pnpm lint             # ESLint
