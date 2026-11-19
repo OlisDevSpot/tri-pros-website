@@ -1,0 +1,16 @@
+{
+  "answer": "Once a day, end of day",
+  "answeredOn": "2026-11-14",
+  "area": "your time",
+  "context": "The biggest stall is review time: 8 branches hold about 20 actions only you can take. A fixed sitting lets agents prepare everything beforehand and lets /review-queue run it.",
+  "note": "Not necessarily daily, but most often end of day. Aim for 2-3 times weekly",
+  "options": [
+    "Once a day, mornings",
+    "Once a day, end of day",
+    "Twice a day, short",
+    "No fixed time"
+  ],
+  "order": 1,
+  "question": "When is your daily review sitting?",
+  "recommended": "Once a day, mornings"
+}

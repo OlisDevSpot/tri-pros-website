@@ -1,0 +1,15 @@
+{
+  "answer": "After the plan",
+  "answeredOn": "2026-11-14",
+  "area": "plan",
+  "context": "You ruled 'execute in order, Task 0 first'. The skills (/lane-sync, /collisions, /review-queue, /ship-lane) need no infrastructure and target today's top bottleneck, while Tasks 1–16 lock prod and add migrations.",
+  "note": "I don't trust how fast you created these skills. We'll need further brainstorming, requirement gathering, and rewrite / orchestration of skills flows per feature/improvement to our codebase. After the plan is fine",
+  "options": [
+    "Alongside: skills track starts now, plan continues in order",
+    "After the plan",
+    "Fold the skills into the plan as new tasks"
+  ],
+  "order": 8,
+  "question": "Run the parallel-lane skills alongside plan Tasks 1–16, or after?",
+  "recommended": "Alongside: skills track starts now, plan continues in order"
+}
