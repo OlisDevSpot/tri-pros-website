@@ -1,6 +1,5 @@
 import { join } from "node:path";
 
-const DEL = { __delete__: true };
 const eq = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 const settle = (page, ms = 250) => page.waitForTimeout(ms);
 const go = async (page, hash) => { await page.evaluate((h) => { location.hash = h; }, hash); await settle(page, 200); };
@@ -13,7 +12,7 @@ const doc = (page, id) => page.evaluate((id) => S.decisions.find((d) => d.id ===
 async function fire(page, what) {
   await page.evaluate(async (what) => {
     const db = await window.claude.use("db");
-    if (what === "lanes") await db.doc("lanes/data-views").update({ "session.lastSeen": "2026-11-16T14:58:00Z" });
+    if (what === "lanes") await db.doc("lanes/data-views").update({ session: { lastSeen: "2026-11-16T14:58:00Z" } });
     else await db.doc("decisions/lane-size").update({ order: 4 });
   }, what);
   await settle(page, 150);
@@ -151,7 +150,7 @@ async function run({ page, hash, viewport, scheme, opt, skillDir }, expect) {
     await go(page, "#" + hash);
   }
 
-  // Option 2 with a note: one write, with the free-text flag and the agent's old reply cleared.
+  // Option 2 with a note: one write, with the free-text flag and the agent's old reply cleared (null: the page db has no delete marker).
   const id1 = await firstOpen(page);
   if (id1) {
     const d = await doc(page, id1);
@@ -161,7 +160,7 @@ async function run({ page, hash, viewport, scheme, opt, skillDir }, expect) {
     await settle(page, 400);
     const got = await since(page, n);
     expect(got.length === 1, "answering writes exactly once (got " + got.length + ")");
-    expect(eq(got[0], { path: "decisions/" + id1, patch: { answer: label, answeredOn: day, own: DEL, note: "only if cheap", reply: DEL, replyOn: DEL, appliedOn: DEL } }), "option answer patch " + JSON.stringify(got[0]));
+    expect(eq(got[0], { path: "decisions/" + id1, patch: { answer: label, answeredOn: day, own: null, note: "only if cheap", reply: null, replyOn: null, appliedOn: null } }), "option answer patch " + JSON.stringify(got[0]));
     const st = await page.evaluate((id) => document.querySelector(`#lane-view [data-section=decisions] .lb-card[data-id="${id}"]`)?.dataset.state, id1);
     expect(st === "answered", "the answered card shows as answered (got " + st + ")");
     expect((await laneCard(page, id1).innerText()).includes("Answered · waiting for the agent"), "a fresh answer waits for the agent");
@@ -172,12 +171,21 @@ async function run({ page, hash, viewport, scheme, opt, skillDir }, expect) {
   const casl = laneCard(page, "casl-285-db1");
   expect((await casl.locator("input[type=radio]").count()) === 0, "a doc with options: [] shows no options");
   if (await casl.count()) {
+    // A Vercel refetch lands while the owner types: the same field keeps focus, or the iPad keyboard closes.
+    await casl.locator("textarea[name=own]").fill("ship it");
+    const kept = await page.evaluate(async () => {
+      const before = document.activeElement;
+      window.__vercelTick();
+      await new Promise((r) => setTimeout(r, 100));
+      return { same: document.activeElement === before, textarea: before.tagName === "TEXTAREA", connected: before.isConnected, value: before.value };
+    });
+    expect(kept.textarea && kept.same && kept.connected && kept.value === "ship it", "a Vercel delivery leaves the focused textarea in place " + JSON.stringify(kept));
     const n = (await updates(page)).length;
     await casl.locator("[name=own]").fill("ship it later");
     await casl.getByRole("button", { name: "Save answer" }).click();
     await settle(page, 400);
     const got = await since(page, n);
-    expect(got.length === 1 && eq(got[0], { path: "decisions/casl-285-db1", patch: { answer: "ship it later", answeredOn: day, own: true, note: DEL, reply: DEL, replyOn: DEL, appliedOn: DEL } }), "free-text patch " + JSON.stringify(got));
+    expect(got.length === 1 && eq(got[0], { path: "decisions/casl-285-db1", patch: { answer: "ship it later", answeredOn: day, own: true, note: null, reply: null, replyOn: null, appliedOn: null } }), "free-text patch " + JSON.stringify(got));
   } else expect(false, "the casl-285-db1 card is on its lane page");
   await go(page, "#" + hash);
 
@@ -190,11 +198,13 @@ async function run({ page, hash, viewport, scheme, opt, skillDir }, expect) {
     const n = (await updates(page)).length;
     await mo.getByRole("button", { name: "Change answer" }).click();
     await settle(page, 100);
+    const pre = { own: await mo.locator("[name=own]").inputValue(), note: await mo.locator("[name=note]").inputValue() };
+    expect(pre.own === moDoc.answer && pre.note === moDoc.note, "Change answer opens on the current answer and note " + JSON.stringify(pre));
     await answerOption(mo, 0, null);
     await settle(page, 400);
     const got = await since(page, n);
     const label = moDoc.options[0].label;
-    expect(got.length === 1 && eq(got[0], { path: "decisions/data-views-merge-order", patch: { answer: label, answeredOn: day, own: DEL, note: DEL, reply: DEL, replyOn: DEL, appliedOn: DEL } }), "changed answer patch " + JSON.stringify(got));
+    expect(got.length === 1 && eq(got[0], { path: "decisions/data-views-merge-order", patch: { answer: label, answeredOn: day, own: null, note: moDoc.note, reply: null, replyOn: null, appliedOn: null } }), "changing only the option keeps the note " + JSON.stringify(got));
     expect((await mo.innerText()).includes("Answered · waiting for the agent"), "a changed answer waits for the agent again");
   }
 
@@ -210,6 +220,16 @@ async function run({ page, hash, viewport, scheme, opt, skillDir }, expect) {
     expect(got.length === 1 && eq(got[0], { path: "decisions/data-views-prod-check", patch: { done: true } }), "ticking writes {done: true} " + JSON.stringify(got));
   }
   const after = await headerChip(page);
+  {
+    const n = (await updates(page)).length;
+    await ck.locator("input[type=checkbox]").uncheck();
+    await settle(page, 400);
+    const got = await since(page, n);
+    const st = await ck.getAttribute("data-state");
+    expect(got.length === 1 && eq(got[0], { path: "decisions/data-views-prod-check", patch: { done: null } }) && st === "open" && (await headerChip(page)) === before, "unticking writes {done: null} and reopens the check " + JSON.stringify({ got, st }));
+    await ck.locator("input[type=checkbox]").check();
+    await settle(page, 400);
+  }
   expect(before === "2 waiting on you" && after === "1 waiting on you", `the check counts as open until ticked (${before} → ${after})`);
   if (viewport === "1280x900" || viewport === "390x844") await page.locator("#lane-view [data-section=decisions]").screenshot({ path: join(skillDir, "test", "shots", `dec-lane-answered-${viewport}-${scheme}.png`) });
 
@@ -240,6 +260,8 @@ async function run({ page, hash, viewport, scheme, opt, skillDir }, expect) {
     const d = await doc(page, legacy);
     const labels = await c.locator("input[type=radio]").evaluateAll((xs) => xs.map((x) => x.closest("label").querySelector(".lb-ot").textContent));
     expect(eq(labels, d.options), "legacy string options render as options " + JSON.stringify(labels));
+    const picked = await c.locator("input[type=radio]:checked").evaluateAll((xs) => xs.map((x) => x.closest("label").querySelector(".lb-ot").textContent));
+    if (!d.own && d.options.includes(d.answer)) expect(eq(picked, [d.answer]), "Change answer opens with the current option picked " + JSON.stringify(picked));
     await c.getByRole("button", { name: "Keep answer" }).click();
     await settle(page, 100);
   }

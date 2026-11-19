@@ -722,9 +722,9 @@ async function startVercel(){
   let mcp=null;try{mcp=await window.claude?.use?.("mcp")}catch{}
   if(!mcp){S.vc={...S.vc,state:"unavailable"};renderLive();return}
   mcp.watchTool(VC.server,"list_deployments",{projectId:VC.project,teamId:VC.team,limit:60},ev=>{
-    if(ev.type==="data"){ingestVercel(ev.result?.payload);renderLive();renderTree();if(S.lane)renderLaneView()}
+    if(ev.type==="data"){ingestVercel(ev.result?.payload);renderLive();renderTree();renderLaneLive()}
     else{const code=ev.error?.code||"upstream_error";const keep=["rate_limited","server_unavailable","upstream_error"].includes(code)&&S.vc.state==="ok";
-      if(!keep){S.vc={state:code,byBranch:{},prod:null,at:null};renderTree();if(S.lane)renderLaneView()}renderLive()}
+      if(!keep){S.vc={state:code,byBranch:{},prod:null,at:null};renderTree();renderLaneLive()}renderLive()}
   },{refetchInterval:120000});
 }
 startVercel();

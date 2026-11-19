@@ -75,24 +75,16 @@ function installMock(cfg) {
   window.__updates = [];
   let rejectCode = cfg.rejectNext;
 
-  const clean = (v) => {
-    if (v && typeof v === "object" && !Array.isArray(v)) {
-      const out = {};
-      for (const [k, x] of Object.entries(v)) {
-        if (x && typeof x === "object" && x.__delete__ === true) continue;
-        out[k] = clean(x);
-      }
-      return out;
+  // The page's db contract: update merges nested objects recursively, arrays and scalars replace, and there is
+  // no delete marker; {"__delete__": true} is an ArtifactData feature on Claude's side only. A page write that
+  // carries one would be stored as a truthy object, so the mock stores it verbatim and fails the run.
+  const isObj = (x) => !!x && typeof x === "object" && !Array.isArray(x);
+  const hasMarker = (v) => isObj(v) ? ("__delete__" in v || Object.values(v).some(hasMarker)) : Array.isArray(v) && v.some(hasMarker);
+  const merge = (into, patch) => {
+    for (const [k, v] of Object.entries(patch)) {
+      if (isObj(v) && isObj(into[k])) merge(into[k], v);
+      else into[k] = clone(v);
     }
-    return v;
-  };
-  const setPath = (obj, path, value) => {
-    const keys = path.split(".");
-    let o = obj;
-    for (const k of keys.slice(0, -1)) { if (!o[k] || typeof o[k] !== "object") o[k] = {}; o = o[k]; }
-    const last = keys[keys.length - 1];
-    if (value && typeof value === "object" && value.__delete__ === true) delete o[last];
-    else o[last] = clean(value);
   };
   const clone = (x) => JSON.parse(JSON.stringify(x));
   const collSnap = (col) => ({
@@ -146,9 +138,9 @@ function installMock(cfg) {
             throw Object.assign(new Error(code), { code });
           }
           const [col, id] = path.split("/");
-          if (!data[col]) data[col] = {};
-          if (!data[col][id]) data[col][id] = {};
-          for (const [k, v] of Object.entries(patch)) setPath(data[col][id], k, v);
+          if (!data[col] || !data[col][id]) throw Object.assign(new Error("update needs an existing document: " + path), { code: "invalid_argument" });
+          if (hasMarker(patch)) console.error("page write to " + path + " carries __delete__, which the page db stores as data: " + JSON.stringify(patch));
+          merge(data[col][id], patch);
           window.__updates.push({ path, patch: clone(patch) });
           listeners.filter((l) => (l.kind === "col" && l.col === col) || (l.kind === "doc" && l.path === path)).forEach(fire);
         },
@@ -159,7 +151,9 @@ function installMock(cfg) {
 
   const mcp = {
     watchTool(server, tool, args, cb) {
-      setTimeout(() => cb({ type: "data", result: { payload: cfg.vercel } }), 50);
+      // A check calls this to stand in for the next 2-minute refetch.
+      window.__vercelTick = () => cb({ type: "data", result: { payload: cfg.vercel } });
+      setTimeout(window.__vercelTick, 50);
       return () => {};
     },
   };

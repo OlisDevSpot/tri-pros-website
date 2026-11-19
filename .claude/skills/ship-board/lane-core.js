@@ -2,7 +2,6 @@
   const STEPS = ["prod", "release", "next", "later"];
   const STATUSES = ["shipped", "built", "building", "decided", "plan", "spec", "idea", "parked"];
   const OLD_KEYS = ["open", "notes", "orientPage", "statusBlock", "pr"];
-  const DEL = { "__delete__": true };
 
   const deps = (l) => [...new Set([l.stackedOn, ...(l.blockedBy || [])].filter(Boolean))];
   const activeDeps = (l, m) => deps(l).filter((d) => m[d] && m[d].stage !== "shipped");
@@ -48,7 +47,8 @@
     const cols = [[], [mk(laneId, 1)], [], []];
     activeDeps(me, m).forEach((id) => { placed.add(id); cols[0].push(mk(id, 0)); });
     const dependents = (ids) => lanes.filter((l) => isLive(l) && !placed.has(l.id) && deps(l).some((d) => ids.includes(d))).map((l) => l.id);
-    const c2 = dependents([laneId]); c2.forEach((id) => placed.add(id));
+    // Nothing waits on a lane that is already on prod.
+    const c2 = me.stage === "shipped" ? [] : dependents([laneId]); c2.forEach((id) => placed.add(id));
     const c3 = dependents(c2); c3.forEach((id) => placed.add(id));
     c2.forEach((id) => cols[2].push(mk(id, 2)));
     c3.forEach((id) => cols[3].push(mk(id, 3)));
@@ -142,7 +142,8 @@
       own = true;
     }
     const n = String(note || "").trim();
-    return { answer, answeredOn: today, own: own ? true : DEL, note: n || DEL, reply: DEL, replyOn: DEL, appliedOn: DEL };
+    // The page's db has no delete marker: an update merges, so a cleared field is written as null.
+    return { answer, answeredOn: today, own: own ? true : null, note: n || null, reply: null, replyOn: null, appliedOn: null };
   }
 
   function pinsByStep(brief, decisions, laneId) {
@@ -176,25 +177,49 @@
     return a ? dayNum(today) - dayNum(a) > 3 : false;
   }
 
+  const DAY = /^\d{4}-\d{2}-\d{2}$/;
+  const isObj = (x) => !!x && typeof x === "object" && !Array.isArray(x);
+  const isStr = (x) => typeof x === "string";
+  // Optional fields: absent and null read the same, since the page clears a field by writing null.
   function validateBrief(b) {
     const p = [];
-    if (!b || typeof b !== "object") return ["brief is missing"];
+    if (!isObj(b)) return ["brief is missing"];
+    const rows = (k) => {
+      if (b[k] == null) return [];
+      if (Array.isArray(b[k])) return b[k];
+      p.push(k + " must be a list");
+      return [];
+    };
     if (!b.goal) p.push("missing goal");
-    if (!Array.isArray(b.phases)) p.push("missing phases");
+    else if (!isStr(b.goal)) p.push("goal must be a string");
+    if (b.stand != null && !isStr(b.stand)) p.push("stand must be a string");
+    if (b.phases === undefined) p.push("missing phases");
+    else if (!Array.isArray(b.phases)) p.push("phases must be a list");
     if (!b.tracker && !b.plan && !b.spec) p.push("needs one of tracker, plan or spec");
-    (b.phases || []).forEach((ph, i) => {
+    rows("phases").forEach((ph, i) => {
+      if (!isObj(ph)) { p.push("phase " + i + " must be an object"); return; }
       if (!ph.id || !ph.name) p.push("phase " + i + " needs id and name");
       if (!STATUSES.includes(ph.status)) p.push("phase " + (ph.id || i) + " has status " + JSON.stringify(ph.status));
       if (ph.step !== undefined && ph.step !== "parked" && !STEPS.includes(ph.step)) p.push("phase " + (ph.id || i) + " has step " + JSON.stringify(ph.step));
     });
-    for (const k of Object.keys(b.steps || {})) if (!STEPS.includes(k)) p.push("steps key " + k + " is not a step");
-    if (b.areas) {
-      if (b.areas.length > 7) p.push("areas has more than 7 rows");
-      b.areas.forEach((a, i) => { if (!a.area || a.files == null) p.push("area row " + i + " needs area and files"); });
+    if (b.steps != null && !isObj(b.steps)) p.push("steps must be an object");
+    else for (const [k, v] of Object.entries(b.steps || {})) {
+      if (!STEPS.includes(k)) p.push("steps key " + k + " is not a step");
+      if (!isStr(v)) p.push("steps." + k + " must be a string");
     }
-    (b.timeline || []).forEach((t, i) => { if (!t.date || !t.label) p.push("timeline row " + i + " needs date and label"); });
-    if ((b.watch || []).length > 3) p.push("watch has more than 3 items");
-    if ((b.decided || []).length > 6) p.push("decided has more than 6 rows");
+    const areas = rows("areas");
+    if (areas.length > 7) p.push("areas has more than 7 rows");
+    areas.forEach((a, i) => { if (!isObj(a) || !isStr(a.area) || !a.area || typeof a.files !== "number") p.push("area row " + i + " needs area and files"); });
+    rows("timeline").forEach((t, i) => {
+      if (!isObj(t) || !t.date || !t.label) p.push("timeline row " + i + " needs date and label");
+      else if (!isStr(t.date) || !DAY.test(t.date)) p.push("timeline row " + i + " date must be YYYY-MM-DD");
+    });
+    if (b.builtOn != null && !(isStr(b.builtOn) && DAY.test(b.builtOn))) p.push("builtOn must be YYYY-MM-DD");
+    for (const k of ["watch", "agent", "evidence"]) rows(k).forEach((x, i) => { if (!isStr(x)) p.push(k + " row " + i + " must be a string"); });
+    if (rows("watch").length > 3) p.push("watch has more than 3 items");
+    const decided = rows("decided");
+    if (decided.length > 6) p.push("decided has more than 6 rows");
+    decided.forEach((d, i) => { if (!isObj(d) || !isStr(d.date) || !DAY.test(d.date) || !isStr(d.text)) p.push("decided row " + i + " needs a YYYY-MM-DD date and text"); });
     for (const k of OLD_KEYS) if (k in b) p.push("old-shape key " + k);
     return p;
   }
@@ -218,9 +243,8 @@
     return id;
   }
 
-  function migrateBrief(lane, today, sort = {}) {
+  function migrateBrief(lane, today, sort = {}, taken = new Set()) {
     const brief = JSON.parse(JSON.stringify(lane.brief || {}));
-    const taken = new Set();
     const decisions = [];
     const agent = [...(brief.agent || [])];
     for (const item of brief.open || []) {

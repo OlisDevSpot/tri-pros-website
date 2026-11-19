@@ -45,3 +45,9 @@ test("width follows the columns actually used", () => {
   assert.ok(m.width < 770);
   for (const n of m.nodes) assert.ok(n.x + n.w <= m.width, n.id);
 });
+test("a shipped lane holds nothing up", () => {
+  const lanes = [lane("old", {stage: "shipped"}), lane("w1", {blockedBy: ["old"]}), lane("w2", {stackedOn: "old"}), lane("w3", {blockedBy: ["w1"]})];
+  const m = C.layoutBlockerMap("old", lanes, {pairs: []});
+  assert.deepEqual(col(m, 2), []); assert.deepEqual(col(m, 3), []);
+  assert.deepEqual(col(m, 1), ["old"]);
+});

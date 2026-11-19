@@ -14,6 +14,8 @@ The Parallel Ship Flow board: one claude.ai artifact whose source lives here. La
 
 The code is the schema. Brief fields are checked by `validateBrief` and decision docs by `validateDecision` in `lane-core.js`; run `scripts/check-brief.mjs <file>` before writing either to the board. Never copy the field list into prose.
 
+Clearing a field: the page writes `null` (its db's `update` merges and has no delete marker); Claude-side `ArtifactData` writes clear with `{"__delete__": true}`. Readers treat a null field as absent.
+
 ## Vocabulary
 
 - **Lane**: one feature on its own branch and worktree, doc id = lane id (`lanes/<id>`).
@@ -27,7 +29,7 @@ The code is the schema. Brief fields are checked by `validateBrief` and decision
 
 This is the one home of these rules; `/orient`, the lane hook and `session-capture` point here.
 
-1. **Which docs.** `decisions` docs whose `lane` matches the lane in hand, that have an `answer` or a `note`, and no `appliedOn`. A doc with no `lane` is applied only when the owner asks, never by a lane run.
+1. **Which docs.** `decisions` docs whose `lane` matches the lane in hand, that have an `answer` or a `note`, and no `appliedOn` (absent or null). A doc with no `lane` is applied only when the owner asks, never by a lane run.
 2. **Ruling target.** The first of: the tracker's rulings table, the plan's `## Rulings` table, else the doc alone. Write a dated row in the owner's words. Never edit the spec.
 3. **Which copy.** The file in the lane's worktree (`brief.worktree`); the main checkout when `brief.worktree` is missing or the folder is gone.
 4. **Guard.** Write into another session's worktree only when `git -C <worktree> diff --quiet -- <file>` is clean, and only the rulings table and status block. Otherwise leave the file to the lane session and say so in `reply`.
@@ -35,7 +37,7 @@ This is the one home of these rules; `/orient`, the lane hook and `session-captu
 
 ## Republish
 
-`Artifact` publish with `file_path: page.html`, `url` the board URL, and `files: {"lane-core.js": "<abs path>", "lane-view.js": "<abs path>"}`. Read the live artifact first when this session has not published it.
+`Artifact` publish with `file_path: page.html`, `url` the board URL, and `files: {"lane-core.js": "<abs path>", "lane-view.js": "<abs path>"}`. Omit `capabilities` so `{db, user, mcp}` carry forward; passing a partial set revokes the rest. Read the live artifact first when this session has not published it.
 
 ## Rollback
 

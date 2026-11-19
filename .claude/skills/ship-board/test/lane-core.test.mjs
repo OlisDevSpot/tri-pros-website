@@ -2,17 +2,17 @@ import test from "node:test"; import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import "../lane-core.js"; const C = globalThis.LaneCore;
 import { loadLanes } from "./fixtures.mjs";
-const DEL = {"__delete__": true};
 const VALID_DV_BRIEF = JSON.parse(readFileSync(new URL("./fixtures/brief-data-views.json", import.meta.url)));
 test("isEpic", () => { assert.equal(C.isEpic({phases: Array(5).fill({})}), true); assert.equal(C.isEpic({phases: Array(4).fill({})}), false); assert.equal(C.isEpic(undefined), false); });
 test("normalizeOptions keeps legacy strings and empty lists", () => {
   assert.deepEqual(C.normalizeOptions(["Yes", {label: "No", consequence: "c"}]), [{label: "Yes", consequence: ""}, {label: "No", consequence: "c"}]);
   assert.deepEqual(C.normalizeOptions([]), []); assert.deepEqual(C.normalizeOptions(undefined), []);
 });
+// The page's db has no delete marker, so a page-side clear is null.
 test("answerPatch clears the agent's reply and any stale own or note", () => {
   const d = {options: ["A", {label: "B", consequence: "x"}]};
-  assert.deepEqual(C.answerPatch(d, 1, "", "2026-11-16"), {answer: "B", answeredOn: "2026-11-16", own: DEL, note: DEL, reply: DEL, replyOn: DEL, appliedOn: DEL});
-  assert.deepEqual(C.answerPatch(d, "  my own  ", "only if cheap", "2026-11-16"), {answer: "my own", answeredOn: "2026-11-16", own: true, note: "only if cheap", reply: DEL, replyOn: DEL, appliedOn: DEL});
+  assert.deepEqual(C.answerPatch(d, 1, "", "2026-11-16"), {answer: "B", answeredOn: "2026-11-16", own: null, note: null, reply: null, replyOn: null, appliedOn: null});
+  assert.deepEqual(C.answerPatch(d, "  my own  ", "only if cheap", "2026-11-16"), {answer: "my own", answeredOn: "2026-11-16", own: true, note: "only if cheap", reply: null, replyOn: null, appliedOn: null});
   assert.throws(() => C.answerPatch(d, "   ", "", "2026-11-16"));
 });
 test("localDay is the local calendar day", () => assert.equal(C.localDay(new Date(2026, 10, 16, 23, 30)), "2026-11-16"));
@@ -90,4 +90,31 @@ test("a decision on a parked phase pins to later", () => {
   const p = C.pinsByStep(brief, ds, "x");
   assert.deepEqual(p.later.map(x => x.id), ["a"]);
   assert.deepEqual(p.release.map(x => x.id), ["b", "c", "d"]);
+});
+test("migrateBrief takes the ids already on the board as taken", () => {
+  const lane = {id: "casl-285", brief: {goal: "g", tracker: "t", phases: [], open: [{id: "DB1", owner: "you", text: "Rules in the database?"}]}};
+  const taken = new Set(["casl-285-db1"]);
+  assert.deepEqual(C.migrateBrief(lane, "2026-11-16", {}, taken).decisions.map(d => d.id), ["casl-285-db1-2"]);
+  assert.deepEqual(C.migrateBrief(lane, "2026-11-16").decisions.map(d => d.id), ["casl-285-db1"]);
+});
+test("validateBrief checks types, not only presence", () => {
+  const ok = {goal: "g", plan: "p.md", phases: []};
+  assert.deepEqual(C.validateBrief({...ok, stand: null, watch: null, steps: {release: "Ship it"}, builtOn: "2026-11-03"}), []);
+  const bad = (patch, re) => assert.ok(C.validateBrief({...ok, ...patch}).some(p => re.test(p)), JSON.stringify(patch));
+  bad({goal: 3}, /goal must be a string/);
+  bad({stand: ["x"]}, /stand must be a string/);
+  bad({phases: "DV1"}, /phases must be a list/);
+  bad({watch: "one risk"}, /watch must be a list/);
+  bad({agent: [{text: "x"}]}, /agent row 0 must be a string/);
+  bad({evidence: [1]}, /evidence row 0 must be a string/);
+  bad({timeline: [{date: "Nov 3", label: "x"}]}, /timeline row 0 date must be YYYY-MM-DD/);
+  bad({decided: [{date: "2026-11-3", text: "x"}]}, /decided row 0 needs a YYYY-MM-DD date/);
+  bad({builtOn: "2026-11-03T10:00"}, /builtOn must be YYYY-MM-DD/);
+  bad({steps: ["Ship it"]}, /steps must be an object/);
+  bad({steps: {release: 1}}, /steps.release must be a string/);
+  bad({areas: [{area: "src", files: "12"}]}, /area row 0 needs area and files/);
+});
+test("validateDecision reads null as an absent field", () => {
+  assert.deepEqual(C.validateDecision({question: "q", kind: "decision", options: ["A"], answer: null, own: null, note: null, reply: null, replyOn: null, appliedOn: null}), []);
+  assert.deepEqual(C.validateDecision({question: "q", kind: "check", done: null}), []);
 });

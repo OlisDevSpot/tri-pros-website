@@ -126,6 +126,18 @@ Read `lanes`, the lane's open `decisions` (`query` where `lane == <id>`) and `sn
 | `decisions/<doc id>` per question or owner check | `set` new, `update` existing | `if_version` on an existing doc |
 | `snapshots/collisions`: `pairs`, `asOf` | `update` | `if_version` |
 
+- **Stale brief keys**: `update` merges nested objects, so a `brief` written as is keeps every old key the new brief leaves out (an old `watch`, `builtOn`, `steps.later`, or `open`, `notes`, `pr` and `statusBlock` on a lane never backfilled). The lane entry's `brief` is the new brief plus `{"__delete__": true}` for each key of the read brief that the new one lacks, at the top level and inside every nested object both share (`steps`, `aheadBehind`). Run `check-brief.mjs` on the new brief, not on the entry. With the read brief and the new brief in two files:
+
+```sh
+node -e 'const fs = require("fs"); const [a, b] = process.argv.slice(1).map((f) => JSON.parse(fs.readFileSync(f, "utf8"))); const obj = (x) => !!x && typeof x === "object" && !Array.isArray(x); const gone = (o, n) => { const out = { ...n }; for (const k in o) if (!(k in n)) out[k] = { __delete__: true }; else if (obj(o[k]) && obj(n[k])) out[k] = gone(o[k], n[k]); return out; }; console.log(JSON.stringify(gone(a, b)))' <read-brief.json> <new-brief.json>
+```
+
+- **New lane id**: the lane name slugged the way `docId` slugs a key, with no lane prefix: lowercase, every run of characters outside `a-z0-9` becomes `-`, leading and trailing `-` trimmed, cut to 40 characters (and any `-` the cut leaves at the end dropped), then `-2`, `-3` … while an existing lane id has it:
+
+```sh
+node -e 'const [name, ...taken] = process.argv.slice(1); const base = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40).replace(/-+$/, ""); let id = base, n = 2; while (taken.includes(id)) id = base + "-" + n++; console.log(id)' '<lane name>' <existing lane ids…>
+```
+
 - **Doc ids**: compare each question with the lane's open docs by `ref`, then by question text; a match is an `update` of that doc. A new doc gets its id from `docId`, with every existing id in `decisions` as taken:
 
 ```sh
@@ -151,7 +163,7 @@ One JSON file, passing `check-brief.mjs`:
 }
 ```
 
-`rulings` and `decisionPatches` are what step 2 would write; `decisions` carries each doc's full fields beside `id` and `op`.
+`rulings` and `decisionPatches` are what step 2 would write; `decisions` carries each doc's full fields beside `id` and `op`. `lanePatch` is the lane entry exactly as [Board write](#board-write) would send it: `brief` with a `{"__delete__": true}` for each stale key, `briefAt`, and `stage`, `next` or `branch` when changed. `check-brief.mjs` reads the top-level `brief`, never `lanePatch`.
 
 ## Speed discipline
 

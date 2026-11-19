@@ -282,7 +282,6 @@
     return box;
   }
 
-  const DEL = { "__delete__": true };
   const isCheck = (d) => d.kind === "check";
   // Open decisions, then open owner checks, then what is already answered or ticked.
   const cardRank = (d) => (isCheck(d) ? (d.done ? 3 : 1) : d.answer ? 2 : 0);
@@ -333,14 +332,20 @@
   async function toggleCheck(e, d) {
     const done = e.target.checked;
     if (!startSaving(d.id)) { e.target.checked = !done; return; }
-    try { await save("decisions", d.id, done ? { done: true } : { done: DEL }); } finally { inFlight().delete(d.id); }
+    try { await save("decisions", d.id, { done: done ? true : null }); } finally { inFlight().delete(d.id); }
     redrawCards();
+  }
+
+  // Changing only the option must not drop the note, so the form opens on the answer as it stands.
+  function currentAnswer(d) {
+    const at = d.own ? -1 : LaneCore.normalizeOptions(d.options).findIndex((o) => o.label === d.answer);
+    return at >= 0 ? { choice: at, own: "", note: d.note || "" } : { choice: null, own: d.answer || "", note: d.note || "" };
   }
 
   function reopen(btn, d) {
     const card = btn.closest(".lb-card"), scope = card.closest("#lane-view, #dec-list") || document;
     const at = copiesOf(d.id, scope).indexOf(card);
-    drafts()[d.id] = { editing: true };
+    drafts()[d.id] = { editing: true, ...currentAnswer(d) };
     redrawCards();
     const again = copiesOf(d.id, scope)[at];
     const first = again && again.querySelector("[name=choice], [name=own]");
@@ -587,6 +592,13 @@
     box.replaceChildren(inspector(V.l, V.ds));
   }
 
+  // Vercel feeds only the status panel's preview line; a full redraw would replace a focused field and close the iPad keyboard.
+  function renderLaneLive() {
+    const box = document.getElementById("lane-inspector");
+    if (!box || !V || V.l.id !== S.lane || S.sel) return;
+    keepUiState(box, renderInspector);
+  }
+
   function markSel() {
     const main = document.querySelector("#lane-view .lb-main");
     if (!main) return;
@@ -649,5 +661,5 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", wire); else wire();
 
-  Object.assign(globalThis, { renderLaneView, laneHeader, whereItStands, blockerMapSvg, areaBars, waitTimeline, decisionsList, inspector, decisionCard, keepUiState, byCard });
+  Object.assign(globalThis, { renderLaneView, renderLaneLive, laneHeader, whereItStands, blockerMapSvg, areaBars, waitTimeline, decisionsList, inspector, decisionCard, keepUiState, byCard });
 })();
