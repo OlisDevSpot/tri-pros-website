@@ -113,6 +113,13 @@ test("validateBrief checks types, not only presence", () => {
   bad({steps: ["Ship it"]}, /steps must be an object/);
   bad({steps: {release: 1}}, /steps.release must be a string/);
   bad({areas: [{area: "src", files: "12"}]}, /area row 0 needs area and files/);
+  bad({lastCommit: "a6548d23e · 2026-10-23 · docs(records): D69"}, /lastCommit must be/);
+  bad({lastCommit: {sha: "a6548d23e", date: "23 Oct", subject: "s"}}, /lastCommit must be/);
+  bad({aheadBehind: {ahead: 21, behind: 0}}, /aheadBehind must be/);
+  bad({files: "227"}, /files must be a number/);
+  bad({worktree: 1}, /worktree must be a string/);
+  bad({verifiedAt: {ref: "x"}}, /verifiedAt must be a string/);
+  assert.deepEqual(C.validateBrief({...ok, lastCommit: {sha: "a6548d23e", date: "2026-10-23", subject: "s"}, aheadBehind: {ahead: 21, behind: 0, onCurrentProd: true}, files: 227, worktree: null}), []);
 });
 test("validateDecision reads null as an absent field", () => {
   assert.deepEqual(C.validateDecision({question: "q", kind: "decision", options: ["A"], answer: null, own: null, note: null, reply: null, replyOn: null, appliedOn: null}), []);

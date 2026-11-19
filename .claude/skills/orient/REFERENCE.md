@@ -89,6 +89,7 @@ The schema is `validateBrief` in `<ship-board>/lane-core.js`; this section says 
 - **Phases.** Epic altitude: one per child, status from its verified stage (brainstorm→`idea`, building→`building`, built→`built`, shipped→`shipped`, the rest by the same name). Plan altitude: one per task, `done` on the ref → `built` (or `shipped` when on `origin/main`), `partial` → `building`, `not started` → `plan`.
 - **Decided**: rulings and requirement IDs that `still hold`, newest first, capped as the validator says. **Watch**: stale refs, invalidated requirements, divergence that matters. **Agent**: what the code settled and what the agent will do next.
 - **Evidence**: one line per verdict worth keeping, with its tag; `verifiedAt` = `ref@sha date`.
+- **`lastCommit` and `aheadBehind`**: their shapes are the validator's. Values: `git log -1 --format='%h|%as|%s' <ref>` gives sha, date and subject; `git rev-list --left-right --count origin/main...<ref>` gives behind then ahead; `git merge-base --is-ancestor origin/main <ref>` (exit 0) gives `onCurrentProd`.
 - **Check before writing:**
 
 ```sh

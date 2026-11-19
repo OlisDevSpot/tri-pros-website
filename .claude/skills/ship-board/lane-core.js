@@ -215,6 +215,12 @@
       else if (!isStr(t.date) || !DAY.test(t.date)) p.push("timeline row " + i + " date must be YYYY-MM-DD");
     });
     if (b.builtOn != null && !(isStr(b.builtOn) && DAY.test(b.builtOn))) p.push("builtOn must be YYYY-MM-DD");
+    for (const k of ["worktree", "tracker", "plan", "spec", "verifiedAt"]) if (b[k] != null && !isStr(b[k])) p.push(k + " must be a string");
+    if (b.files != null && typeof b.files !== "number") p.push("files must be a number");
+    const lc = b.lastCommit;
+    if (lc != null && !(isObj(lc) && isStr(lc.sha) && isStr(lc.date) && DAY.test(lc.date) && isStr(lc.subject))) p.push("lastCommit must be {sha, date: YYYY-MM-DD, subject}");
+    const ab = b.aheadBehind;
+    if (ab != null && !(isObj(ab) && typeof ab.ahead === "number" && typeof ab.behind === "number" && typeof ab.onCurrentProd === "boolean")) p.push("aheadBehind must be {ahead, behind, onCurrentProd}");
     for (const k of ["watch", "agent", "evidence"]) rows(k).forEach((x, i) => { if (!isStr(x)) p.push(k + " row " + i + " must be a string"); });
     if (rows("watch").length > 3) p.push("watch has more than 3 items");
     const decided = rows("decided");

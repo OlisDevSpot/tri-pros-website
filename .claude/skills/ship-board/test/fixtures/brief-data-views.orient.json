@@ -132,9 +132,14 @@
     "files": 227,
     "aheadBehind": {
       "ahead": 21,
-      "behind": 0
+      "behind": 0,
+      "onCurrentProd": true
     },
-    "lastCommit": "a6548d23e · 2026-10-23 · docs(records): D69 says each customer surface offers at most View Profile, Schedule Meeting and Delete",
+    "lastCommit": {
+      "sha": "a6548d23e",
+      "date": "2026-10-23",
+      "subject": "docs(records): D69 says each customer surface offers at most View Profile, Schedule Meeting and Delete"
+    },
     "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/data-views",
     "tracker": "docs/plans/2026-10-12-data-views-epic.md",
     "spec": "docs/superpowers/specs/2026-10-07-data-view-surface-design.md",
@@ -452,11 +457,13 @@
       "aheadBehind": {
         "ahead": 21,
         "behind": 0,
-        "onCurrentProd": {
-          "__delete__": true
-        }
+        "onCurrentProd": true
       },
-      "lastCommit": "a6548d23e · 2026-10-23 · docs(records): D69 says each customer surface offers at most View Profile, Schedule Meeting and Delete",
+      "lastCommit": {
+        "sha": "a6548d23e",
+        "date": "2026-10-23",
+        "subject": "docs(records): D69 says each customer surface offers at most View Profile, Schedule Meeting and Delete"
+      },
       "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/data-views",
       "tracker": "docs/plans/2026-10-12-data-views-epic.md",
       "spec": "docs/superpowers/specs/2026-10-07-data-view-surface-design.md",
