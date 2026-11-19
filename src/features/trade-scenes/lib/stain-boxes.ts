@@ -37,38 +37,47 @@ function edgeOver(face: PaintedSurface | undefined, top: number, along: readonly
   return face ? Math.min(face.topEdge(along[0]), face.topEdge(along[1])) : top
 }
 
-// The muddy band rain splashes up the foot of a wall, one layer per step of the level along the whole run. Each layer passes
-// under an opening it reaches at the opening's sill, so a door splits it and a crawl vent lowers it. The openings are measured
-// from the floor, which never sits below the band's foot, so measuring them from the foot keeps the band under every sill.
-// `stretch` is how far the frame the wall is drawn in is stretched upward; the band is laid out at its real height within it.
-export function splashBand(wall: HouseWall, base: number, share: number, openings: readonly WallOpening[] = wall.openings, stretch = 1): BoxSpec[] {
-  const layers = LOOK.splashLayers.slice(0, Math.round(LOOK.splashCount * share))
+// One layer of a wall's foot band, over `span` of its run and from `base` up to `top`. It passes under an opening it reaches at
+// the opening's sill, so a door splits it and a crawl vent lowers it; an opening that straddles the span's edge still steps it.
+// The openings are measured from the floor, which never sits below the band's foot, so measuring them from the foot keeps the
+// band under every sill.
+export function bandBoxes(wall: HouseWall, span: readonly [number, number], base: number, top: number, openings: readonly WallOpening[]): BoxSpec[] {
+  const [from, to] = [Math.max(wall.from, span[0]), Math.min(wall.to, span[1])]
   const inside = openings
     .filter(opening => opening.along - opening.width / 2 >= wall.from && opening.along + opening.width / 2 <= wall.to)
     .sort((a, b) => a.along - b.along)
-  return layers.flatMap((layer) => {
-    const top = base + layer / stretch
-    const boxes: BoxSpec[] = []
-    let cursor = wall.from
-    for (const opening of inside) {
-      const sill = base + opening.sill
-      if (sill >= top) {
-        continue
-      }
-      const [left, right] = [opening.along - opening.width / 2, opening.along + opening.width / 2]
-      if (left > cursor) {
-        boxes.push(stain(wall, [cursor, left], [base, top]))
-      }
-      if (sill > base) {
-        boxes.push(stain(wall, [left, right], [base, sill]))
-      }
-      cursor = right
+  const boxes: BoxSpec[] = []
+  let cursor = from
+  for (const opening of inside) {
+    const [left, right] = [opening.along - opening.width / 2, opening.along + opening.width / 2]
+    const sill = base + opening.sill
+    if (right <= from || left >= to || sill >= top) {
+      continue
     }
-    if (cursor < wall.to) {
-      boxes.push(stain(wall, [cursor, wall.to], [base, top]))
+    if (left > cursor) {
+      boxes.push(stain(wall, [cursor, left], [base, top]))
     }
-    return boxes
-  })
+    if (sill > base) {
+      boxes.push(stain(wall, [Math.max(left, from), Math.min(right, to)], [base, sill]))
+    }
+    cursor = right
+  }
+  if (cursor < to) {
+    boxes.push(stain(wall, [cursor, to], [base, top]))
+  }
+  return boxes
+}
+
+// The muddy band rain splashes up the foot of a wall, one layer per step of the level along the whole run.
+// `stretch` is how far the frame the wall is drawn in is stretched upward; the band is laid out at its real height within it.
+export function splashBand(wall: HouseWall, base: number, share: number, openings: readonly WallOpening[] = wall.openings, stretch = 1): BoxSpec[] {
+  const layers = LOOK.splashLayers.slice(0, Math.round(LOOK.splashCount * share))
+  return layers.flatMap(layer => bandBoxes(wall, [wall.from, wall.to], base, base + layer / stretch, openings))
+}
+
+// The dark wet band where the roof's water lands on a wall's foot: one layer, `height` tall as the eye reads it through `stretch`.
+export function wetBandBoxes(wall: HouseWall, span: readonly [number, number], base: number, height: number, openings: readonly WallOpening[], stretch = 1): BoxSpec[] {
+  return bandBoxes(wall, span, base, base + height / stretch, openings)
 }
 
 // Runoff streaks: one or two hang from under each window's sill ledge and each vent, and fainter single ones from the top edge.

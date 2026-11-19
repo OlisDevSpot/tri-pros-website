@@ -8,6 +8,7 @@ import { useShallow } from 'zustand/react/shallow'
 import { CONTROLS_CLASSES } from '@/features/trade-scenes/constants/controls-classes'
 import { HOME_PROFILE_CHOICES } from '@/features/trade-scenes/constants/home-profile-choices'
 import { CONTROLS_COPY, PROFILE_COPY, ROOF_FORM_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
+import { useLotIsData } from '@/features/trade-scenes/contexts/layout-editor-context'
 import { useSceneVisibleArea } from '@/features/trade-scenes/contexts/scene-visible-area-context'
 import { useApplySceneChange } from '@/features/trade-scenes/hooks/use-apply-scene-change'
 import { missingFacts } from '@/features/trade-scenes/lib/missing-facts'
@@ -15,6 +16,7 @@ import { fromChoice, toChoice } from '@/features/trade-scenes/lib/profile-choice
 import { ChoicePill } from '@/features/trade-scenes/ui/components/controls/choice-pill'
 import { FactRow } from '@/features/trade-scenes/ui/components/controls/fact-row'
 import { HomeFactsTabs } from '@/features/trade-scenes/ui/components/controls/home-facts-tabs'
+import { LotFacts } from '@/features/trade-scenes/ui/components/controls/lot-facts'
 import { SoonTiles } from '@/features/trade-scenes/ui/components/controls/soon-tiles'
 import { ScaleField } from '@/features/trade-scenes/ui/components/fields/scale-field'
 import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
@@ -33,6 +35,7 @@ export function HomeFactsBody() {
   const climate = useSceneInputs((state: TradeSceneInputs) => state.climate)
   const missing = useSceneInputs(useShallow((state: TradeSceneInputs) => missingFacts(state)))
   const applyChange = useApplySceneChange()
+  const lotIsData = useLotIsData()
   const ageLabelId = useId()
   const { foundationType, householdType, ageGroup } = HOME_PROFILE_CHOICES
   const roofForm = roofFormOf(property.roofType)
@@ -93,7 +96,7 @@ export function HomeFactsBody() {
         <SoonTiles tiles={CONTROLS_COPY.facts.soonTiles.area} />
       </TabsContent>
       <TabsContent value="lot" className={panel}>
-        <SoonTiles tiles={CONTROLS_COPY.facts.soonTiles.lot} />
+        {lotIsData ? <LotFacts /> : <SoonTiles tiles={CONTROLS_COPY.facts.soonTiles.lot} />}
       </TabsContent>
     </div>
   )

@@ -1,4 +1,4 @@
-import type { ControlsSection, StageShape, SystemsFocus, TradeSceneInputs } from '@/features/trade-scenes/types'
+import type { ControlsSection, StageShape, SystemsPick, TradeSceneInputs } from '@/features/trade-scenes/types'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
 import type { ScopeId } from '@/shared/modules/construction/core/constants/scope-ids'
 import type { TradeSlug } from '@/shared/modules/construction/core/constants/trade-slugs'
@@ -6,7 +6,7 @@ import type { HomeFacts, PropertyProfile } from '@/shared/modules/construction/c
 import assert from 'node:assert/strict'
 
 import { INFER_EXISTING_CONDITIONS } from '@/features/trade-scenes/constants/existing-conditions'
-import { PART_LABELS, SCENE_COPY, SHORTCUT_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
+import { AREA_GROUP_LABELS, CONTROLS_COPY, PART_LABELS, SCENE_COPY, SHORTCUT_COPY, YARD_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
 import { HOME_SCENE_DEFAULTS } from '@/features/trade-scenes/constants/home-scene-defaults'
 import { HOME_SYSTEMS } from '@/features/trade-scenes/constants/home-systems'
 import { PAINT_WEAR_START } from '@/features/trade-scenes/constants/paint-wear'
@@ -14,12 +14,14 @@ import { PROFILE_ROOF_TYPES } from '@/features/trade-scenes/constants/scene-cont
 import { SCENE_LAYOUT } from '@/features/trade-scenes/constants/scene-layout'
 import { SCENE_SHORTCUTS, SHORTCUT_SHEET_ROWS } from '@/features/trade-scenes/constants/scene-shortcuts'
 import { SCOPE_VERBS } from '@/features/trade-scenes/constants/scope-verbs'
+import { AREA_GROUP_IDS, YARD_IDS } from '@/features/trade-scenes/constants/yards'
 import { applySceneChange } from '@/features/trade-scenes/lib/apply-scene-change'
-import { flipView, pressFocus, pressPin, pressSection } from '@/features/trade-scenes/lib/controls-press'
+import { flipView, pressChip, pressPick, pressSection } from '@/features/trade-scenes/lib/controls-press'
 import { dockHeightFor, dockLayoutFor, dockRegionFor } from '@/features/trade-scenes/lib/dock-layout-for'
 import { efficiencyUpgradePatch } from '@/features/trade-scenes/lib/efficiency-upgrade-patch'
 import { homeHeat } from '@/features/trade-scenes/lib/home-heat'
 import { homeMaterialPatch } from '@/features/trade-scenes/lib/home-material-patch'
+import { yardBaseOptions } from '@/features/trade-scenes/lib/lot-options'
 import { paintWearInForce } from '@/features/trade-scenes/lib/paint-wear-in-force'
 import { alsoNewLabels, baseIncludedLabel, existingParts, keepOffered, offeredScopes, partOffers } from '@/features/trade-scenes/lib/part-offers'
 import { propertyPatch } from '@/features/trade-scenes/lib/property-patch'
@@ -295,6 +297,19 @@ assert.deepEqual(propertyPatch(withStains, { yearBuilt: '1978-1998' }, YEAR).hom
 const newRoofNoGutters = state({ property: sixties, homeMaterials: { ...HOME_MATERIAL_FACTS_UNSET, gutters: 'none', wear: { roof: 'new' } } })
 const gutterRow = upgradeRows(facts(newRoofNoGutters), [], newRoofNoGutters.efficiencyUpgrades).find(system => system.id === 'roof')!.rows.find(row => row.offer.partId === 'gutter')!
 assert.notEqual(gutterRow.blocked, 'already-new', 'a New roof with no gutters can still be offered gutters')
+function gutterRowOf(patch: Partial<TradeSceneInputs['homeMaterials']>, picks: string[] = []) {
+  const s = state({ property: sixties, homeMaterials: { ...HOME_MATERIAL_FACTS_UNSET, ...patch } })
+  return { s, row: upgradeRows(facts(s), picks, s.efficiencyUpgrades).find(system => system.id === 'roof')!.rows.find(row => row.offer.partId === 'gutter')! }
+}
+const failingGutters = gutterRowOf({ gutters: 'present', gutterWear: 'failing', wear: { roof: 'new' } }, [gutters])
+assert.notEqual(failingGutters.row.blocked, 'already-new', 'failing gutters on a new roof can be sold')
+assert.deepEqual(keepOffered([gutters], facts(failingGutters.s), []), [gutters], 'failing gutters on a new roof can be sold')
+assert.equal(gutterRowOf({ gutters: 'present', gutterWear: 'new', wear: { roof: 'worn' } }).row.blocked, 'already-new', 'new gutters on a worn roof are not offered again')
+assert.equal(gutterRowOf({ gutters: 'present', gutterWear: null, wear: { roof: 'new' } }).row.blocked, 'already-new', 'unset, gutters on a new roof are new too')
+const sealedToday = state({ property: sixties, homeMaterials: { ...HOME_MATERIAL_FACTS_UNSET, airSealing: 'sealed' } })
+const sealingRow = upgradeRows(facts(sealedToday), [], sealedToday.efficiencyUpgrades).flatMap(system => system.rows).find(row => row.offer.partId === 'air-sealing')!
+assert.equal(sealingRow.blocked, 'already-sealed', 'a home sealed today is not offered air sealing')
+assert.deepEqual(keepOffered([SCOPE_IDS.airSealing], facts(sealedToday), []), [], 'a home sealed today drops an air sealing pick')
 const ductsOffer = partOffers('hvac-attic').find(offer => offer.partId === 'duct-runs')!
 const ductsDropped = scopePick(state({ property: sixties, proposedScopeIds: [SCOPE_IDS.airDuctsReplacement], efficiencyUpgrades: ['cool-roof', 'r8-ducts'] }), ductsOffer, null)
 assert.deepEqual(ductsDropped.efficiencyUpgrades, ['cool-roof'], 'dropping the ducts drops R-8, never the cool roof')
@@ -341,20 +356,20 @@ const roofRow = (efficiencyUpgrades: EfficiencyUpgradeId[]) => upgradeRows(facts
 assert.equal(roofRow(['cool-roof']).kinds[SCOPE_IDS.roofTearOff], 'saves-energy')
 assert.equal(roofRow([]).kinds[SCOPE_IDS.roofTearOff], 'like-for-like', 'cool off: like for like')
 
-const at = (open: ControlsSection | null, focus: SystemsFocus = null, view: 'existing' | 'proposed' = 'existing') => ({ open, focus, view })
+const at = (open: ControlsSection | null, picked: SystemsPick = null, view: 'existing' | 'proposed' = 'existing') => ({ open, picked, view })
 assert.deepEqual(pressSection(at('facts'), 'facts'), { ...at(null), toast: false }, 'pressing the open section closes it')
 assert.deepEqual(pressSection(at('systems', 'roof'), 'modify'), { ...at('modify'), toast: false }, 'leaving Systems lets the system go')
 assert.deepEqual(pressSection(at(null), 'benefits'), { ...at('benefits', null, 'proposed'), toast: true }, 'Benefits on Today flips first')
 assert.deepEqual(pressSection(at(null, null, 'proposed'), 'benefits'), { ...at('benefits', null, 'proposed'), toast: false })
 assert.deepEqual(flipView(at('benefits', null, 'proposed')), { ...at(null), toast: false }, 'flipping to Today closes Benefits')
-assert.deepEqual(flipView(at('systems', 'roof')), { ...at('systems', 'roof', 'proposed'), toast: false }, 'a flip keeps the system in focus')
-assert.deepEqual(pressFocus(at('systems', 'roof'), 'roof'), { ...at('systems'), toast: false }, 'the same system again lets it go')
-assert.deepEqual(pressFocus(at('systems', 'roof'), 'attic'), { ...at('systems', 'attic'), toast: false })
-assert.deepEqual(pressPin({ open: null, focus: null, view: 'existing' }, 'roof'), { open: 'systems', focus: 'roof', view: 'existing', toast: false }, 'a pin opens Systems on its system')
+assert.deepEqual(flipView(at('systems', 'roof')), { ...at('systems', 'roof', 'proposed'), toast: false }, 'a flip keeps the picked system')
+assert.deepEqual(pressPick(at('systems', 'roof'), 'roof'), { ...at('systems'), toast: false }, 'the same system again lets it go')
+assert.deepEqual(pressPick(at('systems', 'roof'), 'attic'), { ...at('systems', 'attic'), toast: false })
+assert.deepEqual(pressChip({ open: null, picked: null, view: 'existing' }, 'roof'), { open: 'systems', picked: 'roof', view: 'existing', toast: false }, 'a chip\'s name opens Systems on its system')
 // A pin is exactly its rail chip: open Systems, then press the chip.
 for (const [from, system] of [[at(null), 'roof'], [at(null, null, 'proposed'), 'attic'], [at('systems'), 'windows'], [at('systems', 'roof'), 'heating-cooling']] as const) {
   const opened = from.open === 'systems' ? from : pressSection(from, 'systems')
-  assert.deepEqual(pressPin(from, system), pressFocus(opened, system), `from ${from.open ?? 'nothing'} on ${from.view}: the ${system} pin is its rail chip`)
+  assert.deepEqual(pressChip(from, system), pressPick(opened, system), `from ${from.open ?? 'nothing'} on ${from.view}: the ${system} pin is its rail chip`)
 }
 assert.equal(stageShapeOf(1440, 900), 'landscape')
 assert.equal(stageShapeOf(768, 700), 'narrow')
@@ -362,7 +377,7 @@ assert.equal(stageShapeOf(820, 1180), 'portrait')
 assert.equal(stageShapeOf(764, 1000), 'portrait')
 assert.equal(stageShapeOf(390, 844), 'portrait')
 assert.equal(stageShapeOf(599, 300), 'portrait')
-const area = (shape: StageShape, width: number, height: number, focusCardBottom: number | null = null) => sceneVisibleAreaFor({ shape, width, height, focusCardBottom })
+const area = (shape: StageShape, width: number, height: number, openCardBottom: number | null = null) => sceneVisibleAreaFor({ shape, width, height, openCardBottom })
 assert.deepEqual(area('landscape', 1180, 820), { left: 0, right: 94, bottom: 80, top: 0 })
 assert.deepEqual(area('portrait', 390, 844), { left: 0, right: 94, bottom: 76, top: 0 })
 assert.deepEqual(area('landscape', 1180, 820, 400), { left: 0, right: 94 + 10 + 440, bottom: 80, top: 0 }, 'the card beside the system')
@@ -372,7 +387,7 @@ assert.deepEqual(area('narrow', 760, 560, 220), { left: 0, right: 94, bottom: 80
 // bottom is all that moves it, and on portrait the card stops at its share of the stage, the system still in sight below.
 for (const [shape, width, height, bottom] of [['landscape', 1180, 820, 520], ['narrow', 760, 560, 280], ['portrait', 390, 844, 422]] as const) {
   // @ts-expect-error up close asks nothing of its own of the area
-  const upCloseArea = sceneVisibleAreaFor({ shape, width, height, focusCardBottom: bottom, lookInside: true })
+  const upCloseArea = sceneVisibleAreaFor({ shape, width, height, openCardBottom: bottom, lookInside: true })
   assert.deepEqual(upCloseArea, area(shape, width, height, bottom), `${shape}: up close frames the system as its focus does`)
 }
 const cardCap = Math.round(844 * SCENE_LAYOUT.systemCard.topShare)
@@ -404,5 +419,18 @@ assert.equal(SHORTCUT_COPY.lines.wholeHome, 'Step back: a menu, a Benefits detai
 assert.equal(SCENE_SHORTCUTS.r, 'recenter', 'R glides the camera back to the framing')
 assert.equal(SHORTCUT_COPY.lines.recenter, 'Recenter the camera')
 assert.equal(SCENE_COPY.recenter, 'Recenter')
+
+// The two renames, and the Areas rail's groups and yards in the order the rail shows them.
+// eslint-disable-next-line no-lone-blocks -- this block declares no const; the other blocks keep their own scope
+{
+  assert.equal(CONTROLS_COPY.sections.facts, 'Property facts')
+  assert.equal(CONTROLS_COPY.sections.systems, 'Areas')
+  assert.equal(CONTROLS_COPY.factsMissing(2), 'Property facts, 2 missing')
+  assert.deepEqual(YARD_IDS.map(id => YARD_LABELS[id]), ['Front yard', 'Back yard', 'Left side yard', 'Right side yard'])
+  assert.deepEqual(AREA_GROUP_IDS.map(id => AREA_GROUP_LABELS[id]), ['Exterior', 'Interior', 'Lot'])
+  // The Lot tab's base menu opens each system's heading once, and pool is no base a yard starts from.
+  assert.ok(yardBaseOptions().every((option, n, all) => n === 0 || option.group === all[n - 1].group || all.slice(0, n).every(seen => seen.group !== option.group)), 'a base menu\'s groups sit together')
+  assert.ok(yardBaseOptions().every(option => option.value !== 'pool' && option.group !== undefined))
+}
 
 console.log('✓ trade scene layout')

@@ -1,40 +1,48 @@
 'use client'
 
 import type { ThermalTagData } from '@/features/trade-scenes/lib/thermal-tag'
-import type { BoxSpec, SystemLit, SystemPartId } from '@/features/trade-scenes/types'
+import type { BoxSpec, SurfaceTexture, SystemLit, SystemPartId } from '@/features/trade-scenes/types'
+import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 
 import { useMemo } from 'react'
 
-import { HOUSE } from '@/features/trade-scenes/constants/home-geometry'
+import { STEP_CUTS } from '@/features/trade-scenes/constants/look-inside'
 import { useStepPeel } from '@/features/trade-scenes/hooks/use-step-peel'
+import { isCutawaySystem } from '@/features/trade-scenes/lib/is-cutaway-system'
 import { clipBoxes, stepBottom, stepStarts } from '@/features/trade-scenes/lib/step-cut-back'
 import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
 import { MergedBoxes } from '@/features/trade-scenes/ui/components/home-kit/merged-boxes'
 
 interface AtticStepsProps {
   part: SystemPartId
+  // The roof it lies under, which sets where the attic opens.
+  form: RoofForm
   // The system up close, which steps this part open when it is one of its steps.
   lit: SystemLit | null
   thermal: Readonly<ThermalTagData>
   // Memoized or module-level: a new list rebuilds the geometry.
   boxes: readonly BoxSpec[]
   color: string
+  texture?: SurfaceTexture
   radius?: number
   roughness?: number
   castShadow?: boolean
+  // Whether what lies the far side of the cut stays drawn, under the ghost, while the part steps open.
+  keepsRest?: boolean
 }
 
 // One box-built system part laid flat across the house: the attic's blanket or joists, the ceiling under them, or a flat
-// roof's system parts, which lie straight over its joist space. Stepped, it starts a step past the cut and shows nothing
-// back to the cut; what lies the far side of the cut drops its tag, so it takes the ghost with the rest of the house. The
-// bottom step never moves, so it stays whole. It reads the peel itself, so a drag redraws only this part.
-export function AtticSteps({ part, lit, thermal, boxes, color, radius, roughness, castShadow }: AtticStepsProps) {
+// roof's system parts, which lie straight over its joist space. Stepped, it starts a step past its system's cut and shows
+// nothing back to the cut; what lies the far side of the cut drops its tag, so it takes the ghost with the rest of the
+// house. The bottom step never moves, so it stays whole. It reads the peel itself, so a drag redraws only this part.
+export function AtticSteps({ part, form, lit, thermal, boxes, color, texture, radius, roughness, castShadow, keepsRest = true }: AtticStepsProps) {
   const peel = useStepPeel(lit)
-  const start = lit === null ? undefined : stepStarts(lit.system, lit.shown, peel).get(part)
+  const start = lit === null ? undefined : stepStarts(lit.system, form, lit.shown, peel).get(part)
   const split = start !== undefined && lit !== null && stepBottom(lit.shown) !== part
-  const rest = useMemo(() => split ? clipBoxes(boxes, 0, -Infinity, HOUSE.cutX) : [], [boxes, split])
+  const cut = lit !== null && isCutawaySystem(lit.system) ? STEP_CUTS[form][lit.system] : undefined
+  const rest = useMemo(() => keepsRest && split && cut !== undefined ? clipBoxes(boxes, 0, -Infinity, cut) : [], [boxes, keepsRest, split, cut])
   const shown = useMemo(() => split ? clipBoxes(boxes, 0, start, Infinity) : boxes, [boxes, split, start])
-  const look = { color, radius, roughness, castShadow }
+  const look = { color, texture, radius, roughness, castShadow }
   return (
     <group userData={thermal}>
       {rest.length > 0 && <MergedBoxes boxes={rest} {...look} />}

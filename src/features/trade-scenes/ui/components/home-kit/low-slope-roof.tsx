@@ -2,8 +2,9 @@
 
 import type { Ref } from 'react'
 import type { Group } from 'three'
+import type { CoveringLook } from '@/features/trade-scenes/lib/covering-look'
 import type { PartState } from '@/features/trade-scenes/lib/part-state'
-import type { BoxSpec, HouseWall, PaintLook, SystemLit } from '@/features/trade-scenes/types'
+import type { BoxSpec, DrawnGutter, HouseWall, PaintLook, SystemLit } from '@/features/trade-scenes/types'
 
 import { useMemo } from 'react'
 
@@ -29,15 +30,18 @@ import { CutawayRotStains } from '@/features/trade-scenes/ui/components/home-kit
 import { MergedBoxes } from '@/features/trade-scenes/ui/components/home-kit/merged-boxes'
 import { PaintStains } from '@/features/trade-scenes/ui/components/home-kit/paint-stains'
 import { TintedMarks } from '@/features/trade-scenes/ui/components/home-kit/tinted-marks'
+import { gutterLook } from '@/features/trade-scenes/ui/lib/gutter-look'
 import { wallSkinLook } from '@/features/trade-scenes/ui/lib/wall-skin-look'
 import { wornColor } from '@/features/trade-scenes/ui/lib/worn-color'
 
 interface LowSlopeRoofProps {
-  covering: PartState
+  covering: CoveringLook
   deck: PartState
   underlayment: PartState
-  gutter: PartState
+  gutter: DrawnGutter | null
   paint: PaintLook
+  // A stucco home draws its body surfaces with the plaster map.
+  stucco: boolean
   // The new fascia boards' colour where the build replaced the rotted fascia; null where it did not.
   fasciaBoards: string | null
   // Holds the front fascia's rot and new boards, which the home hides while the closed front parapet stands in front of them.
@@ -106,7 +110,7 @@ const FASCIA_BOARD: HouseWall = { run: 'x', line: FASCIA_AT[2], outward: 1, from
 const FASCIA_RANGE = [FASCIA_RUN.from, FASCIA_RUN.to] as const
 const NEW_BOARDS_FRAME = fasciaBoardFrame(FRONT_FASCIA[0])
 
-export function LowSlopeRoof({ covering, deck, underlayment, gutter, paint, fasciaBoards, behindParapet, thermal, lit }: LowSlopeRoofProps) {
+export function LowSlopeRoof({ covering, deck, underlayment, gutter, paint, stucco, fasciaBoards, behindParapet, thermal, lit }: LowSlopeRoofProps) {
   const crackShare = PAINT_WEAR_SHARE[paint.paintWear.cracks]
   const stainShare = PAINT_WEAR_SHARE[paint.paintWear.stains]
   const fadeShare = wornShare(paint.wear)
@@ -115,10 +119,10 @@ export function LowSlopeRoof({ covering, deck, underlayment, gutter, paint, fasc
   const cracks = useMemo(() => parapetCracks(crackShare), [crackShare])
   const stains = useMemo(() => {
     const { kept, complete } = paintedSurfaceStains('low-slope', stainShare, fadeShare).parapets
-    return { kept: surfaceStainLists(kept, stainShare, fadeShare), complete: surfaceStainLists(complete, stainShare, fadeShare) }
-  }, [stainShare, fadeShare])
+    return { kept: surfaceStainLists(kept, stainShare, fadeShare, paint.fade), complete: surfaceStainLists(complete, stainShare, fadeShare, paint.fade) }
+  }, [stainShare, fadeShare, paint.fade])
   const peeling = useMemo(() => roofPeeling('low-slope', peelingShare).parapets, [peelingShare])
-  const skin = wallSkinLook(lit, paint.color)
+  const skin = wallSkinLook(lit, paint.color, stucco)
   const marks = useMemo(() => {
     const { crackColor } = WEAR_LOOKS.paint
     return {
@@ -130,7 +134,7 @@ export function LowSlopeRoof({ covering, deck, underlayment, gutter, paint, fasc
   const membrane = wornColor(colours.new, colours.worn, covering.wear)
   const membraneRoughness = wornValue(0.75, 0.95, covering.wear)
   const deckColour = wornColor(HOME_PALETTE.plywood, HOME_PALETTE.plywoodWorn, deck.wear)
-  const gutterColour = wornColor(HOME_PALETTE.gutter, HOME_PALETTE.gutterWorn, gutter.wear)
+  const gutterMaterial = useMemo(() => gutter === null ? null : gutterLook(gutter.hex, gutter.wear), [gutter])
   const patches = useMemo(() => (covering.wear >= WEAR_AMOUNT.worn ? PATCHES : []), [covering.wear])
   const aged = isAgedFelt(underlayment)
   const underlaymentColour = underlayment.material === 'synthetic' ? HOME_PALETTE.synthetic : aged ? HOME_PALETTE.feltAged : HOME_PALETTE.felt
@@ -149,17 +153,17 @@ export function LowSlopeRoof({ covering, deck, underlayment, gutter, paint, fasc
 
   return (
     <group>
-      <AtticSteps part="deck" lit={lit} thermal={DECK_TAG} boxes={DECK_BOXES} color={deckColour} castShadow />
-      {underlayment.material !== null && <AtticSteps part="underlayment" lit={lit} thermal={UNDERLAYMENT_TAG} boxes={UNDERLAYMENT} color={underlaymentColour} roughness={1} />}
-      {feltBared && feltLists.map(list => list.boxes.length > 0 && <AtticSteps key={list.color} part="underlayment" lit={lit} thermal={UNDERLAYMENT_TAG} boxes={list.boxes} color={list.color} roughness={1} />)}
-      <AtticSteps part="covering" lit={lit} thermal={COVERING_TAG} boxes={MEMBRANE_BOXES} color={membrane} roughness={membraneRoughness} />
-      <AtticSteps part="covering" lit={lit} thermal={COVERING_TAG} boxes={SEAMS} color={membrane} roughness={1} />
-      {patches.length > 0 && <AtticSteps part="covering" lit={lit} thermal={COVERING_TAG} boxes={patches} color={HOME_PALETTE.felt} radius={0.002} roughness={1} />}
+      <AtticSteps part="deck" form="low-slope" lit={lit} thermal={DECK_TAG} boxes={DECK_BOXES} color={deckColour} castShadow />
+      {underlayment.material !== null && <AtticSteps part="underlayment" form="low-slope" lit={lit} thermal={UNDERLAYMENT_TAG} boxes={UNDERLAYMENT} color={underlaymentColour} roughness={1} />}
+      {feltBared && feltLists.map(list => list.boxes.length > 0 && <AtticSteps key={list.color} part="underlayment" form="low-slope" lit={lit} thermal={UNDERLAYMENT_TAG} boxes={list.boxes} color={list.color} roughness={1} />)}
+      <AtticSteps part="covering" form="low-slope" lit={lit} thermal={COVERING_TAG} boxes={MEMBRANE_BOXES} color={membrane} roughness={membraneRoughness} />
+      <AtticSteps part="covering" form="low-slope" lit={lit} thermal={COVERING_TAG} boxes={SEAMS} color={membrane} roughness={1} />
+      {patches.length > 0 && <AtticSteps part="covering" form="low-slope" lit={lit} thermal={COVERING_TAG} boxes={patches} color={HOME_PALETTE.felt} radius={0.002} roughness={1} />}
       {/* The parapets are the walls carried up, so they read as the walls do. */}
       <group userData={thermalTag('exterior')}>
         {/* Square: a rounded edge on a square wall top leaves a groove all round. */}
         <group userData={skin.tag}>
-          <MergedBoxes boxes={PARAPETS} color={skin.color} castShadow receiveShadow />
+          <MergedBoxes boxes={PARAPETS} color={skin.color} texture={skin.texture} castShadow receiveShadow />
         </group>
         <group userData={skin.finish}>
           <TintedMarks lists={marks.kept} thermal={thermal} />
@@ -205,8 +209,8 @@ export function LowSlopeRoof({ covering, deck, underlayment, gutter, paint, fasc
         </group>
         <group userData={thermalTag('exterior')}>
           <group userData={skin.tag}>
-            <MergedBoxes boxes={COMPLETE_PARAPETS} color={skin.color} castShadow receiveShadow />
-            <MergedBoxes boxes={PARAPET_CORNERS} color={skin.color} castShadow receiveShadow />
+            <MergedBoxes boxes={COMPLETE_PARAPETS} color={skin.color} texture={skin.texture} castShadow receiveShadow />
+            <MergedBoxes boxes={PARAPET_CORNERS} color={skin.color} texture={skin.texture} castShadow receiveShadow />
           </group>
           <group userData={skin.finish}>
             <TintedMarks lists={marks.complete} thermal={thermal} />
@@ -217,10 +221,10 @@ export function LowSlopeRoof({ covering, deck, underlayment, gutter, paint, fasc
           </group>
         </group>
       </group>
-      {gutter.material !== null && (
+      {gutterMaterial !== null && (
         <group userData={thermalTag(null, 'gutter')}>
           <group userData={systemPartTag('gutter')}>
-            <MergedBoxes boxes={DRAINS} color={gutterColour} radius={0.02} roughness={0.55} />
+            <MergedBoxes boxes={DRAINS} color={gutterMaterial.color} radius={0.02} roughness={gutterMaterial.roughness} />
           </group>
         </group>
       )}

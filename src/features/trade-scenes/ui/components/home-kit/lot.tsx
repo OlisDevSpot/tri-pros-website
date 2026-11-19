@@ -4,6 +4,7 @@ import type { WeatherSky } from '@/features/trade-scenes/types'
 
 import { LOT_PALETTE } from '@/features/trade-scenes/constants/home-lot'
 import { HOME_PALETTE } from '@/features/trade-scenes/constants/home-palette'
+import { CONCRETE_TEXTURE } from '@/features/trade-scenes/constants/material-textures'
 import { BLUEPRINT_OMIT_TAG } from '@/features/trade-scenes/constants/scene-load'
 import { LOT_BOXES } from '@/features/trade-scenes/lib/lot-boxes'
 import { LotGround } from '@/features/trade-scenes/ui/components/home-kit/lot-ground'
@@ -25,10 +26,10 @@ export function Lot({ ground }: LotProps) {
         <LotPlants />
         <Neighbours />
       </group>
-      <MergedBoxes boxes={LOT_BOXES.asphalt} color={LOT_PALETTE.asphalt} roughness={0.95} receiveShadow />
-      <MergedBoxes boxes={LOT_BOXES.concrete} color={HOME_PALETTE.path} roughness={0.9} castShadow receiveShadow />
+      <MergedBoxes boxes={LOT_BOXES.asphalt} texture={{ set: 'asphalt', map: 'own' }} color={LOT_PALETTE.asphalt} roughness={0.95} receiveShadow />
+      <MergedBoxes boxes={LOT_BOXES.concrete} texture={CONCRETE_TEXTURE} color={HOME_PALETTE.path} roughness={0.9} castShadow receiveShadow />
       <MergedBoxes boxes={LOT_BOXES.concreteJoints} color={LOT_PALETTE.joint} roughness={1} ignoreTaps />
-      <MergedBoxes boxes={LOT_BOXES.mulch} color={LOT_PALETTE.mulch} roughness={1} receiveShadow ignoreTaps />
+      <MergedBoxes boxes={LOT_BOXES.mulch} texture={{ set: 'mulch', map: 'own' }} color={LOT_PALETTE.mulch} roughness={1} receiveShadow ignoreTaps />
       <MergedBoxes boxes={LOT_BOXES.blockWalls} color={HOME_PALETTE.blockWall} radius={0.01} roughness={0.95} castShadow receiveShadow />
       <MergedBoxes boxes={LOT_BOXES.wallCaps} color={LOT_PALETTE.wallCap} roughness={0.9} castShadow receiveShadow />
       <MergedBoxes boxes={LOT_BOXES.fenceBoards} color={LOT_PALETTE.fenceBoard} roughness={0.85} castShadow receiveShadow />

@@ -54,7 +54,7 @@ export function upgradeRows(facts: HomeFacts, picks: readonly string[], efficien
       if (!offer || !existing) {
         return []
       }
-      const { scopeIds, blocked } = offeredScopes(offer, { roofType: property.roofType, picks, existing: existingAssembly, assemblyId: assembly, wear: partWear(assembly, part, home), efficiencyUpgrades })
+      const { scopeIds, blocked } = offeredScopes(offer, { roofType: property.roofType, picks, existing: existingAssembly, assemblyId: assembly, wear: partWear(assembly, part, home, existingAssembly), efficiencyUpgrades })
       return [{
         part,
         offer,

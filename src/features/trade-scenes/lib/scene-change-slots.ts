@@ -2,13 +2,13 @@ import type { SceneChangeSlot, SceneChangeSlotId, SceneTargets, TradeSceneInputs
 import type { CustomerAgeGroup, HouseholdType, YearBuiltRange } from '@/shared/constants/enums/customers'
 import type { Climate } from '@/shared/modules/construction/core/constants/climate-presets'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
-import type { AcTons, CrawlInsulation, DuctMaterial, ExteriorPaint, FoundationType, GutterOption, HVACComponent, HVACType, InsulationLevel, RoofType, Wear, WindowsType } from '@/shared/modules/construction/core/constants/enums'
+import type { AcTons, AirSealingOption, CrawlInsulation, DuctMaterial, ExteriorPaint, FoundationType, GutterOption, HVACComponent, HVACType, InsulationLevel, RoofType, Wear, WindowsType } from '@/shared/modules/construction/core/constants/enums'
 import type { HomeMaterialId } from '@/shared/modules/construction/core/constants/home-material-ids'
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 import type { ScopeId } from '@/shared/modules/construction/core/constants/scope-ids'
 import type { HomeFacts, ResolvedHomeMaterial } from '@/shared/modules/construction/core/types'
 
-import { AC_TON_LABELS, AGE_GROUP_LABELS, CONTROLS_COPY, CRAWL_INSULATION_LABELS, DUCT_LABELS, EFFICIENCY_UPGRADE_LABELS, EXTERIOR_PAINT_LABELS, FOUNDATION_TYPE_LABELS, GUTTER_LABELS, HOME_MATERIAL_LABELS, HOME_MATERIALS_COPY, HOUSEHOLD_TYPE_LABELS, HVAC_COMPONENT_LABELS, HVAC_TYPE_LABELS, INSTALL_STYLE_HINTS, INSTALL_STYLE_LABELS, PANEL_COPY, PART_LABELS, PROFILE_COPY, REQUIRED_UPGRADE_COPY, ROOF_FORM_LABELS, ROOF_TYPE_LABELS, SAVINGS_COPY, SCOPES_AND_ADDONS_COPY, WEAR_LABELS, WINDOWS_TYPE_LABELS, YEAR_BUILT_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
+import { AC_TON_LABELS, AGE_GROUP_LABELS, AIR_SEALING_LABELS, CONTROLS_COPY, CRAWL_INSULATION_LABELS, DUCT_LABELS, EFFICIENCY_UPGRADE_LABELS, EXTERIOR_PAINT_LABELS, FOUNDATION_TYPE_LABELS, GUTTER_LABELS, HOME_MATERIAL_LABELS, HOME_MATERIALS_COPY, HOUSEHOLD_TYPE_LABELS, HVAC_COMPONENT_LABELS, HVAC_TYPE_LABELS, INSTALL_STYLE_HINTS, INSTALL_STYLE_LABELS, PANEL_COPY, PART_LABELS, PROFILE_COPY, REQUIRED_UPGRADE_COPY, ROOF_FORM_LABELS, ROOF_TYPE_LABELS, SAVINGS_COPY, SCOPES_AND_ADDONS_COPY, WEAR_LABELS, WINDOWS_TYPE_LABELS, YEAR_BUILT_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
 import { SAVINGS_CATEGORIES } from '@/features/trade-scenes/constants/savings-categories'
 import { SCENE_CHANGE_WORDS } from '@/features/trade-scenes/constants/scene-change-words'
 import { NO_CHANGE_CHOICE } from '@/features/trade-scenes/constants/scene-controls'
@@ -20,12 +20,14 @@ import { upgradeRowState } from '@/features/trade-scenes/lib/upgrade-row-state'
 import { upgradeRows } from '@/features/trade-scenes/lib/upgrade-rows'
 import { customerAgeGroups, householdTypes, yearBuiltRanges } from '@/shared/constants/enums/customers'
 import { CLIMATE_LABELS, CLIMATES } from '@/shared/modules/construction/core/constants/climate-presets'
-import { acTonnages, crawlInsulations, exteriorPaints, foundationTypes, gutterOptions, hvacComponents, hvacTypes, INSULATION_LEVEL_LABELS, insulationLevels, wears, windowsTypes } from '@/shared/modules/construction/core/constants/enums'
+import { acTonnages, airSealingOptions, crawlInsulations, exteriorPaints, foundationTypes, gutterOptions, hvacComponents, hvacTypes, INSULATION_LEVEL_LABELS, insulationLevels, wears, windowsTypes } from '@/shared/modules/construction/core/constants/enums'
 import { FASCIA_REPLACEMENT_SCOPE_ID } from '@/shared/modules/construction/core/constants/fascia-replacement'
 import { HOME_MATERIAL_IDS } from '@/shared/modules/construction/core/constants/home-material-ids'
 import { ROOF_FORMS } from '@/shared/modules/construction/core/constants/roof-forms'
 import { SCOPE_INSTALLS } from '@/shared/modules/construction/core/constants/scope-installs'
+import { wearInForce } from '@/shared/modules/construction/core/lib/resolve-home-materials'
 import { roofFormOf } from '@/shared/modules/construction/core/lib/roof-form-of'
+import { wearChoices } from '@/shared/modules/construction/core/lib/wear-choices'
 
 type SlotFields = Pick<SceneChangeSlot, 'id' | 'group' | 'name' | 'options' | 'current' | 'change'> & Partial<Pick<SceneChangeSlot, 'isFact' | 'offersNotSure' | 'bill' | 'unavailable' | 'required'>>
 
@@ -52,9 +54,16 @@ function materialSlots(id: HomeMaterialId, material: ResolvedHomeMaterial, state
         existingSlot(id, name, optionsOf(roofTypeChoices(roofFormOf(property.roofType)), ROOF_TYPE_LABELS), property.roofType, value => ({ kind: 'property', patch: { roofType: value as RoofType } })),
         existingSlot('gutters', HOME_MATERIALS_COPY.gutters, optionsOf(gutterOptions, GUTTER_LABELS), homeMaterials.gutters, value => ({ kind: 'fact', patch: { gutters: value as GutterOption } })),
       )
+      if (homeMaterials.gutters === 'present') {
+        own.push(existingSlot('gutter-wear', CONTROLS_COPY.modify.wearName(HOME_MATERIALS_COPY.gutters), optionsOf(wears, WEAR_LABELS), homeMaterials.gutterWear ?? wearInForce(material), value => ({ kind: 'fact', patch: { gutterWear: value as Wear } })))
+      }
       break
     case 'attic-insulation':
       own.push(existingSlot(id, name, optionsOf(insulationLevels, INSULATION_LEVEL_LABELS), material.option, value => ({ kind: 'option', field: 'insulationLevel', value: value as InsulationLevel })))
+      // An unset roof reads as shingle in the resolver, so it has an attic to seal.
+      if (roofFormOf(property.roofType) !== 'low-slope') {
+        own.push(existingSlot('air-sealing', HOME_MATERIALS_COPY.airSealing, optionsOf(airSealingOptions, AIR_SEALING_LABELS), homeMaterials.airSealing, value => ({ kind: 'fact', patch: { airSealing: value as AirSealingOption } })))
+      }
       break
     case 'windows':
       own.push(existingSlot(id, name, optionsOf(windowsTypes, WINDOWS_TYPE_LABELS), material.option, value => ({ kind: 'option', field: 'windowsType', value: value as WindowsType })))
@@ -81,11 +90,11 @@ function materialSlots(id: HomeMaterialId, material: ResolvedHomeMaterial, state
   if (material.absent) {
     return own
   }
-  return [...own, existingSlot(`wear:${id}`, CONTROLS_COPY.modify.wearName(name), optionsOf(wears, WEAR_LABELS), material.wear, value => ({ kind: 'wear', id, wear: value as Wear }))]
+  return [...own, existingSlot(`wear:${id}`, CONTROLS_COPY.modify.wearName(name), optionsOf(wearChoices(id, property), WEAR_LABELS), material.wear, value => ({ kind: 'wear', id, wear: value as Wear }))]
 }
 
 // Every change Modify can make, in the order it lists them. The system card reads the same slots, so an option list is
-// worked out once. Paint wear has no slot: it is set in the system card only.
+// worked out once. Paint wear has no slot: it is set in the action card and in quick edit, not here.
 export function sceneChangeSlots(state: TradeSceneInputs, targets: SceneTargets, year: number): SceneChangeSlot[] {
   const { property, household } = state
   const facts: HomeFacts = { property, materials: state.homeMaterials, year }

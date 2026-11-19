@@ -1,11 +1,12 @@
 import type { ShaderMaterial } from 'three'
 import type { RemodelRoiFormValues } from '@/features/calculators/remodel-roi-calculator/schemas/form'
 import type { HomePaintKey } from '@/features/trade-scenes/constants/home-thermal-zones'
-import type { ArrowLane, BenefitsState, BoxSpec, CeilingOpening, CompleteWallLane, CutawaySteps, CutawaySystemId, FasciaRotSpot, FasciaRun, HomeReadings, HomeShell, HomeSystemId, HouseWall, PeelingBoxes, RoofHeatLane, SceneChange, SceneResolveInputs, StainBox, SurfaceStains, SystemLit, SystemPart, SystemPartId, SystemPartTagData, TradeSceneInputs, Vec3, WallHeatLane } from '@/features/trade-scenes/types'
-import type { CameraFraming } from '@/shared/components/scene/types'
+import type { SystemAction } from '@/features/trade-scenes/lib/system-actions'
+import type { ArrowLane, BenefitsState, BoxSpec, CeilingOpening, CompleteWallLane, CoveringWear, CutawaySteps, CutawaySystemId, FasciaRotSpot, FasciaRun, GutterRun, HomeReadings, HomeShell, HomeSystemId, HouseWall, PeelingBoxes, RoofHeatLane, SceneChange, SceneResolveInputs, StageShape, StainBox, SurfaceStains, SystemLit, SystemPart, SystemPartId, SystemPartTagData, TappedSpot, TradeSceneInputs, Vec3, WallHeatLane, WallOpening } from '@/features/trade-scenes/types'
+import type { CameraFraming, PieceLayout, RainColumn } from '@/shared/components/scene/types'
 import type { Climate } from '@/shared/modules/construction/core/constants/climate-presets'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
-import type { Wear } from '@/shared/modules/construction/core/constants/enums'
+import type { PaintWearLevel, Wear } from '@/shared/modules/construction/core/constants/enums'
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 import type { ScopeId } from '@/shared/modules/construction/core/constants/scope-ids'
 import type { ExistingConditions, HeatWeather, HomeMaterialFacts, PaintPick, PropertyProfile, ResolvedPart, Weather } from '@/shared/modules/construction/core/types'
@@ -13,8 +14,8 @@ import assert from 'node:assert/strict'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { isDeepStrictEqual } from 'node:util'
-import { BoxGeometry, Color, Euler, FrontSide, Group, Mesh, MeshStandardMaterial, SRGBColorSpace, Vector3 } from 'three'
 
+import { BoxGeometry, Color, CylinderGeometry, Euler, FrontSide, Group, Mesh, MeshStandardMaterial, MOUSE, Object3D, PerspectiveCamera, SRGBColorSpace, TOUCH, Vector3 } from 'three'
 import { REMODEL_ROI_CONFIG_DEFAULTS } from '@/features/calculators/remodel-roi-calculator/constants/config-defaults'
 import { createRemodelRoiDefaults, createTradePicks } from '@/features/calculators/remodel-roi-calculator/constants/form-defaults'
 import { projectRemodelRoi } from '@/features/calculators/remodel-roi-calculator/lib/project-remodel-roi'
@@ -22,57 +23,66 @@ import { resolveRemodelRoiConfig } from '@/features/calculators/remodel-roi-calc
 import { ATTIC_FAN_LOOK } from '@/features/trade-scenes/constants/attic-fan-look'
 import { ADD_ON_SYSTEM, TRADE_SYSTEM } from '@/features/trade-scenes/constants/benefit-systems'
 import { CLIMATE_DEFAULT_BILLS, CLIMATE_FALLBACK } from '@/features/trade-scenes/constants/climate-bills'
+import { COVERING_WEAR_START } from '@/features/trade-scenes/constants/covering-wear'
 import { INFER_EXISTING_CONDITIONS } from '@/features/trade-scenes/constants/existing-conditions'
 import { HEAT_ARROW_LOOK } from '@/features/trade-scenes/constants/heat-arrow-look'
-import { CRAWL_FRAMING, HOME_ANCHORS, INSIDE_READING_IDS, READING_ANCHORS, READING_CALLOUTS, READING_IDS, readingAnchors } from '@/features/trade-scenes/constants/home-anchors'
+import { CRAWL_FRAMING, INSIDE_READING_IDS, READING_ANCHORS, READING_CALLOUTS, READING_IDS, readingAnchors } from '@/features/trade-scenes/constants/home-anchors'
 import { CEILING_OPENING_LOOK, FOUNDATION, FRONT_STEPS, GABLE_VENT, METER_BOX, ROOF_TRIM } from '@/features/trade-scenes/constants/home-details'
 import { AC_SCALE, PACKAGE_UNIT } from '@/features/trade-scenes/constants/home-equipment-sizes'
 import { FADE_SHEET_ORDER, HOME_FADE_TAGS, HOME_FADES_SHOWN, HOME_GARAGE_TAG, HOME_GHOST_TAG } from '@/features/trade-scenes/constants/home-fades'
-import { ATTIC_FAN_SPOT, ATTIC_JOIST_XS, ATTIC_SPANS, BACK_INNER, CEILING_OPENINGS, COVERING_BASE, COVERING_EAVE_X, CRAWL_SKIRT_BOXES, CRAWL_VENT_BOXES, DEEPEST_INSULATION, DOWNSPOUTS, EAVE_RUN, EQUIPMENT, FASCIA_CENTRE, FLOOR_FRAMING, FRONT_CORNERS, FRONT_CRAWL_SKIRT_BOXES, FRONT_CRAWL_VENT_BOXES, FRONT_DOOR, FRONT_OPENINGS, FRONT_WALL, FRONT_WALL_PROUD, GABLE_VENT_Y, GUTTER_BACK, GUTTER_Y, HOME_FLOOR_Y, HOME_FRAMINGS, HOME_GHOST_OPACITY, HOME_ORBIT, HOUSE, HOUSE_WALLS, INSULATION_DEPTH, JOIST_DECK_GAP, LOW_SLOPE_DECK_Y, LOW_SLOPE_ROOF_Y, PARAPET_TOP, PIERS, RADIANT_BARRIER_FACES, RAFTER_ORIGIN_Y, RAFTER_PROFILE, REGISTER_BOOT_TOP, RIDGE_Y, ROOF_HALF_LENGTH, SIDE_SKIN_FROM, SLOPE_LENGTH, WALL_TOP_Y, WINDOW_FRAMES } from '@/features/trade-scenes/constants/home-geometry'
+import { ATTIC_FAN_SPOT, ATTIC_JOIST_XS, ATTIC_SPANS, BACK_INNER, CEILING_OPENINGS, COVERING_BASE, COVERING_EAVE_X, CRAWL_SKIRT_BOXES, CRAWL_VENT_BOXES, DEEPEST_INSULATION, DOWNSPOUT_LOOK, DOWNSPOUTS, EAVE_RUN, EQUIPMENT, FASCIA_CENTRE, FLOOR_FRAMING, FRONT_CORNERS, FRONT_CRAWL_SKIRT_BOXES, FRONT_CRAWL_VENT_BOXES, FRONT_DOOR, FRONT_OPENINGS, FRONT_WALL, FRONT_WALL_PROUD, GABLE_VENT_Y, GUTTER_BACK, GUTTER_OUT, GUTTER_Y, HOME_FLOOR_Y, HOME_FRAMINGS, HOME_GHOST_OPACITY, HOME_ORBIT, HOUSE, HOUSE_WALLS, INSULATION_DEPTH, JOIST_DECK_GAP, LOW_SLOPE_DECK_Y, LOW_SLOPE_ROOF_Y, LOWEST_LAWN_Y, PARAPET_TOP, PARTITIONS_X, PIERS, RADIANT_BARRIER_FACES, RAFTER_ORIGIN_Y, RAFTER_PROFILE, REGISTER_BOOT_TOP, RIDGE_Y, ROOF_HALF_LENGTH, SIDE_SKIN_FROM, SLOPE_LENGTH, WALL_TOP_Y, WINDOW_FRAMES } from '@/features/trade-scenes/constants/home-geometry'
 import { HEAT_ARROW_SCALE, HEAT_FLOW_STOPPED, METER_LEVEL, PART_HEAT_EFFECTS, STARTING_HOME_HEAT } from '@/features/trade-scenes/constants/home-heat-figures'
 import { ATTIC_FAN_LANE, CEILING_LEAK_LANE, CUTAWAY_FACE_FLOW_KEY, faceBounceTo, HOME_COMPLETE_ROOF_HEAT_LANES, HOME_COMPLETE_WALL_HEAT_LANES, HOME_COMPLETE_WINDOW_HEAT_LANES, HOME_ROOF_HEAT_LANES, HOME_WALL_HEAT_LANES, HOME_WINDOW_HEAT_LANES, LANE_STANDOFF, OPEN_LANE_REACH, wallPoint } from '@/features/trade-scenes/constants/home-heat-lanes'
-import { LEAK } from '@/features/trade-scenes/constants/home-life'
+import { GUTTER_WATER, HOME_RAIN, LEAK, ROOF_SHEEN } from '@/features/trade-scenes/constants/home-life'
 import { GARAGE, LOT } from '@/features/trade-scenes/constants/home-lot'
 import { HOME_PALETTE } from '@/features/trade-scenes/constants/home-palette'
 import * as HOME_SCENE_COPY from '@/features/trade-scenes/constants/home-scene-copy'
-import { CONTROLS_COPY, EAVES_TRIM_DETAILS, EFFICIENCY_UPGRADE_LABELS, PAINT_COLOR_COPY, PANEL_COPY, PART_COPY, SYSTEM_PART_DETAILS, SYSTEM_PART_LABELS, SYSTEM_PIN_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
+import { CONTROLS_COPY, EAVES_TRIM_DETAILS, EFFICIENCY_UPGRADE_LABELS, HOME_SYSTEM_LABELS, PAINT_COLOR_COPY, PAINT_WEAR_LABELS, PANEL_COPY, PART_COPY, QUICK_EDIT_COPY, SUMMARY_COPY, SYSTEM_PART_DETAILS, SYSTEM_PART_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
 import { HOME_SCENE_DEFAULTS } from '@/features/trade-scenes/constants/home-scene-defaults'
-import { BUILD_ROW_PART_IDS, HOME_SYSTEMS, LOOK_INSIDE_SYSTEM_IDS, SPOT_OF } from '@/features/trade-scenes/constants/home-systems'
+import { BUILD_ROW_PART_IDS, HOME_SPOT_IDS, HOME_SYSTEM_IDS, HOME_SYSTEMS, LOOK_INSIDE_SYSTEM_IDS, SPOT_OF } from '@/features/trade-scenes/constants/home-systems'
 import { CRAWL_AIR } from '@/features/trade-scenes/constants/home-temperatures'
 import { HOME_PAINT_KEYS } from '@/features/trade-scenes/constants/home-thermal-zones'
-import { ATTIC_DUST, CUTAWAY_FLOW, CUTAWAY_ROT, DUCT_PIN_RISE, LOOK_INSIDE, LOOK_INSIDE_DUCT_RUN, LOOK_INSIDE_WALL, LOOK_INSIDE_WINDOW, LOOK_INSIDE_WINDOW_TAG, PART_PIECES, STEP_DEPTHS, WINDOW_LANE_ALONG, WINDOW_SPREAD } from '@/features/trade-scenes/constants/look-inside'
+import { DEFAULT_LAYOUT } from '@/features/trade-scenes/constants/layout-fixtures'
+import { ATTIC_DUST, CUTAWAY_FLOW, CUTAWAY_ROT, DUCT_PIN_RISE, FRONT_WALL_WINDOW_TAG, LOOK_INSIDE, LOOK_INSIDE_DUCT_RUN, LOOK_INSIDE_WALL, LOOK_INSIDE_WINDOW, PART_PIECES, STEP_CUTS, STEP_DEPTHS, WINDOW_LANE_ALONG, WINDOW_SPREAD } from '@/features/trade-scenes/constants/look-inside'
+import { STUCCO_TEXTURE } from '@/features/trade-scenes/constants/material-textures'
 import { FASCIA_ROT, PAINT_WEAR_SHARE, PAINT_WEAR_START, PEELING_SEEDS, STAIN_SEEDS } from '@/features/trade-scenes/constants/paint-wear'
 import { SAVINGS_CATEGORIES } from '@/features/trade-scenes/constants/savings-categories'
 import { HOME_VIEWS, LEAVE_LOOK_INSIDE, NO_CHANGE_CHOICE, SCENE_WEATHERS } from '@/features/trade-scenes/constants/scene-controls'
+import { SPIN_CURSOR } from '@/features/trade-scenes/constants/scene-cursors'
+import { SCENE_LAYOUT } from '@/features/trade-scenes/constants/scene-layout'
 import { SCOPE_VERBS } from '@/features/trade-scenes/constants/scope-verbs'
 import { lookInsideView, partLookInsideView, SYSTEM_CAMERA_VIEWS } from '@/features/trade-scenes/constants/system-camera-views'
 import { DUCT_WRAP_LOOKS, FRAME_LOOKS, ORIGINAL_FRAME_LOOK, PANE_LOOKS, SCREEN_STANDOFF } from '@/features/trade-scenes/constants/system-part-looks'
 import { SYSTEM_PARTS } from '@/features/trade-scenes/constants/system-parts'
-import { FELT_WEAR, WEAR_AMOUNT, WEAR_LOOKS } from '@/features/trade-scenes/constants/wear-looks'
+import { FELT_WEAR, INSULATION_DEBRIS, WEAR_AMOUNT, WEAR_LOOKS, wetBand } from '@/features/trade-scenes/constants/wear-looks'
 import { createTapClaim } from '@/features/trade-scenes/contexts/scene-tap-claim-context'
 import { applySceneChange } from '@/features/trade-scenes/lib/apply-scene-change'
 import { arrowStations } from '@/features/trade-scenes/lib/arrow-stations'
-import { atticDustPatches } from '@/features/trade-scenes/lib/attic-dust-patches'
 import { atticFanRuns } from '@/features/trade-scenes/lib/attic-fan-runs'
 import { atticInsulationBoxes, atticInsulationTop } from '@/features/trade-scenes/lib/attic-insulation-boxes'
 import { atticJoistBoxes } from '@/features/trade-scenes/lib/attic-joist-boxes'
 import { benefitsStepBack } from '@/features/trade-scenes/lib/benefits-step-back'
+import { blanketDebris } from '@/features/trade-scenes/lib/blanket-debris'
 import { buildBenefits } from '@/features/trade-scenes/lib/build-benefits'
 import { castResidents } from '@/features/trade-scenes/lib/cast-residents'
+import { ceilingOpeningDust } from '@/features/trade-scenes/lib/ceiling-opening-dust'
 import { ceilingOpeningPart } from '@/features/trade-scenes/lib/ceiling-opening-part'
 import { ceilingOpenings } from '@/features/trade-scenes/lib/ceiling-openings'
 import { comfortFromReadings } from '@/features/trade-scenes/lib/comfort-from-readings'
 import { pressHomeView } from '@/features/trade-scenes/lib/controls-press'
 import { coveringBaseY } from '@/features/trade-scenes/lib/covering-base-y'
+import { coveringShares } from '@/features/trade-scenes/lib/covering-look'
 import { currentYear } from '@/features/trade-scenes/lib/current-year'
 import { cutawayFaceHeatLanes } from '@/features/trade-scenes/lib/cutaway-face-heat-lanes'
 import { cutawayBarrierBounceEnd, cutawayHeatLanes, cutawayReadingSpots } from '@/features/trade-scenes/lib/cutaway-heat-lanes'
 import { cutawayCrossings, cutawayRainPath, cutawayRibbonWidths, cutawayRotSpots } from '@/features/trade-scenes/lib/cutaway-rain-path'
 import { deckRotSpots } from '@/features/trade-scenes/lib/deck-rot-spots'
-import { downspoutBoxes } from '@/features/trade-scenes/lib/downspout-boxes'
+import { downspoutBoxes, downspoutFeet, downspoutOutlet, gableDownspouts } from '@/features/trade-scenes/lib/downspout-boxes'
+import { dripEdgeBoxes, eaveLipBox } from '@/features/trade-scenes/lib/drip-edge-boxes'
 import { ductRunPoints, openedDuctRun } from '@/features/trade-scenes/lib/duct-run-points'
 import { ductStrapBoxes } from '@/features/trade-scenes/lib/duct-strap-boxes'
 import { ductsHang } from '@/features/trade-scenes/lib/ducts-hang'
+import { EAVE_DRIP } from '@/features/trade-scenes/lib/eave-drip'
 import { eavesTrimDetail } from '@/features/trade-scenes/lib/eaves-trim-detail'
 import { efficiencyUpgradePatch } from '@/features/trade-scenes/lib/efficiency-upgrade-patch'
 import { eraCodeLine } from '@/features/trade-scenes/lib/era-code-line'
@@ -80,46 +90,55 @@ import { escapeStep } from '@/features/trade-scenes/lib/escape-step'
 import { fasciaNewLengths, fasciaReplacedBoxes, fasciaRotLeft } from '@/features/trade-scenes/lib/fascia-replaced-boxes'
 import { FASCIA_RUNS, fasciaRotSpots, fasciaRotWithin } from '@/features/trade-scenes/lib/fascia-rot-spots'
 import { feltRainHole, feltWearMarks, isAgedFelt } from '@/features/trade-scenes/lib/felt-wear-marks'
-import { foamCollarsShown } from '@/features/trade-scenes/lib/foam-collars-shown'
 import { FOUNDATION_FRONT_WALL, FOUNDATION_WALLS, RAISED_GROUND_STRETCH } from '@/features/trade-scenes/lib/foundation-walls'
 import { framingTowardPart, partOffset } from '@/features/trade-scenes/lib/framing-toward-part'
 import { FRONT_DOOR_BOXES } from '@/features/trade-scenes/lib/front-door-boxes'
 import { futureYear } from '@/features/trade-scenes/lib/future-year'
 import { gableVentBoxes, homeGableVent } from '@/features/trade-scenes/lib/gable-vent-boxes'
 import { GARAGE_BOXES } from '@/features/trade-scenes/lib/garage-boxes'
+import { groundTopAlong } from '@/features/trade-scenes/lib/ground-top-along'
+import { gutterHex } from '@/features/trade-scenes/lib/gutter-hex'
+import { gutterFasciaStains, gutterStreaks, gutterWallStains } from '@/features/trade-scenes/lib/gutter-marks'
+import { gutterCatches, gutterDropAt, gutterHangers, gutterRuns, gutterRunSpans } from '@/features/trade-scenes/lib/gutter-run'
+import { gutterOutlets, gutterWater, gutterWetSpans } from '@/features/trade-scenes/lib/gutter-water'
 import { bounceArrowLane, heatArrowLane } from '@/features/trade-scenes/lib/heat-arrow-lane'
 import { heatLaneFlows } from '@/features/trade-scenes/lib/heat-lane-flows'
 import { homeFadeNeeded } from '@/features/trade-scenes/lib/home-fade-needed'
 import { homeFloorY } from '@/features/trade-scenes/lib/home-floor-y'
+import { homeFramingFor } from '@/features/trade-scenes/lib/home-framing-for'
 import { homeHeat } from '@/features/trade-scenes/lib/home-heat'
 import { coveringStandoff, homeHeatLanes } from '@/features/trade-scenes/lib/home-heat-lanes'
 import { homeLift } from '@/features/trade-scenes/lib/home-lift'
 import { homePaintTemperatures } from '@/features/trade-scenes/lib/home-paint-temperatures'
 import { homePanBox } from '@/features/trade-scenes/lib/home-pan-box'
 import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
-import { framingGrid, SHINGLE, TILE } from '@/features/trade-scenes/lib/home-roof-layout'
+import { framingGrid, SHAKE, SHINGLE, TILE } from '@/features/trade-scenes/lib/home-roof-layout'
 import { houseOpen } from '@/features/trade-scenes/lib/house-open'
 import { insideHouse } from '@/features/trade-scenes/lib/inside-house'
 import { installedShingleTone } from '@/features/trade-scenes/lib/installed-shingle-tone'
 import { keepEfficiencyUpgrades } from '@/features/trade-scenes/lib/keep-efficiency-upgrades'
 import { keepLookInside } from '@/features/trade-scenes/lib/keep-look-inside'
-import { laidInsulationDepth } from '@/features/trade-scenes/lib/laid-insulation-depth'
 import { leanPoint } from '@/features/trade-scenes/lib/lean-point'
 import { liftedFraming } from '@/features/trade-scenes/lib/lifted-framing'
 import { listedRows } from '@/features/trade-scenes/lib/listed-rows'
+import { LOT_BOXES } from '@/features/trade-scenes/lib/lot-boxes'
 import { lowSlopeRoofBoxes } from '@/features/trade-scenes/lib/low-slope-roof-boxes'
+import { materialInputGroupIds } from '@/features/trade-scenes/lib/material-input-groups'
 import { existingDuctChoices, hasAcUnit, roofTypeChoices, showsEquipment } from '@/features/trade-scenes/lib/material-option-choices'
 import { missingFacts } from '@/features/trade-scenes/lib/missing-facts'
 import { openPeel } from '@/features/trade-scenes/lib/open-peel'
+import { outsideTemperature } from '@/features/trade-scenes/lib/outside-temperature'
+import { overflowStains } from '@/features/trade-scenes/lib/overflow-stains'
 import { packageUnitDrop, packageUnitPlacement } from '@/features/trade-scenes/lib/package-unit-placement'
 import { paintComboState } from '@/features/trade-scenes/lib/paint-combo-state'
 import { paintHexes } from '@/features/trade-scenes/lib/paint-hexes'
 import { doorFramePeeling, fasciaPeeling, wallPeeling } from '@/features/trade-scenes/lib/paint-peeling'
+import { paintWearInForce } from '@/features/trade-scenes/lib/paint-wear-in-force'
 import { FRONT_STAIN_WALL, gableVentOpening, paintedSurfaceStains, paintTopEdge, roofPeeling, splitAlong, splitAtSeam, STAIN_WALLS } from '@/features/trade-scenes/lib/painted-surface-stains'
 import { partOffers } from '@/features/trade-scenes/lib/part-offers'
 import { partPaintTemperatures } from '@/features/trade-scenes/lib/part-paint-temperatures'
 import { partPinId } from '@/features/trade-scenes/lib/part-pin-id'
-import { partState } from '@/features/trade-scenes/lib/part-state'
+import { drawnGutterWear, partState, wornShare } from '@/features/trade-scenes/lib/part-state'
 import { peels } from '@/features/trade-scenes/lib/peels'
 import { pickPaintColor } from '@/features/trade-scenes/lib/pick-paint-color'
 import { pickedUpgrades } from '@/features/trade-scenes/lib/picked-upgrades'
@@ -128,23 +147,30 @@ import { railGroups } from '@/features/trade-scenes/lib/rail-groups'
 import { readingPinId } from '@/features/trade-scenes/lib/reading-pin-id'
 import { repairsRows } from '@/features/trade-scenes/lib/repairs-rows'
 import { resolveScene } from '@/features/trade-scenes/lib/resolve-scene'
+import { restingFraming } from '@/features/trade-scenes/lib/resting-framing'
 import { gableCracks, LEFT_PARAPET_CUT, parapetCracks } from '@/features/trade-scenes/lib/roof-cracks'
 import { roofUndersideY } from '@/features/trade-scenes/lib/roof-underside'
 import { rotMarkGroups } from '@/features/trade-scenes/lib/rot-mark-groups'
 import { rotStainBoxes } from '@/features/trade-scenes/lib/rot-stain-boxes'
 import { sceneBurstKey } from '@/features/trade-scenes/lib/scene-burst-key'
 import { sceneChangeSlots } from '@/features/trade-scenes/lib/scene-change-slots'
+import { sceneCursor } from '@/features/trade-scenes/lib/scene-cursor'
 import { selectResolveInputs } from '@/features/trade-scenes/lib/scene-resolve-inputs'
+import { sceneVisibleAreaFor } from '@/features/trade-scenes/lib/scene-visible-area-for'
 import { offersEfficiencyUpgrade } from '@/features/trade-scenes/lib/scope-chip-options'
 import { scopePreviewPatch } from '@/features/trade-scenes/lib/scope-preview-patch'
 import { searchSceneChanges } from '@/features/trade-scenes/lib/search-scene-changes'
+import { layoutShakes } from '@/features/trade-scenes/lib/shake-layout'
 import { layoutShingles } from '@/features/trade-scenes/lib/shingle-layout'
+import { spotChipFree, spotChipPlacement } from '@/features/trade-scenes/lib/spot-chip-placement'
 import { spotFromPinId, spotPinId } from '@/features/trade-scenes/lib/spot-pin-id'
-import { spotPinPoint } from '@/features/trade-scenes/lib/spot-pin-point'
-import { fadeBlotches, runoffStreaks, sillDirt, splashBand } from '@/features/trade-scenes/lib/stain-boxes'
+import { fadeBlotches, runoffStreaks, sillDirt, splashBand, wetBandBoxes } from '@/features/trade-scenes/lib/stain-boxes'
 import { clipBoxes, stepBottom, stepCutBack, stepOrder, stepStarts } from '@/features/trade-scenes/lib/step-cut-back'
 import { stuccoCracks } from '@/features/trade-scenes/lib/stucco-cracks'
+import { systemActions } from '@/features/trade-scenes/lib/system-actions'
+import { systemBuildEntries } from '@/features/trade-scenes/lib/system-build-entries'
 import { systemCuts } from '@/features/trade-scenes/lib/system-cuts'
+import { systemInputSlotIds } from '@/features/trade-scenes/lib/system-input-slots'
 import { systemLit } from '@/features/trade-scenes/lib/system-lit'
 import { systemMaterialIds } from '@/features/trade-scenes/lib/system-material-ids'
 import { systemOfPart } from '@/features/trade-scenes/lib/system-of-part'
@@ -160,6 +186,7 @@ import { upgradeRowBlockedLine } from '@/features/trade-scenes/lib/upgrade-row-s
 import { upgradeRows } from '@/features/trade-scenes/lib/upgrade-rows'
 import { upgradeScope, withUpgradeScopes } from '@/features/trade-scenes/lib/upgrade-scopes'
 import { ventPipeStubCylinders } from '@/features/trade-scenes/lib/vent-pipe-stub-cylinders'
+import { wearFoldSummary, wearSummary } from '@/features/trade-scenes/lib/wear-summary'
 import { sillLedgeBox, windowBoxes } from '@/features/trade-scenes/lib/window-boxes'
 import { flashingBoxes } from '@/features/trade-scenes/lib/window-flashing-boxes'
 import { windowPieceBoxes } from '@/features/trade-scenes/lib/window-piece-boxes'
@@ -173,9 +200,13 @@ import { STAIN_CELL_U } from '@/features/trade-scenes/ui/lib/create-stain-atlas'
 import { createFadeSheets, markFadeSheet, settleFadeSheets } from '@/features/trade-scenes/ui/lib/fade-sheets'
 import { fasciaBoardsColor } from '@/features/trade-scenes/ui/lib/fascia-boards-color'
 import { glassLook } from '@/features/trade-scenes/ui/lib/glass-look'
-import { paintChalk } from '@/features/trade-scenes/ui/lib/paint-chalk'
+import { gutterGeometry } from '@/features/trade-scenes/ui/lib/gutter-geometry'
+import { gutterLook } from '@/features/trade-scenes/ui/lib/gutter-look'
+import { mergeBoxes } from '@/features/trade-scenes/ui/lib/merge-boxes'
+import { paintChalk, paintFade } from '@/features/trade-scenes/ui/lib/paint-chalk'
 import { paintLook } from '@/features/trade-scenes/ui/lib/paint-look'
 import { riseFadeGroup } from '@/features/trade-scenes/ui/lib/rise-fade-group'
+import { roofSheenGeometry } from '@/features/trade-scenes/ui/lib/roof-sheen-geometry'
 import { createThermalPaintSet, paintThermal, restoreThermalPaint, thermalSurfaceId, tintThermalPaint } from '@/features/trade-scenes/ui/lib/thermal-paint-set'
 import { mergeStainBoxes, tintVertices } from '@/features/trade-scenes/ui/lib/vertex-tinted-geometry'
 import { wallSkinGeometry } from '@/features/trade-scenes/ui/lib/wall-skin-geometry'
@@ -183,7 +214,11 @@ import { wallSkinLook } from '@/features/trade-scenes/ui/lib/wall-skin-look'
 import { watchSubtree } from '@/features/trade-scenes/ui/lib/watch-subtree'
 import { windowFrameLook } from '@/features/trade-scenes/ui/lib/window-frame-look'
 import { wornColor } from '@/features/trade-scenes/ui/lib/worn-color'
+import { CAMERA_GESTURE_MAPS } from '@/shared/components/scene/constants/camera-gesture-maps'
+import { RAIN } from '@/shared/components/scene/constants/rain'
 import { normalizeOnScale } from '@/shared/components/scene/lib/normalize-on-scale'
+import { widenFovForAspect } from '@/shared/components/scene/lib/widen-fov-for-aspect'
+import { seededStreaks, streakAt } from '@/shared/components/scene/ui/rain-field'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { ASSEMBLIES } from '@/shared/modules/construction/core/constants/assemblies'
 import { ROOF_ATTIC } from '@/shared/modules/construction/core/constants/assemblies/roof-attic'
@@ -195,8 +230,9 @@ import { CLIMATE_PRESETS, CLIMATES, THERMAL_SCALE_F } from '@/shared/modules/con
 import { CONSTRUCTION_GROWTH_RATE_PERCENT } from '@/shared/modules/construction/core/constants/construction-growth-rate'
 import { COOL_LIFE_COLORS, COOL_LIFE_FAMILIES, COOL_LIFE_FAN_DECK_URL, COOL_LIFE_QUICK_COLOR_IDS, PAINT_COMBOS } from '@/shared/modules/construction/core/constants/cool-life-colors'
 import { EFFICIENCY_UPGRADE_IDS } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
-import { INSULATION_LEVEL_LABELS, insulationLevels, paintWearLevels, roofTypes, wears } from '@/shared/modules/construction/core/constants/enums'
+import { coveringWearKinds, INSULATION_LEVEL_LABELS, insulationLevels, paintWearLevels, roofTypes, wears } from '@/shared/modules/construction/core/constants/enums'
 import { FASCIA_REPLACEMENT_SCOPE_ID } from '@/shared/modules/construction/core/constants/fascia-replacement'
+import { GUTTER_COLORS } from '@/shared/modules/construction/core/constants/gutter-colors'
 import { HOME_MATERIAL_IDS } from '@/shared/modules/construction/core/constants/home-material-ids'
 import { HOME_MATERIAL_FACTS_UNSET, HOME_MATERIALS } from '@/shared/modules/construction/core/constants/home-materials'
 import { OWENS_CORNING_SHINGLES } from '@/shared/modules/construction/core/constants/owens-corning-shingles'
@@ -559,14 +595,59 @@ assert.equal(rows.find(row => row.material === 'roof')?.note, 'Shingle · Worn')
 assert.equal(rows.find(row => row.material === 'exterior-paint')?.note?.startsWith('Water-based paint · '), true, 'paint has a note now')
 const shallowEqual = (a: object, b: object) => Object.keys(a).length === Object.keys(b).length && Object.entries(a).every(([key, value]) => Object.is(value, (b as Record<string, unknown>)[key]))
 const select = (patch: Partial<HomeMaterialFacts>) => selectResolveInputs({ ...HOME_SCENE_DEFAULTS, homeMaterials: { ...HOME_MATERIAL_FACTS_UNSET, ...patch } })
-assert.ok(shallowEqual(select({ acTons: '3' }), select({ acTons: '5', shingleColor: 'dark-brown', paintWear: { stains: 'heavy' }, existingPaintColors: { body: 'cotton-ball', trim: null }, proposedPaintColors: { body: 'deep-space', trim: 'sugar-dust', combo: 'dark-light' }, windowFrameColor: 'black' })), 'no colour pick re-resolves the scene')
+assert.ok(shallowEqual(select({ acTons: '3' }), select({ acTons: '5', shingleColor: 'dark-brown', paintWear: { stains: 'heavy' }, coveringWear: { missing: 'heavy' }, existingPaintColors: { body: 'cotton-ball', trim: null }, proposedPaintColors: { body: 'deep-space', trim: 'sugar-dust', combo: 'dark-light' }, windowFrameColor: 'black' })), 'no colour pick re-resolves the scene')
 assert.ok(!shallowEqual(select({ wear: { roof: 'good' } }), select({ wear: { roof: 'worn' } })), 'a wear change does')
-type DrawingOnlyKey = 'acTons' | 'shingleColor' | 'paintWear' | 'existingPaintColors' | 'proposedPaintColors' | 'windowFrameColor'
+type DrawingOnlyKey = 'acTons' | 'shingleColor' | 'paintWear' | 'coveringWear' | 'existingPaintColors' | 'proposedPaintColors' | 'windowFrameColor' | 'existingGutterColor' | 'proposedGutterColor'
 // One property per key, each `never` when the resolver's inputs carry it, so a key left in fails the assignment.
-const drawingOnly: { [K in DrawingOnlyKey]: K extends keyof SceneResolveInputs['homeMaterials'] ? never : true } = { acTons: true, shingleColor: true, paintWear: true, existingPaintColors: true, proposedPaintColors: true, windowFrameColor: true }
+const drawingOnly: { [K in DrawingOnlyKey]: K extends keyof SceneResolveInputs['homeMaterials'] ? never : true } = { acTons: true, shingleColor: true, paintWear: true, coveringWear: true, existingPaintColors: true, proposedPaintColors: true, windowFrameColor: true, existingGutterColor: true, proposedGutterColor: true }
 assert.ok(Object.values(drawingOnly).every(Boolean))
 const cameraFocusIsDrawingOnly: 'cameraFocus' extends keyof SceneResolveInputs ? never : true = true
 assert.ok(cameraFocusIsDrawingOnly)
+const pickedSystemIsDrawingOnly: 'pickedSystem' extends keyof SceneResolveInputs ? never : true = true
+assert.ok(pickedSystemIsDrawingOnly, 'a pick is drawing-only')
+const gutterWearIsAnInput: 'gutterWear' extends keyof SceneResolveInputs['homeMaterials'] ? true : never = true
+assert.ok(gutterWearIsAnInput)
+assert.ok(shallowEqual(select({ existingGutterColor: 'white' }), select({ existingGutterColor: 'black', proposedGutterColor: 'clay' })), 'no gutter colour pick re-resolves the scene')
+assert.ok(!shallowEqual(select({ gutterWear: 'good' }), select({ gutterWear: 'failing' })), 'a gutter wear change does')
+const gutterOf = (scene: ReturnType<typeof at>) => scene.assemblies['roof-attic']!.parts.find(part => part.id === 'gutter')!
+const gutterHome = (gutters: HomeMaterialFacts['gutters'], gutterWear: HomeMaterialFacts['gutterWear'], roof?: Wear) => ({ ...HOME_MATERIAL_FACTS_UNSET, gutters, gutterWear, wear: roof === undefined ? {} : { roof } })
+const gutterScene = (patch: Partial<TradeSceneInputs>, gutters: HomeMaterialFacts['gutters'], gutterWear: HomeMaterialFacts['gutterWear'] = null, roof?: Wear) => at({ property: sixtiesSingle, homeMaterials: gutterHome(gutters, gutterWear, roof), ...patch })
+assert.equal(gutterOf(gutterScene({}, null)).condition, 'absent', 'a home with gutters not set has none')
+assert.equal(gutterOf(gutterScene({}, null)).material, null, 'a home with gutters not set has none')
+assert.deepEqual(gutterScene({ bills: BILLS }, null).savings, gutterScene({ bills: BILLS }, 'none').savings, 'not set reads as no gutters')
+assert.deepEqual(gutterScene({}, null).assemblies['roof-attic']!.parts, gutterScene({}, 'none').assemblies['roof-attic']!.parts, 'not set reads as no gutters')
+assert.equal(gutterOf(gutterScene({}, 'present', null, 'fair')).wear, 'fair', 'unset, the gutter follows the roof')
+assert.equal(gutterOf(gutterScene({}, 'present', 'failing', 'good')).wear, 'failing', 'a set gutter keeps its condition when the roof\'s changes')
+assert.equal(gutterOf(gutterScene({}, 'present', 'failing', 'new')).wear, 'failing', 'a set gutter keeps its condition when the roof\'s changes')
+assert.equal(gutterOf(gutterScene({}, 'present', 'new')).condition, 'retained', 'a Good gutter reads as Gutters, whichever way it got there')
+assert.equal(gutterOf(gutterScene({}, 'present', 'good')).condition, 'retained', 'a Good gutter reads as Gutters, whichever way it got there')
+assert.equal(gutterOf(gutterScene({}, 'present', 'fair')).condition, 'worn', 'a Fair gutter is worn')
+assert.equal(gutterOf(gutterScene({}, 'present', null, 'good')).condition, 'retained', 'a Good gutter reads as Gutters, whichever way it got there')
+for (const wear of wears) {
+  const rain: Partial<TradeSceneInputs> = { view: 'proposed', weather: 'rain', proposedScopeIds: [SCOPE_IDS.roofTearOff], bills: BILLS }
+  const unsetWear = gutterScene(rain, 'present')
+  const set = gutterScene(rain, 'present', wear)
+  assert.deepEqual(set.savings, unsetWear.savings, `${wear}: the gutter's condition moves no saving`)
+  assert.deepEqual(set.leak, unsetWear.leak, `${wear}: the gutter's condition moves no water`)
+  const inside: Partial<TradeSceneInputs> = { ...rain, cameraFocus: 'roof', lookInside: true }
+  assert.deepEqual(gutterScene(inside, 'present', wear).assemblies['roof-attic']!.water, gutterScene(inside, 'present').assemblies['roof-attic']!.water, `${wear}: the gutter's condition moves no water up close`)
+  const build: Partial<TradeSceneInputs> = { view: 'proposed', proposedScopeIds: [SCOPE_IDS.roofTearOff, SCOPE_IDS.gutters], bills: BILLS }
+  assert.deepEqual(gutterScene(build, 'present', wear).savings, gutterScene(build, null, wear).savings, `${wear}: a tear-off with Gutters saves the same whether or not the home has gutters`)
+}
+assert.equal(gutterOf(gutterScene({ view: 'proposed', proposedScopeIds: [SCOPE_IDS.roofTearOff] }, null)).condition, 'absent', 'a tear-off adds no gutters')
+assert.equal(gutterOf(gutterScene({ view: 'proposed', proposedScopeIds: [SCOPE_IDS.gutters] }, null)).condition, 'installed', 'the Gutters build adds them')
+const sealedHome = (airSealing: HomeMaterialFacts['airSealing']) => ({ ...HOME_MATERIAL_FACTS_UNSET, airSealing })
+const sealedScene = (airSealing: HomeMaterialFacts['airSealing'], patch: Partial<TradeSceneInputs> = {}) => at({ property: sixtiesSingle, homeMaterials: sealedHome(airSealing), ...patch })
+const sealingOf = (scene: ReturnType<typeof at>) => scene.assemblies['roof-attic']!.parts.find(part => part.id === 'air-sealing')
+assert.deepEqual(sealedScene(null).assemblies['roof-attic']!.parts, sealedScene('none').assemblies['roof-attic']!.parts, 'not set reads as not sealed')
+assert.equal(sealingOf(sealedScene('none'))!.condition, 'absent')
+assert.deepEqual([sealingOf(sealedScene('sealed'))!.material, sealingOf(sealedScene('sealed'))!.condition], ['sealed', 'retained'], 'sealed today is kept')
+assert.ok(sealedScene('sealed', { weather: 'summer' }).heat!.readings.ceiling < sealedScene('none', { weather: 'summer' }).heat!.readings.ceiling, 'sealed today takes the sealed heat figures')
+const flatSealed = at({ property: profile({ roofType: 'flat', hvacType: 'package-unit' }), homeMaterials: sealedHome('sealed') })
+assert.equal(sealingOf(flatSealed), undefined, 'a flat roof has no attic to seal')
+const airSealingIsAnInput: 'airSealing' extends keyof SceneResolveInputs['homeMaterials'] ? true : never = true
+assert.ok(airSealingIsAnInput)
+assert.ok(!shallowEqual(select({ airSealing: 'none' }), select({ airSealing: 'sealed' })), 'an air sealing change re-resolves the scene')
 const sheetMesh = new Mesh(new BoxGeometry(1, 1, 1), new MeshStandardMaterial())
 sheetMesh.renderOrder = 1
 const sheets = createFadeSheets()
@@ -909,13 +990,19 @@ for (const [path, line] of screenCopy) {
 
 // The resolver tier stays free of three.js, so the resolver and these scripts never pull a renderer in.
 const THREE_IMPORT = /^\s*import\s[^;]*?\sfrom\s+'(?:three|three\/[^']*|@react-three\/[^']*)'|^\s*import\s+'(?:three|three\/[^']*|@react-three\/[^']*)'|\bimport\(\s*'(?:three|three\/[^']*|@react-three\/[^']*)'/m
-const pureTier = ['lib', 'constants'].flatMap(folder => readdirSync(join('src/features/trade-scenes', folder), { recursive: true, encoding: 'utf8' })
+const pureTier = ['lib', 'constants', 'schemas'].flatMap(folder => readdirSync(join('src/features/trade-scenes', folder), { recursive: true, encoding: 'utf8' })
   .filter(file => /\.tsx?$/.test(file))
   .map(file => join('src/features/trade-scenes', folder, file)))
 for (const file of [...pureTier, 'src/features/trade-scenes/types.ts']) {
   assert.ok(!THREE_IMPORT.test(readFileSync(file, 'utf8')), `${file}: imports three.js, so it belongs under ui/`)
 }
 assert.ok(THREE_IMPORT.test('import type { Mesh } from \'three\'\n') && THREE_IMPORT.test('import {\n  useFrame,\n} from \'@react-three/fiber\'\n') && THREE_IMPORT.test('import { mergeGeometries } from \'three/examples/jsm/utils/BufferGeometryUtils.js\'\n'), 'the three.js import check catches what it guards')
+
+// A type-level check: tsc fails here if the layout ever joins what resolveScene reads.
+const layoutIsDrawingOnly: 'layout' extends keyof SceneResolveInputs ? never : true = true
+assert.ok(layoutIsDrawingOnly)
+assert.equal(sceneBurstKey({ ...HOME_SCENE_DEFAULTS, layout: { ...HOME_SCENE_DEFAULTS.layout, source: 'edited' } }), sceneBurstKey(HOME_SCENE_DEFAULTS), 'a layout edit redraws, it never wakes the home')
+assert.equal(HOME_SCENE_DEFAULTS.layout, DEFAULT_LAYOUT, 'the scene opens on the default layout')
 
 const ROOF_GROUP = [TEAR_OFF, GUTTERS]
 const otherGroupKept = scopePreviewPatch({ proposedScopeIds: [ATTIC_REPLACEMENT], efficiencyUpgrades: ['cool-roof'] }, ROOF_GROUP, [GUTTERS])
@@ -930,20 +1017,24 @@ const homeViewIsDrawingOnly: 'homeView' extends keyof SceneResolveInputs ? never
 assert.ok(homeViewIsDrawingOnly)
 const partlyOpen: TradeSceneInputs = { ...HOME_SCENE_DEFAULTS, homeView: 'partly-open' }
 assert.notEqual(sceneBurstKey(partlyOpen), sceneBurstKey(HOME_SCENE_DEFAULTS), 'opening the house wakes the home')
-assert.equal(houseOpen({ homeView: 'complete', cameraFocus: 'attic' }), true, 'the attic in focus opens a Complete house')
-assert.equal(houseOpen({ homeView: 'complete', cameraFocus: 'heating-cooling' }), true, 'heating & cooling in focus opens it too')
-assert.equal(houseOpen({ homeView: 'complete', cameraFocus: 'roof' }), false, 'the roof keeps the rep\'s Complete')
-assert.equal(houseOpen({ homeView: 'complete', cameraFocus: null }), false, 'leaving the system puts Complete back')
-assert.equal(houseOpen({ homeView: 'partly-open', cameraFocus: null }), true, 'the rep\'s own Partly open stays')
-assert.equal(houseOpen({ homeView: 'partly-open', cameraFocus: 'windows' }), false, 'the windows in focus hold a Partly open house closed, so the front window stands in its wall')
-assert.equal(houseOpen({ homeView: 'complete', cameraFocus: 'windows' }), false, 'and keep a Complete house closed')
-assert.equal(houseOpen({ homeView: 'partly-open', cameraFocus: 'walls' }), false, 'the walls in focus hold a Partly open house closed, so the whole skin the paint coats stands, the front too')
-assert.equal(houseOpen({ homeView: 'partly-open', cameraFocus: 'attic' }), true, 'the attic in focus keeps a Partly open house open')
-assert.equal(houseOpen({ homeView: 'partly-open', cameraFocus: 'heating-cooling' }), true, 'so does heating & cooling')
-assert.equal(houseOpen({ homeView: 'partly-open', cameraFocus: 'roof' }), true, 'any other system follows the rep\'s Partly open')
+assert.equal(houseOpen({ homeView: 'complete', pickedSystem: 'attic', tappedSpot: null }), true, 'the attic in focus opens a Complete house')
+assert.equal(houseOpen({ homeView: 'complete', pickedSystem: 'heating-cooling', tappedSpot: null }), true, 'heating & cooling in focus opens it too')
+assert.equal(houseOpen({ homeView: 'complete', pickedSystem: 'roof', tappedSpot: null }), false, 'the roof keeps the rep\'s Complete')
+assert.equal(houseOpen({ homeView: 'complete', pickedSystem: null, tappedSpot: null }), false, 'leaving the system puts Complete back')
+assert.equal(houseOpen({ homeView: 'partly-open', pickedSystem: null, tappedSpot: null }), true, 'the rep\'s own Partly open stays')
+assert.equal(houseOpen({ homeView: 'partly-open', pickedSystem: 'windows', tappedSpot: null }), false, 'the windows in focus hold a Partly open house closed, so the front window stands in its wall')
+assert.equal(houseOpen({ homeView: 'complete', pickedSystem: 'windows', tappedSpot: null }), false, 'and keep a Complete house closed')
+assert.equal(houseOpen({ homeView: 'partly-open', pickedSystem: 'walls', tappedSpot: null }), false, 'the walls in focus hold a Partly open house closed, so the whole skin the paint coats stands, the front too')
+assert.equal(houseOpen({ homeView: 'partly-open', pickedSystem: 'attic', tappedSpot: null }), true, 'the attic in focus keeps a Partly open house open')
+assert.equal(houseOpen({ homeView: 'partly-open', pickedSystem: 'heating-cooling', tappedSpot: null }), true, 'so does heating & cooling')
+assert.equal(houseOpen({ homeView: 'partly-open', pickedSystem: 'roof', tappedSpot: null }), true, 'any other system follows the rep\'s Partly open')
+assert.equal(houseOpen({ homeView: 'complete', pickedSystem: 'foundation', tappedSpot: null }), true, 'the foundation picked opens a Complete house')
+assert.equal(houseOpen({ homeView: 'complete', pickedSystem: null, tappedSpot: null }), false, 'closing the card puts Complete back')
+const cameraFocusAlone: Pick<TradeSceneInputs, 'cameraFocus' | 'pickedSystem'> = { cameraFocus: 'attic', pickedSystem: null }
+assert.equal(houseOpen({ homeView: 'complete', ...cameraFocusAlone, tappedSpot: null }), false, 'the camera framing the attic does not open the house; the pick does')
 assert.ok(!/homeView === 'partly-open'/.test(readFileSync('src/features/trade-scenes/ui/components/home-scene-canvas.tsx', 'utf8')) && !/homeView === 'partly-open'/.test(readFileSync('src/features/trade-scenes/ui/components/home-kit/home-camera-rig.tsx', 'utf8')), 'the canvas and the camera ask houseOpen, never the pick alone')
-assert.notEqual(sceneBurstKey({ ...HOME_SCENE_DEFAULTS, homeView: 'complete', cameraFocus: null }), sceneBurstKey({ ...HOME_SCENE_DEFAULTS, homeView: 'complete', cameraFocus: 'attic' }), 'focus that opens the house wakes the home')
-assert.equal(sceneBurstKey({ ...HOME_SCENE_DEFAULTS, homeView: 'complete', cameraFocus: 'attic' }), sceneBurstKey({ ...HOME_SCENE_DEFAULTS, homeView: 'complete', cameraFocus: 'heating-cooling' }), 'no frame closes between the attic and heating & cooling')
+assert.notEqual(sceneBurstKey({ ...HOME_SCENE_DEFAULTS, homeView: 'complete', pickedSystem: null }), sceneBurstKey({ ...HOME_SCENE_DEFAULTS, homeView: 'complete', pickedSystem: 'attic' }), 'a pick that opens the house wakes the home')
+assert.equal(sceneBurstKey({ ...HOME_SCENE_DEFAULTS, homeView: 'complete', pickedSystem: 'attic' }), sceneBurstKey({ ...HOME_SCENE_DEFAULTS, homeView: 'complete', pickedSystem: 'heating-cooling' }), 'no frame closes between the attic and heating & cooling')
 
 for (const form of ['pitched', 'low-slope'] as const) {
   for (const id of READING_IDS) {
@@ -1440,8 +1531,103 @@ near(lift.position.y + ground.position.y + ground.scale.y * (HOUSE.floorY - HOUS
 const raisedLift = HOME_FLOOR_Y.raised - HOUSE.floorY
 const bottomOf = (boxes: readonly BoxSpec[]) => Math.min(...boxes.map(b => b.position[1] - b.size[1] / 2))
 const topOf = (boxes: readonly BoxSpec[]) => Math.max(...boxes.map(b => b.position[1] + b.size[1] / 2))
-for (const form of ROOF_FORMS) {
-  assert.ok(bottomOf(downspoutBoxes(form)) + raisedLift <= 1e-9, 'the downspouts reach the ground on a raised floor')
+{
+  const DOWNSPOUT_AT = { 'pitched': DOWNSPOUTS.pitched.at, 'low-slope': DOWNSPOUTS.lowSlope.at } as const
+  const setOf = (boxes: readonly BoxSpec[], [x, z]: readonly [number, number]) => boxes.filter(box => Math.abs(box.position[0] - x) < 0.5 && Math.sign(box.position[2]) === Math.sign(z))
+  const sizesOf = (boxes: readonly BoxSpec[]) => boxes.map(box => box.size.map(value => value.toFixed(6)).join(',')).sort()
+  const cornersOf = ({ size, position, rotation = [0, 0, 0] }: BoxSpec) => [-1, 1].flatMap(a => [-1, 1].flatMap(b => [-1, 1].map(c => ({
+    local: c,
+    world: new Vector3(a * size[0] / 2, b * size[1] / 2, c * size[2] / 2).applyEuler(new Euler(...rotation)).add(new Vector3(...position)),
+  }))))
+  const allFeet = (form: RoofForm) => [...downspoutFeet(form).kept, ...downspoutFeet(form).complete]
+  const isLeftFront = ([x, z]: readonly [number, number]) => x === -HOUSE.halfLength + 0.3 && z > 0
+  const isRightFront = ([x, z]: readonly [number, number]) => x === HOUSE.halfLength - 0.3 && z > 0
+  assert.deepEqual(DOWNSPOUTS.pitched.section, DOWNSPOUTS.lowSlope.section, 'both forms hang the same pipe')
+  assert.equal(DOWNSPOUTS.pitched.at.length, 4, 'a gable has a downspout at each corner')
+  near(LOWEST_LAWN_Y + raisedLift, 0, 1e-9, 'the lowest lawn is the house frame\'s lawn on a raised floor')
+  for (const form of ROOF_FORMS) {
+    const house = downspoutBoxes(form)
+    const feet = allFeet(form)
+    const sets = DOWNSPOUT_AT[form]
+    assert.equal(sets.reduce((sum, at) => sum + setOf(house, at).length, 0), house.length, `${form}: every house box belongs to one set`)
+    assert.equal(sets.reduce((sum, at) => sum + setOf(feet, at).length, 0), feet.length, `${form}: every foot box belongs to one set`)
+    for (const at of sets) {
+      // The downspout itself is as long as its shoe's ground lets it be.
+      const fittings = (each: readonly [number, number]) => {
+        const boxes = setOf(house, each)
+        const downspout = boxes.reduce((tallest, box) => box.size[1] > tallest.size[1] ? box : tallest)
+        return sizesOf(boxes.filter(box => box !== downspout))
+      }
+      assert.ok(setOf(house, at).length === setOf(house, sets[0]!).length && fittings(at).join() === fittings(sets[0]!).join(), `${form} (${at}): every set has the same pieces, front and back`)
+      assert.deepEqual(sizesOf(setOf(feet, at)), sizesOf(setOf(feet, sets[0]!)), `${form} (${at}): and the same foot, front and back`)
+      const vertical = setOf(house, at).reduce((tallest, box) => box.size[1] > tallest.size[1] ? box : tallest)
+      const side = Math.sign(at[1])
+      const sleeve = setOf(feet, at).find(box => box.rotation === undefined)!
+      const shoe = setOf(feet, at).filter(box => box.rotation !== undefined)
+      const { shoe: SHOE } = DOWNSPOUT_LOOK
+      const [sleeveBottom, sleeveTop] = [sleeve.position[1] - sleeve.size[1] / 2, sleeve.position[1] + sleeve.size[1] / 2]
+      for (let step = 0; step <= 10; step++) {
+        const floorY = HOME_FLOOR_Y.slab + (HOME_FLOOR_Y.raised - HOME_FLOOR_Y.slab) * step / 10
+        const bottom = vertical.position[1] - vertical.size[1] / 2 + floorY - HOUSE.floorY
+        assert.ok(bottom >= sleeveBottom - 1e-9, `${form} (${at}) at floor ${floorY.toFixed(2)}: the downspout ends where the shoe's bend starts, never below it`)
+        assert.ok(bottom <= sleeveTop - 0.01, `${form} (${at}) at floor ${floorY.toFixed(2)}: and stays inside the sleeve above it`)
+      }
+      const turns = shoe.map(box => Math.abs(box.rotation![0]))
+      near(Math.max(...turns), SHOE.turn, 1e-9, `${form} (${at}): the shoe turns the water ${(SHOE.turn * 180 / Math.PI).toFixed(0)} degrees from straight down`)
+      assert.ok(SHOE.turn <= 75 * Math.PI / 180, 'short of a right angle, so it reads as a bend, not a corner')
+      for (let i = 1; i < shoe.length; i++) {
+        assert.ok(turns[i]! - turns[i - 1]! >= -1e-9 && turns[i]! - turns[i - 1]! <= 10 * Math.PI / 180 + 1e-9, `${form} (${at}): piece ${i} turns at most 10 degrees past the one before`)
+        const apart = Math.hypot(shoe[i]!.position[1] - shoe[i - 1]!.position[1], shoe[i]!.position[2] - shoe[i - 1]!.position[2])
+        assert.ok(apart <= (shoe[i]!.size[1] + shoe[i - 1]!.size[1]) / 2 + 1e-9, `${form} (${at}): piece ${i} meets the one before it, no gap`)
+      }
+      const corners = shoe.flatMap(box => cornersOf(box).map(corner => corner.world))
+      const reach = Math.max(...corners.map(point => side * point.z)) - side * at[1]
+      assert.ok(reach <= 0.35, `${form} (${at}): the shoe stays close to the house (${reach.toFixed(3)} m out)`)
+      const ground = groundTopAlong(at[0], at[1], at[1] + side * reach)
+      const lowest = Math.min(...corners.map(point => point.y))
+      assert.ok(lowest >= ground - 1e-9 && lowest <= ground + SHOE.clearance + 0.005, `${form} (${at}): its mouth rests just over the highest ground under it (${(lowest - ground).toFixed(4)} m)`)
+      if (form === 'pitched' && isLeftFront(at)) {
+        const bed = LOT_BOXES.mulch.find(box => Math.abs(at[0] - box.position[0]) <= box.size[0] / 2 && Math.abs(at[1] + side * reach - box.position[2]) <= box.size[2] / 2)
+        assert.ok(bed !== undefined && lowest >= bed.position[1] + bed.size[1] / 2, 'the left front shoe stands over its bed\'s mulch, not in it')
+      }
+      const tail = shoe[shoe.length - 1]!
+      const turned = Math.abs(tail.rotation![0])
+      const mouth = [tail.position[0], tail.position[1] - Math.cos(turned) * tail.size[1] / 2, tail.position[2] + side * Math.sin(turned) * tail.size[1] / 2]
+      downspoutOutlet(at).forEach((value, axis) => near(value, mouth[axis]!, 1e-9, `${form} (${at}): the outlet is the centre of the shoe's mouth`))
+    }
+  }
+  for (const [x, z] of DOWNSPOUTS.pitched.at.filter(([, z]) => z > 0)) {
+    for (const opening of FRONT_OPENINGS) {
+      const clear = Math.max(opening.along - opening.width / 2 - x, x - opening.along - opening.width / 2) - DOWNSPOUTS.pitched.section.across / 2
+      assert.ok(clear >= 0.3, `the front downspout at (${x}, ${z}) clears the opening at ${opening.along} (${clear.toFixed(3)} m)`)
+    }
+  }
+  const straddles = (boxes: readonly BoxSpec[]) => boxes.some(box => box.position[0] - box.size[0] / 2 < HOUSE.cutX && box.position[0] + box.size[0] / 2 > HOUSE.cutX)
+  const { pulled } = gutterRunSpans('failing')
+  const minUp = Math.min(...ROOF_TRIM.gutter.profile.outline.map(([, up]) => up))
+  for (const wear of wears) {
+    const lists = [gableDownspouts(wear), downspoutFeet('pitched')]
+    for (const [label, { kept, complete }] of [['gableDownspouts', lists[0]!], ['downspoutFeet', lists[1]!]] as const) {
+      const inComplete = DOWNSPOUTS.pitched.at.filter(at => setOf(complete, at).length > 0)
+      assert.ok(inComplete.length === 1 && isLeftFront(inComplete[0]!), `${wear} ${label}: the Complete list holds exactly the left front set`)
+      assert.equal(setOf(complete, inComplete[0]!).length, complete.length, `${wear} ${label}: and nothing else`)
+      assert.ok(!straddles(kept) && !straddles(complete), `${wear} ${label}: no box straddles the cut`)
+      const keptSets = DOWNSPOUT_AT.pitched.filter(at => setOf(kept, at).length > 0)
+      assert.ok(keptSets.length === 3 && keptSets.some(([x, z]) => x < 0 && z < 0) && !keptSets.some(isLeftFront), `${wear} ${label}: the kept list holds the other three, the back left among them`)
+    }
+    const { kept, complete } = lists[0]!
+    for (const at of DOWNSPOUTS.pitched.at) {
+      const boxes = setOf([...kept, ...complete], at)
+      const gutterBottom = GUTTER_Y - gutterDropAt(wear, at[1] > 0 ? 'front' : 'back', at[0]) + minUp
+      if (wear === 'failing' && isRightFront(at)) {
+        assert.ok(pulled !== null && at[0] >= pulled[0] && at[0] <= pulled[1], 'the right front set stands under the pulled end')
+        assert.ok(boxes.length > 0 && topOf(boxes) <= gutterBottom - DOWNSPOUT_LOOK.tornGap + 1e-9, `failing: the torn set hangs ${DOWNSPOUT_LOOK.tornGap} m short of the gutter, its gooseneck gone`)
+      }
+      else {
+        near(topOf(boxes), gutterBottom, 1e-6, `${wear} (${at}): the set's top meets the gutter's bottom`)
+      }
+    }
+  }
 }
 const girders = FLOOR_FRAMING.filter(b => b.size[0] > b.size[2])
 near(topOf(PIERS), bottomOf(girders), 1e-9, 'the piers meet the girders')
@@ -1476,7 +1662,7 @@ risingRoot.updateMatrixWorld(true)
 near(stretchedPart.getWorldPosition(new Vector3()).y, risingPart.getWorldPosition(new Vector3()).y, 1e-9, 'a part in the stretched ground frame rises as far as the rest')
 
 // The near slope's two parts lay their covering on one grid, so no joint runs eave to ridge at the cut.
-const slopeArea = { seed: 7, wear: WEAR_AMOUNT.worn, xFrom: COVERING_EAVE_X, xTo: SLOPE_LENGTH, zFrom: -ROOF_HALF_LENGTH, zTo: ROOF_HALF_LENGTH, base: COVERING_BASE }
+const slopeArea = { seed: 7, wear: WEAR_AMOUNT.worn, xFrom: COVERING_EAVE_X, xTo: SLOPE_LENGTH, zFrom: -ROOF_HALF_LENGTH, zTo: ROOF_HALF_LENGTH, base: COVERING_BASE, shares: coveringShares(COVERING_WEAR_START.worn), reused: false }
 const wholeShingles = layoutShingles(slopeArea, SHINGLE)
 const leftShingles = piecesInSpan(wholeShingles, -ROOF_HALF_LENGTH, HOUSE.cutX, true)
 const rightShingles = piecesInSpan(wholeShingles, HOUSE.cutX, ROOF_HALF_LENGTH, true)
@@ -1517,6 +1703,22 @@ assert.ok(Math.max(topIn[1], topOut[0] < COVERING_EAVE_X ? atCoveringEdge : topO
 // The first course reaches out over the gutter's back lip, so no gap between roof and gutter shows from above.
 const coveringEdge = -across([COVERING_EAVE_X, COVERING_BASE])
 assert.ok(coveringEdge >= GUTTER_BACK - 1e-9, `the covering stops ${(GUTTER_BACK - coveringEdge).toFixed(3)} m short of the gutter`)
+
+// The drip edge's lip laps a replaced fascia board as well as the old one, and still hangs clear of the gutter's back: two
+// opaque faces in one plane flicker, and at the orbit's farthest a 1 mm gap is about what the depth buffer can still split.
+const eaveLip = eaveLipBox(-1, 1)
+assert.deepEqual(dripEdgeBoxes(-1, 1, [])[1], eaveLip, 'the drip edge hangs the eave\'s lip')
+const lipOut = -across([eaveLip.position[0] - FASCIA_CENTRE[0], eaveLip.position[1] - FASCIA_CENTRE[1]])
+const lipInner = lipOut - eaveLip.size[0] / 2
+const lipOuter = lipOut + eaveLip.size[0] / 2
+const newBoardOuter = Math.max(...fasciaReplacedBoxes([{ face: 'front', along: [0, 1], bottom: false }], [0, 1], '#000000').flatMap(({ boxes }) => boxes.map(box => box.size[0] / 2)))
+assert.ok(lipInner >= newBoardOuter - 1e-9, `the drip edge's lip sits ${((newBoardOuter - lipInner) * 1000).toFixed(1)} mm inside a replaced fascia board's face`)
+const fasciaFace = HOUSE.halfDepth - across(FASCIA_CENTRE) + FASCIA_T / 2
+near(EAVE_DRIP.out, HOUSE.halfDepth - across(FASCIA_CENTRE) + lipOuter, 1e-9, 'the eave drips off the lip\'s outer face')
+near(EAVE_DRIP.y, RAFTER_ORIGIN_Y + eaveLip.position[0] * Math.sin(PITCH) + eaveLip.position[1] * Math.cos(PITCH) - eaveLip.size[1] / 2, 1e-9, 'from its bottom edge')
+assert.ok(EAVE_DRIP.out > fasciaFace && EAVE_DRIP.out < HOUSE.halfDepth + GUTTER_BACK, `the eave drips between the fascia's face and the gutter's back (${EAVE_DRIP.out.toFixed(4)})`)
+const lipToGutter = HOUSE.halfDepth + GUTTER_BACK - EAVE_DRIP.out
+assert.ok(lipToGutter >= 0.002 - 1e-9, `the drip edge's lip stands ${(lipToGutter * 1000).toFixed(1)} mm off the gutter's back`)
 
 // Nothing in the attic pokes through the roof: the plenum stays under the rafters, the ducts it feeds start on it and stay
 // under the deck, and every blanket of insulation stays under the roof's underside wherever it is laid.
@@ -1627,18 +1829,19 @@ for (const material of Object.keys(INSULATION_DEPTH)) {
 
 // Every part draws its wear as an amount: the build's new parts at 0, a kept part by its set wear, an unset one as Worn.
 const wearPart = (condition: ResolvedPart['condition'], wear?: Wear): ResolvedPart[] => [{ id: 'covering', group: 'roof', role: 'surface', material: 'shingle', condition, label: '', detail: '', thermal: null, water: null, ...(wear ? { wear } : {}) }]
-assert.equal(partState(wearPart('installed', 'failing'), 'covering').wear, 0, 'the build always draws new')
+assert.equal(partState(wearPart('installed', 'failing'), 'covering').wear, 0, 'a new install draws new')
+assert.equal(partState([{ ...wearPart('installed', 'failing')[0], reused: true }], 'covering').wear, 1, 'a reused part keeps its wear')
 assert.equal(partState(wearPart('worn'), 'covering').wear, 0.75, 'unset reads as Worn')
 assert.equal(partState(wearPart('retained', 'new'), 'covering').wear, 0)
 assert.equal(partState(wearPart('worn', 'failing'), 'covering').wear, 1)
 assert.equal(partState([], 'covering').wear, 0, 'an absent part draws new')
 
-const shingleAreaAt = (wear: number) => ({ ...slopeArea, wear })
-const tabCount = (wear: number) => layoutShingles(shingleAreaAt(wear), SHINGLE).length
-assert.ok(tabCount(WEAR_AMOUNT.new) > tabCount(WEAR_AMOUNT.worn) && tabCount(WEAR_AMOUNT.worn) > tabCount(WEAR_AMOUNT.failing), 'more tabs go missing as the wear grows')
-const liftedCount = (wear: number) => layoutShingles(shingleAreaAt(wear), SHINGLE).filter(piece => piece.tilt < -0.2).length
-assert.equal(liftedCount(WEAR_AMOUNT.new), 0, 'a new roof has no lifted tab')
-assert.ok(liftedCount(WEAR_AMOUNT.failing) > liftedCount(WEAR_AMOUNT.worn) && liftedCount(WEAR_AMOUNT.worn) > 0, 'more tabs lift as the wear grows')
+const shingleAreaAt = (patch: Partial<CoveringWear>) => ({ ...slopeArea, shares: coveringShares({ ...COVERING_WEAR_START.new, ...patch }) })
+const tabCount = (missing: PaintWearLevel) => layoutShingles(shingleAreaAt({ missing }), SHINGLE).length
+assert.ok(tabCount('none') > tabCount('moderate') && tabCount('moderate') > tabCount('heavy'), 'more tabs go missing as the level climbs')
+const liftedCount = (curling: PaintWearLevel) => layoutShingles(shingleAreaAt({ curling }), SHINGLE).filter(piece => piece.tilt < -0.2).length
+assert.equal(liftedCount('none'), 0, 'a roof with no Curling has no lifted tab')
+assert.ok(liftedCount('heavy') > liftedCount('moderate') && liftedCount('moderate') > 0, 'more tabs lift as the level climbs')
 
 assert.equal(wornColor('#000000', '#808080', 0), '#000000', 'no wear is the fresh colour')
 assert.equal(wornColor('#000000', '#808080', WEAR_AMOUNT.worn), '#808080', 'Worn is the worn colour')
@@ -1701,6 +1904,9 @@ for (const combo of PAINT_COMBOS) {
 }
 for (const [id, frame] of Object.entries(WINDOW_FRAME_COLORS)) {
   coreCopy.push([`WINDOW_FRAME_COLORS.${id}`, frame.name])
+}
+for (const color of GUTTER_COLORS) {
+  coreCopy.push([`GUTTER_COLORS.${color.id}`, color.name])
 }
 assert.equal(new Set(COOL_LIFE_COLORS.map(color => color.id)).size, COOL_LIFE_COLORS.length, 'Cool Life ids are unique')
 assert.ok(COOL_LIFE_COLORS.length >= 38 && COOL_LIFE_COLORS.length <= 45, 'about 40 colours in the fuller list')
@@ -2752,10 +2958,6 @@ for (const radius of [EQUIPMENT.ductRadius, EQUIPMENT.ductRadius * WEAR_LOOKS.ne
     near(strap.position[1] + strap.size[1] / 2, roofUndersideY(strap.position[2], 'pitched'), 1e-9, 'a strap hangs from the roof underside')
   }
 }
-assert.equal(foamCollarsShown('pitched', 'sealed', null), true)
-for (const [form, sealing, insulation] of [['pitched', 'sealed', 'batts-r11'], ['pitched', null, null], ['low-slope', 'sealed', null]] as const) {
-  assert.equal(foamCollarsShown(form, sealing, insulation), false, `${form} ${sealing} ${insulation}: no collars`)
-}
 // The pipes' roof stubs and the roof lanes read the roof's surface from one rule, which puts the lanes where they were.
 for (const [form, z, y] of [['pitched', -0.8, 4.158830368802246], ['pitched', 0.8, 4.158830368802246], ['low-slope', -1.9, 3.3]] as const) {
   near(coveringBaseY(z, form), y, 1e-12, `the ${form} covering's base at z ${z}`)
@@ -2840,6 +3042,30 @@ assert.deepEqual(slotsOf(base).map(s => s.group).filter((group, i, all) => group
 assert.ok(slotsOf(base).every(s => typeof s.words === 'string' && s.words.length > 0), 'every slot has its words')
 assert.equal(new Set(slotsOf(base).map(s => s.id)).size, slotsOf(base).length, 'slot ids are unique')
 assert.ok(!slotsOf(base).some(s => s.id.includes('paint-wear')), 'paint wear is set in the system card only')
+
+// The gutters' condition is its own Modify row while the home has gutters, and follows the roof until the rep rates it.
+{
+  const guttered = (gutters: HomeMaterialFacts['gutters'], gutterWear: HomeMaterialFacts['gutterWear'], roof: Wear, extra: Partial<HomeMaterialFacts> = {}) =>
+    ({ ...base, homeMaterials: { ...HOME_MATERIAL_FACTS_UNSET, gutters, gutterWear, wear: { roof }, ...extra } }) as TradeSceneInputs
+  const wearSlot = (state: TradeSceneInputs) => slotsOf(state).find(s => s.id === 'gutter-wear')
+  assert.equal(wearSlot(guttered(null, null, 'fair')), undefined, 'gutters not set: no condition row')
+  assert.equal(wearSlot(guttered('none', 'failing', 'fair', { existingGutterColor: 'clay' })), undefined, 'no gutters: no condition row, though a condition and a colour are held')
+  assert.equal(wearSlot(guttered('present', null, 'fair'))?.current, 'fair', 'unset, it follows the roof')
+  const rated = wearSlot(guttered('present', 'failing', 'new'))
+  assert.equal(rated?.current, 'failing', 'a rated gutter keeps its own condition')
+  assert.deepEqual(rated?.change('worn'), { kind: 'fact', patch: { gutterWear: 'worn' } })
+}
+// Air sealing is a Today row beside the attic's insulation, on every home with an attic to seal.
+{
+  const sealSlot = (state: TradeSceneInputs) => slotsOf(state).find(s => s.id === 'air-sealing')
+  const slot = sealSlot(base)
+  assert.ok(slot, 'a roof not yet set reads as shingle, so it has an attic to seal')
+  assert.deepEqual(slot.options.map(option => option.label), ['Not air sealed', 'Air sealed'])
+  assert.equal(slot.current, null)
+  assert.deepEqual(slot.change('sealed'), { kind: 'fact', patch: { airSealing: 'sealed' } })
+  assert.equal(sealSlot(applyAll(base, [slot.change('sealed')]))?.current, 'sealed', 'the pick sticks')
+  assert.equal(sealSlot(applyAll(base, [{ kind: 'roof-form', form: 'low-slope' }])), undefined, 'a flat roof has no attic to seal, so no row')
+}
 const flatRoof = applyAll(base, [{ kind: 'roof-form', form: 'low-slope' }])
 assert.deepEqual(slotsOf(flatRoof).find(s => s.id === 'roof')?.options, [{ value: 'flat', label: 'Torch down' }], 'a flat roof has one covering')
 const roofSlot = slotsOf(base).find(s => s.id === 'roof')
@@ -2890,8 +3116,14 @@ assert.ok(!showsEquipment({ ...base.property, hvacType: 'package-unit' }))
 const rowOf = (facts: Parameters<typeof upgradeRows>[0], picks: string[], partId: string) => upgradeRows(facts, picks, []).flatMap(system => system.rows).find(row => row.offer.partId === partId)
 const unsetCovering = rowOf({ property: base.property, materials: HOME_MATERIAL_FACTS_UNSET, year: YEAR }, [], 'covering')
 assert.ok(unsetCovering)
-assert.deepEqual(upgradeRowBlockedLine(unsetCovering, { property: base.property, materials: HOME_MATERIAL_FACTS_UNSET, year: YEAR }, []), { included: false, text: 'Set the roof under Home facts' })
+assert.deepEqual(upgradeRowBlockedLine(unsetCovering, { property: base.property, materials: HOME_MATERIAL_FACTS_UNSET, year: YEAR }, []), { included: false, text: 'Set the roof under Property facts' })
 const shakeFacts = { property: { ...base.property, roofType: 'woodshake' as const }, materials: HOME_MATERIAL_FACTS_UNSET, year: YEAR }
+function wearSlotValues(roofType: 'woodshake' | 'shingle') {
+  const state = { ...base, property: { ...base.property, roofType } }
+  return slotsOf(state).find(s => s.id === 'wear:roof')?.options.map(option => option.value)
+}
+assert.deepEqual(wearSlotValues('woodshake'), ['worn', 'failing'], 'a wood shake roof is Worn or Failing')
+assert.equal(wearSlotValues('shingle')?.length, 5, 'a shingle roof offers all five')
 const shakeDeck = rowOf(shakeFacts, [TEAR_OFF], 'deck')
 assert.ok(shakeDeck)
 assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { included: true, text: ROOF_ATTIC.parts.find(part => part.id === 'covering')?.materials.shingle.needsBase?.copy.label }, 'a tear-off over shakes includes the deck\'s base')
@@ -3183,7 +3415,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   assert.ok(!pick(raised, null).efficiencyUpgrades.includes('r38-insulation'), 'removing the pick removes R-38')
   // A draw-only write keeps every array the resolver selects, so it never re-resolves the scene.
   const drawn = { ...topped, installStyles: [] }
-  for (const change of [{ kind: 'fact', patch: { shingleColor: 'oyster-shell' } }, { kind: 'fact', patch: { paintWear: { stains: 'heavy' } } }, { kind: 'fact', patch: { existingPaintColors: { body: 'cotton-ball', trim: null } } }, { kind: 'fact', patch: { proposedPaintColors: { body: 'deep-space', trim: 'sugar-dust', combo: 'dark-light' } } }, { kind: 'fact', patch: { windowFrameColor: 'black' } }] as const satisfies readonly SceneChange[]) {
+  for (const change of [{ kind: 'fact', patch: { shingleColor: 'oyster-shell' } }, { kind: 'fact', patch: { paintWear: { stains: 'heavy' } } }, { kind: 'fact', patch: { coveringWear: { missing: 'heavy' } } }, { kind: 'fact', patch: { existingPaintColors: { body: 'cotton-ball', trim: null } } }, { kind: 'fact', patch: { proposedPaintColors: { body: 'deep-space', trim: 'sugar-dust', combo: 'dark-light' } } }, { kind: 'fact', patch: { windowFrameColor: 'black' } }] as const satisfies readonly SceneChange[]) {
     const patch = applySceneChange(drawn, change, YEAR)
     assert.ok(patch.proposedScopeIds === drawn.proposedScopeIds && patch.efficiencyUpgrades === drawn.efficiencyUpgrades && patch.installStyles === drawn.installStyles, `${Object.keys(change.patch)[0]}: the picks and their options keep their identity`)
     assert.ok(shallowEqual(selectResolveInputs(drawn), selectResolveInputs({ ...drawn, ...patch })), `${Object.keys(change.patch)[0]}: the resolver's inputs select equal`)
@@ -3277,9 +3509,14 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
 // ── Each system lists its system parts, and the spots that open it ─────────────
 {
   const wholeParts = SYSTEM_PARTS.filter(entry => entry.id === entry.part)
+  // The air sealing seals the ceiling's openings, so the attic's ceiling row tells it rather than a part of its own.
+  const toldByCeiling = (assembly: string, part: string) => assembly === 'roof-attic' && part === 'air-sealing'
   const homeAssemblies = ASSEMBLY_IDS.filter(id => id !== 'yard-ground')
   for (const assembly of homeAssemblies) {
     for (const { id } of ASSEMBLIES[assembly].parts) {
+      if (toldByCeiling(assembly, id)) {
+        continue
+      }
       const matches = wholeParts.filter(entry => entry.assembly === assembly && entry.part === id)
       assert.equal(matches.length, 1, `${assembly}/${id} is exactly one whole system part`)
       assert.equal(matches[0]!.systems.length, id === 'ceiling' ? 2 : 1, `${assembly}/${id}: only the ceiling is shared`)
@@ -3288,9 +3525,13 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   assert.ok(SYSTEM_PARTS.every(entry => homeAssemblies.includes(entry.assembly) && ASSEMBLIES[entry.assembly].parts.some(part => part.id === entry.part)), 'every system part sits on a construction part of the home, never the yard')
   assert.ok(SYSTEM_PARTS.every(entry => entry.id === entry.part || wholeParts.some(whole => whole.assembly === entry.assembly && whole.part === entry.part && entry.systems.every(system => (whole.systems as readonly HomeSystemId[]).includes(system)))), 'a piece belongs to one of its whole part\'s systems')
   assert.equal(new Set(SYSTEM_PARTS.map(entry => entry.id)).size, SYSTEM_PARTS.length, 'system part ids are unique')
-  assert.deepEqual(SYSTEM_PARTS.find(entry => entry.id === 'ceiling'), { id: 'ceiling', assembly: 'roof-attic', part: 'ceiling', systems: ['roof', 'attic'], story: { roof: 'leak', attic: 'air-gaps' } })
+  assert.deepEqual(SYSTEM_PARTS.find(entry => entry.id === 'ceiling'), { id: 'ceiling', assembly: 'roof-attic', part: 'ceiling', systems: ['roof', 'attic'], story: { roof: 'leak', attic: 'sealing' } })
   for (const { id, rows } of HOME_SYSTEMS) {
     for (const { assembly, part } of rows) {
+      if (toldByCeiling(assembly, part)) {
+        assert.equal(id, 'attic', 'the air sealing\'s build row sits on the attic, whose ceiling tells it')
+        continue
+      }
       assert.ok(wholeParts.some(entry => entry.assembly === assembly && entry.part === part && (entry.systems as readonly HomeSystemId[]).includes(id)), `${id}'s row ${part} is a whole system part of ${id}`)
       assert.equal(systemOfPart(assembly, part), id, `${assembly}/${part} looks up to ${id}`)
     }
@@ -3324,12 +3565,12 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   assert.deepEqual(systemsAtSpot('wall', { form: 'pitched', picks: [], hvacType: null }), ['walls'])
   assert.ok(canLookInside('walls', { form: 'pitched', picks: [], hvacType: null }))
   assert.ok(canLookInside('walls', { form: 'low-slope', picks: [], hvacType: 'portable' }), 'walls open on every home')
-  assert.equal(SYSTEM_PIN_LABELS.walls, 'Walls system')
   const houseShellCode = readFileSync('src/features/trade-scenes/ui/components/home-kit/house-shell.tsx', 'utf8')
   assert.ok(/onClick=\{onWindowTap\}/.test(houseShellCode) && /onClick=\{onWallTap\}/.test(houseShellCode), 'the glass and frame take their own tap, the wall its own')
   assert.equal(canLookInside('attic', { ...lowSlope, picks: [TORCH_DOWN] }), false, 'a flat roof\'s attic opens only with a redeck')
   assert.equal(canLookInside('attic', { ...lowSlope, picks: [TORCH_DOWN, REDECK] }), true)
-  assert.deepEqual(LOOK_INSIDE_SYSTEM_IDS.map(id => SPOT_OF[id]), ['roof', 'roof', 'window', 'wall', 'equipment'])
+  assert.deepEqual(HOME_SYSTEM_IDS.map(id => SPOT_OF[id]), ['roof', 'roof', 'window', 'wall', 'equipment', 'foundation'], 'every system has a spot')
+  assert.deepEqual(systemsAtSpot('foundation', { form: 'pitched', picks: [], hvacType: null }), ['foundation'], 'the foundation is its own spot')
 
   // A part two systems share shows in each only for the story it tells there.
   const shownIds = (system: HomeSystemId, scene: ReturnType<typeof resolveScene>) => systemPartsShown(system, partsByAssembly(scene), systemStory(scene)).map(entry => entry.id)
@@ -3340,11 +3581,13 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   assert.ok(!shownIds('roof', normalFailing).includes('ceiling'), 'no leak, no ceiling in the roof')
   assert.ok(shownIds('attic', rainFailing).includes('ceiling'), 'open gaps light the ceiling in the attic')
   const sealed = at({ property: profile({ roofType: 'shingle' }), view: 'proposed', proposedScopeIds: [SCOPE_IDS.airSealing], bills: BILLS })
-  assert.ok(!shownIds('attic', sealed).includes('ceiling'), 'air sealing in the build closes the gaps')
-  assert.deepEqual([systemStory(rainFailing).leak, systemStory(rainFailing).airGaps, systemStory(sealed).airGaps], [true, true, false])
+  assert.ok(shownIds('attic', sealed).includes('ceiling'), 'the build\'s air sealing keeps the ceiling up close')
+  assert.deepEqual([systemStory(rainFailing).leak, systemStory(rainFailing).sealable, systemStory(sealed).sealable], [true, true, true])
   const flat = at({ property: profile({ roofType: 'flat' }), view: 'existing' })
+  assert.equal(systemStory(flat).sealable, false)
   const flatShown = [...shownIds('roof', flat), ...shownIds('attic', flat)]
-  for (const id of ['radiant-barrier', 'air-sealing', 'attic-fan'] as const) assert.ok(!flatShown.includes(id), `a flat roof shows no ${id}`)
+  for (const id of ['radiant-barrier', 'attic-fan'] as const) assert.ok(!flatShown.includes(id), `a flat roof shows no ${id}`)
+  assert.ok(!shownIds('attic', flat).includes('ceiling'), 'a flat roof shows no attic ceiling')
   const singleShown = shownIds('windows', at({ property: sixtiesSingle }))
   assert.ok(singleShown.includes('pane') && !singleShown.includes('outer-pane'), 'a single-pane home\'s windows show pane, not outer-pane')
 
@@ -3376,6 +3619,17 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   assert.ok(roofLit().shown.has('deck') && !roofLit().shown.has('ceiling'), 'the fixture: a dry roof shows its deck, not the ceiling')
   assert.equal(systemPartOpacity(systemPartTag('covering'), false, roofLit(), ghost), 1, 'a shown roof system part stays solid')
   assert.equal(systemPartOpacity(systemPartTag('attic-insulation'), false, roofLit(), ghost), ghost, 'an attic part under a lit roof takes the ghost')
+  const windowsLit = { system: 'windows', shown: new Set(['frame', 'glazing']), emphasized: null } as SystemLit
+  assert.equal(systemPartOpacity(systemPartTag('frame', FRONT_WALL_WINDOW_TAG), true, windowsLit, ghost), 1, 'the left front window\'s frame stays solid while the windows look inside')
+  assert.equal(systemPartOpacity(systemPartTag('glazing', FRONT_WALL_WINDOW_TAG), true, windowsLit, ghost), 1, 'and its glass')
+  assert.equal(systemPartOpacity(systemPartTag('frame'), true, windowsLit, ghost), ghost, 'an untagged Complete-only frame still ghosts')
+  {
+    const shellSource = readFileSync('src/features/trade-scenes/ui/components/home-kit/house-shell.tsx', 'utf8')
+    const completeGroup = shellSource.slice(shellSource.indexOf('userData={HOME_FADE_TAGS.complete}'))
+    const windowTags = [...completeGroup.matchAll(/systemPartTag\('(frame|glazing)'[^)]*\)/g)].map(match => match[0])
+    assert.ok(windowTags.length >= 3, 'the Complete-only group draws the front frame, the framed window\'s frame and the glass')
+    assert.ok(windowTags.every(tag => tag.includes('FRONT_WALL_WINDOW_TAG')), `every front-wall window piece is tagged over the front: ${windowTags.join(', ')}`)
+  }
   assert.equal(systemPartOpacity(systemPartTag('covering'), true, roofLit(), ghost), ghost, 'a roof part only the Complete house draws takes the ghost')
   assert.equal(systemPartOpacity(systemPartTag('ceiling'), false, roofLit(), ghost), ghost, 'a ceiling the roof does not show takes the ghost')
   assert.equal(systemPartOpacity({}, false, roofLit(), ghost), ghost, 'an untagged mesh takes the ghost')
@@ -3462,8 +3716,13 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   for (const id of PART_PIECES['duct-runs']) {
     assert.ok(kitTagged.has(id), `${id}: the opened duct tags it`)
   }
+  // Past the attic's cut the faded blanket reads as nothing, so up close its debris draws nothing there, or it would read as
+  // dirt on the bare ceiling; every other stepped part keeps what lies past the cut, under the ghost. The sweep renders no
+  // component, so this reads the rows themselves.
+  const restDropped = readdirSync(kitDir).flatMap(file => [...readFileSync(join(kitDir, file), 'utf8').matchAll(/<AtticSteps [^>]*boxes=\{(\w+)\}[^>]*keepsRest=\{false\}/g)].map(match => `${file}: ${match[1]}`))
+  assert.deepEqual(restDropped, ['attic-floor.tsx: openDebris', 'attic-floor.tsx: completeDebris'], 'up close only the blanket\'s debris drops what lies past the cut')
   for (const file of ['window-panes.tsx', 'window-seals.tsx']) {
-    assert.match(readFileSync(join(kitDir, file), 'utf8'), /userData=\{systemPartTag\(id, LOOK_INSIDE_WINDOW_TAG\)\}/, `${file}: each piece tags itself, over the front`)
+    assert.match(readFileSync(join(kitDir, file), 'utf8'), /userData=\{systemPartTag\(id, FRONT_WALL_WINDOW_TAG\)\}/, `${file}: each piece tags itself, over the front`)
   }
   assert.ok([...kitTagged].every(id => upClose.some(entry => entry.id === id)), `the house tags only system parts shown up close: ${[...kitTagged].join(', ')}`)
   // Every surface the paint coats is the walls' own: the body reads its colour through the wall's skin and sits under the
@@ -3490,26 +3749,67 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   }
 }
 
-// Look inside: up close is a step into the system in focus, on the one house and the one card.
+// Releasing focus holds the pose; only Recenter goes home.
+{
+  const F = SYSTEM_CAMERA_VIEWS.roof('pitched', 'landscape', 0, { type: null, scale: 1 })
+  const H = homeFramingFor(1.4)
+  assert.deepEqual(restingFraming({ focus: F, held: null, home: H, recentered: false }), { framing: F, held: F, away: false }, 'Focus frames the system and remembers it')
+  assert.deepEqual(restingFraming({ focus: null, held: F, home: H, recentered: false }), { framing: F, held: F, away: true }, 'releasing Focus keeps the framing, so nothing glides, and Recenter stays')
+  assert.deepEqual(restingFraming({ focus: null, held: F, home: H, recentered: true }), { framing: H, held: null, away: false }, 'Recenter goes home')
+  assert.deepEqual(restingFraming({ focus: F, held: F, home: H, recentered: true }), { framing: F, held: F, away: false }, 'Focus pressed again after a pan wins over its own recenter bump')
+  assert.deepEqual(restingFraming({ focus: null, held: null, home: H, recentered: false }), { framing: H, held: null, away: false }, 'with nothing held the home framing stands')
+}
+
+// Look inside: up close is a step into the picked system, on the one house and the one card.
 {
   // Escape steps back one layer a press, the innermost first; a window owns its own.
-  const bare = { menu: false, lookInside: false, focus: null, open: null, pins: false } as const
-  assert.equal(escapeStep({ ...bare, menu: true, lookInside: true, open: 'systems', focus: 'roof' }), 'menu', 'an open menu goes first')
-  assert.equal(escapeStep({ ...bare, lookInside: true, open: 'systems', focus: 'roof' }), 'look-inside', 'up close goes before the system')
-  assert.equal(escapeStep({ ...bare, open: 'systems', focus: 'roof' }), 'focus')
+  const bare = { menu: false, drawing: false, lookInside: false, picked: null, open: null, spotChip: false, editing: false, fold: false, yard: false, thing: false } as const
+  assert.equal(escapeStep({ ...bare, menu: true, lookInside: true, open: 'systems', picked: 'roof' }), 'menu', 'an open menu goes first')
+  assert.equal(escapeStep({ ...bare, lookInside: true, open: 'systems', picked: 'roof' }), 'look-inside', 'up close goes before the system')
+  assert.equal(escapeStep({ ...bare, open: 'systems', picked: 'roof' }), 'card')
   assert.equal(escapeStep({ ...bare, open: 'systems' }), 'systems', 'Systems with no system in focus')
-  assert.equal(escapeStep({ ...bare, open: 'systems', pins: true }), 'systems', 'pins count only with nothing open')
-  assert.equal(escapeStep({ ...bare, pins: true }), 'pins', 'the pins at a spot, over the bare scene')
-  assert.equal(escapeStep({ ...bare, open: 'modify', pins: true }), null, 'a window owns its Escape')
+  assert.equal(escapeStep({ ...bare, open: 'systems', yard: true, thing: true }), 'thing', 'the focused thing goes before the yard')
+  assert.equal(escapeStep({ ...bare, open: 'systems', yard: true }), 'yard', 'the yard goes before Areas')
+  assert.equal(escapeStep({ ...bare, open: 'systems', drawing: true, yard: true, thing: true }), 'drawing', 'drawing goes before the thing')
+  assert.equal(escapeStep({ ...bare, open: 'systems', drawing: true, menu: true }), 'menu', 'a menu on the draw bar goes before drawing')
+  assert.equal(escapeStep({ ...bare, open: 'systems', spotChip: true }), 'spot-chip', 'a chip under the open Systems section goes before the section')
+  assert.equal(escapeStep({ ...bare, open: 'systems', spotChip: true, editing: true, fold: true }), 'fold', 'quick edit under the open Systems section still folds first')
+  assert.equal(escapeStep({ ...bare, open: 'systems', spotChip: false, picked: 'roof' }), 'card', 'with no chip the card goes as before')
+  assert.equal(escapeStep({ ...bare, open: 'modify', spotChip: true }), null, 'a window owns its Escape')
   assert.equal(escapeStep(bare), null, 'nothing to step back')
+  {
+    const bareChip = { ...bare, spotChip: false, editing: false, fold: false }
+    assert.equal(escapeStep({ ...bareChip, menu: true, spotChip: true, editing: true, fold: true }), 'menu', 'a value menu inside quick edit closes first')
+    assert.equal(escapeStep({ ...bareChip, spotChip: true, editing: true, fold: true }), 'fold', 'then the fold')
+    assert.equal(escapeStep({ ...bareChip, spotChip: true, editing: true }), 'quick-edit', 'then quick edit')
+    assert.equal(escapeStep({ ...bareChip, spotChip: true }), 'spot-chip', 'then the chip')
+    assert.equal(escapeStep({ ...bareChip, spotChip: true, lookInside: true }), 'spot-chip', 'the chip goes before up close')
+    const wearFacts = (wear: 'failing' | 'new') => ({ property: profile({ yearBuilt: '1950-1978', roofType: 'shingle' }), materials: { ...HOME_MATERIAL_FACTS_UNSET, wear: { 'exterior-paint': wear } }, year: YEAR })
+    const poorPaint = resolveHomeMaterials(wearFacts('failing'))['exterior-paint']
+    const newPaint = resolveHomeMaterials(wearFacts('new'))['exterior-paint']
+    assert.equal(wearSummary({ cracks: 'moderate', stains: 'light', peeling: 'none' }, PAINT_WEAR_LABELS), 'Cracks moderate · Stains light', 'the fold reads its set levels')
+    assert.equal(wearSummary({}, PAINT_WEAR_LABELS), 'None', 'with none set it says None')
+    assert.equal(wearFoldSummary(poorPaint, {}, 'paint', 'shingle'), wearSummary(paintWearInForce(poorPaint, {}), PAINT_WEAR_LABELS), 'the fold reads the levels in force, as its fields do')
+    assert.notEqual(wearFoldSummary(poorPaint, {}, 'paint', 'shingle'), 'None', 'a poor paint with nothing recorded never reads None')
+    assert.equal(wearFoldSummary(newPaint, {}, 'paint', 'shingle'), null, 'new paint has no fold')
+    assert.equal(wearFoldSummary(undefined, {}, 'paint', 'shingle'), null, 'no material has no fold')
+  }
 
   // A tap on the house pins its systems where it was tapped, under ids no part or reading pin takes.
-  for (const system of LOOK_INSIDE_SYSTEM_IDS) {
-    assert.equal(spotFromPinId(spotPinId(system)), system, `${system}: its spot pin's id reads back`)
+  for (const spot of HOME_SPOT_IDS) {
+    assert.equal(spotFromPinId(spotPinId(spot)), spot, `${spot}: its spot pin's id reads back`)
+  }
+  for (const system of HOME_SYSTEM_IDS) {
     assert.equal(spotFromPinId(partPinId(system)), null, `${system}: a part pin is no spot pin`)
   }
   assert.equal(spotFromPinId(readingPinId('roof')), null, 'a reading is no spot pin')
-  assert.equal(spotFromPinId(spotPinId('foundation')), null, 'no spot opens the foundation')
+  assert.equal(spotFromPinId(spotPinId('foundation')), 'foundation', 'a foundation spot pin reads back')
+  assert.equal(spotFromPinId(spotPinId('roof')), 'roof', 'a spot pin is keyed by spot, so a stack shares one anchor')
+  assert.match(readFileSync('src/features/trade-scenes/ui/components/home-kit/home-kit.tsx', 'utf8'), /<CondenserUnit[^>]*spotTap\('equipment', 'ground'\)/, 'the ground condenser\'s tap rides the ground, not the lift')
+  const spot = (editing: HomeSystemId | null): TappedSpot => ({ id: 1, spot: 'roof', point: [0, 0, 0], rides: 'lift', editing })
+  assert.equal(houseOpen({ homeView: 'complete', pickedSystem: null, tappedSpot: spot('attic') }), true, 'the attic in quick edit opens a Complete house')
+  assert.equal(houseOpen({ homeView: 'complete', pickedSystem: null, tappedSpot: spot(null) }), false, 'a chip at rest leaves the house as it is')
+  assert.equal(houseOpen({ homeView: 'partly-open', pickedSystem: null, tappedSpot: { ...spot('windows'), spot: 'window' } }), false, 'the windows in quick edit hold the house closed')
   assert.ok(!spotPinId('roof').startsWith('part:') && !spotPinId('roof').startsWith('reading:'), 'the spot prefix is its own')
   for (const homeView of ['complete', 'partly-open'] as const) {
     const patch = pressHomeView(homeView)
@@ -3517,19 +3817,16 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
     assert.equal(patch.tappedSpot, null, `${homeView}: turning the home view lets the pins at a spot go`)
   }
   for (const form of ['pitched', 'low-slope'] as const) {
-    assert.deepEqual(spotPinPoint('roof', form, null), HOME_ANCHORS[form].roof.position, `${form}: the roof's pin stands where its view looks`)
-    assert.deepEqual(spotPinPoint('attic', form, null), HOME_ANCHORS[form].attic.position, `${form}: so does the attic's`)
-    assert.deepEqual(spotPinPoint('windows', form, null), systemPartFocus('windows', form, 'glazing', 0, [], NO_RUN), `${form}: the window's on its glass`)
-    // The whole home's window reading and spot pin show in every home view, so they stand on a window every view draws, never
+    // The whole home's window reading shows in every home view, so it stands on a window every view draws, never
     // on the Complete-only front; the windows' own view still frames the front window its Look inside opens.
     const onWindow = (point: Vec3, walls: readonly HouseWall[]) => walls.some(wall => wall.openings.some((opening) => {
       const [across, along] = wall.run === 'x' ? [point[2], point[0]] : [point[0], point[2]]
       return Math.abs(across - wall.line) <= HOUSE.wallThickness / 2 + 1e-9 && Math.abs(along - opening.along) <= opening.width / 2 && point[1] >= HOUSE.floorY + opening.sill && point[1] <= HOUSE.floorY + opening.head
     }))
     const drawnAlways = Object.values(HOUSE_WALLS) as readonly HouseWall[]
-    assert.ok(onWindow(READING_ANCHORS[form].window, drawnAlways) && onWindow(spotPinPoint('windows', form, null), drawnAlways), `${form}: the whole-home window marks stand on a window every view draws`)
-    // With the windows in focus the house is held closed, so the window reading stands on the window their Look inside opens;
-    // every other focus keeps the whole home's.
+    assert.ok(onWindow(READING_ANCHORS[form].window, drawnAlways), `${form}: the whole-home window reading stands on a window every view draws`)
+    // With the windows framed the house is held closed, so the window reading stands on the window their Look inside opens;
+    // every other framing keeps the whole home's.
     const opened = (point: Vec3) => onWindow(point, [LOOK_INSIDE_WINDOW.wall]) && Math.abs(point[0] - LOOK_INSIDE_WINDOW.opening.along) <= LOOK_INSIDE_WINDOW.opening.width / 2
     assert.ok(opened(readingAnchors(form, 'windows').window), `${form}: up close, the window reading stands on the window it opens`)
     for (const focus of [null, 'roof', 'attic', 'walls', 'heating-cooling', 'foundation'] as const) {
@@ -3539,12 +3836,6 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
       const { target } = SYSTEM_CAMERA_VIEWS.windows(form, shape, 0, { type: 'central', scale: 1 })
       assert.ok(onWindow(target, [LOOK_INSIDE_WINDOW.wall]) && Math.abs(target[0] - LOOK_INSIDE_WINDOW.opening.along) <= LOOK_INSIDE_WINDOW.opening.width / 2, `${form} ${shape}: the windows' view aims at the front window`)
     }
-    const [cx, cy, cz] = systemPartFocus('heating-cooling', form, 'condenser', 0, [], NO_RUN)!
-    const [condenserX, condenserY, condenserZ] = spotPinPoint('heating-cooling', form, 'central')
-    assert.ok(condenserX === cx && condenserZ === cz && condenserY > cy, `${form}: heating & cooling's stands over the condenser`)
-    const [ux, uy, uz] = systemPartFocus('heating-cooling', form, 'package-unit', 0, [], NO_RUN)!
-    const [unitX, unitY, unitZ] = spotPinPoint('heating-cooling', form, 'package-unit')
-    assert.ok(unitX === ux && unitZ === uz && unitY > uy, `${form}: and over the package unit on a package home`)
   }
   // A house tap that answers itself claims the gesture, and the claim lasts until the next press.
   const claim = createTapClaim()
@@ -3555,7 +3846,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   assert.equal(claim.claimed(), false, 'the next press lets it go')
   // A pin over the canvas is a pick, like a rail chip: its tap is a tap on the scene too, so each claims it before it picks,
   // or the tap-away would close Systems (and leave Look inside) on the same click.
-  for (const [file, pick] of [['src/features/trade-scenes/ui/components/panel/part-pins.tsx', 'emphasize(partId)'], ['src/features/trade-scenes/ui/components/spot-pin.tsx', 'pickFromPin(system)']] as const) {
+  for (const [file, pick] of [['src/features/trade-scenes/ui/components/panel/part-pins.tsx', 'emphasize(partId)'], ['src/features/trade-scenes/ui/components/spot-chip/spot-chip-head.tsx', 'pickFromChip(system)']] as const) {
     const code = readFileSync(file, 'utf8')
     assert.match(code, new RegExp(String.raw`claimTap\(\)\s*\n\s*${pick.replace(/[()]/g, String.raw`\$&`)}`), `${file}: the pin claims its tap before it picks`)
   }
@@ -3565,24 +3856,25 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
     assert.deepEqual(keepLookInside(state), {}, `${label}: up close holds before the change`)
     const next = { ...state, ...applySceneChange(state, change, YEAR) }
     assert.deepEqual([next.lookInside, next.peel, next.emphasizedPart, next.cameraFocus], [false, 0, null, state.cameraFocus], `${label}: back to the system, still in focus`)
+    assert.equal(next.pickedSystem, state.pickedSystem, `${label}: the pick stays`)
   }
   const flatHome = profile({ yearBuilt: '1950-1978', roofType: 'flat', insulationLevel: 'r11', hvacType: 'central' })
   const flatRows = upgradeRows({ property: flatHome, materials: HOME_MATERIAL_FACTS_UNSET, year: YEAR }, [TORCH_DOWN, REDECK], []).flatMap(system => system.rows)
   const deckOffer = flatRows.find(row => row.offer.partId === 'deck')!.offer
   const upClose = { lookInside: true, peel: 0.6 } as const
-  stepsBack('a flat attic losing its redeck', inputs({ property: flatHome, view: 'proposed', proposedScopeIds: [TORCH_DOWN, REDECK], cameraFocus: 'attic', ...upClose, emphasizedPart: 'attic-insulation' }), { kind: 'scope', offer: deckOffer, scopeId: null })
-  stepsBack('heating & cooling turning to a wall unit', inputs({ property: profile({ hvacType: 'central' }), cameraFocus: 'heating-cooling', ...upClose, emphasizedPart: 'duct-runs' }), { kind: 'property', patch: { hvacType: 'wall-mounted' } })
-  stepsBack('a pitched attic turning flat', inputs({ property: profile({ roofType: 'shingle' }), cameraFocus: 'attic', ...upClose, emphasizedPart: null }), { kind: 'roof-form', form: 'low-slope' })
-  const roofUpClose = inputs({ property: profile({ roofType: 'shingle' }), cameraFocus: 'roof', ...upClose, emphasizedPart: 'covering' })
+  stepsBack('a flat attic losing its redeck', inputs({ property: flatHome, view: 'proposed', proposedScopeIds: [TORCH_DOWN, REDECK], cameraFocus: 'attic', pickedSystem: 'attic', ...upClose, emphasizedPart: 'attic-insulation' }), { kind: 'scope', offer: deckOffer, scopeId: null })
+  stepsBack('heating & cooling turning to a wall unit', inputs({ property: profile({ hvacType: 'central' }), cameraFocus: 'heating-cooling', pickedSystem: 'heating-cooling', ...upClose, emphasizedPart: 'duct-runs' }), { kind: 'property', patch: { hvacType: 'wall-mounted' } })
+  stepsBack('a pitched attic turning flat', inputs({ property: profile({ roofType: 'shingle' }), cameraFocus: 'attic', pickedSystem: 'attic', ...upClose, emphasizedPart: null }), { kind: 'roof-form', form: 'low-slope' })
+  const roofUpClose = inputs({ property: profile({ roofType: 'shingle' }), cameraFocus: 'roof', pickedSystem: 'roof', ...upClose, emphasizedPart: 'covering' })
   assert.deepEqual(applySceneChange(roofUpClose, { kind: 'roof-form', form: 'low-slope' }, YEAR).lookInside, undefined, 'a flat roof still opens its roof, so the change leaves up close alone')
-  assert.deepEqual(keepLookInside({ ...roofUpClose, lookInside: false, property: profile({ hvacType: 'wall-mounted' }), cameraFocus: 'heating-cooling' }), {}, 'off up close nothing is asked')
+  assert.deepEqual(keepLookInside({ ...roofUpClose, lookInside: false, property: profile({ hvacType: 'wall-mounted' }), cameraFocus: 'heating-cooling', pickedSystem: 'heating-cooling' }), {}, 'off up close nothing is asked')
   assert.deepEqual(LEAVE_LOOK_INSIDE, { lookInside: false, peel: 0, emphasizedPart: null })
 
   // An emphasis holds only while its part is shown: once Today, a weather or a pick takes the part away, the system is whole
   // again, and the part comes back emphasised with what draws it.
   const litIn = (system: HomeSystemId, state: TradeSceneInputs) => systemLit(system, systemPartRows(system, targetsOf(state)), state.emphasizedPart)
   const barrierProperty = profile({ roofType: 'shingle' })
-  const barrierBuild = inputs({ property: barrierProperty, view: 'proposed', proposedScopeIds: [ATTIC_REPLACEMENT, RADIANT_BARRIER], bills: BILLS, cameraFocus: 'attic', ...upClose, emphasizedPart: 'radiant-barrier' })
+  const barrierBuild = inputs({ property: barrierProperty, view: 'proposed', proposedScopeIds: [ATTIC_REPLACEMENT, RADIANT_BARRIER], bills: BILLS, cameraFocus: 'attic', pickedSystem: 'attic', ...upClose, emphasizedPart: 'radiant-barrier' })
   assert.equal(litIn('attic', barrierBuild).emphasized, 'radiant-barrier', 'the build\'s radiant barrier is emphasised')
   const barrierToday = { ...barrierBuild, view: 'existing' as const }
   assert.ok(!litIn('attic', barrierToday).shown.has('radiant-barrier'), 'the fixture has no barrier today')
@@ -3592,7 +3884,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   const barrierOffer = upgradeRows({ property: barrierProperty, materials: HOME_MATERIAL_FACTS_UNSET, year: YEAR }, [ATTIC_REPLACEMENT, RADIANT_BARRIER], []).flatMap(system => system.rows).find(row => row.offer.partId === 'radiant-barrier')!.offer
   const barrierDropped = { ...barrierBuild, ...applySceneChange(barrierBuild, { kind: 'scope', offer: barrierOffer, scopeId: null }, YEAR) }
   assert.deepEqual([barrierDropped.lookInside, litIn('attic', barrierDropped).emphasized], [true, null], 'a pick that drops the barrier keeps up close and lets its emphasis go')
-  const rainCeiling = inputs({ property: profile({ roofType: 'shingle' }), weather: 'rain', view: 'existing', cameraFocus: 'roof', ...upClose, emphasizedPart: 'ceiling' })
+  const rainCeiling = inputs({ property: profile({ roofType: 'shingle' }), weather: 'rain', view: 'existing', cameraFocus: 'roof', pickedSystem: 'roof', ...upClose, emphasizedPart: 'ceiling' })
   assert.equal(litIn('roof', rainCeiling).emphasized, 'ceiling', 'the leak story emphasises the roof\'s ceiling in the rain')
   assert.equal(litIn('roof', { ...rainCeiling, weather: 'normal' }).emphasized, null, 'out of the rain the roof draws no ceiling, so it lets the emphasis go')
   assert.equal(HOME_SCENE_DEFAULTS.lookInside, false, 'the scene opens on the whole home')
@@ -3903,21 +4195,21 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
     const trimPicked = systemLit('walls', wallRows, 'eaves-trim')
     const stuccoPicked = systemLit('walls', wallRows, 'stucco')
     const paintPicked = systemLit('walls', wallRows, 'paint')
-    const body = (lit: SystemLit | null) => wallSkinLook(lit, '#ffffff')
+    const body = (lit: SystemLit | null) => wallSkinLook(lit, '#ffffff', true)
     assert.deepEqual([onTheFront(body(trimPicked).tag.scenePart, trimPicked), onTheFront('eaves-trim', trimPicked)], [LOOK_INSIDE.dimmedOpacity, 1], 'Eaves & trim: the body dims, the trim lights')
     assert.deepEqual([onTheFront(body(stuccoPicked).tag.scenePart, stuccoPicked), onTheFront('eaves-trim', stuccoPicked)], [1, LOOK_INSIDE.dimmedOpacity], 'Stucco: the body lights, the trim dims')
     assert.deepEqual([onTheFront(body(paintPicked).tag.scenePart, paintPicked), onTheFront('eaves-trim', paintPicked)], [1, LOOK_INSIDE.dimmedOpacity], 'Paint: the body lights, the trim dims')
-    assert.deepEqual(body(stuccoPicked), { bare: true, color: WEAR_LOOKS.paint.peeling.bareStucco, tag: systemPartTag('stucco'), finish: systemPartTag('stucco'), peeled: WEAR_LOOKS.paint.peeling.bareOnCoat }, 'Stucco: the body shows its bare base coat, tagged with the finish')
+    assert.deepEqual(body(stuccoPicked), { bare: true, color: WEAR_LOOKS.paint.peeling.bareStucco, texture: STUCCO_TEXTURE, tag: systemPartTag('stucco'), finish: systemPartTag('stucco'), peeled: WEAR_LOOKS.paint.peeling.bareOnCoat }, 'Stucco: the body shows its bare base coat, tagged with the finish')
     assert.notEqual(body(stuccoPicked).peeled, body(stuccoPicked).color, 'Stucco: the peeling\'s bare patches still read on the bare coat')
     assert.deepEqual(body(systemLit('walls', systemPartRows('walls', sidingHome), 'siding')).tag, systemPartTag('siding'), 'Siding: the body is tagged with the siding')
     for (const lit of [paintPicked, trimPicked, systemLit('walls', wallRows, null), null]) {
-      assert.deepEqual(body(lit), { bare: false, color: '#ffffff', tag: systemPartTag('paint'), finish: systemPartTag('stucco'), peeled: WEAR_LOOKS.paint.peeling.bareStucco }, `${lit?.emphasized ?? 'no system'}: the body keeps its coat, tagged with the paint`)
+      assert.deepEqual(body(lit), { bare: false, color: '#ffffff', texture: STUCCO_TEXTURE, tag: systemPartTag('paint'), finish: systemPartTag('stucco'), peeled: WEAR_LOOKS.paint.peeling.bareStucco }, `${lit?.emphasized ?? 'no system'}: the body keeps its coat, tagged with the paint`)
     }
     assert.equal(body(systemLit('roof', systemPartRows('roof', stuccoHome), null)).bare, false, 'another system never bares the wall')
 
     // Under Thermal the ghost writes each mesh's opacity onto its paint, so a lit piece on a ghosted piece's surface would read
     // as whichever was walked last: the front face, lit, before the door leaf, ghosted, in the same zone and fades.
-    const thermalPieces: readonly SystemPartTagData[] = [systemPartTag('paint'), systemPartTag('stucco'), systemPartTag('siding'), systemPartTag('eaves-trim'), {}, systemPartTag('frame'), systemPartTag('frame', LOOK_INSIDE_WINDOW_TAG), systemPartTag('covering')]
+    const thermalPieces: readonly SystemPartTagData[] = [systemPartTag('paint'), systemPartTag('stucco'), systemPartTag('siding'), systemPartTag('eaves-trim'), {}, systemPartTag('frame'), systemPartTag('frame', FRONT_WALL_WINDOW_TAG), systemPartTag('covering')]
     const wallLits = [systemLit('walls', wallRows, null), trimPicked, stuccoPicked, paintPicked]
     const wallsTag = (tag: SystemPartTagData) => tag.scenePart !== undefined && wallShown.has(tag.scenePart)
     for (const [index, one] of thermalPieces.entries()) {
@@ -4066,15 +4358,15 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
     assert.equal(PART_COPY.pull, 'Pull it apart')
     assert.equal(PART_COPY.together, 'Put it back together')
 
-    // The window stands in the front wall, which only the Complete house draws and Look inside ghosts: its parts carry the
+    // The front wall's windows stand in a wall only the Complete house draws and Look inside ghosts: their parts carry the
     // over-the-front mark, so each lights under a windows pick while the front around it fades.
-    assert.equal(LOOK_INSIDE_WINDOW_TAG.overFront, true)
+    assert.equal(FRONT_WALL_WINDOW_TAG.overFront, true)
     const shell = readFileSync('src/features/trade-scenes/ui/components/home-kit/house-shell.tsx', 'utf8')
-    assert.ok(/systemPartTag\('frame', LOOK_INSIDE_WINDOW_TAG\)\}>\s*<FramedWindowFrame[^>]*\/>\s*<WindowSeals/.test(shell), 'the framed window\'s frame and seals stand under the frame tag marked over the front')
+    assert.ok(/systemPartTag\('frame', FRONT_WALL_WINDOW_TAG\)\}>\s*<FramedWindowFrame[^>]*\/>\s*<WindowSeals/.test(shell), 'the framed window\'s frame and seals stand under the frame tag marked over the front')
     const newRows = systemPartRows('windows', newWindow)
     for (const { id } of listedRows(newRows)) {
-      assert.equal(systemPartOpacity(systemPartTag(id, LOOK_INSIDE_WINDOW_TAG), true, systemLit('windows', newRows, id), LOOK_INSIDE.ghostOpacity), 1, `the front window lights over the faded front: ${id}`)
-      assert.equal(systemPartOpacity(systemPartTag(id, LOOK_INSIDE_WINDOW_TAG), true, systemLit('windows', newRows, null), LOOK_INSIDE.ghostOpacity), 1, `the front window lights over the faded front: ${id}, no pick`)
+      assert.equal(systemPartOpacity(systemPartTag(id, FRONT_WALL_WINDOW_TAG), true, systemLit('windows', newRows, id), LOOK_INSIDE.ghostOpacity), 1, `the front window lights over the faded front: ${id}`)
+      assert.equal(systemPartOpacity(systemPartTag(id, FRONT_WALL_WINDOW_TAG), true, systemLit('windows', newRows, null), LOOK_INSIDE.ghostOpacity), 1, `the front window lights over the faded front: ${id}, no pick`)
     }
 
     // The flashing hides behind the frame: it lies no further out than the frame's outer face, and in the opening's plane it
@@ -4291,7 +4583,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
     { property: profile({ roofType: 'shingle', hvacType: 'central' }), build: [...FULL_BUILD, SCOPE_IDS.airSealing, SCOPE_IDS.atticFan, GUTTERS] },
     { property: profile({ roofType: 'flat', hvacType: 'package-unit' }), build: [TORCH_DOWN, REDECK, ATTIC_REPLACEMENT] },
   ]
-  const stepped = { ceiling: { roof: 0, attic: 0 }, steps: 0, sealedStrips: 0, sealedBoots: 0, floorCrossings: 0 }
+  const stepped = { ceiling: { roof: 0, attic: 0 }, steps: 0, floorCrossings: 0 }
   for (const { property, build } of stepHomes) {
     for (const view of VIEWS) {
       for (const weather of ['normal', 'rain'] as const) {
@@ -4302,7 +4594,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
           const shown = systemPartsShown(system, partsByAssembly(scene), systemStory(scene)).map(entry => entry.id)
           // The attic stands fully open whatever the store's peel says; the roof is swept fully peeled.
           const peel = openPeel(system, system === 'attic' ? 0 : 1)
-          const starts = stepStarts(system, shown, peel)
+          const starts = stepStarts(system, form, shown, peel)
           const order = stepOrder(shown)
           assert.deepEqual([...starts.keys()], [...shown].filter(id => starts.has(id)).reverse(), `${label}: the steps run against the card's order, the outermost cut back furthest`)
           for (const id of shown) {
@@ -4310,7 +4602,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
           }
           for (const [id, start] of starts) {
             assert.ok(shown.includes(id), `${label}: ${id} steps only while it shows`)
-            assert.ok(start >= HOUSE.cutX, `${label}: ${id} steps on the kept side of the cut`)
+            assert.ok(start >= STEP_CUTS[form][system], `${label}: ${id} steps on the kept side of the cut`)
             const point = systemPartFocus(system, form, id, peel, shown, NO_RUN)
             if (id === stepBottom(shown)) {
               assert.deepEqual(point, systemPartFocus(system, form, id, 0, [], NO_RUN), `${label}: the bottom step, ${id}, keeps the spot its story is told at`)
@@ -4319,20 +4611,9 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
               assert.ok(point !== null && point[0] > start && point[0] < Math.min(start + STEP_DEPTHS[system], drawnEnd(form, id)), `${label}: ${id} is pointed at on its step`)
             }
           }
-          // The air sealing's strip, from its step to the blanket's, holds a light can, a vent pipe and a duct boot on the kept
-          // span, each with its foam clear of the strip's ends by the collar's reach.
-          if (shown.includes('air-sealing') && shown.includes('attic-insulation')) {
-            const [from, to] = [starts.get('air-sealing')!, starts.get('attic-insulation')!]
-            const { reach } = CEILING_OPENING_LOOK.collar
-            const ducted = scene.assemblies['hvac-attic'] !== undefined
-            const inStrip = (kind: CeilingOpening['kind']) => ceilingOpenings(ducted).some(opening => opening.kind === kind && opening.at[1] < HOUSE.atticFrontZ && opening.at[0] - opening.radius - 2 * reach >= from && opening.at[0] + opening.radius + 2 * reach <= to)
-            assert.ok(inStrip('can') && inStrip('pipe') && (inStrip('boot') || !ducted), `${label}: the air sealing shows round a can, a pipe and, with ducts, a boot in its strip (${from.toFixed(2)}..${to.toFixed(2)})`)
-            stepped.sealedBoots += ducted ? 1 : 0
-            stepped.sealedStrips += 1
-          }
           if (order.length > 0) {
-            assert.equal(starts.get(order[order.length - 1]), HOUSE.cutX, `${label}: the bottom step stays at the cut`)
-            assert.equal(starts.get(order[0]), HOUSE.cutX + (order.length - 1) * STEP_DEPTHS[system], `${label}: the top step is cut back furthest`)
+            assert.equal(starts.get(order[order.length - 1]), STEP_CUTS[form][system], `${label}: the bottom step stays at the cut`)
+            assert.equal(starts.get(order[0]), STEP_CUTS[form][system] + (order.length - 1) * STEP_DEPTHS[system], `${label}: the top step is cut back furthest`)
           }
           assert.equal(starts.has('ceiling'), shown.includes('ceiling'), `${label}: the ceiling steps only while its story holds`)
           if (starts.has('ceiling')) {
@@ -4341,7 +4622,6 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
           // The attic's heat crosses each floor part where it is drawn: a stepped one on its own strip, one that stays whole
           // on the kept side of the cut, under the steps over it; never where the steps have cut a part back.
           if (system === 'attic') {
-            assert.ok(!(shown.includes('ceiling') && shown.includes('air-sealing')), `${label}: the ceiling's gaps and the air sealing that closes them never show together`)
             // The fan stands in its gable's vent, on the wall the open house keeps whole.
             for (const id of shown.filter(id => id !== 'attic-fan')) {
               const point = systemPartFocus(system, form, id, peel, shown, NO_RUN)
@@ -4353,23 +4633,57 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
             for (const crossing of floor) {
               const start = starts.get(crossing.partId)
               const xs = [crossing.outer[0], crossing.inner[0], crossing.tread[0]]
-              const [from, to] = start === undefined || crossing.partId === bottom ? [HOUSE.cutX, drawnEnd(form, crossing.partId)] : [start, Math.min(start + STEP_DEPTHS.attic, drawnEnd(form, crossing.partId))]
+              const [from, to] = start === undefined || crossing.partId === bottom ? [STEP_CUTS[form].attic, drawnEnd(form, crossing.partId)] : [start, Math.min(start + STEP_DEPTHS.attic, drawnEnd(form, crossing.partId))]
               assert.ok(xs.every(x => x > from && x < to), `${label}: the heat crosses the ${crossing.partId} on its strip (${xs[0].toFixed(2)} in ${from.toFixed(2)}..${to.toFixed(2)})`)
               assert.ok([...starts].every(([id, over]) => id === bottom || !floor.some(other => other.partId === id) || xs[0] > over), `${label}: the heat crosses the ${crossing.partId} under every step drawn over it`)
               assert.ok(crossing.outer[2] < HOUSE.atticFrontZ, `${label}: the heat crosses the ${crossing.partId} on the span the open house keeps`)
               stepped.floorCrossings += 1
             }
           }
-          if (shown.includes('attic-insulation') && shown.includes('air-sealing')) {
-            assert.ok(order.indexOf('attic-insulation') < order.indexOf('air-sealing'), `${label}: the blanket is cut back past the foam under it`)
-          }
           stepped.steps += starts.size
         }
       }
     }
   }
-  assert.ok(stepped.ceiling.roof > 0 && stepped.ceiling.attic > 0 && stepped.sealedStrips > 0 && stepped.sealedBoots > 0 && stepped.floorCrossings > 10 && stepped.steps > 30, `the sweep reaches the ceiling in both systems (${JSON.stringify(stepped)})`)
-  assert.deepEqual(stepStarts('windows', ['frame', 'glazing'], 1).size, 0, 'only the roof and the attic step open on the house')
+  assert.ok(stepped.ceiling.roof > 0 && stepped.ceiling.attic > 0 && stepped.floorCrossings > 10 && stepped.steps > 30, `the sweep reaches the ceiling in both systems (${JSON.stringify(stepped)})`)
+  assert.deepEqual(stepStarts('windows', 'pitched', ['frame', 'glazing'], 1).size, 0, 'only the roof and the attic step open on the house')
+  {
+    for (const form of ROOF_FORMS) {
+      assert.equal(STEP_CUTS[form].roof, HOUSE.cutX, `${form}: the roof still opens at the kitchen wall`)
+    }
+    // A flat roof resolves no air sealing, so its attic has no ceiling row or foam story to open the left-end bay for: it
+    // opens where its roof does. A gable's opens over its left room.
+    const floorSteps = ['ceiling', 'attic-insulation'] as SystemPartId[]
+    const flatStarts = stepStarts('attic', 'low-slope', floorSteps, 1)
+    assert.deepEqual([flatStarts.get('ceiling'), flatStarts.get('attic-insulation')], [HOUSE.cutX, HOUSE.cutX + STEP_DEPTHS.attic], 'a flat roof\'s attic steps open from the kitchen wall')
+    const flatAttic = at({ property: profile({ roofType: 'flat', hvacType: 'package-unit' }), view: 'proposed', proposedScopeIds: [TORCH_DOWN, REDECK, ATTIC_REPLACEMENT] })
+    const flatShown = shownOf('attic', flatAttic)
+    assert.equal(stepStarts('attic', 'low-slope', flatShown, 1).get(stepBottom(flatShown)!), HOUSE.cutX, 'a flat roof\'s attic keeps its bottom step at the kitchen wall')
+    const gableStarts = stepStarts('attic', 'pitched', floorSteps, 1)
+    assert.ok(gableStarts.get('ceiling')! > -(HOUSE.halfLength - HOUSE.wallThickness) && gableStarts.get('attic-insulation')! < PARTITIONS_X[0], 'a gable\'s attic steps open in its left room')
+    for (const shape of ['landscape', 'narrow', 'portrait'] as const) {
+      const flatView = lookInsideView('attic', 'low-slope', shape, 0, { type: 'package-unit', scale: 1 })
+      assert.ok(flatView.target[0] > HOUSE.cutX && flatView.target[0] < HOUSE.cutX + 2 * STEP_DEPTHS.attic, `${shape}: a flat roof's attic is looked at by the kitchen wall (${flatView.target[0].toFixed(2)})`)
+      const gableView = lookInsideView('attic', 'pitched', shape, 0, { type: 'central', scale: 1 })
+      assert.ok(gableView.target[0] < PARTITIONS_X[0], `${shape}: a gable's attic is looked at in its left room (${gableView.target[0].toFixed(2)})`)
+    }
+    const unsealed = shownOf('attic', at({ property: profile({ roofType: 'shingle', hvacType: 'central' }) }))
+    const blanketFrom = stepStarts('attic', 'pitched', unsealed, 1).get('attic-insulation')!
+    const reach = 2 * CEILING_OPENING_LOOK.collar.reach
+    const rafterWidth = HOUSE.rafterWidth
+    const rafterXs = framingGrid(-HOUSE.halfLength + rafterWidth, HOUSE.halfLength - rafterWidth, HOUSE.framingSpacing)
+    // The air sealing story is told round the openings the bare strip shows: a can, a pipe and, with ducts, a boot, each
+    // with its foam clear of both of the strip's edges.
+    for (const ducted of [true, false]) {
+      const inStrip = (kind: CeilingOpening['kind']) => ceilingOpenings(ducted).some(opening => opening.kind === kind && opening.at[1] < HOUSE.atticFrontZ && opening.at[0] - opening.radius - reach >= STEP_CUTS.pitched.attic && opening.at[0] + opening.radius + reach <= blanketFrom)
+      assert.ok(inStrip('can') && inStrip('pipe') && (inStrip('boot') || !ducted), `ducted ${ducted}: the bare strip holds the openings`)
+    }
+    assert.ok(CEILING_OPENING_LOOK.collar.height < Math.min(...Object.values(INSULATION_DEPTH)), 'a blanket hides the foam: the collar stands under the shallowest one laid')
+    const bathStack = CEILING_OPENINGS.find(opening => opening.kind === 'pipe' && opening.at[0] < 0)!
+    assert.ok(ATTIC_JOIST_XS.every(x => Math.abs(x - bathStack.at[0]) >= bathStack.radius + reach + HOUSE.joistWidth / 2), 'the left-end bay\'s vent pipe stands in a joist bay, clear of its foam')
+    assert.ok(rafterXs.every(x => Math.abs(x - bathStack.at[0]) >= bathStack.radius + rafterWidth / 2 + 0.05), 'and leaves through the back slope between two rafters')
+    assert.ok(HOUSE.halfLength - HOUSE.wallThickness - blanketFrom > 3 * (HOUSE.halfLength - HOUSE.wallThickness - (HOUSE.cutX + STEP_DEPTHS.attic)), 'the blanket shows over more than three times the run a strip at the kitchen wall would leave')
+  }
   {
     const leaking = at({ property: profile({ roofType: 'shingle', hvacType: 'central' }), weather: 'rain' })
     const dry = at({ property: profile({ roofType: 'shingle', hvacType: 'central' }) })
@@ -4381,30 +4695,50 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
     assert.equal(listedRows(systemPartRows('roof', dry))[0]!.id, 'rafters', 'with no rain inside, the rafters are pin 1')
     assert.deepEqual(stepOrder(roofIds as SystemPartId[]), ['covering', 'underlayment', 'ice-and-water', 'deck', 'rafters', 'ceiling'], 'the cut still opens outside in')
     assert.deepEqual(stepOrder(['ceiling', 'ceiling-joists', 'attic-insulation', 'radiant-barrier', 'attic-fan']), ['attic-insulation', 'ceiling'], 'the open attic steps its blanket over its ceiling')
-    assert.deepEqual(stepOrder(['air-sealing', 'ceiling-joists', 'attic-insulation', 'radiant-barrier', 'attic-fan']), ['attic-insulation', 'air-sealing'], 'the sealed attic steps its blanket over its air sealing')
     const atticIds = ['ceiling', 'ceiling-joists', 'attic-insulation', 'radiant-barrier', 'attic-fan']
     assert.deepEqual(listedRows(systemPartRows('attic', unsealedGable)).map(row => row.id), atticIds.filter(id => systemPartRows('attic', unsealedGable).some(row => row.id === id)), 'the attic lists inside out')
     assert.equal(systemPartRows('attic', unsealedGable).find(row => row.id === 'ceiling-joists')!.label, 'Ceiling joists')
     assert.ok(!systemPartRows('attic', flatScene).some(row => row.id === 'ceiling-joists'), 'a flat roof\'s joists are its rafters, with no row of their own')
+    for (const [airSealing, label] of [['none', 'Ceiling leakage'], ['sealed', 'Ceiling air sealed']] as const) {
+      const rows = systemPartRows('attic', at({ property: sixtiesSingle, homeMaterials: { ...HOME_MATERIAL_FACTS_UNSET, airSealing } }))
+      const ceiling = rows.find(row => row.id === 'ceiling')!
+      assert.deepEqual([ceiling.label, ceiling.condition], [label, 'retained'], `${airSealing}: the attic's ceiling row`)
+      assert.equal(rows.filter(row => row.id === 'ceiling').length, 1, 'air sealing has no row of its own')
+    }
+    const unsetRoofCeiling = systemPartRows('attic', at({ property: profile({ roofType: null }) })).find(row => row.id === 'ceiling')
+    assert.deepEqual([unsetRoofCeiling?.label, unsetRoofCeiling?.condition], ['Ceiling leakage', 'retained'], 'a roof not yet set reads as a shingle, so its attic\'s ceiling row tells the leakage')
+    const sealedBuild = at({ property: sixtiesSingle, view: 'proposed', proposedScopeIds: [SCOPE_IDS.airSealing] })
+    const builtCeiling = systemPartRows('attic', sealedBuild).find(row => row.id === 'ceiling')!
+    assert.deepEqual([builtCeiling.label, builtCeiling.condition], ['Ceiling air sealed', 'installed'], 'the build seals the ceiling: the row reads New')
+    assert.equal(systemPartRows('roof', at({ property: sixtiesSingle, weather: 'rain' })).find(row => row.id === 'ceiling')!.label, 'Ceiling', 'the roof keeps its own ceiling label')
+    assert.ok(!systemPartRows('attic', at({ property: profile({ roofType: 'flat', hvacType: 'package-unit' }) })).some(row => row.id === 'ceiling'), 'a flat roof shows no attic ceiling')
     assert.ok(systemPartFocus('attic', 'pitched', 'ceiling-joists', 1, shownOf('attic', unsealedGable), NO_RUN) !== null, 'the joists have a pin')
-    const dustFrom = stepStarts('attic', shownOf('attic', unsealedGable), 1).get('attic-insulation')!
-    const dustOpenings = ceilingOpenings(true)
-    const dustAll = atticDustPatches('blown-r30', false, true, null)
-    assert.equal(dustAll.length, dustOpenings.length, 'the dust lies on the blanket over each gap')
-    dustOpenings.forEach((opening, index) => {
-      const patch = dustAll[index]!
-      assert.deepEqual([patch.position[0], patch.position[2]], [...opening.at], 'the dust lies on the blanket over each gap')
-      assert.ok(Math.abs(patch.position[1] - (WALL_TOP_Y + laidInsulationDepth('blown-r30', false) + ATTIC_DUST.lift)) < 1e-9, 'the dust lies on the blanket over each gap')
-      assert.ok(patch.size[1] <= 0.005, 'the dust lies flat')
+    const dust = ceilingOpeningDust(true)
+    assert.equal(dust.length, ceilingOpenings(true).length, 'dust gathers round every opening')
+    ceilingOpenings(true).forEach((opening, index) => {
+      assert.deepEqual([dust[index]!.position[0], dust[index]!.position[2]], [...opening.at], 'round the opening itself')
+      assert.ok(Math.abs(dust[index]!.position[1] - (WALL_TOP_Y + ATTIC_DUST.lift)) < 1e-9, 'on the ceiling, under any blanket')
+      assert.equal(dust[index]!.size[1], 0, 'a dust patch is flat: a box\'s sides would draw the stain as a line round it')
     })
-    assert.equal(atticDustPatches('blown-r30', false, false, null).length, ceilingOpenings(false).length, 'no boot, no dust over one')
-    const dustCut = atticDustPatches('blown-r30', false, true, dustFrom)
-    assert.ok(dustCut.every(patch => patch.position[0] >= dustFrom), 'the bare strip shows its gaps, the blanket its dirt')
-    assert.equal(dustCut.length, dustOpenings.filter(opening => opening.at[0] >= dustFrom).length, 'the bare strip shows its gaps, the blanket its dirt')
-    assert.ok(dustCut.length > 0, 'the blanket shows dirt over a gap it covers')
-    assert.deepEqual(atticDustPatches(null, false, true, null), [], 'no blanket, no dust on it')
+    assert.equal(ceilingOpeningDust(false).length, ceilingOpenings(false).length, 'no boot, no dust round one')
+    const debrisOf = (boxes: readonly BoxSpec[], wear: number) => blanketDebris(boxes, wornShare(wear), 1)
+    for (const material of ['blown-r30', 'batts-r30'] as const) {
+      const blanket = atticInsulationBoxes(material, false, ATTIC_SPANS.open)
+      assert.deepEqual(debrisOf(blanket, WEAR_AMOUNT.new), [], `${material}: a new blanket is clean`)
+      const [good, worn, failing] = [WEAR_AMOUNT.good, WEAR_AMOUNT.worn, WEAR_AMOUNT.failing].map(wear => debrisOf(blanket, wear))
+      assert.ok(good.length > 0 && good.length < worn.length && worn.length < failing.length, `${material}: debris grows with wear`)
+      assert.deepEqual(good, failing.filter(speck => good.some(kept => isDeepStrictEqual(kept, speck))), `${material}: less wear keeps a subset of the specks, never a reshuffle`)
+      const topAt = (x: number, z: number) => Math.max(...blanket.filter(box => Math.abs(box.position[0] - x) <= box.size[0] / 2 && Math.abs(box.position[2] - z) <= box.size[2] / 2).map(box => box.position[1] + box.size[1] / 2))
+      for (const speck of failing) {
+        assert.ok(Math.abs(speck.position[1] - (topAt(speck.position[0], speck.position[2]) + INSULATION_DEBRIS.lift)) < 1e-9, `${material}: every speck lies on the blanket's uppermost top, never inside a sheet over it`)
+      }
+    }
+    const toppedOff = at({ property: profile({ roofType: 'shingle', hvacType: 'central', insulationLevel: 'r19' }), view: 'proposed', proposedScopeIds: [SCOPE_IDS.atticInsulationTopOff, SCOPE_IDS.airSealing], homeMaterials: { ...HOME_MATERIAL_FACTS_UNSET, wear: { 'attic-insulation': 'failing' } } })
+    const failingToday = at({ property: profile({ roofType: 'shingle', hvacType: 'central', insulationLevel: 'r19' }), homeMaterials: { ...HOME_MATERIAL_FACTS_UNSET, wear: { 'attic-insulation': 'failing' } } })
+    assert.ok(partState(roofAttic(failingToday).parts, 'attic-insulation').wear > 0, 'the same home\'s Failing blanket carries debris today')
+    assert.equal(partState(roofAttic(toppedOff).parts, 'attic-insulation').wear, 0, 'a top off lays a new blanket, so it carries no debris')
     const leakShown = shownOf('roof', leaking)
-    const leakStarts = stepStarts('roof', leakShown, 1)
+    const leakStarts = stepStarts('roof', 'pitched', leakShown, 1)
     const leakOrder = ['covering', 'underlayment', 'ice-and-water', 'deck', 'rafters', 'ceiling'].filter(id => leakStarts.has(id as SystemPartId))
     assert.ok(leakOrder.length >= 5 && leakOrder.at(-1) === 'ceiling', 'the leaking roof steps its covering down to its ceiling')
     leakOrder.forEach((id, index) => {
@@ -4415,7 +4749,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
     const scene = at({ property: profile({ roofType: 'shingle', hvacType: 'central' }), view: scopes.length > 0 ? 'proposed' : 'existing', proposedScopeIds: [...scopes], bills: BILLS })
     const shown = systemPartsShown('attic', partsByAssembly(scene), systemStory(scene)).map(entry => entry.id)
     const peel = openPeel('attic', 0)
-    const starts = stepStarts('attic', shown, peel)
+    const starts = stepStarts('attic', 'pitched', shown, peel)
     for (const id of shown) {
       const point = systemPartFocus('attic', 'pitched', id, peel, shown, NO_RUN)
       assert.ok(point !== null && point[2] < HOUSE.atticFrontZ, `attic ${label}: ${id} is pointed at on the span the open house keeps`)
@@ -4432,10 +4766,10 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   assert.ok(peels('roof') && peels('windows') && peels('heating-cooling'), 'the systems with something to drag keep theirs')
   assert.equal(openPeel('attic', 0), 1, 'the attic stands fully open, whatever the store\'s peel')
   assert.equal(openPeel('roof', 0.3), 0.3, 'the roof follows its peel')
-  // Up close on the attic the cans, boots and vents light with the part their gaps are told by; anywhere else they ghost.
+  // Up close on the attic the cans, boots and vents light with the ceiling they pierce; anywhere else they ghost.
   const litOf = (system: HomeSystemId, shown: SystemPartId[]): SystemLit => ({ system, shown: new Set(shown), emphasized: null })
-  assert.equal(ceilingOpeningPart(litOf('attic', ['attic-insulation', 'air-sealing'])), 'air-sealing', 'sealed, the fixtures light with the air sealing')
-  assert.equal(ceilingOpeningPart(litOf('attic', ['attic-insulation', 'ceiling'])), 'ceiling', 'open, with the ceiling they pierce')
+  assert.equal(ceilingOpeningPart(litOf('attic', ['attic-insulation', 'ceiling'])), 'ceiling', 'with the ceiling they pierce')
+  assert.equal(ceilingOpeningPart(litOf('attic', ['attic-insulation'])), null, 'no ceiling up close, nothing to light them with')
   assert.equal(ceilingOpeningPart(litOf('roof', ['covering', 'ceiling'])), null, 'the roof leaves them to the ghost')
   assert.equal(ceilingOpeningPart(null), null, 'and so does the whole home')
   // A pick on the attic fan, behind the attic's own view, turns to face its gable from inside the attic, over the lifted near
@@ -4466,8 +4800,8 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
     for (const shape of ['landscape', 'portrait'] as const) {
       const { position } = lookInsideView('attic', 'pitched', shape, 0, { type: 'central', scale: 1 })
       for (const mark of marks) {
-        for (let step = 1; step < 60; step++) {
-          const point = [0, 1, 2].map(axis => position[axis] + (mark[axis] - position[axis]) * step / 60)
+        for (let step = 1; step < 200; step++) {
+          const point = [0, 1, 2].map(axis => position[axis] + (mark[axis] - position[axis]) * step / 200)
           const hit = fixtureBoxes.find(box => point.every((value, axis) => value > box.min[axis] && value < box.max[axis]))
           assert.ok(hit === undefined, `attic ${label} ${shape}: the ${hit?.kind} at ${hit?.at} stands between the camera and the heat at [${mark.map(value => value.toFixed(2)).join(', ')}]`)
         }
@@ -4484,11 +4818,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
       const members = SYSTEM_PARTS.filter(entry => (entry.systems as readonly string[]).includes(system)).map(entry => entry.id)
       for (let mask = 1; mask < 1 << members.length; mask++) {
         const shown = members.filter((_, bit) => mask & (1 << bit))
-        // The attic lights its ceiling for the gaps air sealing would close, so the two never show together.
-        if (system === 'attic' && shown.includes('ceiling') && shown.includes('air-sealing')) {
-          continue
-        }
-        for (const [id, start] of stepStarts(system, shown, openPeel(system, 1))) {
+        for (const [id, start] of stepStarts(system, form, shown, openPeel(system, 1))) {
           assert.ok(start < drawnEnd(form, id) - STEP_DEPTHS[system] / 2, `${form} ${system} [${shown.join(', ')}]: ${id} starts at ${start.toFixed(2)}, before its drawn end`)
         }
         combos += 1
@@ -4531,6 +4861,21 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   // The bills a tear-off on the 300 electric / 120 gas home left before the wood replacement existed; it changes copy and drawing only.
   const TEAR_OFF_BILLS = { electricAfter: 276, gasAfter: 120 } as const
   const CUTAWAY_SPACING = 0.5 * HEAT_ARROW_LOOK.size.cutaway
+  // Where a point lands on the stage, in the canvas's own NDC, through the lens the camera rig sets: the frame centred in
+  // what the card, the dock and the band leave, widened for that part's shape.
+  const STAGES = { landscape: { width: 1194, height: 834, cardBottom: 620 }, portrait: { width: 834, height: 1194, cardBottom: 453 } } as const
+  const stageNdc = (framing: CameraFraming, point: Vec3, shape: keyof typeof STAGES): [number, number] => {
+    const { width, height, cardBottom } = STAGES[shape]
+    const area = sceneVisibleAreaFor({ shape: shape as StageShape, width, height, openCardBottom: cardBottom })
+    const [shownWidth, shownHeight] = [width - area.left - area.right, height - area.top - area.bottom]
+    const camera = new PerspectiveCamera(widenFovForAspect(framing.fov, shownWidth / shownHeight), shownWidth / shownHeight)
+    camera.setViewOffset(shownWidth, shownHeight, -area.left, -area.top, width, height)
+    camera.position.set(...framing.position)
+    camera.lookAt(...framing.target)
+    camera.updateMatrixWorld()
+    const { x, y } = new Vector3(...point).project(camera)
+    return [x, y]
+  }
   const same = (a: Vec3 | undefined, b: Vec3 | undefined) => a !== undefined && b !== undefined && Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]) < 1e-9
   const ends = (lane: ArrowLane, point: Vec3 | undefined) => same(lane.points[0], point) || same(lane.points.at(-1), point)
   const counts: string[] = []
@@ -4542,6 +4887,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
       property: home.property,
       weather,
       climate,
+      homeMaterials: { ...HOME_MATERIAL_FACTS_UNSET, gutters: 'present' },
       ...(build ? { view: 'proposed', proposedScopeIds: [home.roof, ATTIC_REPLACEMENT, RADIANT_BARRIER, ...extra], efficiencyUpgrades: ['cool-roof'] } : {}),
     }), cuts)
     const heatCase = (weather: HeatWeather, build: boolean, system: CutawaySystemId, peel: number, climate: Climate = 'inland', extra: string[] = []) => {
@@ -4591,7 +4937,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
         assert.ok(same(last.points.at(-1), existing.at.room) && existing.at.room[1] < insulation.inner[1], `${what}: summer's last main lane ends in the room, below the insulation's step`)
         assert.ok(existing.lanes.every(lane => lane.count > 0), `${what}: a lane with no arrows is dropped`)
         for (const span of existing.spans) {
-          const start = stepStarts(system, existing.steps.shown, peel).get(span.partId)
+          const start = stepStarts(system, existing.form, existing.steps.shown, peel).get(span.partId)
           if (start !== undefined && span.partId !== stepBottom(existing.steps.shown)) {
             if (system === 'roof') {
               assert.ok(Math.abs(span.outer[0] - (start - CUTAWAY_FLOW.front)) < 1e-9, `${what}: the line crosses the ${span.partId} at its step`)
@@ -4621,6 +4967,31 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
           assert.equal(cutawayHeatLanes('pitched', parts, quiet, 'summer', steps, ceilingOpenings(true)).length - attic.length, ceilingOpenings(true).length, `${what}: each unsealed opening leaks a lane`)
           for (const spot of Object.values(cutawayReadingSpots('pitched', parts, steps))) {
             assert.ok(spot[2] < HOUSE.atticFrontZ, `${what}: the attic's readings sit on the kept span`)
+          }
+          // The attic stands fully open up close, so its readings are read at that peel: on a wide stage left of the card,
+          // with room for the label, on a phone below it, and the ceiling's over the bare strip, clear of every fixture.
+          if (peel === openPeel('attic', 0)) {
+            const cardEdge = 1 - 2 * STAGES.portrait.cardBottom / STAGES.portrait.height
+            for (const [kind, cut] of [['existing', existing], ['built', built]] as const) {
+              const spots = cutawayReadingSpots('pitched', cut.target.parts, cut.steps)
+              for (const [id, spot] of Object.entries(spots)) {
+                const [x] = stageNdc(lookInsideView('attic', 'pitched', 'landscape', 0, { type: 'central', scale: 1 }), spot, 'landscape')
+                assert.ok(x <= -0.15, `${what} ${kind}: on a wide stage the ${id} reading reads in full left of the card (NDC x ${x.toFixed(3)})`)
+                const [px, py] = stageNdc(lookInsideView('attic', 'pitched', 'portrait', 0, { type: 'central', scale: 1 }), spot, 'portrait')
+                assert.ok(Math.abs(px) < 1 && py > -1 && py < cardEdge, `${what} ${kind}: on a phone the ${id} reading stands in frame, below the card (NDC ${px.toFixed(3)}, ${py.toFixed(3)})`)
+              }
+              const [x, , z] = spots.ceiling
+              assert.ok(x > STEP_CUTS.pitched.attic && x < STEP_CUTS.pitched.attic + STEP_DEPTHS.attic, `${what} ${kind}: the ceiling's reading stands over the bare strip (${x.toFixed(2)})`)
+              // A boot is a square box, its foam a square round it; a can and a pipe are round. The label's anchor stands
+              // visibly off each, foam and all.
+              for (const { kind: fixture, at: [ox, oz], radius } of ceilingOpenings(true)) {
+                const reach = radius + CEILING_OPENING_LOOK.collar.reach
+                const clear = fixture === 'boot'
+                  ? Math.hypot(Math.max(Math.abs(x - ox) - reach, 0), Math.max(Math.abs(z - oz) - reach, 0))
+                  : Math.hypot(x - ox, z - oz) - reach
+                assert.ok(clear >= 0.08, `${what} ${kind}: the ceiling's reading stands clear of the ${fixture} at ${ox}, ${oz} (${clear.toFixed(3)} m)`)
+              }
+            }
           }
         }
         if (label === 'gable') {
@@ -4732,7 +5103,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
       const newDeck = deckRotSpots(shed.form, newDeckTarget.parts, stepsOf('roof', newDeckScene, peel))
       assert.equal(oldDeck.length > 0, peel > 0, `${label} peel ${peel}: the old deck shows its rot once the steps open, and none with peel 0`)
       // The strip's own start moves with the parts each view shows, so the spots are compared on the strip.
-      const onStrip = (spots: typeof oldDeck, steps: CutawaySteps) => spots.map(spot => [(spot.position[0] - stepStarts('roof', steps.shown, steps.peel).get('deck')!).toFixed(6), spot.position[1].toFixed(6), spot.position[2].toFixed(6)])
+      const onStrip = (spots: typeof oldDeck, steps: CutawaySteps) => spots.map(spot => [(spot.position[0] - stepStarts('roof', leak.form, steps.shown, steps.peel).get('deck')!).toFixed(6), spot.position[1].toFixed(6), spot.position[2].toFixed(6)])
       assert.deepEqual(onStrip(keptDeck, shed.steps), onStrip(oldDeck, leak.steps), `${label} peel ${peel}: the same spots in the existing and the proposed view`)
       assert.ok(oldDeck.every(spot => spot.woodReplaced === undefined && spot.partId === 'deck'), `${label} peel ${peel}: the existing view's spots are rot`)
       assert.ok(keptDeck.every(spot => spot.woodReplaced === true), `${label} peel ${peel}: under a roof-off build the spots are wood replaced`)
@@ -4786,7 +5157,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
         assert.equal(tearOff.gas.after, TEAR_OFF_BILLS.gasAfter, 'and leaves the gas bill alone')
       }
       if (peel > 0) {
-        const start = stepStarts('roof', leak.steps.shown, peel).get('deck')!
+        const start = stepStarts('roof', leak.form, leak.steps.shown, peel).get('deck')!
         assert.ok(oldDeck.every(spot => spot.position[0] > start && spot.position[0] < start + STEP_DEPTHS.roof * peel), `${label} peel ${peel}: the spots sit on the deck's strip`)
       }
       assert.equal(shed.path.drip, false, `${label} peel ${peel}: a new roof does not drip`)
@@ -4794,7 +5165,16 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
       const gutters = shed.target.parts.some(part => part.id === 'gutter' && part.material !== null)
       assert.ok(gutters, `${label}: the build keeps the home's gutters`)
       if (label === 'gable') {
-        assert.ok(end[1] === GUTTER_Y && end[2] > HOUSE.halfDepth + GUTTER_BACK, `${label} peel ${peel}: a new roof's rain ends in the gutter`)
+        const kept = (wear: Wear) => shed.target.parts.map(part => part.id === 'gutter' ? { ...part, condition: wear === 'new' || wear === 'good' ? 'retained' as const : 'worn' as const, wear } : part)
+        const soundEnd = cutawayRainPath(shed.form, kept('good'), shed.water, shed.steps).points.at(-1)!
+        assert.ok(soundEnd[1] === GUTTER_Y && soundEnd[2] > HOUSE.halfDepth + GUTTER_BACK, `${label} peel ${peel}: a new roof's rain ends in a sound gutter`)
+
+        const wornEnd = cutawayRainPath(shed.form, kept('worn'), shed.water, shed.steps).points.at(-1)!
+        assert.deepEqual(wornEnd, [wornEnd[0], GUTTER_Y, GUTTER_OUT], `${label} peel ${peel}: a worn gutter still takes the roof's rain`)
+        const failingEnd = cutawayRainPath(shed.form, kept('failing'), shed.water, shed.steps).points.at(-1)!
+        assert.ok(gutterCatches('failing', wornEnd[0]), `${label} peel ${peel}: the rain lands on a failing gutter's sound part`)
+        assert.deepEqual(failingEnd, wornEnd, `${label} peel ${peel}: a sound part of a failing gutter still takes the rain`)
+        assert.ok(!gutterCatches('failing', ROOF_HALF_LENGTH - 0.6), `${label} peel ${peel}: the pulled end takes none`)
       }
       else {
         assert.ok(DOWNSPOUTS.lowSlope.at.some(([x, z]) => end[0] === x && end[2] === z) && end[1] < LOW_SLOPE_DECK_Y, `${label} peel ${peel}: a new flat roof's rain leaves by its scupper`)
@@ -4803,6 +5183,25 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
       const widths = cutawayRibbonWidths(leak.path, 49)
       assert.ok(widths.every(width => width === 0 || width >= CUTAWAY_FLOW.minWidth), `${label}: a flow never draws thinner than a thread`)
       assert.ok(rain(false, 'attic').path.points.length > 0, `${label}: the rain runs through the attic's steps too`)
+      // The open house fades the near slope short of the roof's own cut, whichever system it holds open, so fully open the
+      // rain comes in through the roof's parts, and rots the deck, only on the slope it keeps. Closed, the roof's parts all
+      // end at that cut and the rain crosses just in front of it, as it crosses every step's cut end.
+      const wornRain = resolveScene(inputs({ property: home.property, weather: 'rain', homeMaterials: { ...HOME_MATERIAL_FACTS_UNSET, gutters: 'present', wear: { roof: 'worn' } } }), cuts)
+      for (const system of peel === 1 ? ['roof', 'attic'] as const : []) {
+        for (const scene of [leak.scene, wornRain]) {
+          const target = roofAttic(scene)
+          const form = homeRoofForm(target.form)
+          const steps = stepsOf(system, scene, peel)
+          const roofSpans = cutawayCrossings(form, target.parts, steps, 'rain').filter(span => ['covering', 'underlayment', 'deck'].includes(span.partId))
+          assert.equal(roofSpans.length, 3, `${label} peel ${peel} ${system}: the rain crosses the covering, the underlayment and the deck`)
+          for (const span of roofSpans) {
+            assert.ok([span.outer, span.inner, span.tread].every(point => point[0] >= HOUSE.cutX), `${label} peel ${peel} ${system}: the rain crosses the ${span.partId} on the kept near slope (${span.outer[0].toFixed(2)})`)
+          }
+          const rotted = cutawayRotSpots(form, target.parts, target.water!, steps)
+          assert.ok(scene === leak.scene || rotted.length > 0, `${label} peel ${peel} ${system}: a worn roof's rain rots the deck`)
+          assert.ok(rotted.every(spot => spot.position[0] >= HOUSE.cutX), `${label} peel ${peel} ${system}: the rot lies on the kept near slope (${rotted.map(spot => spot.position[0].toFixed(2)).join(', ')})`)
+        }
+      }
     }
 
     // Each lit part is painted from its inner face to its outer face, from the home's own readings.
@@ -4904,10 +5303,10 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   assert.equal(off.homeMaterials?.shingleColor, 'dark-brown', 'the switch carries the colour to its twin')
   const standardParts = roofAttic(at({ ...coolOff, efficiencyUpgrades: [] })).parts
   const coolParts = roofAttic(at(coolOff)).parts
-  assert.equal(installedShingleTone(standardParts, 'dark-brown'), '#685347', 'a standard shingle takes the standard colour')
+  assert.equal(installedShingleTone(standardParts, 'dark-brown'), '#6A5548', 'a standard shingle takes the standard colour')
   assert.equal(installedShingleTone(standardParts, 'forest-brown'), null, 'a standard shingle never draws a cool colour')
   assert.equal(installedShingleTone(coolParts, 'dark-brown'), null, 'a cool shingle never draws a standard colour')
-  assert.equal(installedShingleTone(coolParts, 'forest-brown'), '#685347')
+  assert.equal(installedShingleTone(coolParts, 'forest-brown'), '#6A5548')
 }
 
 // A scope pick never touches the colours, on or off.
@@ -4929,6 +5328,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   assert.equal(workDetailsKind(SCOPE_IDS.coolLifeRepaint), 'paint')
   assert.equal(workDetailsKind(SCOPE_IDS.waterBasedRepaint), 'paint')
   assert.equal(workDetailsKind(SCOPE_IDS.windowReplacement), 'vinyl-frame')
+  assert.equal(workDetailsKind(SCOPE_IDS.gutters), 'gutter')
   assert.equal(workDetailsKind(SCOPE_IDS.roofRedeck), null)
   assert.equal(workDetailsKind(NO_CHANGE_CHOICE), null, 'No change closes the menu')
   assert.equal(workDetailsKind(null), null)
@@ -4978,6 +5378,17 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   const fromTan = Math.abs(hueDegrees(wornBody(tan)) - hueDegrees(tan))
   const fromChalk = Math.abs(hueDegrees(wornBody(tan)) - hueDegrees(WEAR_LOOKS.paint.chalk))
   assert.ok(fromTan <= 4 && fromTan < fromChalk, `worn Tailored Tan keeps its own hue (${fromTan.toFixed(1)}° from tan, ${fromChalk.toFixed(1)}° from the chalk)`)
+
+  // The sun's fade patches are the body's own paint gone further: lighter, in its hue, never one cream laid on every colour.
+  const stuccoFade = channels(paintFade(HOME_PALETTE.stucco))
+  channels(WEAR_LOOKS.paint.blotchColor).forEach((channel, index) => assert.ok(Math.abs(channel - stuccoFade[index]!) <= 1, `the default wall fades to the hand-tuned blotch (${paintFade(HOME_PALETTE.stucco)} against ${WEAR_LOOKS.paint.blotchColor})`))
+  const fadeOf = (body: string) => paintLook({ material: 'standard', wear: WEAR_AMOUNT.worn }, PAINT_WEAR_START.worn, { body, trim: HOME_PALETTE.trim }).fade
+  const navy = COOL_LIFE_COLORS.find(color => color.id === 'queen-of-the-night')!.hex
+  const lightness = (hex: string) => new Color(hex).getHSL({ h: 0, s: 0, l: 0 }, SRGBColorSpace).l
+  const navyHueShift = Math.abs(hueDegrees(fadeOf(navy)) - hueDegrees(navy))
+  assert.ok(navyHueShift <= 6, `a navy wall's fade stays navy (${navyHueShift.toFixed(1)}° off)`)
+  assert.ok(lightness(fadeOf(navy)) > lightness(navy) && lightness(fadeOf(navy)) - lightness(navy) < 0.2, `a navy wall's fade is a lighter navy, not a pale disc (${navy} to ${fadeOf(navy)})`)
+  assert.notEqual(fadeOf(navy), fadeOf(tan), 'two homes with different colours fade differently')
 }
 
 // Replace rotted fascia: a scope that installs no part, switched on the Walls card, drawn as new board lengths where the rot was.
@@ -5166,5 +5577,743 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
     assert.equal(feltRainHole(attic.form, attic.parts, attic.steps, 'rain'), null, `${label}: only the roof up close shows the hole`)
   }
 }
+
+{
+  const hexOf = (id: (typeof GUTTER_COLORS)[number]['id']) => GUTTER_COLORS.find(color => color.id === id)!.hex
+  const gutterPart = (patch: Partial<ResolvedPart>) => [{ id: 'gutter', material: 'aluminum', condition: 'retained', ...patch } as ResolvedPart]
+  assert.equal(drawnGutterWear([]), null, 'an absent gutter is not drawn')
+  assert.equal(drawnGutterWear(gutterPart({ material: null, condition: 'absent' })), null, 'a gutter with no material is not drawn')
+  assert.equal(drawnGutterWear(gutterPart({ condition: 'installed' })), 'new', 'an installed gutter draws new')
+  assert.equal(drawnGutterWear(gutterPart({ condition: 'worn', wear: 'fair' })), 'fair', 'a kept gutter draws at its own wear')
+  assert.equal(drawnGutterWear(gutterPart({ condition: 'retained' })), 'worn', 'a kept gutter with no wear draws worn')
+
+  const none = { existingGutterColor: null, proposedGutterColor: null } as const
+  assert.equal(gutterHex(none, false), hexOf('almond'), 'the existing gutter is Almond by default')
+  assert.equal(gutterHex(none, true), hexOf('white'), 'a built gutter is White when nothing is picked')
+  assert.equal(gutterHex({ existingGutterColor: 'clay', proposedGutterColor: null }, true), hexOf('clay'), 'a build keeps the existing colour unless the rep picks one')
+  assert.equal(gutterHex({ existingGutterColor: null, proposedGutterColor: 'black' }, true), hexOf('black'), 'a built gutter takes the proposed colour')
+  assert.equal(gutterHex({ existingGutterColor: 'clay', proposedGutterColor: 'black' }, false), hexOf('clay'), 'the existing side ignores the proposed colour')
+
+  const channels = (hex: string) => [1, 3, 5].map(at => Number.parseInt(hex.slice(at, at + 2), 16))
+  const worn = channels(gutterLook(hexOf('almond'), 'worn').color)
+  const was = channels('#b9b1a3')
+  assert.ok(worn.every((channel, at) => Math.abs(channel - was[at]!) <= 2), 'an unset worn gutter looks as it did')
+  assert.equal(gutterLook(hexOf('clay'), 'new').color, hexOf('clay'), 'a new gutter draws its hex')
+  assert.equal(gutterLook(hexOf('clay'), 'good').color, hexOf('clay'), 'a good gutter draws as new')
+  assert.ok(gutterLook(hexOf('clay'), 'new').roughness < gutterLook(hexOf('clay'), 'worn').roughness, 'a gutter roughens as it wears')
+  assert.ok(gutterLook(hexOf('clay'), 'worn').roughness < gutterLook(hexOf('clay'), 'failing').roughness, 'a failing gutter is rougher than a worn one')
+}
+
+{
+  const R = ROOF_HALF_LENGTH
+  interface Lists { kept: readonly RainColumn[], complete: readonly RainColumn[] }
+  const all = ({ kept, complete }: Lists) => [...kept, ...complete]
+  const xSpan = ({ box, position }: RainColumn) => [position[0] - box[0] / 2, position[0] + box[0] / 2] as const
+  const footOf = ({ box, position }: RainColumn) => position[1] - box[1] / 2
+  // An outlet's sheet starts at the extension's open end and runs on from it.
+  const mouthOf = ({ box, position, flow = [0, -1, 0] }: RainColumn) => `${position[0]},${position[2] - flow[2] * box[2] / 2}`
+  const nearSpan = (column: RainColumn, span: readonly [number, number], label: string) => {
+    const [from, to] = xSpan(column)
+    near(from, span[0], 1e-9, `${label}: starts at ${span[0]}`)
+    near(to, span[1], 1e-9, `${label}: ends at ${span[1]}`)
+  }
+  const isTrickle = (column: RainColumn) => column.box[0] === GUTTER_WATER.trickle.width
+  const minUp = Math.min(...ROOF_TRIM.gutter.profile.outline.map(([, up]) => up))
+  const outletXZ = DOWNSPOUTS.pitched.at.map(at => downspoutOutlet(at)).map(([x, , z]) => `${x},${z}`)
+
+  for (const wear of ['new', 'good', 'fair'] as const) {
+    assert.deepEqual(gutterWater(wear, 'pitched'), { kept: [], complete: [] }, `${wear}: a sound gutter takes all the roof's water`)
+    const outlets = gutterOutlets(wear, 'pitched')
+    assert.ok(outlets.kept.length === 3 && outlets.complete.length === 1, `${wear}: water leaves all four downspouts, the left front one with the Complete house`)
+  }
+
+  const { sagLow, pulled } = gutterRunSpans('failing')
+  for (const wear of ['worn', 'failing'] as const) {
+    const water = gutterWater(wear, 'pitched')
+    const sag = gutterRunSpans(wear).sagLow!
+    assert.deepEqual(water.complete, [], `${wear}: the Complete house's gutter stays straight, so nothing falls from it`)
+    const trickles = water.kept.filter(isTrickle)
+    assert.equal(trickles.length, 1, `${wear}: one trickle`)
+    const trickle = trickles[0]!
+    near(trickle.position[0], sag, 1e-9, `${wear}: the trickle falls at the sag's low point`)
+    near(trickle.position[1] + trickle.box[1] / 2, GUTTER_Y - gutterDropAt(wear, 'front', sag) + minUp, 1e-9, `${wear}: from the gutter's bottom there`)
+    near(trickle.position[2], GUTTER_OUT + Math.max(...ROOF_TRIM.gutter.profile.outline.map(([out]) => out)), 1e-9, `${wear}: over the gutter's front lip`)
+    assert.equal(trickle.streaks, GUTTER_WATER.trickle.streaks, `${wear}: the trickle's streaks`)
+  }
+  assert.equal(gutterWater('worn', 'pitched').kept.length, 1, 'worn: only the trickle')
+  const worn = gutterOutlets('worn', 'pitched')
+  assert.ok(worn.kept.length === 3 && worn.complete.length === 1, 'worn: still drains to all four downspouts')
+
+  const failing = gutterWater('failing', 'pitched')
+  assert.ok(sagLow !== null && pulled !== null, 'failing has a sag and a pulled end')
+  assert.ok(sagLow < pulled[0] || sagLow > pulled[1], 'failing: the trickle falls where the gutter still hangs, not under its pulled end')
+  const curtains = failing.kept.filter(column => !isTrickle(column))
+  assert.equal(curtains.length, 1, 'failing: one curtain')
+  nearSpan(curtains[0]!, pulled!, 'failing: the curtain spans exactly the pulled end')
+  near(curtains[0]!.position[2], EAVE_DRIP.out, 1e-9, 'failing: the curtain falls off the eave\'s drip line')
+  const failingOutlets = gutterOutlets('failing', 'pitched')
+  assert.ok(failingOutlets.kept.length === 2 && failingOutlets.complete.length === 1, 'failing: the torn downspout runs dry, the other three still drain')
+  assert.ok(!failingOutlets.kept.some(column => column.position[0] > 0 && column.position[2] > 0), 'failing: the dry one is the right front')
+
+  const none = gutterWater(null, 'pitched')
+  assert.equal(none.complete.length, 1, 'no gutter: one curtain falls with the Complete house')
+  nearSpan(none.complete[0]!, [-R, HOUSE.cutX], 'no gutter: the Complete curtain')
+  near(none.complete[0]!.position[2], EAVE_DRIP.out, 1e-9, 'no gutter: the Complete curtain falls off the front eave\'s drip line')
+  assert.equal(none.kept.length, 2, 'no gutter: the kept front and the back each get a curtain')
+  const keptFront = none.kept.find(column => column.position[2] > 0)!
+  const back = none.kept.find(column => column.position[2] < 0)!
+  nearSpan(keptFront, [HOUSE.cutX, R], 'no gutter: the kept front curtain')
+  near(keptFront.position[2], EAVE_DRIP.out, 1e-9, 'no gutter: the kept front curtain falls off the front eave\'s drip line')
+  nearSpan(back, [-R, R], 'no gutter: the back curtain')
+  near(back.position[2], -EAVE_DRIP.out, 1e-9, 'no gutter: the back curtain falls off the back eave\'s drip line')
+  assert.deepEqual(gutterOutlets(null, 'pitched'), { kept: [], complete: [] }, 'no gutter: no downspouts, so no outlets')
+
+  assert.deepEqual(gutterWater('new', 'pitched'), { kept: [], complete: [] }, 'gutters over a failing gutter: the new one has no curtain and no trickle')
+  assert.ok(gutterWater('failing', 'pitched').kept.length === 2, 'where the failing one had both')
+  assert.equal(all(gutterOutlets('new', 'pitched')).length, 4, 'and the new one drains to all four downspouts')
+
+  for (const wear of [null, ...wears] as const) {
+    assert.deepEqual(gutterWater(wear, 'low-slope'), { kept: [], complete: [] }, `${wear} flat roof: its parapets shed to the scuppers, so nothing falls off an eave`)
+  }
+  assert.deepEqual(gutterOutlets(null, 'low-slope'), { kept: [], complete: [] }, 'a flat roof with no gutter has no outlets')
+  const flatNew = gutterOutlets('new', 'low-slope')
+  assert.deepEqual(gutterOutlets('worn', 'low-slope'), flatNew, 'a flat roof drains the same whatever its gutter\'s wear')
+  assert.deepEqual(gutterOutlets('failing', 'low-slope'), flatNew, 'even failing')
+  assert.ok(flatNew.kept.length === 2 && flatNew.complete.length === 0, 'a flat roof drains out of its two back outlets')
+  const flatOutletXZ = DOWNSPOUTS.lowSlope.at.map(at => downspoutOutlet(at)).map(([x, , z]) => `${x},${z}`)
+  flatNew.kept.forEach(column => assert.ok(flatOutletXZ.includes(mouthOf(column)), 'a flat roof\'s outlet starts at an extension\'s open end'))
+
+  for (const wear of [null, ...wears] as const) {
+    const water = all(gutterWater(wear, 'pitched'))
+    water.forEach((column, index) => {
+      near(footOf(column), LOWEST_LAWN_Y, 1e-9, `${wear} column ${index}: falls to the lowest lawn`)
+      assert.ok(Number.isInteger(column.streaks) && column.streaks > 0, `${wear} column ${index}: draws some streaks`)
+      if (!isTrickle(column)) {
+        assert.equal(column.streaks, Math.round(column.box[0] * GUTTER_WATER.curtain.perMetre), `${wear} column ${index}: a curtain is as thick along every metre`)
+        near(column.position[1] + column.box[1] / 2, EAVE_DRIP.y, 1e-9, `${wear} column ${index}: a curtain starts at the lip's bottom`)
+        assert.equal(column.box[2], GUTTER_WATER.curtain.depth, `${wear} column ${index}: a curtain is a thin sheet`)
+      }
+    })
+    for (const form of ROOF_FORMS) {
+      all(gutterOutlets(wear, form)).forEach((column, index) => {
+        const away = Math.sign(column.position[2])
+        assert.deepEqual(column.flow, [0, 0, away], `${wear} ${form} outlet ${index}: runs out along the lawn, away from the house`)
+        const [mouthZ, farZ] = [column.position[2] - away * column.box[2] / 2, column.position[2] + away * column.box[2] / 2]
+        near(column.position[1], groundTopAlong(column.position[0], mouthZ, farZ) + GUTTER_WATER.outlet.lift, 1e-9, `${wear} ${form} outlet ${index}: lies just over the highest ground it runs across, lawn or mulch`)
+        assert.deepEqual(column.box, GUTTER_WATER.outlet.box, `${wear} ${form} outlet ${index}: the outlet's sheet`)
+        assert.ok(column.streaks === GUTTER_WATER.outlet.streaks && column.streaks > 0, `${wear} ${form} outlet ${index}: draws some streaks`)
+        if (form === 'pitched') {
+          assert.ok(outletXZ.includes(mouthOf(column)), `${wear} outlet ${index}: starts at an extension's open end`)
+        }
+      })
+    }
+  }
+
+  for (const wear of [null, ...wears] as const) {
+    for (const form of ROOF_FORMS) {
+      assert.deepEqual(gutterWetSpans(wear, form, false), { front: [], back: [] }, `${wear} ${form}: no band while it is dry`)
+    }
+    assert.deepEqual(gutterWetSpans(wear, 'low-slope', true), { front: [], back: [] }, `${wear} flat roof: its water goes to the scuppers, so the walls stay dry`)
+  }
+  assert.deepEqual(gutterWetSpans(null, 'pitched', true), { front: [[-R, R]], back: [[-R, R]] }, 'no gutter: the roof\'s water lands along the whole of both walls')
+  assert.deepEqual(gutterWetSpans('failing', 'pitched', true), { front: [gutterRunSpans('failing').pulled!], back: [] }, 'failing: the water lands only under the pulled span')
+  for (const wear of ['new', 'good', 'worn'] as const) {
+    assert.deepEqual(gutterWetSpans(wear, 'pitched', true), { front: [], back: [] }, `${wear}: a hung gutter carries all the water`)
+  }
+  {
+    const pulled = gutterRunSpans('failing').pulled!
+    const house = HOUSE.floorY - HOUSE.floorThickness
+    const wetWalls: { wall: HouseWall, base: number, stretch: number, span: readonly [number, number] }[] = [
+      { wall: FRONT_STAIN_WALL, base: house, stretch: 1, span: [-R, R] },
+      { wall: FRONT_STAIN_WALL, base: house, stretch: 1, span: pulled },
+      { wall: FOUNDATION_WALLS.back, base: 0, stretch: RAISED_GROUND_STRETCH, span: [-R, R] },
+      { wall: HOUSE_WALLS.back, base: house, stretch: 1, span: [-R, R] },
+    ]
+    for (const { wall, base, stretch, span } of wetWalls) {
+      const openings = wall === FRONT_STAIN_WALL ? FRONT_OPENINGS : wall.openings
+      const boxes = wetBandBoxes(wall, span, base, wetBand.height, openings, stretch)
+      assert.ok(boxes.length > 0, 'the wet band draws boxes')
+      for (const box of boxes) {
+        const [start, end] = [box.position[0] - box.size[0] / 2, box.position[0] + box.size[0] / 2]
+        assert.ok(start >= Math.max(wall.from, span[0]) - 1e-9 && end <= Math.min(wall.to, span[1]) + 1e-9, 'a wet box lies within the wall\'s run and the span')
+        assert.ok(box.size[1] <= wetBand.height / stretch + 1e-9, 'a wet box is no taller than the band, as drawn through the stretch')
+        for (const opening of openings.filter(each => each.sill === 0)) {
+          assert.ok(end <= opening.along - opening.width / 2 + 1e-9 || start >= opening.along + opening.width / 2 - 1e-9, 'no wet box crosses a door')
+        }
+      }
+      assert.ok(boxes.some(box => Math.abs(box.size[1] - wetBand.height / stretch) < 1e-9), 'the band is its full height where nothing steps it')
+    }
+    const pulledBoxes = wetBandBoxes(FRONT_STAIN_WALL, pulled, house, wetBand.height, FRONT_OPENINGS)
+    near(Math.max(...pulledBoxes.map(box => box.position[0] + box.size[0] / 2)), HOUSE.halfLength, 1e-9, 'the pulled span\'s band ends at the wall\'s end')
+    const straddling: WallOpening = { along: pulled[0], width: 0.6, sill: wetBand.height / 2, head: 1 }
+    const stepped = wetBandBoxes(FRONT_STAIN_WALL, pulled, house, wetBand.height, [straddling])
+    const under = stepped.filter(box => box.position[0] - box.size[0] / 2 < straddling.along + straddling.width / 2 - 1e-9)
+    assert.ok(under.length > 0, 'an opening straddling the span\'s start still has the band under it')
+    for (const box of under) {
+      near(box.position[0] - box.size[0] / 2, pulled[0], 1e-9, 'the band under it starts at the span\'s start')
+      near(box.position[1] + box.size[1] / 2, house + straddling.sill, 1e-9, 'and steps down to its sill')
+    }
+  }
+
+  {
+    // three fixes an instanced mesh's count when it builds it, and only a rendered tree shows the rebuild, so this one stays a
+    // check of the source.
+    const rainField = readFileSync('src/shared/components/scene/ui/rain-field.tsx', 'utf8')
+    assert.match(rainField, /<instancedMesh key=\{total\}/, 'the rain field rebuilds its one instanced mesh when the total changes')
+    const columns: RainColumn[] = [3, 6, 1, 10].map((streaks, index) => ({ box: [0, 1, 0], position: [index, 0, 0], streaks }))
+    const total = columns.reduce((sum, column) => sum + column.streaks, 0)
+    const seeded = seededStreaks(columns)
+    assert.equal(seeded.length, total, 'the rain field seeds one streak for each of every column\'s')
+    for (const count of [5, 10, 15]) {
+      const shown = seeded.slice(0, count)
+      columns.forEach((column, index) => {
+        const drawn = shown.filter(streak => streak.start[0] === index).length
+        assert.ok(Math.abs(drawn - count * column.streaks / total) <= 1, `with ${count} of ${total} streaks drawn, column ${index} keeps its share (${drawn}), so the count's ease thins every column alike`)
+      })
+    }
+
+    // A streak wraps back to where it entered, so a frame carrying it more than half its column lands it behind where it was
+    // and the water reads as running backwards. A quarter on the longest frame keeps the way it runs unmistakable.
+    const sky: RainColumn[] = HOME_RAIN.fields.map(field => ({ box: field.box, position: field.position, streaks: 8 }))
+    const water = (['new', 'worn', 'failing', null] as const).flatMap(wear => [
+      ...Object.values(gutterWater(wear, 'pitched')).flat(),
+      ...Object.values(gutterOutlets(wear, 'pitched')).flat(),
+      ...Object.values(gutterOutlets(wear, 'low-slope')).flat(),
+    ])
+    for (const streak of seededStreaks([...sky, ...water])) {
+      assert.ok(streak.speed * RAIN.maxFrameSeconds <= streak.span / 4 + 1e-12, `a streak in a ${streak.span.toFixed(2)} m column moves at most a quarter of it on the longest frame (${(streak.speed * RAIN.maxFrameSeconds).toFixed(3)} m)`)
+      assert.ok(streak.length <= Math.min(RAIN.streakLength, streak.span / 2) + 1e-12, `a streak in a ${streak.span.toFixed(2)} m column is at most half of it (${streak.length.toFixed(2)} m)`)
+      if (streak.span >= 3) {
+        assert.ok(streak.speed >= RAIN.fallSpeed * 0.8 - 1e-9 && streak.length === RAIN.streakLength, `a ${streak.span.toFixed(2)} m column keeps the rain's full speed and streak`)
+      }
+      // From one frame to the next, short of a wrap, no water climbs.
+      const wrapsAt = (1 - streak.phase) * streak.span / streak.speed
+      const [from, to] = [streakAt(streak, 0), streakAt(streak, Math.min(RAIN.maxFrameSeconds, wrapsAt / 2))]
+      assert.ok(to[1] <= from[1] + 1e-12, `a streak at ${from.map(value => value.toFixed(2)).join(', ')} never climbs`)
+      assert.ok(Math.hypot(to[0] - from[0], to[1] - from[1], to[2] - from[2]) > 0, 'and it moves')
+    }
+    for (const column of water.filter(each => each.flow !== undefined)) {
+      const outward = seededStreaks([column]).map(streak => streakAt(streak, 0.01)[2] * Math.sign(column.position[2]) - streakAt(streak, 0)[2] * Math.sign(column.position[2]))
+      assert.ok(outward.every(step => step > 0 || step < -column.box[2] / 2), 'an outlet\'s streaks run away from the house, short of a wrap')
+    }
+  }
+
+  const gableSource = readFileSync('src/features/trade-scenes/ui/components/home-kit/gable-roof.tsx', 'utf8')
+  const blocksAfter = (source: string, opener: string) => source.split(opener).slice(1).map((rest) => {
+    let depth = 1
+    let end = 0
+    while (depth > 0 && end < rest.length) {
+      depth += rest[end] === '(' ? 1 : rest[end] === ')' ? -1 : 0
+      end++
+    }
+    return rest.slice(0, end)
+  })
+  const rainFieldsIn = (texts: readonly string[]) => texts.reduce((sum, text) => sum + text.split('<RainField').length - 1, 0)
+  const raining = blocksAfter(gableSource, '{raining && (')
+  assert.equal(rainFieldsIn([gableSource]), 2, 'the gable draws its water as two rain fields, kept and Complete')
+  assert.equal(rainFieldsIn(raining), 2, 'both only while it rains')
+  assert.equal(rainFieldsIn(blocksAfter(gableSource, '{gutters !== null && gutterMaterial !== null && (')), 0, 'and neither waits on a gutter, since with none the eave still drips')
+  const homeKitSource = readFileSync('src/features/trade-scenes/ui/components/home-kit/home-kit.tsx', 'utf8')
+  assert.equal(rainFieldsIn([homeKitSource]), 2, 'the home kit draws the downspouts\' outlets as two rain fields, kept and Complete')
+  assert.equal(rainFieldsIn(blocksAfter(homeKitSource, '{raining && (')), 2, 'both only while it rains')
+  const sheensIn = (texts: readonly string[]) => texts.reduce((sum, text) => sum + text.split('<RoofSheen').length - 1, 0)
+  assert.equal(sheensIn(blocksAfter(gableSource, '{sheen && (')), 3, 'all three of the gable\'s sheens mount under the sheen\'s gate')
+  const sheenGate = gableSource.split('\n').find(line => line.trim().startsWith('const sheen = '))
+  assert.ok(sheenGate?.includes('raining') && sheenGate.includes('lit === null'), 'which opens only while it rains and nothing is up close')
+}
+
+{
+  const R = ROOF_HALF_LENGTH
+  const rise = 0.03
+  const sheen = roofSheenGeometry(HOUSE.cutX, R, rise)
+  const position = sheen.getAttribute('position')
+  const normal = sheen.getAttribute('normal')
+  const uv = sheen.getAttribute('uv')
+  // The geometry stores float32, so a vertex holds its place to about a micrometre.
+  const vertices = Array.from({ length: position.count }, (_, index) => ({
+    x: position.getX(index),
+    y: position.getY(index),
+    z: position.getZ(index),
+    u: uv.getX(index),
+    v: uv.getY(index),
+    // The quad lies in the rafters' plane, so it alone faces straight off it.
+    onQuad: Math.abs(normal.getY(index) - 1) < 1e-6,
+  }))
+  assert.ok(vertices.every(({ z }) => z >= HOUSE.cutX - 1e-6 && z <= R + 1e-6), 'every vertex of the sheen lies across its own run')
+  const quad = vertices.filter(vertex => vertex.onQuad)
+  const strip = vertices.filter(vertex => !vertex.onQuad)
+  assert.ok(quad.length > 0 && strip.length > 0, 'the sheen is a quad down the slope and a strip over the edge')
+  const film = COVERING_BASE + rise + ROOF_SHEEN.lift
+  quad.forEach(({ y }, index) => near(y, film, 1e-6, `sheen quad vertex ${index} stands its lift over the covering`))
+  near(Math.min(...quad.map(({ x }) => x)), COVERING_EAVE_X, 1e-6, 'the sheen quad runs down to the covering\'s edge')
+  near(Math.max(...quad.map(({ x }) => x)), SLOPE_LENGTH, 1e-6, 'and up to the ridge')
+  const lip = eaveLipBox(HOUSE.cutX, R)
+  const outerBottom = new Vector3(-lip.size[0] / 2, -lip.size[1] / 2, 0).applyEuler(new Euler(...lip.rotation!)).add(new Vector3(...lip.position))
+  const lowest = strip.reduce((low, vertex) => vertex.y < low.y ? vertex : low)
+  near(lowest.x, outerBottom.x, 1e-6, 'the sheen\'s strip ends at the drip edge\'s lip, along the slope')
+  near(lowest.y, outerBottom.y, 1e-6, 'and off it')
+  const ridgeV = Math.max(...quad.filter(({ x }) => Math.abs(x - SLOPE_LENGTH) < 1e-6).map(({ v }) => v))
+  const eaveV = Math.min(...quad.filter(({ x }) => Math.abs(x - COVERING_EAVE_X) < 1e-6).map(({ v }) => v))
+  const stripTop = strip.filter(({ y }) => Math.abs(y - film) < 1e-6)
+  const stripEnd = strip.filter(({ y }) => Math.abs(y - outerBottom.y) < 1e-6)
+  assert.ok(ridgeV < eaveV, `the sheen's v rises down the slope (${ridgeV} at the ridge, ${eaveV} at the eave)`)
+  stripTop.forEach(({ v }) => near(v, eaveV, 1e-6, 'and runs on unbroken over the edge'))
+  assert.ok(stripEnd.every(({ v }) => v > eaveV), 'and on down the strip to its end')
+  const uAtCut = (geometry: ReturnType<typeof roofSheenGeometry>) => {
+    const [zs, us] = [geometry.getAttribute('position'), geometry.getAttribute('uv')]
+    return Array.from({ length: zs.count }, (_, index) => index).filter(index => Math.abs(zs.getZ(index) - HOUSE.cutX) < 1e-6).map(index => us.getX(index))
+  }
+  const completeU = uAtCut(roofSheenGeometry(-R, HOUSE.cutX, rise))
+  const keptU = uAtCut(sheen)
+  assert.ok(completeU.length > 0 && keptU.length > 0 && [...completeU, ...keptU].every(u => Math.abs(u - keptU[0]!) < 1e-6), 'the two parts of the near slope\'s sheen meet at the cut on the same streaks')
+
+  // Every covering laid at its worst on every kind of wear, over both slopes' seeds, each piece through its own drawn shape:
+  // the film must stand clear of the highest piece any rep can set, so nothing pokes through it.
+  const worst = coveringShares(Object.fromEntries(coveringWearKinds.map(kind => [kind, 'heavy'])) as CoveringWear)
+  const halfPipe = (upper: boolean) => new CylinderGeometry(TILE.radius, TILE.radius, TILE.length, 12, 1, true, upper ? 0 : Math.PI, Math.PI).rotateZ(Math.PI / 2)
+  const highest = (pieces: readonly PieceLayout[], shape: BoxGeometry | CylinderGeometry, stretchToWidth: boolean) => {
+    const placed = new Object3D()
+    const corners = shape.getAttribute('position')
+    const corner = new Vector3()
+    let top = -Infinity
+    for (const piece of pieces) {
+      placed.position.set(piece.x, piece.y, piece.z)
+      placed.rotation.set(0, piece.yaw ?? 0, piece.tilt)
+      placed.scale.set(1, 1, stretchToWidth ? piece.width : 1)
+      placed.updateMatrix()
+      for (let index = 0; index < corners.count; index++) {
+        top = Math.max(top, corner.fromBufferAttribute(corners, index).applyMatrix4(placed.matrix).y)
+      }
+    }
+    return top - COVERING_BASE
+  }
+  assert.deepEqual(Object.keys(ROOF_SHEEN.rise).sort(), ['default', 'tile', 'wood-shake'], 'the sheen has a rise for each way a covering is laid')
+  for (const seed of [7, 19]) {
+    const area = { seed, wear: 1, shares: worst, reused: false, xFrom: COVERING_EAVE_X, xTo: SLOPE_LENGTH + COVERING_BASE * Math.tan(PITCH), zFrom: -R, zTo: R, base: COVERING_BASE }
+    const { pans, caps } = layoutTiles(area, TILE)
+    const tops = {
+      'default': highest(layoutShingles(area, SHINGLE), new BoxGeometry(SHINGLE.length, SHINGLE.thickness, 1), true),
+      'wood-shake': highest(layoutShakes(area, SHAKE), new BoxGeometry(SHAKE.length, SHAKE.thickness, 1), true),
+      'tile': Math.max(highest(pans, halfPipe(false), false), highest(caps, halfPipe(true), false)),
+    }
+    for (const [covering, top] of Object.entries(tops)) {
+      assert.ok(ROOF_SHEEN.rise[covering] > top, `seed ${seed}: the ${covering} sheen's rise (${ROOF_SHEEN.rise[covering]}) clears its covering's highest piece (${top.toFixed(4)})`)
+    }
+  }
+
+  const sheenMounts = readFileSync('src/features/trade-scenes/ui/components/home-kit/gable-roof.tsx', 'utf8').split('<RoofSheen').length - 1
+  assert.equal(sheenMounts, 3, 'the gable draws a sheen on the back slope and on both parts of the near one')
+  assert.ok(!readFileSync('src/features/trade-scenes/ui/components/home-kit/low-slope-roof.tsx', 'utf8').includes('RoofSheen'), 'a flat roof has no sheen')
+}
+
+{
+  const { sag, pulled, streaks } = WEAR_LOOKS.gutter
+  const R = ROOF_HALF_LENGTH
+  const end = R - pulled.length
+  const front = (runs: readonly GutterRun[]) => runs.filter(run => run.face === 'front')
+  const keptFront = (wear: Wear) => front(gutterRuns(wear).kept)[0]!
+  const completeFront = (wear: Wear) => gutterRuns(wear).complete[0]!
+  const stationAt = (run: GutterRun, x: number) => run.stations.find(station => Math.abs(station.x - x) < 1e-9)
+
+  assert.deepEqual(gutterRuns('good'), gutterRuns('new'), 'a good gutter draws exactly as a new one')
+  assert.deepEqual(gutterStreaks('good'), gutterStreaks('new'), 'a good gutter draws exactly as a new one')
+  const fresh = gutterRuns('new')
+  assert.equal(fresh.kept.length, 2, 'a new gutter keeps the back run and one front run')
+  assert.equal(fresh.complete.length, 1, 'and the complete house draws one front run')
+  for (const run of [...fresh.kept, ...fresh.complete]) {
+    assert.ok(run.stations.every(station => station.drop === 0 && station.out === 0 && station.roll === 0), 'a new gutter is straight')
+  }
+  const [back] = fresh.kept
+  assert.ok(back!.face === 'back' && back!.capStart && back!.capEnd, 'the back run is capped at both ends')
+  assert.ok(completeFront('new').capStart && !completeFront('new').capEnd, 'the complete front run is capped at its far end only')
+  assert.ok(!keptFront('new').capStart && keptFront('new').capEnd, 'and the kept one at its rake end only')
+
+  for (const wear of wears) {
+    const [complete, kept] = [completeFront(wear), keptFront(wear)]
+    const [last, first] = [complete.stations.at(-1)!, kept.stations[0]!]
+    assert.ok(last.x === HOUSE.cutX && first.x === HOUSE.cutX, `${wear}: the two pieces meet on the same section`)
+    assert.ok([last, first].every(station => station.drop === 0 && station.out === 0 && station.roll === 0), `${wear}: and it is straight`)
+    // The run is drawn straight from station to station, so a step longer than one station must lie where the wear leaves it
+    // straight: off the sag, which runs from the cut to as far past its low point, and off the pulled end.
+    const { sagLow: low, pulled: pull } = gutterRunSpans(wear)
+    const bent = [...(low === null ? [] : [[HOUSE.cutX, 2 * low - HOUSE.cutX] as const]), ...(pull === null ? [] : [pull])]
+    for (const run of [...gutterRuns(wear).kept, ...gutterRuns(wear).complete]) {
+      for (let index = 1; index < run.stations.length; index++) {
+        const [a, b] = [run.stations[index - 1]!, run.stations[index]!]
+        const gap = b.x - a.x
+        assert.ok(gap > 0, `${wear}: a run's stations rise along it`)
+        if (gap > ROOF_TRIM.gutter.station + 1e-9) {
+          const straight = [a, b].every(station => station.drop === 0 && station.out === 0 && station.roll === 0)
+          const offTheWear = run.face === 'back' || bent.every(([from, to]) => b.x <= from + 1e-9 || a.x >= to - 1e-9)
+          assert.ok(straight && offTheWear, `${wear}: a run's stations rise by no more than one station wherever the wear bends it (${a.x.toFixed(3)} to ${b.x.toFixed(3)})`)
+        }
+      }
+    }
+    assert.ok(gutterRuns(wear).kept[0]!.stations.every(station => station.drop === 0 && station.out === 0 && station.roll === 0), `${wear}: the back run is straight`)
+    assert.ok(complete.stations.every(station => station.drop === 0 && station.out === 0 && station.roll === 0), `${wear}: the complete house's gutter is straight`)
+    for (const station of kept.stations) {
+      assert.ok((station.drop === 0 && station.out === 0 && station.roll === 0) || station.x >= HOUSE.cutX - 1e-9, `${wear}: the wear stays on the kept side of the cut`)
+    }
+    assert.equal(gutterDropAt(wear, 'back', 0), 0, `${wear}: the back run does not sag`)
+    assert.equal(gutterDropAt(wear, 'back', R / 2), 0, `${wear}: the back run does not sag`)
+  }
+
+  const worn = keptFront('worn')
+  const sagLow = gutterRunSpans('worn').sagLow!
+  near(sagLow, (HOUSE.cutX + R) / 2, 1e-9, 'a worn gutter is lowest at the middle of the kept run')
+  near(Math.max(...worn.stations.map(station => station.drop)), sag.worn, 1e-9, 'a worn gutter sags its look\'s depth')
+  near(stationAt(worn, sagLow)!.drop, sag.worn, 1e-9, 'at its lowest station')
+  near(worn.stations[0]!.drop, 0, 1e-9, 'and not at the cut')
+  near(worn.stations.at(-1)!.drop, 0, 1e-9, 'nor at the rake end')
+  const slopes = worn.stations.slice(1).map((station, index) => (station.drop - worn.stations[index]!.drop) / (station.x - worn.stations[index]!.x))
+  for (let index = 1; index < slopes.length; index++) {
+    assert.ok(Math.abs(slopes[index]! - slopes[index - 1]!) <= 0.02, 'the sag is a smooth dip')
+  }
+  assert.ok(Math.abs(slopes[0]!) <= 0.01, 'there is no kink where the kept run meets the complete one')
+  near(gutterDropAt('worn', 'front', sagLow), sag.worn, 1e-9, 'the drop at the lowest point reads back')
+  {
+    const failingSag = keptFront('failing').stations.filter(station => station.x <= end + 1e-9)
+    const failingSlopes = failingSag.slice(1).map((station, index) => (station.drop - failingSag[index]!.drop) / (station.x - failingSag[index]!.x))
+    for (let index = 1; index < failingSlopes.length; index++) {
+      assert.ok(Math.abs(failingSlopes[index]! - failingSlopes[index - 1]!) <= 0.02, 'failing: the shorter sag is a smooth dip too')
+    }
+    assert.ok(Math.abs(failingSlopes[0]!) <= 0.01, 'failing: no kink where the kept run meets the complete one')
+  }
+  assert.equal(gutterRunSpans('good').sagLow, null, 'a sound gutter has no sag')
+  assert.equal(gutterRunSpans('worn').pulled, null, 'a worn gutter is still hung')
+
+  const failing = keptFront('failing')
+  const [tip, root] = [failing.stations.at(-1)!, stationAt(failing, end)!]
+  assert.ok(Math.abs(tip.x - R) < 1e-9, 'a failing gutter runs to the rake')
+  near(tip.drop, pulled.drop, 1e-9, 'the rake end hangs down')
+  near(tip.out, pulled.out, 1e-9, 'and out from the fascia')
+  near(tip.roll, pulled.tilt, 1e-9, 'and rolls forward')
+  assert.ok(root.drop === 0 && root.out === 0 && root.roll === 0, 'the pulled end bends away from a station on the sag\'s own line')
+  for (const station of failing.stations.filter(station => station.x < end - 1e-9)) {
+    assert.ok(station.out === 0 && station.roll === 0, 'only the pulled end comes away')
+  }
+  assert.deepEqual(gutterRunSpans('failing'), { sagLow: (HOUSE.cutX + end) / 2, pulled: [end, R] }, 'a failing gutter\'s sag ends where the pull starts')
+
+  assert.equal(gutterCatches(null, 0), false, 'no gutter catches nothing')
+  assert.equal(gutterCatches('good', R), true, 'a good gutter catches to its end')
+  assert.equal(gutterCatches('worn', R), true, 'a worn one too')
+  assert.equal(gutterCatches('failing', R - 0.6), false, 'a failing gutter catches nothing under its pulled end')
+  assert.equal(gutterCatches('failing', HOUSE.cutX), true, 'but does elsewhere')
+
+  for (const wear of wears) {
+    const xs = gutterStreaks(wear)
+    assert.equal(xs.length, streaks.count[wear], `${wear}: the gutter draws its count of streaks`)
+    for (const x of xs) {
+      const run = x < HOUSE.cutX ? completeFront(wear) : keptFront(wear)
+      for (const along of [streaks.width / 2, streaks.width / 2 + streaks.feather]) {
+        assert.ok(stationAt(run, x - along) && stationAt(run, x + along), `${wear}: a streak's edges are stations, so it draws to its own width`)
+      }
+    }
+  }
+
+  const hung = gutterHangers(gutterRuns('failing').kept)
+  assert.ok(hung.filter(hanger => hanger.position[2] > 0).every(hanger => hanger.position[0] < end), 'the front run\'s pulled end has come off its hangers')
+  assert.ok(hung.some(hanger => hanger.position[2] > 0) && hung.some(hanger => hanger.position[2] < 0), 'both runs hang on their hangers')
+  for (const sign of [1, -1]) {
+    const xs = gutterHangers(gutterRuns('new').kept).filter(hanger => Math.sign(hanger.position[2]) === sign).map(hanger => hanger.position[0]).sort((a, b) => a - b)
+    assert.ok(xs.length > 1, 'a run has hangers along it')
+    assert.ok(xs.every((x, index) => index === 0 || x - xs[index - 1]! <= ROOF_TRIM.gutter.hangerSpacing + 1e-9), 'hangers are no further apart than their spacing')
+  }
+  const straightY = gutterHangers([keptFront('new')])[0]!.position[1]
+  for (const wear of ['worn', 'failing'] as const) {
+    const sagged = gutterHangers([keptFront(wear)]).filter(hanger => hanger.position[0] > sagLow - 0.4 && hanger.position[0] < sagLow + 0.4)
+    assert.ok(sagged.some(hanger => hanger.position[1] < straightY - 0.01), `${wear}: hangers follow the sag down`)
+  }
+
+  for (const wear of wears) {
+    const stains = gutterFasciaStains(wear)
+    const wall = gutterWallStains(wear)
+    if (wear !== 'failing') {
+      assert.deepEqual(stains, [], `${wear}: the gutter stains nothing below Failing`)
+      assert.deepEqual(wall, [], `${wear}: the gutter stains nothing below Failing`)
+      continue
+    }
+    const { overflow, pulled: pulledEnd } = WEAR_LOOKS.gutter
+    const spill = [ROOF_HALF_LENGTH - pulledEnd.length / 2 - overflow.width / 2, ROOF_HALF_LENGTH - pulledEnd.length / 2 + overflow.width / 2] as const
+    assert.ok(stains.length === 1 && stains[0]!.boxes.length === overflow.tracks, 'a failing gutter stains the fascia under its pulled end in separate runs')
+    assert.ok(wall.length === 1 && wall[0]!.boxes.length > 1 && wall[0]!.boxes.length <= overflow.tracks, 'and the wall under it, never as one sheet')
+    for (const [label, boxes, top, height] of [['fascia', stains[0]!.boxes, Math.max(...stains[0]!.boxes.map(box => box.position[1] + box.size[1] / 2)), ROOF_TRIM.fascia.height], ['wall', wall[0]!.boxes, WALL_TOP_Y, WALL_TOP_Y - HOUSE.floorY]] as const) {
+      const reaches = boxes.map(box => box.size[1])
+      for (const box of boxes) {
+        const [left, right] = [box.position[0] - box.size[0] / 2, box.position[0] + box.size[0] / 2]
+        assert.ok(left >= spill[0] - 1e-9 && right <= spill[1] + 1e-9, `${label}: each overflow run lies under the spill`)
+        assert.ok(box.size[0] > 0 && box.size[0] <= overflow.trackWidth[1] + 1e-9, `${label}: each run is narrow (${box.size[0].toFixed(3)} m)`)
+        near(box.position[1] + box.size[1] / 2, top, 1e-9, `${label}: each run hangs from the top, where the water comes over`)
+      }
+      if (label === 'wall') {
+        assert.ok(boxes.every(box => box.position[0] + box.size[0] / 2 <= FRONT_STAIN_WALL.to + 1e-9), 'the wall\'s overflow runs end at or before the wall\'s end')
+        assert.ok(Math.max(...reaches) <= overflow.reach[1] * height + 1e-9, 'none runs the wall\'s whole height')
+        assert.ok(Math.max(...reaches) - Math.min(...reaches) >= 0.2 * height, 'and they run down to different lengths')
+      }
+    }
+  }
+}
+
+{
+  const { outline, cap, front } = ROOF_TRIM.gutter.profile
+  const { streaks } = WEAR_LOOKS.gutter
+  const R = ROOF_HALF_LENGTH
+  const [base, streakHex] = ['#e8e1cf', streaks.color]
+  const build = (runs: readonly GutterRun[], boxes: readonly BoxSpec[] = [], marks: readonly number[] = []) => gutterGeometry(runs, boxes, marks, base, streakHex)
+  const ups = outline.map(([, up]) => up)
+  const polygonArea = (points: readonly (readonly [number, number])[]) => Math.abs(points.reduce((sum, [a, b], index) => {
+    const [c, d] = points[(index + 1) % points.length]!
+    return sum + a * d - c * b
+  }, 0)) / 2
+  const pointsOf = (geometry: ReturnType<typeof build>) => {
+    const position = geometry.getAttribute('position')
+    return Array.from({ length: position.count }, (_, index) => [position.getX(index), position.getY(index), position.getZ(index)] as const)
+  }
+  const colorsOf = (geometry: ReturnType<typeof build>) => {
+    const color = geometry.getAttribute('color')
+    return Array.from({ length: color.count }, (_, index) => [color.getX(index), color.getY(index), color.getZ(index)] as const)
+  }
+  // Positions are stored in single precision, so "at x" compares against x as the buffer holds it.
+  const atX = (value: number, x: number) => Math.abs(value - Math.fround(x)) <= 1e-9
+  function faceAreaAt(geometry: ReturnType<typeof build>, x: number): number {
+    const points = pointsOf(geometry)
+    let area = 0
+    for (let index = 0; index < points.length; index += 3) {
+      const [a, b, c] = [points[index]!, points[index + 1]!, points[index + 2]!]
+      if (![a, b, c].every(point => atX(point[0], x))) {
+        continue
+      }
+      area += Math.abs((b[1] - a[1]) * (c[2] - a[2]) - (b[2] - a[2]) * (c[1] - a[1])) / 2
+    }
+    return area
+  }
+  const sameColor = (actual: readonly number[], hex: string) => {
+    const expected = new Color(hex)
+    return [expected.r, expected.g, expected.b].every((channel, index) => Math.abs(channel - actual[index]!) <= 1e-6)
+  }
+
+  const back = gutterRuns('new').kept.filter(run => run.face === 'back')
+  const alone = build(back)
+  alone.computeBoundingBox()
+  const { min, max } = alone.boundingBox!
+  near(min.x, -R, 1e-6, 'a back run runs from rake to rake')
+  near(max.x, R, 1e-6, 'a back run runs from rake to rake')
+  near(min.y, GUTTER_Y + Math.min(...ups), 1e-6, 'a run is as deep as its profile')
+  near(max.y, GUTTER_Y + Math.max(...ups), 1e-6, 'a run is as deep as its profile')
+  for (const name of ['position', 'normal', 'uv', 'color']) {
+    assert.ok(alone.hasAttribute(name), `a gutter's sweep carries ${name}`)
+  }
+
+  const outlineArea = polygonArea(outline)
+  const capArea = polygonArea(cap)
+  for (const wear of wears) {
+    const { kept, complete } = gutterRuns(wear)
+    const keptFront = kept.filter(run => run.face === 'front')
+    const sectionAt = (geometry: ReturnType<typeof build>) => new Set(pointsOf(geometry).filter(point => atX(point[0], HOUSE.cutX)).map(([, y, z]) => `${y.toFixed(6)},${z.toFixed(6)}`))
+    const [completeSection, keptSection] = [sectionAt(build(complete)), sectionAt(build(keptFront))]
+    assert.ok(completeSection.size > 0 && isDeepStrictEqual(completeSection, keptSection), `${wear}: the two pieces meet flush at the cut`)
+
+    const whole = build(complete)
+    assert.equal(faceAreaAt(whole, HOUSE.cutX), 0, `${wear}: the two pieces share one section at the cut, the kept run's`)
+    near(faceAreaAt(build(keptFront), HOUSE.cutX), outlineArea, outlineArea * 0.01, `${wear}: the kept run's section closes it at the cut, flat and uncapped`)
+    near(faceAreaAt(whole, -R), outlineArea + capArea, (outlineArea + capArea) * 0.01, `${wear}: the true ends are capped`)
+  }
+
+  const failing = gutterRuns('failing')
+  const failingFront = failing.kept.find(run => run.face === 'front')!
+  const marks = gutterStreaks('failing').filter(x => x > HOUSE.cutX)
+  const streaked = build([failingFront], [], marks)
+  const [points, colors] = [pointsOf(streaked), colorsOf(streaked)]
+  const colorsAt = (x: number, drop: number, profilePoint: readonly [number, number]) => points.flatMap((point, index) => {
+    const onPoint = atX(point[0], x) && Math.abs(point[1] - (GUTTER_Y - drop + profilePoint[1])) <= 1e-5 && Math.abs(point[2] - (GUTTER_OUT + profilePoint[0])) <= 1e-5
+    return onPoint ? [colors[index]!] : []
+  })
+  const inStreak = failingFront.stations.find(station => station.out === 0 && station.roll === 0 && marks.some(x => Math.abs(station.x - x) <= streaks.width / 2 + 1e-9))
+  assert.ok(inStreak, 'a streak falls on a hung station of the failing front run')
+  for (let index = front[0]; index <= front[1]; index++) {
+    const found = colorsAt(inStreak.x, inStreak.drop, outline[index]!)
+    assert.ok(found.length > 0 && found.every(color => sameColor(color, streakHex)), 'a streak darkens the front face')
+  }
+  const backPoints = outline.filter(([out]) => out === Math.min(...outline.map(([o]) => o)))
+  for (const point of backPoints) {
+    const found = colorsAt(inStreak.x, inStreak.drop, point)
+    assert.ok(found.length > 0 && found.every(color => sameColor(color, base)), 'and leaves the back face its colour')
+  }
+  for (const point of outline.filter((_, index) => index < front[0] || index > front[1])) {
+    const found = colorsAt(inStreak.x, inStreak.drop, point)
+    assert.ok(found.length > 0 && found.every(color => sameColor(color, base)), 'and leaves every point off the front face its colour, the inside and the bottom too')
+  }
+  // A strip from a darkened point to a plain one blends across its width, so the strips just off the face are kept too narrow to see.
+  for (const [onFace, offFace] of [[front[0], front[0] - 1], [front[1], front[1] + 1]] as const) {
+    const [a, b] = [outline[onFace]!, outline[offFace]!]
+    const width = Math.hypot(a[0] - b[0], a[1] - b[1])
+    assert.ok(width <= 0.0015, `the streak stops at the front face's edge by point ${onFace} (blends over ${(width * 1000).toFixed(1)} mm)`)
+  }
+  near(faceAreaAt(streaked, HOUSE.cutX), outlineArea, outlineArea * 0.01, 'a streaked kept run still closes its cut end with its section alone, uncapped')
+  // Each piece colours only its own stations, so a streak across the cut must reach both for them to meet in one colour.
+  const frontAt = (x: number) => (geometry: ReturnType<typeof build>) => {
+    const [all, tints] = [pointsOf(geometry), colorsOf(geometry)]
+    const face = outline.slice(front[0], front[1] + 1).map(([out, up]) => [GUTTER_Y + up, GUTTER_OUT + out] as const)
+    return tints.filter((_, index) => atX(all[index]![0], x) && face.some(([y, z]) => Math.abs(all[index]![1] - y) <= 1e-5 && Math.abs(all[index]![2] - z) <= 1e-5))
+  }
+  for (const wear of wears) {
+    const { kept, complete } = gutterRuns(wear)
+    for (const run of [complete[0]!, kept.find(each => each.face === 'front')!]) {
+      const found = frontAt(HOUSE.cutX)(build([run], [], [HOUSE.cutX]))
+      assert.ok(found.length > 0 && found.every(color => sameColor(color, streakHex)), `${wear}: a streak across the cut darkens both pieces' faces there alike`)
+    }
+  }
+  const gableRoof = readFileSync('src/features/trade-scenes/ui/components/home-kit/gable-roof.tsx', 'utf8')
+  assert.equal(gableRoof.split('streaks={gutters.streaks}').length - 1, 2, 'the gable hands both front pieces every streak')
+  const clear = failingFront.stations.find(station => marks.every(x => Math.abs(station.x - x) > streaks.width / 2 + streaks.feather + 1e-9))!
+  assert.ok(colors.filter((_, index) => atX(points[index]![0], clear.x)).every(color => sameColor(color, base)), 'away from every streak the run is its colour throughout')
+  assert.ok(colorsOf(build([...gutterRuns('new').kept, ...gutterRuns('new').complete])).every(color => sameColor(color, base)), 'a new gutter is its colour throughout')
+
+  // The gutter's mesh is rebuilt whenever its wear or colour changes, which the Today and Build toggle does, so it is drawn with
+  // as few triangles as its bends need: a rebuild that grows past these lands as a hitch on the toggle.
+  const triangleBudget = { new: 5200, good: 5200, fair: 6600, worn: 13300, failing: 14500 } as const satisfies Record<Wear, number>
+  for (const wear of wears) {
+    const { kept, complete } = gutterRuns(wear)
+    const downspouts = gableDownspouts(wear)
+    const marks = gutterStreaks(wear)
+    const pieces = [
+      gutterGeometry(kept, [...downspouts.kept, ...gutterHangers(kept)], marks, base, streakHex),
+      gutterGeometry(complete, [...downspouts.complete, ...gutterHangers(complete)], marks, base, streakHex),
+    ]
+    const triangles = pieces.reduce((sum, piece) => sum + piece.getAttribute('position').count / 3, 0)
+    assert.ok(triangles <= triangleBudget[wear], `${wear}: the gutter rebuilds on the Today and Build toggle, so both pieces stay within ${triangleBudget[wear]} triangles (${triangles})`)
+    pieces.forEach(piece => piece.dispose())
+  }
+
+  const boxes = [...downspoutBoxes('pitched'), ...gutterHangers(failing.kept)]
+  const bare = build(failing.kept)
+  const hung = build(failing.kept, boxes)
+  assert.equal(hung.getAttribute('position').count, bare.getAttribute('position').count + mergeBoxes(boxes, 0.01).getAttribute('position').count, 'the hangers and downspouts merge into the gutter\'s one mesh')
+  for (const name of ['normal', 'uv', 'color']) {
+    assert.equal(hung.getAttribute(name).count, hung.getAttribute('position').count, `every vertex carries its ${name}`)
+  }
+}
+
+{
+  const overflowOf = (scene: ReturnType<typeof at>) => overflowStains(scene.existingGutterWear, {
+    repainted: scene.assemblies['exterior-wall']?.parts.find(part => part.id === 'paint')?.condition === 'installed',
+    newFascia: scene.fasciaReplaced,
+  })
+  const failingBuild = (proposedScopeIds: string[]) => gutterScene({ view: 'proposed', proposedScopeIds }, 'present', 'failing')
+
+  const guttersOnly = failingBuild([SCOPE_IDS.gutters])
+  assert.equal(drawnGutterWear(guttersOnly.assemblies['roof-attic']!.parts), 'new', 'the new gutter itself draws new')
+  assert.equal(guttersOnly.existingGutterWear, 'failing', 'the build still knows the existing gutter\'s wear')
+  assert.deepEqual(overflowOf(guttersOnly), { wall: 'failing', fascia: 'failing' }, 'new gutters alone leave the old overflow stains on the wall and the fascia')
+  assert.deepEqual(overflowOf(failingBuild([SCOPE_IDS.gutters, SCOPE_IDS.roofTearOff])), { wall: 'failing', fascia: 'failing' }, 'so does a new roof with them')
+
+  for (const repaint of [SCOPE_IDS.coolLifeRepaint, SCOPE_IDS.waterBasedRepaint]) {
+    assert.deepEqual(overflowOf(failingBuild([repaint])), { wall: null, fascia: null }, 'a repaint without Gutters covers both stains')
+    assert.deepEqual(overflowOf(failingBuild([repaint, FASCIA_REPLACEMENT_SCOPE_ID])), { wall: null, fascia: null }, 'and with new fascia boards too')
+  }
+  assert.deepEqual(overflowOf(failingBuild([FASCIA_REPLACEMENT_SCOPE_ID])), { wall: 'failing', fascia: null }, 'new fascia boards alone clear the fascia\'s stain and keep the wall\'s')
+
+  for (const gutters of [null, 'none'] as const) {
+    const added = gutterScene({ view: 'proposed', proposedScopeIds: [SCOPE_IDS.gutters] }, gutters)
+    assert.equal(added.existingGutterWear, null, `${gutters}: a home with no gutters has no existing gutter`)
+    assert.deepEqual(overflowOf(added), { wall: null, fascia: null }, `${gutters}: new gutters on a home with none stain nothing`)
+  }
+
+  for (const wear of wears) {
+    const existing = gutterScene({}, 'present', wear)
+    const drawn = drawnGutterWear(existing.assemblies['roof-attic']!.parts)
+    assert.equal(existing.existingGutterWear, drawn, `${wear}: the existing view's gutter is the existing gutter`)
+    assert.deepEqual(overflowOf(existing), { wall: drawn, fascia: drawn }, `${wear}: the existing view stains as the gutter it draws`)
+  }
+}
+
+// A drag pans, Shift spins, and the cursor says which.
+assert.equal(sceneCursor({ overPart: false, shift: false, dragging: null }), 'move', 'over the scene a drag pans')
+assert.equal(sceneCursor({ overPart: true, shift: false, dragging: null }), 'pointer', 'over a tappable part')
+assert.equal(sceneCursor({ overPart: true, shift: false, dragging: 'pan' }), 'grabbing', 'while panning')
+assert.equal(sceneCursor({ overPart: false, shift: true, dragging: null }), SPIN_CURSOR, 'Shift held says a drag spins')
+assert.equal(sceneCursor({ overPart: true, shift: true, dragging: null }), SPIN_CURSOR, 'Shift wins over a part')
+assert.equal(sceneCursor({ overPart: false, shift: false, dragging: 'spin' }), SPIN_CURSOR, 'while spinning')
+assert.deepEqual(CAMERA_GESTURE_MAPS['pan-first'], { mouseButtons: { LEFT: MOUSE.PAN, MIDDLE: MOUSE.DOLLY, RIGHT: MOUSE.ROTATE }, touches: { ONE: TOUCH.PAN, TWO: TOUCH.DOLLY_ROTATE } }, 'pan-first maps the buttons and fingers')
+assert.match(readFileSync('src/shared/components/scene/ui/camera-rig.tsx', 'utf8'), /mouseButtons=\{[^}]*CAMERA_GESTURE_MAPS/, 'the rig passes the maps to OrbitControls')
+
+// The system action card: the buttons under a card's title are the subject's, pressed where they are a state.
+{
+  const noop = { focusCamera: () => {}, toggleLookInside: () => {}, draw: () => {} }
+  const at = (over: Partial<Parameters<typeof systemActions>[1]> = {}) => ({ cameraFocus: null, moved: false, lookInside: false, canLookInside: true, ...over })
+  const ids = (actions: SystemAction[]) => actions.map(action => [action.id, action.pressed])
+  assert.deepEqual(ids(systemActions('roof', at(), noop)), [['focus', false], ['look-inside', false]], 'a system: Focus and Look inside')
+  assert.deepEqual(ids(systemActions('foundation', at({ canLookInside: false }), noop)), [['focus', false]], 'no Look inside where the home has none')
+  assert.deepEqual(ids(systemActions('roof', at({ cameraFocus: 'roof' }), noop)), [['focus', true], ['look-inside', false]], 'Focus pressed while it frames the pick')
+  assert.deepEqual(ids(systemActions('roof', at({ cameraFocus: 'roof', moved: true }), noop)), [['focus', false], ['look-inside', false]], 'a hand move un-presses Focus')
+  assert.deepEqual(ids(systemActions('roof', at({ cameraFocus: 'roof', lookInside: true }), noop)), [['focus', true], ['look-inside', true]], 'Look inside pressed')
+  assert.deepEqual(ids(systemActions('year-built', at(), noop)), [], 'Year built has no actions')
+  assert.deepEqual(ids(systemActions('back-yard', at(), noop)), [['draw-region', null], ['draw-fence', null]], 'a yard draws')
+  assert.equal(CONTROLS_COPY.systems.cardTitle(HOME_SYSTEM_LABELS.walls), 'Walls system', 'the card says system')
+}
+
+// A material's inputs and a system's lists come from one place: the card's chip menu and the spot chip's quick edit read them.
+{
+  const scene = resolveScene(HOME_SCENE_DEFAULTS, cuts, YEAR)
+  const home = scene.home
+  const slots = sceneChangeSlots(HOME_SCENE_DEFAULTS, scene, YEAR)
+  const slotOf = (id: string) => slots.find(candidate => candidate.id === id)!
+  const facts = { property: { ...HOME_SCENE_DEFAULTS.property, roofType: 'shingle' as const }, materials: HOME_SCENE_DEFAULTS.homeMaterials, year: YEAR }
+  const roofRows = upgradeRows(facts, [], []).find(entry => entry.id === 'roof')!.rows
+  assert.deepEqual(materialInputGroupIds(slotOf('heating-cooling'), slots, home['heating-cooling']!), ['hvac-components', 'ac-tons', 'condition'], 'heating & cooling: equipment, AC size, condition')
+  assert.deepEqual(materialInputGroupIds(slotOf('exterior-paint'), slots, home['exterior-paint']!), ['paint-colors', 'condition', 'wear'], 'paint: colours, condition, then its paint wear')
+  assert.deepEqual(materialInputGroupIds(slotOf('roof'), slots, home.roof!), ['condition', 'wear'], 'the roof: condition, then its roof wear')
+  assert.deepEqual(materialInputGroupIds(slotOf('gutters'), slots, null), [], 'gutters the home does not have: no colours or condition to set')
+  const guttered = { ...HOME_SCENE_DEFAULTS, homeMaterials: { ...HOME_SCENE_DEFAULTS.homeMaterials, gutters: 'present' as const } }
+  const gutteredSlots = sceneChangeSlots(guttered, resolveScene(guttered, cuts, YEAR), YEAR)
+  assert.deepEqual(materialInputGroupIds(gutteredSlots.find(candidate => candidate.id === 'gutters')!, gutteredSlots, null), ['gutter-colors', 'condition'], 'gutters: colours then condition')
+  assert.deepEqual(materialInputGroupIds(slotOf('air-sealing'), slots, null), [], 'air sealing has nothing to ride')
+  assert.deepEqual(systemInputSlotIds('roof', home, slots).map(entry => entry.slotId), ['roof', 'gutters'], 'the roof brings the gutters')
+  assert.deepEqual(systemBuildEntries(roofRows, [], []).filter(entry => entry.picked !== null), [], 'nothing picked, nothing in the build')
+  assert.deepEqual(systemBuildEntries(roofRows, [SCOPE_IDS.roofTearOff], []).filter(entry => entry.picked !== null).map(entry => entry.picked), [SCOPE_IDS.roofTearOff], 'a pick shows its row')
+}
+
+// Where a spot chip stands: beside the point, pinned once, lifting at most once.
+assert.equal(QUICK_EDIT_COPY.openCard(HOME_SYSTEM_LABELS.walls), 'Open the Walls system', 'the chip\'s name opens the card')
+assert.ok(!('SYSTEM_PIN_LABELS' in HOME_SCENE_COPY), 'the pin labels are gone')
+{
+  const head = readFileSync('src/features/trade-scenes/ui/components/spot-chip/spot-chip-head.tsx', 'utf8')
+  assert.match(head, /HOME_SYSTEM_LABELS\[system\]/, 'the chip shows the system\'s own label')
+  assert.doesNotMatch(head, /cardTitle/, 'the chip never says system')
+  const chips = readFileSync('src/features/trade-scenes/ui/components/spot-chip/spot-chips.tsx', 'utf8')
+  assert.match(chips, /stageElement\.getBoundingClientRect\(\)[\s\S]*?at\.left < stage\.left[\s\S]*?at\.top > stage\.bottom/, 'the chip host hides when its point leaves the stage')
+}
+{
+  const pick = <T extends object>(value: T, keys: (keyof T)[]) => Object.fromEntries(keys.map(key => [key, value[key]]))
+  const free = { left: 12, right: 1104, top: 12, bottom: 742 }
+  const first = spotChipPlacement({ point: { x: 400, y: 300 }, free, widest: 360, foldedHeight: null, current: null })
+  assert.deepEqual(first, { side: 'right', left: 428, top: 273, width: 360, maxHeight: 469, lifted: false }, 'right of the point, its name row level with it')
+  assert.equal(spotChipPlacement({ point: { x: 900, y: 300 }, free, widest: 360, foldedHeight: null, current: null }).side, 'left', 'left near the dock')
+  assert.deepEqual(pick(spotChipPlacement({ point: { x: 560, y: 300 }, free: { ...free, right: 900 }, widest: 560, foldedHeight: null, current: null }), ['side', 'left', 'top']), { side: 'below', left: 280, top: 328 }, 'neither side fits: centred under the point')
+  assert.deepEqual(pick(spotChipPlacement({ point: { x: 200, y: 300 }, free: { ...free, right: 284 }, widest: 360, foldedHeight: null, current: null }), ['side', 'left', 'width']), { side: 'below', left: 12, width: 272 }, 'a 390 px portrait stage: below, clamped, at the free width')
+  assert.equal(spotChipPlacement({ point: { x: 400, y: 20 }, free, widest: 360, foldedHeight: null, current: null }).top, 12, 'clamped into the free region')
+  const lifted = spotChipPlacement({ point: { x: 400, y: 600 }, free, widest: 360, foldedHeight: 400, current: spotChipPlacement({ point: { x: 400, y: 600 }, free, widest: 360, foldedHeight: null, current: null }) })
+  assert.deepEqual([lifted.top, lifted.lifted], [342, true], 'quick edit lifts once, just enough for the folded panel')
+  const after = spotChipPlacement({ point: { x: 400, y: 600 }, free, widest: 360, foldedHeight: null, current: lifted })
+  assert.equal(after.top, lifted.top, 'a fold opening later never moves it')
+  assert.equal(after.maxHeight, 742 - 342, 'past the room left, the panel scrolls')
+  assert.equal(spotChipPlacement({ point: { x: 400, y: 300 }, free, widest: 360, foldedHeight: 200, current: first }).top, first.top, 'a folded panel that fits never lifts')
+  assert.equal(spotChipPlacement({ point: { x: 400, y: 600 }, free, widest: 360, foldedHeight: 300, current: lifted }).top, lifted.top, 'a flip whose folded height fits keeps the corner')
+  const shrunk = spotChipPlacement({ point: { x: 400, y: 300 }, free: { ...free, bottom: 600 }, widest: 360, foldedHeight: null, current: first })
+  assert.deepEqual([shrunk.top, shrunk.maxHeight], [273, 327], 'a smaller free region never moves it; only its room shrinks')
+  assert.deepEqual(spotChipFree({ stage: { width: 1194, height: 834 }, area: { left: 0, right: 94, top: 0, bottom: 80 }, railShown: true, portrait: false }), { left: 12, right: 1088, top: 64, bottom: 690 }, 'the free region leaves the rail and the summary out')
+  const summaryBottom = SCENE_LAYOUT.summary.top + SCENE_LAYOUT.summary.height
+  assert.equal(spotChipFree({ stage: { width: 1194, height: 834 }, area: { left: 0, right: 94, top: 0, bottom: 80 }, railShown: false, portrait: false }).top, summaryBottom + SCENE_LAYOUT.spotChip.margin, 'a chip never starts under the quick summary')
+  assert.equal(spotChipFree({ stage: { width: 390, height: 844 }, area: { left: 0, right: 94, top: 300, bottom: 76 }, railShown: false, portrait: true }).top, 312, 'an open card above reserves more than the summary')
+  assert.equal(spotChipPlacement({ point: { x: 40, y: 20 }, free: spotChipFree({ stage: { width: 1194, height: 834 }, area: { left: 0, right: 94, top: 0, bottom: 80 }, railShown: false, portrait: false }), widest: 360, foldedHeight: null, current: null }).top, summaryBottom + SCENE_LAYOUT.spotChip.margin, 'a pin in the top-left corner puts its chip below the summary')
+}
+
+// The quick summary: the outside temperature and its words.
+assert.equal(outsideTemperature({ weather: 'summer', climate: 'inland' }), 100, 'inland summer')
+assert.equal(outsideTemperature({ weather: 'winter', climate: 'coastal' }), 45, 'coastal winter')
+assert.equal(outsideTemperature({ weather: 'normal', climate: null }), CLIMATE_PRESETS[CLIMATE_FALLBACK].normal.outside, 'no climate falls back')
+assert.equal(outsideTemperature({ weather: 'rain', climate: 'inland' }), null, 'rain has no temperature')
+assert.equal(SUMMARY_COPY.label({ weather: 'summer', outside: 100, thermal: true }), 'Summer, 100°F outside, thermal on', 'the summary\'s words')
+assert.equal(SUMMARY_COPY.label({ weather: 'rain', outside: null, thermal: false }), 'Rain', 'rain says only rain')
 
 console.log('verify-trade-scene: ok')

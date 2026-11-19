@@ -18,6 +18,15 @@ export const FELT_WEAR = {
   rainHole: 0.3,
 } as const
 
+// The dirt on a blanket, as specks of this side range lying on its top. The density is what Worn draws, scaled by wornShare
+// like every other look's strength. Working numbers, set by screenshot.
+export const INSULATION_DEBRIS = { perSquareMetre: 7, size: { min: 0.05, max: 0.16 }, thickness: 0.003, lift: 0.004 } as const
+
+// The dark wet band on a wall's foot where the roof's water lands on it, in rain only: its height in metres as the eye reads it,
+// and its colour and strength at full. Soaked stucco and concrete go a cool dark grey, so it reads apart from the brown splash
+// band a dry wall already carries. A working number, set by shot.
+export const wetBand = { height: 0.55, color: '#2e3338', alpha: 0.95 } as const
+
 export const WEAR_AMOUNT = { new: 0, good: 0.25, fair: 0.5, worn: 0.75, failing: 1 } satisfies Record<Wear, number>
 
 // Hand-tuned working numbers, set by eye against the scene. Colours are the Worn look; Failing goes a third past them. Strengths
@@ -54,7 +63,8 @@ export const WEAR_LOOKS = {
     // A dusty layer on each sill ledge's top.
     sillDirt: '#776c5c',
     sillDirtThickness: 0.004,
-    // The Condition's fade, uneven: pale soft patches, more of them on the walls the summer sun falls on.
+    // The Condition's fade, uneven: pale soft patches, more of them on the walls the summer sun falls on. The colour is the
+    // default wall's; any other body takes the same move from its own colour.
     blotchColor: '#f3eee3',
     blotchAlpha: 0.45,
     blotchWidth: [0.7, 1.4],
@@ -137,6 +147,23 @@ export const WEAR_LOOKS = {
     r8Girth: 1.25,
     roughness: 0.28,
     metalness: 0.7,
+  },
+  // A working number, set by shot. Grime is the tone a gutter goes toward, and the share is how far it gets at Worn.
+  gutter: {
+    grime: '#6f675b',
+    grimeShare: 0.52,
+    roughness: { new: 0.45, worn: 0.75 },
+    // Dirt run down the front runs' outer face, more of them each step. A working number, set by shot.
+    streaks: { color: '#4d463d', count: { new: 0, good: 0, fair: 3, worn: 8, failing: 12 }, width: 0.012, feather: 0.004 },
+    // How far the kept front run's middle hangs, in metres. A working number, set by shot.
+    sag: { worn: 0.04, failing: 0.07 },
+    // At Failing the kept front run's rake end comes off its hangers: this long, this far down and out, rolled forward this many
+    // radians. A working number, set by shot.
+    pulled: { length: 1.2, drop: 0.18, out: 0.06, tilt: 0.2 },
+    // The water that spills behind the pulled end, stained down the fascia and the wall in separate dark runs across `width`
+    // metres: `tracks` of them, each `trackWidth` wide and reaching down `reach` of the wall's height, so the wall reads as
+    // streaked by the water rather than washed. A working number, set by shot.
+    overflow: { alpha: 0.55, width: 0.9, tracks: 6, trackWidth: [0.03, 0.11] as const, reach: [0.3, 0.85] as const },
   },
   crawlBattSag: 0.07,
 } as const

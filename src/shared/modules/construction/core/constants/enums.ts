@@ -54,11 +54,17 @@ export type Wear = (typeof wears)[number]
 export const gutterOptions = ['present', 'none'] as const
 export type GutterOption = (typeof gutterOptions)[number]
 
+export const airSealingOptions = ['none', 'sealed'] as const
+export type AirSealingOption = (typeof airSealingOptions)[number]
+
 export const exteriorPaints = ['regular', 'cool'] as const
 export type ExteriorPaint = (typeof exteriorPaints)[number]
 
 export const paintWearKinds = ['cracks', 'stains', 'peeling', 'fascia-rot'] as const
 export type PaintWearKind = (typeof paintWearKinds)[number]
+
+export const coveringWearKinds = ['cracked', 'misaligned', 'broken', 'missing', 'curling', 'split'] as const
+export type CoveringWearKind = (typeof coveringWearKinds)[number]
 
 export const paintWearLevels = ['none', 'light', 'moderate', 'heavy'] as const
 export type PaintWearLevel = (typeof paintWearLevels)[number]

@@ -5,7 +5,8 @@ import type { BillCutAddOnId } from '@/shared/modules/construction/core/constant
 import type { CoolLifeColorId, CoolLifeFamilyId, PaintComboId } from '@/shared/modules/construction/core/constants/cool-life-colors'
 import type { CutMode } from '@/shared/modules/construction/core/constants/cut-modes'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
-import type { AcTons, CrawlInsulation, DuctMaterial, ExteriorPaint, FoundationType, GutterOption, HVACComponent, HVACType, InsulationLevel, PaintWearKind, PaintWearLevel, RoofType, Wear, WindowsType } from '@/shared/modules/construction/core/constants/enums'
+import type { AcTons, AirSealingOption, CoveringWearKind, CrawlInsulation, DuctMaterial, ExteriorPaint, FoundationType, GutterOption, HVACComponent, HVACType, InsulationLevel, PaintWearKind, PaintWearLevel, RoofType, Wear, WindowsType } from '@/shared/modules/construction/core/constants/enums'
+import type { GutterColorId } from '@/shared/modules/construction/core/constants/gutter-colors'
 import type { HomeMaterialId } from '@/shared/modules/construction/core/constants/home-material-ids'
 import type { InstallStyleId } from '@/shared/modules/construction/core/constants/install-styles'
 import type { OwensCorningColorId } from '@/shared/modules/construction/core/constants/owens-corning-shingles'
@@ -120,6 +121,8 @@ export interface ResolvedPart {
   edge?: true
   // The build keeps this part and replaces its rotted sections; the part's condition, wear and figures stay as they were.
   woodReplaced?: true
+  // The home's own piece, put back over new work: it stays an install for the part list and savings, but is the same material, so it keeps its wear.
+  reused?: true
   material: string | null
   condition: PartCondition
   wear?: Wear
@@ -143,6 +146,8 @@ export interface ScopeInstall {
     swapsWith?: Partial<Record<EfficiencyUpgradeId, string>>
     // Laid on top of what the part already holds, which stays under it.
     addsTo?: true
+    // Puts the home's own pieces back over new work, so the covering is the same material and keeps its wear.
+    reuses?: true
     // The material after the efficiency swap, mapped to its look in each style.
     styles?: Partial<Record<InstallStyleId, Readonly<Record<string, string>>>>
   }[]
@@ -249,15 +254,22 @@ export interface WindowFrameColor {
 export interface HomeMaterialFacts {
   wear: Partial<Record<HomeMaterialId, Wear>>
   gutters: GutterOption | null
+  // Null follows the roof.
+  gutterWear: Wear | null
+  // Null reads as none.
+  airSealing: AirSealingOption | null
   exteriorPaint: ExteriorPaint | null
   ducts: DuctMaterial | null
   crawlInsulation: CrawlInsulation | null
   acTons: AcTons | null
   shingleColor: ShingleColorId | null
   paintWear: Partial<Record<PaintWearKind, PaintWearLevel>>
+  coveringWear: Partial<Record<CoveringWearKind, PaintWearLevel>>
   existingPaintColors: PaintColorIds
   proposedPaintColors: PaintPick
   windowFrameColor: WindowFrameColorId
+  existingGutterColor: GutterColorId | null
+  proposedGutterColor: GutterColorId | null
 }
 
 export interface HomeFacts {

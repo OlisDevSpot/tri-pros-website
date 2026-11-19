@@ -1,5 +1,8 @@
 'use client'
 
+import type { StoreApi } from 'zustand'
+import type { TradeSceneInputs } from '@/features/trade-scenes/types'
+
 import dynamic from 'next/dynamic'
 import { useId, useRef, useState } from 'react'
 import { preload } from 'react-dom'
@@ -40,13 +43,17 @@ const HomeSceneCanvas = dynamic(() => import('@/features/trade-scenes/ui/compone
 
 const { paperFadeMs, linesFadeMs, linesDelayMs } = SCENE_LOAD
 
-export function TradeSceneView() {
+interface TradeSceneViewProps {
+  inputs?: StoreApi<TradeSceneInputs>
+}
+
+export function TradeSceneView({ inputs }: TradeSceneViewProps) {
   // In flight before the 3D chunk has downloaded. three's FileLoader fetches it in cors mode with same-origin credentials,
   // which `crossOrigin: 'anonymous'` matches, so the browser hands the loader this response. Not drei's preload, which would
   // pull three.js into this bundle.
   preload(SKY_IMAGE, { as: 'fetch', crossOrigin: 'anonymous' })
   // One store per open scene: seeded once, discarded when the page closes.
-  const [store] = useState(() => createSceneInputs(HOME_SCENE_DEFAULTS))
+  const [store] = useState(() => inputs ?? createSceneInputs(HOME_SCENE_DEFAULTS))
   // Apart from the inputs, so a camera move never touches what the scene draws from; outside the stage, so its shortcuts reach it.
   const [camera] = useState(() => createSceneCamera())
   // Outside the stage, which reads the phase; the layers below live here, outside the canvas's dynamic subtree, so a child
@@ -60,10 +67,10 @@ export function TradeSceneView() {
   return (
     <SceneInputsProvider store={store}>
       <SceneTargetsProvider>
-        <SceneControlsProvider>
-          <BenefitsProvider>
-            <SystemCardBottomProvider>
-              <SceneCameraProvider store={camera}>
+        <SceneCameraProvider store={camera}>
+          <SceneControlsProvider>
+            <BenefitsProvider>
+              <SystemCardBottomProvider>
                 <SceneLoadProvider store={load} lines={lines}>
                   {/* `inert` takes the stage out of the accessibility tree, so the status sits beside it. */}
                   {loading && <p role="status" className="sr-only">{SCENE_COPY.loading}</p>}
@@ -121,10 +128,10 @@ export function TradeSceneView() {
                     )}
                   </SceneStage>
                 </SceneLoadProvider>
-              </SceneCameraProvider>
-            </SystemCardBottomProvider>
-          </BenefitsProvider>
-        </SceneControlsProvider>
+              </SystemCardBottomProvider>
+            </BenefitsProvider>
+          </SceneControlsProvider>
+        </SceneCameraProvider>
       </SceneTargetsProvider>
     </SceneInputsProvider>
   )

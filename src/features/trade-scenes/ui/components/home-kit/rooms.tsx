@@ -1,6 +1,7 @@
 'use client'
 
 import type { BoxSpec, HouseWall, RoomSpan, SystemLit } from '@/features/trade-scenes/types'
+import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 
 import { HOME_FADE_TAGS } from '@/features/trade-scenes/constants/home-fades'
 import { HOUSE, HOUSE_WALLS, PARTITION_DOOR, PARTITIONS_X, ROOMS, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
@@ -13,6 +14,8 @@ import { RoomFurnishings } from '@/features/trade-scenes/ui/components/home-kit/
 
 interface RoomsProps {
   roomLight: number
+  // The roof over the rooms, which sets where the attic opens its ceiling.
+  form: RoofForm
   // The system up close; the drywall steps with the joists over it while the ceiling is one of its steps.
   lit: SystemLit | null
 }
@@ -63,7 +66,7 @@ const COMPLETE_CEILING = ceilingOver(HOUSE.atticFrontZ, D - T)
 const CEILING_TAG = thermalTag('ceiling', 'ceiling')
 
 // A living room, a kitchen and one bedroom, open toward the camera.
-export function Rooms({ roomLight, lit }: RoomsProps) {
+export function Rooms({ roomLight, form, lit }: RoomsProps) {
   return (
     <group userData={thermalTag('interior')}>
       <MergedBoxes boxes={WOOD_FLOORS} color={ROOMS.living.floor} roughness={0.8} />
@@ -71,9 +74,9 @@ export function Rooms({ roomLight, lit }: RoomsProps) {
       <MergedBoxes boxes={PAINT.bedroom} color={ROOMS.bedroom.paint} radius={0.008} />
       <MergedBoxes boxes={PAINT.living} color={ROOMS.living.paint} radius={0.008} />
       <MergedBoxes boxes={PAINT.kitchen} color={ROOMS.kitchen.paint} radius={0.008} />
-      <AtticSteps part="ceiling" lit={lit} thermal={CEILING_TAG} boxes={CEILING} color={HOME_PALETTE.ceiling} />
+      <AtticSteps part="ceiling" form={form} lit={lit} thermal={CEILING_TAG} boxes={CEILING} color={HOME_PALETTE.ceiling} />
       <group userData={HOME_FADE_TAGS.complete}>
-        <AtticSteps part="ceiling" lit={lit} thermal={CEILING_TAG} boxes={COMPLETE_CEILING} color={HOME_PALETTE.ceiling} />
+        <AtticSteps part="ceiling" form={form} lit={lit} thermal={CEILING_TAG} boxes={COMPLETE_CEILING} color={HOME_PALETTE.ceiling} />
       </group>
       <RoomFurnishings roomLight={roomLight} />
     </group>

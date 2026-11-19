@@ -109,4 +109,34 @@ export const materialsData = [
     description: 'Paint your home with basic water paint',
     imageUrl: 'https://s7d2.scene7.com/is/image/sherwinwilliams/modern-house-sw-6148-wool-skein-sw-7540-artisan-tan-sw-7034-status-bronze?qlt=82&wid=1024&ts=1704770447288&dpr=off',
   },
+  {
+    label: 'Wood Fencing',
+    accessor: 'woodFencing',
+    description: 'Cedar or redwood boards on posts and rails, the classic privacy fence.',
+    imageUrl: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c',
+  },
+  {
+    label: 'Vinyl Fencing',
+    accessor: 'vinylFencing',
+    description: 'Vinyl panels on posts that never need painting or sealing.',
+    imageUrl: 'https://images.unsplash.com/photo-1558036117-15d82a90b9b2',
+  },
+  {
+    label: 'Composite Fencing',
+    accessor: 'compositeFencing',
+    description: 'Wood-and-polymer boards that keep their colour and resist rot and insects.',
+    imageUrl: 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6',
+  },
+  {
+    label: 'Wrought Iron Fencing',
+    accessor: 'wroughtIronFencing',
+    description: 'Steel or iron pickets on rails, open to the view and hard to climb.',
+    imageUrl: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750',
+  },
+  {
+    label: 'CMU Block',
+    accessor: 'cmuBlock',
+    description: 'Concrete masonry units laid and grouted into a solid wall.',
+    imageUrl: 'https://images.unsplash.com/photo-1503387762-592deb58ef4e',
+  },
 ] as const satisfies InsertMaterial[]

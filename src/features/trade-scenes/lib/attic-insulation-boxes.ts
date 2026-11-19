@@ -67,15 +67,25 @@ export function atticInsulationBoxes(material: string, lowSlope: boolean, span: 
   if (material.startsWith('blown')) {
     return bands.map(band => sheet(band, 0))
   }
-  const between = Math.min(depth, joistDepth, ...bands.map(band => band.top))
-  const run = span.to - span.from
-  const centre = (span.from + span.to) / 2
-  const bays = ATTIC_JOIST_XS.slice(1).map((x, index): BoxSpec => {
+  const bay = (x: number, index: number, height: number, run: number, centre: number): BoxSpec => {
     const from = ATTIC_JOIST_XS[index] + joistWidth / 2
     const to = x - joistWidth / 2
-    return { size: [to - from - 0.01, between, run], position: [(from + to) / 2, WALL_TOP_Y + between / 2, centre] }
-  })
-  return [...bays, ...bands.filter(band => overJoists(band.top, joistDepth)).map(band => sheet(band, joistDepth))]
+    return { size: [to - from - 0.01, height, run], position: [(from + to) / 2, WALL_TOP_Y + height / 2, centre] }
+  }
+  if (bands.some(band => overJoists(band.top, joistDepth))) {
+    // A panel per bay, standing above the joists, so their tops still show as lines between the panels.
+    return bands.flatMap((band) => {
+      const { run, centre } = across(band)
+      return ATTIC_JOIST_XS.slice(1).map((x, index) => bay(x, index, band.top, run, centre))
+    })
+  }
+  const between = Math.min(depth, joistDepth, ...bands.map(band => band.top))
+  return ATTIC_JOIST_XS.slice(1).map((x, index) => bay(x, index, between, span.to - span.from, (span.from + span.to) / 2))
+}
+
+// Blown fill and batts are different fibres: loose and fluffy versus a pressed, faced blanket.
+export function insulationTextureSet(material: string): 'fiber-blown' | 'fiber-batt' {
+  return material.startsWith('blown') ? 'fiber-blown' : 'fiber-batt'
 }
 
 // The blanket's top over a point `z` across the house, where water soaking down through it shows.

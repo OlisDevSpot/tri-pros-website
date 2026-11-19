@@ -66,6 +66,7 @@ function woodReplacements(assembly: Assembly, proposedScopeIds: readonly string[
 export function resolveAssembly(assembly: Assembly, { existing, proposedScopeIds, view, efficiencyUpgrades = [], installStyles = [] }: ResolveInput, installs: Partial<Record<string, ScopeInstall>> = SCOPE_INSTALLS): ResolvedPart[] {
   const installed = new Map<string, string>()
   const addedTo = new Set<string>()
+  const reusing = new Set<string>()
   if (view === 'proposed') {
     for (const scopeId of proposedScopeIds) {
       const entry = installs[scopeId]
@@ -94,6 +95,12 @@ export function resolveAssembly(assembly: Assembly, { existing, proposedScopeIds
         else {
           addedTo.delete(part)
         }
+        if (install.reuses) {
+          reusing.add(part)
+        }
+        else {
+          reusing.delete(part)
+        }
       }
     }
   }
@@ -108,7 +115,9 @@ export function resolveAssembly(assembly: Assembly, { existing, proposedScopeIds
       const installedMaterial = installed.get(part.id)
       const material = installedMaterial ?? existing.parts[part.id]?.material ?? null
       const condition = installedMaterial ? 'installed' : existing.parts[part.id]?.condition ?? 'absent'
-      const wear = installedMaterial ? undefined : existing.parts[part.id]?.wear
+      // Only the home's own material can be put back; a tile reset on a shingle roof lays new tile.
+      const reused = installedMaterial !== undefined && reusing.has(part.id) && installedMaterial === existing.parts[part.id]?.material
+      const wear = installedMaterial && !reused ? undefined : existing.parts[part.id]?.wear
       const definition = material === null ? null : part.materials[material]
       const replacementCopy = woodReplaced.has(part.id) ? definition?.woodReplacementCopy : undefined
       const copy = replacementCopy ?? baseCopy.get(part.id) ?? copyFor(part, material, condition)
@@ -119,6 +128,7 @@ export function resolveAssembly(assembly: Assembly, { existing, proposedScopeIds
         role: part.role,
         ...(part.edge ? { edge: true as const } : {}),
         ...(replacementCopy ? { woodReplaced: true as const } : {}),
+        ...(reused ? { reused: true as const } : {}),
         material,
         condition,
         ...(wear ? { wear } : {}),

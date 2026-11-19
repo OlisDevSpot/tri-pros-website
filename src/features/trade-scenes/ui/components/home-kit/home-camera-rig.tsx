@@ -1,7 +1,9 @@
 'use client'
 
 import type { SystemLit, TradeSceneInputs } from '@/features/trade-scenes/types'
-import type { VisibleArea } from '@/shared/components/scene/types'
+import type { CameraFraming, VisibleArea } from '@/shared/components/scene/types'
+
+import { useLayoutEffect, useState } from 'react'
 
 import { CRAWL_FRAMING } from '@/features/trade-scenes/constants/home-anchors'
 import { AC_SCALE } from '@/features/trade-scenes/constants/home-equipment-sizes'
@@ -20,7 +22,10 @@ import { leanPoint } from '@/features/trade-scenes/lib/lean-point'
 import { liftedFraming } from '@/features/trade-scenes/lib/lifted-framing'
 import { openPeel } from '@/features/trade-scenes/lib/open-peel'
 import { partState } from '@/features/trade-scenes/lib/part-state'
+import { restingFraming } from '@/features/trade-scenes/lib/resting-framing'
+import { useSceneCamera, useSceneCameraApi } from '@/shared/components/scene/contexts/scene-camera-context'
 import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
+import { cameraFramingKey } from '@/shared/components/scene/lib/camera-goal'
 import { CameraRig } from '@/shared/components/scene/ui/camera-rig'
 import { roofFormOf } from '@/shared/modules/construction/core/lib/roof-form-of'
 
@@ -61,13 +66,27 @@ export function HomeCameraRig({ lit }: HomeCameraRigProps) {
   const looksUnderFloor = cameraFocus === 'foundation' && partlyOpen && foundationType === 'raised'
   // Up close comes straight in along the system's own view, and leans toward a part the rep emphasises.
   const up = lit !== null
-  const focusFraming = up
-    ? lookInsideView(lit.system, form, shape, lift, hvac)
-    : cameraFocus === null
-      ? null
-      : looksUnderFloor
-        ? liftedFraming(CRAWL_FRAMING, lift)
-        : SYSTEM_CAMERA_VIEWS[cameraFocus](form, shape, lift, hvac)
+  const upClose = up ? lookInsideView(lit.system, form, shape, lift, hvac) : null
+  const crawl = looksUnderFloor ? liftedFraming(CRAWL_FRAMING, lift) : null
+  // Only the system's own view is held once focus is let go: the up-close view, the lean and the crawl view are layered over
+  // it below, so a card closing from any of them settles on the system's view rather than keeping their pose.
+  const systemView = cameraFocus === null ? null : SYSTEM_CAMERA_VIEWS[cameraFocus](form, shape, lift, hvac)
+  const recenters = useSceneCamera(state => state.recenters)
+  const cameraStore = useSceneCameraApi()
+  const [rest, setRest] = useState<{ held: CameraFraming | null, recenters: number }>({ held: null, recenters })
+  const resting = restingFraming({ focus: systemView, held: rest.held, home: homeFramingFor(aspect), recentered: recenters !== rest.recenters })
+  // Compared by key: the system's view is rebuilt every render, so comparing it by identity would never settle.
+  const heldChanged = (resting.held === null ? null : cameraFramingKey(resting.held)) !== (rest.held === null ? null : cameraFramingKey(rest.held))
+  if (heldChanged || recenters !== rest.recenters) {
+    setRest({ held: resting.held, recenters })
+  }
+  // The shared rig clears `moved` in its own layout effect on a reframe, which runs before this one, so a held pose keeps
+  // Recenter showing.
+  useLayoutEffect(() => {
+    if (resting.away && !cameraStore.getState().moved) {
+      cameraStore.setState({ moved: true })
+    }
+  })
   // An emphasised part that steps open is framed where its step shows, so the lean follows the peel and the parts above it;
   // one that pulls apart is framed where it stands at rest.
   const emphasized = lit === null ? null : lit.emphasized
@@ -78,10 +97,9 @@ export function HomeCameraRig({ lit }: HomeCameraRigProps) {
     : null
   // A part off the system's own run has a look of its own instead of the lean.
   const partFraming = lit !== null && emphasized !== null ? partLookInsideView(lit.system, emphasized, form, shape, lift, hvac) : null
-  const framing = partFraming ?? (focusFraming && point
-    ? framingTowardPart(focusFraming, partOffset(focusFraming, point, lift))
-    : focusFraming)
+  const leaned = upClose && point ? framingTowardPart(upClose, partOffset(upClose, point, lift)) : upClose
+  const framing = partFraming ?? leaned ?? crawl ?? resting.framing
   // Up close a tap already leans toward a part, so a double-tap looks at a spot only outside it, the crawl view included.
   const pan = { box: homePanBox(lift), doubleTapDistance: up ? null : HOME_PAN.doubleTapDistance }
-  return <CameraRig framing={framing ?? homeFramingFor(aspect)} orbit={HOME_ORBIT} visibleArea={visibleArea} pan={pan} />
+  return <CameraRig framing={framing} orbit={HOME_ORBIT} visibleArea={visibleArea} pan={pan} gestures="pan-first" />
 }

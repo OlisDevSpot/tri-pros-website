@@ -12,7 +12,7 @@ const SHINGLE_ROOF = [
 
 // Tile has no cool version on offer, so a tile reset never swaps.
 const TILE_ROOF = [
-  { part: 'covering', material: 'tile' },
+  { part: 'covering', material: 'tile', reuses: true },
   { part: 'underlayment', material: 'synthetic' },
   { part: 'ice-and-water', material: 'membrane' },
   { part: 'drip-edge', material: 'metal' },

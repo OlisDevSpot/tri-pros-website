@@ -107,4 +107,25 @@ export const xScopeMaterialsData: XScopeMaterial[] = [
     scopeAccessor: 'installExteriorPaint',
     materialAccessor: 'waterPaint',
   },
+  {
+    scopeAccessor: 'installFencingGates',
+    materialAccessor: 'woodFencing',
+  },
+  {
+    scopeAccessor: 'installFencingGates',
+    materialAccessor: 'vinylFencing',
+    isMostPopular: true,
+  },
+  {
+    scopeAccessor: 'installFencingGates',
+    materialAccessor: 'compositeFencing',
+  },
+  {
+    scopeAccessor: 'installFencingGates',
+    materialAccessor: 'wroughtIronFencing',
+  },
+  {
+    scopeAccessor: 'installBlockWall',
+    materialAccessor: 'cmuBlock',
+  },
 ]

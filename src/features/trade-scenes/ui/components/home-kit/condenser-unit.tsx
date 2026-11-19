@@ -2,6 +2,7 @@
 
 import type { ThreeEvent } from '@react-three/fiber'
 import type { BoxSpec, FurniturePlacement } from '@/features/trade-scenes/types'
+import type { SpotHover } from '@/features/trade-scenes/ui/components/home-kit/spot-hover'
 import type { SceneBurst } from '@/shared/components/scene/types'
 
 import { useMemo } from 'react'
@@ -12,6 +13,7 @@ import { EQUIPMENT, HOUSE } from '@/features/trade-scenes/constants/home-geometr
 import { CONDENSER_SHIMMER_POSITION } from '@/features/trade-scenes/constants/home-life'
 import { HOME_PALETTE } from '@/features/trade-scenes/constants/home-palette'
 import { OWN_PAINT } from '@/features/trade-scenes/constants/home-thermal-zones'
+import { CONCRETE_TEXTURE } from '@/features/trade-scenes/constants/material-textures'
 import { WEAR_LOOKS } from '@/features/trade-scenes/constants/wear-looks'
 import { useStrainShake } from '@/features/trade-scenes/hooks/use-strain-shake'
 import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
@@ -31,6 +33,7 @@ interface CondenserUnitProps {
   scale: number
   // A tap on the unit, its pad or its lines asks which systems are there.
   onTap: (event: ThreeEvent<MouseEvent>) => void
+  hover: SpotHover
 }
 
 const [x, , z] = EQUIPMENT.condenser.position
@@ -58,15 +61,15 @@ function dustyPlacement(wear: number): FurniturePlacement {
   }
 }
 
-export function CondenserUnit({ load, burst, wear, scale, onTap }: CondenserUnitProps) {
+export function CondenserUnit({ load, burst, wear, scale, onTap, hover }: CondenserUnitProps) {
   const shake = useStrainShake(load, burst)
   const placement = useMemo(() => dustyPlacement(wear), [wear])
   return (
-    <group onClick={onTap}>
+    <group onClick={onTap} {...hover}>
       <group userData={thermalTag('exterior')}>
         {/* The pad is set with the unit, so it lights with it. */}
         <group userData={systemPartTag('condenser')}>
-          <MergedBoxes boxes={PAD} color={HOME_PALETTE.concrete} radius={0.02} receiveShadow />
+          <MergedBoxes boxes={PAD} color={HOME_PALETTE.concrete} texture={CONCRETE_TEXTURE} radius={0.02} receiveShadow />
         </group>
         <group userData={systemPartTag('refrigerant-lines')}>
           <MergedBoxes boxes={LINE_SET} color={HOME_PALETTE.felt} radius={0.02} />

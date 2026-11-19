@@ -6,6 +6,8 @@ import { CRAWL_VENT_Y, CRAWL_VENTS_X, CRAWL_VENTS_Z, FRONT_DOOR, FRONT_WALL, FRO
 // The ground group is drawn for the house's own floor and stretched up to a raised one, so a mark placed in it reads this much
 // taller unless its height is divided by it.
 export const RAISED_GROUND_STRETCH = (HOME_FLOOR_Y.raised - HOUSE.floorThickness) / (HOUSE.floorY - HOUSE.floorThickness)
+// The same at a slab home's floor, where the group folds down instead.
+export const SLAB_GROUND_STRETCH = (HOME_FLOOR_Y.slab - HOUSE.floorThickness) / (HOUSE.floorY - HOUSE.floorThickness)
 
 // The vents hang outside the ground group, so their heights are carried into it at the raised floor, the only one that shows
 // the skirt.

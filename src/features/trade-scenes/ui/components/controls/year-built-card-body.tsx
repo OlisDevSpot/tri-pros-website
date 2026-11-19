@@ -30,6 +30,7 @@ export function YearBuiltCardBody() {
   return (
     // On the phone the pill wraps to two rows, which a full radius would turn into a lozenge.
     <div className={cn('grid gap-2.5 rounded-xl border border-border bg-input-background p-3', shape === 'portrait' && '*:data-[slot=toggle-group]:rounded-[18px]')}>
+      <p className="text-xs text-muted-foreground">{CONTROLS_COPY.systems.setsToday}</p>
       <ChoicePill
         label={CONTROLS_COPY.systems.yearBuilt}
         value={toChoice(property.yearBuilt)}

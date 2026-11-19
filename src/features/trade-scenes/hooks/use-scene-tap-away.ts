@@ -14,7 +14,7 @@ function sampleOf(event: PointerEvent): PointerSample {
 
 // A tap on the scene is a tap away from what floats over it; turning the camera, a pinch or a long press is not, and the
 // scene's own tap tracker decides which is which. Presses that start on the controls never reach the canvas's layer. A tap
-// the house answered itself (a part emphasised, the pins a spot shows) is claimed and leaves what floats over it alone.
+// the house answered itself (a part emphasised, the spot chip a tap shows) is claimed and leaves what floats over it alone.
 export function useSceneTapAway(enabled: boolean, onTapAway: () => void): void {
   const { stageElement } = useSceneVisibleArea()
   const { claimed } = useSceneTapClaim()

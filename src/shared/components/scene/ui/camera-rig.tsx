@@ -10,6 +10,7 @@ import { useThree } from '@react-three/fiber'
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { Box3, Vector2, Vector3 } from 'three'
 
+import { CAMERA_GESTURE_MAPS } from '@/shared/components/scene/constants/camera-gesture-maps'
 import { MIN_SHARE } from '@/shared/components/scene/constants/scene-camera'
 import { SCENE_MOTION } from '@/shared/components/scene/constants/scene-motion'
 import { useOptionalSceneCameraApi } from '@/shared/components/scene/contexts/scene-camera-context'
@@ -32,6 +33,8 @@ interface CameraRigProps {
   visibleArea?: VisibleArea
   // Opt-in: the rep may pan, and the point the camera turns around stays inside the box. Needs a SceneCameraProvider.
   pan?: { box: PanBox, doubleTapDistance: number | null }
+  // Pan-first is the map's way: a drag pans and Shift, Ctrl, the right button or two fingers turn it. Needs pan.
+  gestures?: 'orbit-first' | 'pan-first'
 }
 
 type AreaFractions = readonly [left: number, right: number, bottom: number, top: number]
@@ -58,8 +61,11 @@ function frameVisibleArea(camera: PerspectiveCamera, controls: { panSpeed: numbe
   camera.setViewOffset(visibleW, visibleH, -left * width, -top * height, width, height)
 }
 
-export function CameraRig({ framing, orbit, visibleArea, pan }: CameraRigProps) {
+export function CameraRig({ framing, orbit, visibleArea, pan, gestures = 'orbit-first' }: CameraRigProps) {
   const enabled = pan !== undefined
+  if (gestures === 'pan-first' && !enabled) {
+    throw new Error('CameraRig was given pan-first gestures without pan, so a left drag would do nothing')
+  }
   const provided = useOptionalSceneCameraApi()
   if (enabled && !provided) {
     throw new Error('CameraRig was given pan without a SceneCameraProvider around it')
@@ -68,6 +74,7 @@ export function CameraRig({ framing, orbit, visibleArea, pan }: CameraRigProps) 
   const store = enabled ? provided : null
   const subscribe = useCallback((listener: () => void) => store?.subscribe(listener) ?? (() => {}), [store])
   const recenters = useSyncExternalStore(subscribe, () => store?.getState().recenters ?? 0, () => 0)
+  const drawing = useSyncExternalStore(subscribe, () => store?.getState().drawing ?? false, () => false)
 
   const controls = useRef<ComponentRef<typeof OrbitControls>>(null)
   const camera = useThree(state => state.camera) as PerspectiveCamera
@@ -233,15 +240,19 @@ export function CameraRig({ framing, orbit, visibleArea, pan }: CameraRigProps) 
     const origin = (events.connected as HTMLElement | undefined)?.getBoundingClientRect() ?? rect
     store.setState({ moved: true, tapMark: { x: clientX - origin.left, y: clientY - origin.top, at: performance.now() } })
   }
-  useSceneTaps({ enabled, onMoved: markMoved, onDouble: lookAtTap })
-  useCameraWheel({ enabled, panBy, zoomBy, onMoved: markMoved })
+  useSceneTaps({ enabled: enabled && !drawing, onMoved: markMoved, onDouble: lookAtTap })
+  useCameraWheel({ enabled: enabled && !drawing, panBy, zoomBy, onMoved: markMoved })
 
   return (
     <OrbitControls
       ref={controls}
       makeDefault
+      enabled={!drawing}
       enablePan={enabled}
       screenSpacePanning
+      // Undefined props are skipped by R3F, which leaves OrbitControls' own defaults in place.
+      mouseButtons={gestures === 'pan-first' ? CAMERA_GESTURE_MAPS['pan-first'].mouseButtons : undefined}
+      touches={gestures === 'pan-first' ? CAMERA_GESTURE_MAPS['pan-first'].touches : undefined}
       enableDamping
       minDistance={orbit.minDistance}
       maxDistance={orbit.maxDistance}

@@ -1,19 +1,18 @@
-import type { HomeSystemId } from '@/features/trade-scenes/types'
+import type { HomeSpotId } from '@/features/trade-scenes/types'
 
-import { LOOK_INSIDE_SYSTEM_IDS } from '@/features/trade-scenes/constants/home-systems'
+import { HOME_SPOT_IDS } from '@/features/trade-scenes/constants/home-systems'
 
-// Spot pins share one pin registry with the part pins and the readings, so their ids carry a prefix neither uses.
+// The spot chip's anchor shares one pin registry with the part pins and the readings, so its id carries a prefix neither uses.
 const PREFIX = 'spot:'
 
-export function spotPinId(system: HomeSystemId): string {
-  return `${PREFIX}${system}`
+export function spotPinId(spot: HomeSpotId): string {
+  return `${PREFIX}${spot}`
 }
 
-// Only a system a spot opens can have a pin there.
-export function spotFromPinId(id: string): (typeof LOOK_INSIDE_SYSTEM_IDS)[number] | null {
+export function spotFromPinId(id: string): HomeSpotId | null {
   if (!id.startsWith(PREFIX)) {
     return null
   }
-  const system = id.slice(PREFIX.length)
-  return LOOK_INSIDE_SYSTEM_IDS.find(candidate => candidate === system) ?? null
+  const spot = id.slice(PREFIX.length)
+  return HOME_SPOT_IDS.find(candidate => candidate === spot) ?? null
 }

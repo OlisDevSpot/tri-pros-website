@@ -29,7 +29,7 @@ const GROUP_HEAD = 'col-span-full pt-1 text-xs font-bold tracking-[.14em] text-m
 const EDITOR_CAP = { portrait: 540, wide: 600, clearance: 8 } as const
 
 // Opens over the window, so nothing under it moves. The area is set here only while it is missing; once set it belongs
-// to Home facts, and the row says so.
+// to Property facts, and the row says so.
 export function CostsEditor({ id }: CostsEditorProps) {
   const { repairs, repairsResolved } = useBenefitsFigures()
   const climate = useSceneInputs((state: TradeSceneInputs) => state.climate)

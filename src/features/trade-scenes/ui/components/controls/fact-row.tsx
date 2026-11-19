@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import type { HomeFactId } from '@/features/trade-scenes/types'
+import type { HomeFactId, YardId } from '@/features/trade-scenes/types'
 
 import { CONTROLS_CLASSES } from '@/features/trade-scenes/constants/controls-classes'
 import { CONTROLS_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
@@ -9,7 +9,7 @@ import { toneClasses } from '@/shared/constants/status-tones'
 import { cn } from '@/shared/lib/utils'
 
 interface FactRowProps {
-  id: HomeFactId
+  id: HomeFactId | YardId
   label: string
   // As the tab counts and the group's dot count it.
   missing: boolean

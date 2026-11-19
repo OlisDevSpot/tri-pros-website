@@ -10,11 +10,11 @@ export function homeSpotContext(state: Pick<TradeSceneInputs, 'property' | 'prop
   return { form: homeRoofForm(roofFormOf(state.property.roofType)), picks: state.proposedScopeIds, hvacType: state.property.hvacType }
 }
 
-// A change that leaves the system in focus with nothing to look inside (a flat roof losing its redeck, a wall unit for
+// A change that leaves the picked system with nothing to look inside (a flat roof losing its redeck, a wall unit for
 // the ducts) steps back to the system in the same write, so the card never frames an empty view. The system keeps the
-// camera. Looking inside always has a system in focus.
+// camera. Looking inside always has a system picked.
 export function keepLookInside(state: TradeSceneInputs): Partial<TradeSceneInputs> {
-  if (!state.lookInside || canLookInside(state.cameraFocus!, homeSpotContext(state))) {
+  if (!state.lookInside || canLookInside(state.pickedSystem!, homeSpotContext(state))) {
     return {}
   }
   return LEAVE_LOOK_INSIDE

@@ -1,8 +1,9 @@
 import type { BoxSpec, HomeSystemId, SystemPart, SystemPartId } from '@/features/trade-scenes/types'
+import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 
-import { HOUSE } from '@/features/trade-scenes/constants/home-geometry'
-import { STEP_DEPTHS, UNSTEPPED_SYSTEM_PARTS } from '@/features/trade-scenes/constants/look-inside'
+import { STEP_CUTS, STEP_DEPTHS, UNSTEPPED_SYSTEM_PARTS } from '@/features/trade-scenes/constants/look-inside'
 import { SYSTEM_PARTS } from '@/features/trade-scenes/constants/system-parts'
+import { isCutawaySystem } from '@/features/trade-scenes/lib/is-cutaway-system'
 import { ASSEMBLIES } from '@/shared/modules/construction/core/constants/assemblies'
 
 const ENTRIES = new Map((SYSTEM_PARTS as readonly SystemPart<string>[]).map(entry => [entry.id as SystemPartId, entry]))
@@ -26,19 +27,19 @@ export function stepOrder(shown: Iterable<SystemPartId>): SystemPartId[] {
 }
 
 // The bottom step never moves, so nothing above it is cut back to show it: it stays whole on both sides of the cut, where
-// the story it is lit for (a leak through the ceiling, the gaps round the openings) lies.
+// the story it is lit for (a leak through the ceiling, or the openings the air sealing closes) lies.
 export function stepBottom(shown: Iterable<SystemPartId>): SystemPartId | undefined {
   return stepOrder(shown).at(-1)
 }
 
-// Where each stepped part starts along the house, from the near slope's cut toward its kept end. Only the roof and the attic
-// step open on the house itself.
-export function stepStarts(system: HomeSystemId, shown: Iterable<SystemPartId>, peel: number): ReadonlyMap<SystemPartId, number> {
-  if (system !== 'roof' && system !== 'attic') {
+// Where each stepped part starts along the house, from its system's own cut on this roof toward the right gable. Only the
+// roof and the attic step open on the house itself.
+export function stepStarts(system: HomeSystemId, form: RoofForm, shown: Iterable<SystemPartId>, peel: number): ReadonlyMap<SystemPartId, number> {
+  if (!isCutawaySystem(system)) {
     return new Map()
   }
   const order = stepOrder(shown)
-  return new Map(order.map((id, index) => [id, HOUSE.cutX + stepCutBack(index, order.length, peel, STEP_DEPTHS[system])]))
+  return new Map(order.map((id, index) => [id, STEP_CUTS[form][system] + stepCutBack(index, order.length, peel, STEP_DEPTHS[system])]))
 }
 
 // The middle of the strip a stepped part shows before the part above it starts.

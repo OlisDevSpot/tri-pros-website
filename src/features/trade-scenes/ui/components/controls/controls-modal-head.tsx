@@ -12,7 +12,7 @@ import { DialogClose, DialogTitle } from '@/shared/components/ui/dialog'
 interface ControlsModalHeadProps {
   icon: LucideIcon
   title: string
-  // What sits beside the title: a tag, or Home facts' tabs.
+  // What sits beside the title: a tag, or Property facts' tabs.
   children?: ReactNode
 }
 

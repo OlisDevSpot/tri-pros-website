@@ -9,6 +9,7 @@ import { Color, Mesh, MeshBasicMaterial, ShaderMaterial, Vector3 } from 'three'
 import { HOME_FADES } from '@/features/trade-scenes/constants/home-fades'
 import { HOME_THERMAL_PALETTE } from '@/features/trade-scenes/constants/home-temperatures'
 import { HOME_PAINT_KEYS, OWN_PAINT } from '@/features/trade-scenes/constants/home-thermal-zones'
+import { SOLID_MAP_KEY } from '@/features/trade-scenes/constants/material-textures'
 import { SYSTEM_PARTS } from '@/features/trade-scenes/constants/system-parts'
 import { fitRamp, tintRamps } from '@/features/trade-scenes/ui/lib/part-paint'
 import { thermalPaintColor } from '@/features/trade-scenes/ui/lib/thermal-paint-color'
@@ -159,7 +160,7 @@ function decalFor(set: ThermalPaintSet, key: HomePaintKey, original: Material, m
 
 function paintFor(set: ThermalPaintSet, key: HomePaintKey, fades: number, tag: SystemPartTagData, original: Material): Material {
   const map = 'map' in original ? (original.map as Texture | null) : null
-  return original.transparent && map ? decalFor(set, key, original, map) : surfaceFor(set, key, fades, original.side, tag)
+  return original.transparent && map && original.userData[SOLID_MAP_KEY] !== true ? decalFor(set, key, original, map) : surfaceFor(set, key, fades, original.side, tag)
 }
 
 function materialCount(material: Mesh['material']): number {

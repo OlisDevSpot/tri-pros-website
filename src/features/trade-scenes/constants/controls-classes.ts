@@ -1,6 +1,30 @@
 // Lint holds type to Tailwind's steps with text-xs (12 px) as the floor, and weights to font-bold: no arbitrary sizes, no
 // heavier weights.
+const RAIL_CHIP = 'inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.75 rounded-full px-3.5 text-sm font-bold whitespace-nowrap text-muted-foreground outline-none hover:text-foreground not-aria-pressed:hover:bg-hover pressed:bg-press focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-pressed:bg-muted aria-pressed:text-foreground aria-pressed:inset-ring aria-pressed:inset-ring-primary [&_svg]:size-4 [&_svg]:shrink-0'
+
 export const CONTROLS_CLASSES = {
+  // The read-only overlay look the thermal legend wears: a scrim with media-safe text, never a blur or a muted tone. Like the
+  // legend it takes no taps, so a pin or chip passing under it stays reachable.
+  summaryPill: 'pointer-events-none absolute z-10 flex items-center overflow-hidden rounded-full bg-scrim/70 px-3 whitespace-nowrap text-on-media',
+  summaryRow: 'flex items-center',
+  summarySlot: 'relative flex overflow-hidden',
+  summaryIcon: 'block shrink-0',
+  summaryNumber: 'block pl-1.75 text-sm leading-none font-bold tabular-nums [text-box:trim-both_cap_alphabetic]',
+  summaryFlame: 'flex overflow-hidden',
+  summaryFlameInner: 'flex pl-3',
+  // The chip a tap leaves at the house: the controls' own surface, the card's radius family at a row's height.
+  spotChip: 'absolute box-content overflow-hidden rounded-[26px] border bg-card shadow-2xl',
+  // The name row is 54 px tall: the name's 44 and 5 px round it.
+  spotChipHead: 'flex items-center gap-1 p-1.25',
+  spotChipInner: 'flex flex-col',
+  quickEditBody: 'min-h-0 overflow-y-auto overscroll-contain',
+  quickEditContent: 'grid gap-4 px-3.5 pb-3.5',
+  quickEditSection: 'grid justify-items-start gap-2',
+  quickEditSide: 'text-xs font-bold tracking-[.12em] text-muted-foreground uppercase',
+  quickEditSideProposed: 'text-(--presentation-accent)',
+  wearFold: 'flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-lg text-left text-sm font-bold text-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50',
+  wearFoldSummary: 'min-w-0 flex-1 truncate text-xs font-normal text-muted-foreground',
+  wearFoldChevron: 'size-4 shrink-0 text-muted-foreground transition-transform duration-200 motion-reduce:transition-none',
   // A button in the bottom group, 44 px tall on every shape; portrait lets an icon-only button narrow to 40.
   barItem: {
     base: 'relative inline-flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-full text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 [&_svg]:size-4 [&_svg]:shrink-0',
@@ -14,11 +38,13 @@ export const CONTROLS_CLASSES = {
   chipMiss: 'border-status-attention-dot/60',
   // Radix marks a chip whose menu is open; the chip's own `open` sets the same mark.
   chipOpen: 'data-[state=open]:border-primary data-[state=open]:ring-1 data-[state=open]:ring-primary data-[state=open]:ring-inset',
-  // The stage's controls read at 14 px; a popover would take the page's 16. A menu holding a pick's details can outgrow a
-  // phone's stage, so it scrolls inside the room Radix measures.
+  // The stage's controls read at 14 px; a popover would take the page's 16. Radix sets the room the stage leaves on the
+  // chosen side, so a menu longer than that scrolls instead of running off the stage.
   menu: 'z-40 grid max-h-(--radix-popover-content-available-height) max-w-80 min-w-52.5 gap-px overflow-y-auto overscroll-contain rounded-xl border border-border-strong bg-popover p-1.5 text-sm text-popover-foreground shadow-2xl outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[side=bottom]:slide-in-from-top-1 data-[side=top]:slide-in-from-bottom-1 duration-140 ease-out motion-reduce:animate-none',
   // A chip on the Systems rail: 40 px, quiet until pressed, when it takes the raised fill and a primary ring.
-  railChip: 'inline-flex h-10 shrink-0 cursor-pointer items-center gap-1.75 rounded-full px-3.5 text-sm font-bold whitespace-nowrap text-muted-foreground outline-none hover:text-foreground not-aria-pressed:hover:bg-hover pressed:bg-press focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-pressed:bg-muted aria-pressed:text-foreground aria-pressed:inset-ring aria-pressed:inset-ring-primary [&_svg]:size-4 [&_svg]:shrink-0',
+  railChip: RAIL_CHIP,
+  // A card's action under its title, in the rail chip's pressed look.
+  actionButton: RAIL_CHIP,
   menuHeader: 'px-2.5 pt-1.5 pb-1 text-xs font-bold tracking-[.14em] text-muted-foreground uppercase',
   menuItem: 'relative flex min-h-10 items-center gap-2.5 rounded-lg px-2.5 text-left font-bold',
   // A transparent radio over the drawn row, as the wear dots are drawn: the row keeps its check and label as plain elements.

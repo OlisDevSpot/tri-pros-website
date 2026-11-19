@@ -68,6 +68,17 @@ GROUND_ROWS.forEach(([z, y], i) => {
   }
 })
 
+// Where the ground steps down to the street it must stay behind the curb's face, or a sliver of lawn shows on the curb.
+GROUND_ROWS.forEach(([z, y], i) => {
+  const prev = GROUND_ROWS[i - 1]
+  if (!prev || (y === GRADE.street) === (prev[1] === GRADE.street) || (prev[1] !== GRADE.walk && y !== GRADE.walk)) {
+    return
+  }
+  const nearSide = z < (STREET_Z.curb + STREET_Z.farCurb) / 2
+  const [inner, outer] = nearSide ? [STREET_Z.curb, STREET_Z.curb + GRADE.curb] : [STREET_Z.farCurb - GRADE.curb, STREET_Z.farCurb]
+  assert.ok(prev[0] >= inner - EPS && z <= outer + EPS, `the ground's step at row ${i} lies within the curb`)
+})
+
 const lot = lotBoxes()
 lot.blockWalls.slice(0, 3).forEach((wall, i) => near(wall.size[1], 1.83, EPS, `property wall ${i} height`))
 lot.blockWalls.slice(3).forEach((wall, i) => {
