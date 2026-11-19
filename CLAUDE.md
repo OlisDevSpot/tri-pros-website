@@ -45,7 +45,7 @@ Package manager: **pnpm**. Path alias: `@/` → `src/`.
 
 **Planning**
 - `docs/plans/` — live epic trackers, standing contracts and ledgers, research that open work cites, and the VoIP epics. `docs/superpowers/specs|plans/` — pending, partial, or in-progress designs and plans only. Delete a plan when it ships.
-- `/orient <path|words>` — verified orientation on a plan or epic tracker (tasks vs tree, plan vs git, requirements vs delta), a lean page, a decision sheet, and the structured status block written back; `session-capture` writes the same block at session end so `/orient <path>` is a fresh session's whole prompt.
+- `/orient <path|words>` — verified orientation on a plan or epic tracker (tasks vs tree, plan vs git, requirements vs delta), a briefing on the lane's board page, and the structured status block written back; `session-capture` writes the same block at session end so `/orient <path>` is a fresh session's whole prompt.
 
 **Session memory**
 - `memory/MEMORY.md` — auto-loaded index; `reference-github-workflow.md` for ops details
