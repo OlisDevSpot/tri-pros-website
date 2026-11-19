@@ -174,9 +174,21 @@ export default async function ({ page, hash, viewport, scheme, opt, skillDir }) 
     expect(k === c.sel.split(":")[0], `chip "${c.text}" opens ${c.sel.split(":")[0]} (got ${k})`);
     await backToStatus(page);
   }
-  if (lane === "data-views" && newBrief) {
+  if (lane === "data-views") {
     const texts = chips.map((c) => c.text);
-    expect(eq(texts, ["3 waiting on you", "2 risks", "holds up 4 lanes"]), "data views chips " + JSON.stringify(texts));
+    const want = await page.evaluate((id) => {
+      const l = S.lanes.find((x) => x.id === id);
+      const watch = l.brief && Array.isArray(l.brief.watch) ? l.brief.watch : l.risk ? [l.risk] : [];
+      const holds = LaneCore.layoutBlockerMap(id, S.lanes, S.coll).nodes.filter((n) => n.col === 2 || n.col === 3).flatMap((n) => n.more || [n.id]);
+      const count = (n, one, many) => n + " " + (n === 1 ? one : many);
+      const open = LaneCore.openCount(S.decisions, id);
+      return [open ? open + " waiting on you" : null, watch.length ? count(watch.length, "risk", "risks") : null, holds.length ? "holds up " + count(holds.length, "lane", "lanes") : null].filter(Boolean);
+    }, lane);
+    expect(eq(texts, want), `data views chips ${JSON.stringify(texts)} should read the page's own data: ${JSON.stringify(want)}`);
+    const handWritten = newBrief && opt.briefs.every((b) => b.endsWith("/brief-data-views.json"));
+    if (handWritten) {
+      expect(eq(texts, ["3 waiting on you", "2 risks", "holds up 4 lanes"]), "hand-written brief: data views chips " + JSON.stringify(texts));
+    }
   }
 
   // Every selectable kind opens its own panel, and Back to status returns.

@@ -1,0 +1,621 @@
+{
+  "lane": "data-views",
+  "laneIsNew": false,
+  "ref": "feat/data-views",
+  "base": "origin/main",
+  "brief": {
+    "goal": "Every records table is built from one shared data-view kit, and the customers table becomes a proper entity table that opens instantly with cached rows.",
+    "stand": "Built, not shipped. The shared kit, the folder move and the customers table sit on the branch and go to prod together in one PR; an agent type-checks it against the lanes it touches first.",
+    "phases": [
+      {
+        "id": "DV0",
+        "name": "Instant tab return",
+        "status": "shipped",
+        "step": "prod"
+      },
+      {
+        "id": "DV1",
+        "name": "Edge-to-edge layout",
+        "status": "shipped",
+        "step": "prod"
+      },
+      {
+        "id": "DV2",
+        "name": "Data-view design approved",
+        "status": "decided",
+        "step": "prod"
+      },
+      {
+        "id": "DV3",
+        "name": "The data-view kit and the tables",
+        "status": "built",
+        "step": "release"
+      },
+      {
+        "id": "DV3a",
+        "name": "One folder for every data view",
+        "status": "built",
+        "step": "release"
+      },
+      {
+        "id": "DV4",
+        "name": "Customers entity table",
+        "status": "built",
+        "step": "release"
+      },
+      {
+        "id": "DV5",
+        "name": "Calendars",
+        "status": "spec",
+        "step": "next"
+      },
+      {
+        "id": "DV6",
+        "name": "Kanban (pipeline)",
+        "status": "spec",
+        "step": "next"
+      },
+      {
+        "id": "DV7",
+        "name": "Permissions work shipped first (overtaken)",
+        "status": "shipped",
+        "step": "prod"
+      },
+      {
+        "id": "DV8",
+        "name": "Proposals entity table",
+        "status": "idea",
+        "step": "later"
+      },
+      {
+        "id": "DV9",
+        "name": "Bulk selection and actions",
+        "status": "idea",
+        "step": "later"
+      },
+      {
+        "id": "DV10",
+        "name": "Loading screens for the remaining routes",
+        "status": "spec",
+        "step": "later"
+      },
+      {
+        "id": "DV11",
+        "name": "Card lists and profile lists as data views",
+        "status": "idea",
+        "step": "later"
+      }
+    ],
+    "steps": {
+      "prod": "Instant return, edge to edge",
+      "release": "The shared kit + customers",
+      "next": "Calendars and pipeline",
+      "later": "Proposals, bulk, loading, cards"
+    },
+    "areas": [
+      {
+        "area": "shared/components",
+        "files": 108,
+        "note": "The data-view kit itself: the compound, the table, calendar, kanban and toolbar under one folder."
+      },
+      {
+        "area": "docs",
+        "files": 29,
+        "note": "The tracker, the records notes and every doc that cited the moved paths."
+      },
+      {
+        "area": "shared/entities",
+        "files": 17,
+        "note": "The customers entity table hook and the profile lists that moved with it."
+      },
+      {
+        "area": "features/records-management",
+        "files": 15,
+        "note": "The records pages now render table views of the entity tables."
+      },
+      {
+        "area": "app/(frontend)",
+        "files": 12,
+        "note": "Route pages and loading screens for customers and proposals."
+      },
+      {
+        "area": "shared/modules",
+        "files": 8,
+        "note": "Imports re-pointed to the new data-view folders."
+      },
+      {
+        "area": "other",
+        "files": 38,
+        "note": "Imports re-pointed across 13 other folders."
+      }
+    ],
+    "files": 227,
+    "aheadBehind": {
+      "ahead": 21,
+      "behind": 0
+    },
+    "lastCommit": "a6548d23e · 2026-10-23 · docs(records): D69 says each customer surface offers at most View Profile, Schedule Meeting and Delete",
+    "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/data-views",
+    "tracker": "docs/plans/2026-10-12-data-views-epic.md",
+    "spec": "docs/superpowers/specs/2026-10-07-data-view-surface-design.md",
+    "plan": "docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters-part-2.md",
+    "timeline": [
+      {
+        "date": "2026-10-12",
+        "label": "Epic started",
+        "note": "One structure for the dashboard: an entity shown in a data view."
+      },
+      {
+        "date": "2026-10-13",
+        "label": "Edge to edge on prod",
+        "note": "DV1 shipped; DV0 had shipped the day before."
+      },
+      {
+        "date": "2026-10-14",
+        "label": "Design approved",
+        "note": "The kit, the folder move and customers ship together."
+      },
+      {
+        "date": "2026-10-15",
+        "label": "Kit built",
+        "note": "DV3: the compound and the tables."
+      },
+      {
+        "date": "2026-10-16",
+        "label": "One folder for every data view",
+        "note": "DV3a ruling and build."
+      },
+      {
+        "date": "2026-10-23",
+        "label": "Customers table built",
+        "note": "DV4, with D68 and D69 on what a customer row offers."
+      },
+      {
+        "date": "2026-11-13",
+        "label": "Moved onto its own branch",
+        "note": "The drain re-applied the commits; author dates kept."
+      }
+    ],
+    "builtOn": "2026-10-23",
+    "watch": [
+      "Proposal page and Office TV still import the old folder paths; whichever lane ships second re-points them.",
+      "Scene lab and Trade scenes still carry the old local-main copies of this work: merging either after data views ships conflicts on 109–138 files.",
+      "The tracker's commit list for DV3, DV3a and DV4 names local-main commits that are not on the branch; the drain re-applied them under new ids."
+    ],
+    "agent": [
+      "Type-check this branch merged with Proposal page and Office TV, then open the PR.",
+      "Point three older plans at the new dashboard home path (A5).",
+      "Add the five data-view terms to the glossary once its owner releases it (A3)."
+    ],
+    "decided": [
+      {
+        "date": "2026-10-23",
+        "text": "A customer row offers only View profile, Schedule meeting and Delete (D69)."
+      },
+      {
+        "date": "2026-10-23",
+        "text": "Schedule meeting opens through the modal layer; a booking refreshes the customers list (D68)."
+      },
+      {
+        "date": "2026-10-16",
+        "text": "Every data view's code lives under one data-view folder (DV3a)."
+      },
+      {
+        "date": "2026-10-14",
+        "text": "The kit, the folder move and the customers table ship to prod together."
+      },
+      {
+        "date": "2026-10-12",
+        "text": "The data-view design follows instant tab return; edge to edge goes first (D67)."
+      },
+      {
+        "date": "2026-10-12",
+        "text": "Nothing dims on a refresh (R4)."
+      }
+    ],
+    "evidence": [
+      "DV0, DV1 on origin/main: 77febe8dd, eff6ff23f are ancestors (verified)",
+      "DV3a on ref: src/shared/components/data-view/{core,table,calendar,kanban,query-toolbar} exist; absent on origin/main (verified)",
+      "DV4 on ref: useCustomersTable in customers-records-table.tsx and both lead-sources panes; getCustomers gone (verified)",
+      "DV7: #285 units 1–3 (b17417fd0) on origin/main (verified)",
+      "Tracker's DV3/DV3a/DV4 shas not on the ref; the same subjects exist under new ids, author dates 2026-10-15 to 2026-10-23 (verified)",
+      "DV5, DV6, DV8–DV11 status from the tracker's order table; no plan files to check (inferred)",
+      "Collisions: git merge-tree against every live lane with a branch, 2026-11-18 (verified)"
+    ],
+    "verifiedAt": "feat/data-views@a6548d23e 2026-11-18"
+  },
+  "decisions": [
+    {
+      "id": "data-views-merge-order",
+      "op": "set",
+      "lane": "data-views",
+      "askedBy": "orient",
+      "askedOn": "2026-11-18",
+      "phase": "DV4",
+      "kind": "decision",
+      "ref": null,
+      "area": "flow",
+      "order": 1,
+      "question": "Which lane merges first, given that the folder move touches 92 files?",
+      "context": "Data views moves 92 files to new folders. Proposal page and Office TV still import the old paths, so whichever ships second has to re-point its imports.",
+      "options": [
+        {
+          "label": "Data views first",
+          "consequence": "Proposal page and Office TV re-point their imports at their next catch-up merge"
+        },
+        {
+          "label": "Data views last",
+          "consequence": "Data views waits; it re-points their new imports itself before its PR"
+        }
+      ],
+      "recommended": "Data views first"
+    },
+    {
+      "id": "data-views-footer-updating-under-the-error-screen",
+      "op": "set",
+      "lane": "data-views",
+      "askedBy": "orient",
+      "askedOn": "2026-11-18",
+      "phase": "DV4",
+      "kind": "decision",
+      "ref": null,
+      "area": "polish",
+      "order": 2,
+      "question": "Under an error screen, the table footer still says \"Updating…\". When do we fix it?",
+      "context": "When a list fails to load, its footer still says it is refreshing. The design already fixed the same contradiction for the row count, and the fix is a few lines.",
+      "options": [
+        {
+          "label": "Fix it in this release",
+          "consequence": "Goes into the data views PR"
+        },
+        {
+          "label": "A small step of its own after the release",
+          "consequence": "Ships sooner; the wrong label stays on prod a little longer"
+        }
+      ],
+      "recommended": "Fix it in this release"
+    },
+    {
+      "id": "data-views-aria-busy-on-first-load",
+      "op": "set",
+      "lane": "data-views",
+      "askedBy": "orient",
+      "askedOn": "2026-11-18",
+      "phase": "DV10",
+      "kind": "decision",
+      "ref": null,
+      "area": "accessibility",
+      "order": 3,
+      "question": "Should a list tell screen readers it is loading?",
+      "context": "While a list draws its first placeholder rows, nothing marks it as busy (aria-busy). The design does not say. Only screen-reader users notice.",
+      "options": [
+        {
+          "label": "Add it in this release",
+          "consequence": "One attribute on each list"
+        },
+        {
+          "label": "Add it with the loading-screens step",
+          "consequence": "Batched with the other loading work"
+        },
+        {
+          "label": "Leave it out",
+          "consequence": "No change"
+        }
+      ],
+      "recommended": "Add it with the loading-screens step"
+    },
+    {
+      "id": "data-views-a1",
+      "op": "set",
+      "lane": "data-views",
+      "askedBy": "orient",
+      "askedOn": "2026-11-18",
+      "phase": "DV0",
+      "kind": "check",
+      "ref": "A1",
+      "order": 4,
+      "options": [],
+      "question": "Open a few list pages on prod, leave, and come back: rows should appear at once, with no grey placeholder flash.",
+      "context": "Instant return is already on prod. Dev cannot show it, so only you can check it there."
+    }
+  ],
+  "rulings": [],
+  "decisionPatches": [],
+  "lanePatch": {
+    "brief": "(above)",
+    "briefAt": "2026-11-18"
+  },
+  "collisionPairs": [
+    {
+      "a": "data-views",
+      "b": "filter-rules",
+      "shared": 227,
+      "conflicts": 0,
+      "files": []
+    },
+    {
+      "a": "data-views",
+      "b": "office-tv",
+      "shared": 4,
+      "conflicts": 0,
+      "files": []
+    },
+    {
+      "a": "data-views",
+      "b": "pe4",
+      "shared": 4,
+      "conflicts": 0,
+      "files": []
+    },
+    {
+      "a": "data-views",
+      "b": "proposal-page",
+      "shared": 4,
+      "conflicts": 0,
+      "files": []
+    },
+    {
+      "a": "data-views",
+      "b": "scene-lab",
+      "shared": 227,
+      "conflicts": 138,
+      "files": [
+        "public/scenes/LICENSES.md",
+        "scripts/check-scene-assets.ts",
+        "scripts/verify-construction-model.ts",
+        "scripts/verify-scene-primitives.ts",
+        "scripts/verify-trade-scene-layout.ts",
+        "scripts/verify-trade-scene-lot.ts",
+        "scripts/verify-trade-scene.ts",
+        "src/features/trade-scenes/constants/controls-classes.ts",
+        "src/features/trade-scenes/constants/home-anchors.ts",
+        "src/features/trade-scenes/constants/home-details.ts",
+        "src/features/trade-scenes/constants/home-geometry.ts",
+        "src/features/trade-scenes/constants/home-life.ts",
+        "src/features/trade-scenes/constants/home-lot.ts",
+        "src/features/trade-scenes/constants/home-palette.ts",
+        "src/features/trade-scenes/constants/home-scene-copy.ts",
+        "src/features/trade-scenes/constants/home-scene-defaults.ts",
+        "src/features/trade-scenes/constants/home-systems.ts",
+        "src/features/trade-scenes/constants/look-inside.ts",
+        "src/features/trade-scenes/constants/scene-change-words.ts",
+        "src/features/trade-scenes/constants/scene-control-icons.ts",
+        "src/features/trade-scenes/constants/scene-layout.ts",
+        "src/features/trade-scenes/constants/system-camera-views.ts",
+        "src/features/trade-scenes/constants/system-parts.ts",
+        "src/features/trade-scenes/constants/wear-looks.ts",
+        "src/features/trade-scenes/constants/weather-skies.ts",
+        "src/features/trade-scenes/contexts/scene-controls-context.tsx",
+        "src/features/trade-scenes/contexts/scene-tap-claim-context.tsx",
+        "src/features/trade-scenes/contexts/system-card-bottom-context.tsx",
+        "src/features/trade-scenes/hooks/use-scene-shortcuts.ts",
+        "src/features/trade-scenes/hooks/use-scene-tap-away.ts",
+        "src/features/trade-scenes/lib/attic-insulation-boxes.ts",
+        "src/features/trade-scenes/lib/ceiling-opening-part.ts",
+        "src/features/trade-scenes/lib/controls-press.ts",
+        "src/features/trade-scenes/lib/cutaway-heat-lanes.ts",
+        "src/features/trade-scenes/lib/cutaway-rain-path.ts",
+        "src/features/trade-scenes/lib/deck-rot-spots.ts",
+        "src/features/trade-scenes/lib/dock-layout-for.ts",
+        "src/features/trade-scenes/lib/drip-edge-boxes.ts",
+        "src/features/trade-scenes/lib/escape-step.ts",
+        "src/features/trade-scenes/lib/foundation-walls.ts",
+        "src/features/trade-scenes/lib/home-material-patch.ts",
+        "src/features/trade-scenes/lib/home-roof-layout.ts",
+        "src/features/trade-scenes/lib/house-open.ts",
+        "src/features/trade-scenes/lib/keep-look-inside.ts",
+        "src/features/trade-scenes/lib/lot-boxes.ts",
+        "src/features/trade-scenes/lib/lot-height-at.ts",
+        "src/features/trade-scenes/lib/painted-surface-stains.ts",
+        "src/features/trade-scenes/lib/part-offers.ts",
+        "src/features/trade-scenes/lib/part-state.ts",
+        "src/features/trade-scenes/lib/pieces-in-span.ts",
+        "src/features/trade-scenes/lib/reading-pin-id.ts",
+        "src/features/trade-scenes/lib/resolve-scene.ts",
+        "src/features/trade-scenes/lib/scene-change-slots.ts",
+        "src/features/trade-scenes/lib/scene-resolve-inputs.ts",
+        "src/features/trade-scenes/lib/scene-visible-area-for.ts",
+        "src/features/trade-scenes/lib/shake-layout.ts",
+        "src/features/trade-scenes/lib/shingle-layout.ts",
+        "src/features/trade-scenes/lib/spot-pin-id.ts",
+        "src/features/trade-scenes/lib/step-cut-back.ts",
+        "src/features/trade-scenes/lib/system-part-focus.ts",
+        "src/features/trade-scenes/lib/system-part-opacity.ts",
+        "src/features/trade-scenes/lib/system-parts-shown.ts",
+        "src/features/trade-scenes/lib/systems-at-spot.ts",
+        "src/features/trade-scenes/lib/tile-layout.ts",
+        "src/features/trade-scenes/lib/upgrade-rows.ts",
+        "src/features/trade-scenes/lib/work-details-kind.ts",
+        "src/features/trade-scenes/types.ts",
+        "src/features/trade-scenes/ui/components/benefits/costs-editor.tsx",
+        "src/features/trade-scenes/ui/components/blueprint/blueprint-paper.tsx",
+        "src/features/trade-scenes/ui/components/controls/choice-pill.tsx",
+        "src/features/trade-scenes/ui/components/controls/controls-modal-head.tsx",
+        "src/features/trade-scenes/ui/components/controls/controls-modal.tsx",
+        "src/features/trade-scenes/ui/components/controls/controls-recenter.tsx",
+        "src/features/trade-scenes/ui/components/controls/existing-chip.tsx",
+        "src/features/trade-scenes/ui/components/controls/fact-row.tsx",
+        "src/features/trade-scenes/ui/components/controls/focus-ping.tsx",
+        "src/features/trade-scenes/ui/components/controls/home-facts-body.tsx",
+        "src/features/trade-scenes/ui/components/controls/home-facts-tabs.tsx",
+        "src/features/trade-scenes/ui/components/controls/proposed-chip.tsx",
+        "src/features/trade-scenes/ui/components/controls/system-card-body.tsx",
+        "src/features/trade-scenes/ui/components/controls/systems-rail.tsx",
+        "src/features/trade-scenes/ui/components/controls/systems-section.tsx",
+        "src/features/trade-scenes/ui/components/controls/value-menu.tsx",
+        "src/features/trade-scenes/ui/components/controls/work-details.tsx",
+        "src/features/trade-scenes/ui/components/controls/year-built-card-body.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/attic-ducts.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/attic-dust.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/attic-floor.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/attic-openings.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/attic-steps.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/condenser-unit.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/crawl-insulation.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/foundation.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/gable-roof.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/garage-gable-end.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/garage.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/home-camera-rig.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/home-kit.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/home-rain.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/house-roof.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/house-shell.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/lot-ground.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/lot.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/low-slope-roof.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/merged-boxes.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/roof-covering.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/roof-slope.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/roof-steps.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/rooms.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/spot-pins-layer.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/wall-skin.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/window-panes.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/window-seals.tsx",
+        "src/features/trade-scenes/ui/components/home-scene-canvas.tsx",
+        "src/features/trade-scenes/ui/components/panel/wear-dots.tsx",
+        "src/features/trade-scenes/ui/components/scene-stage.tsx",
+        "src/features/trade-scenes/ui/lib/ground-strip-geometry.ts",
+        "src/features/trade-scenes/ui/lib/leave-look-inside.ts",
+        "src/features/trade-scenes/ui/lib/merge-boxes.ts",
+        "src/features/trade-scenes/ui/lib/paint-chalk.ts",
+        "src/features/trade-scenes/ui/lib/paint-look.ts",
+        "src/features/trade-scenes/ui/lib/thermal-paint-set.ts",
+        "src/features/trade-scenes/ui/lib/wall-skin-look.ts",
+        "src/features/trade-scenes/ui/views/trade-scene-view.tsx",
+        "src/shared/components/scene/lib/create-scene-camera.ts",
+        "src/shared/components/scene/types.ts",
+        "src/shared/components/scene/ui/camera-rig.tsx",
+        "src/shared/components/scene/ui/instanced-pieces.tsx",
+        "src/shared/entities/customers/components/profile/customer-profile-tab-panels.tsx",
+        "src/shared/modules/construction/core/constants/enums.ts",
+        "src/shared/modules/construction/core/constants/home-materials.ts",
+        "src/shared/modules/construction/core/constants/owens-corning-shingles.ts",
+        "src/shared/modules/construction/core/constants/scope-installs.ts",
+        "src/shared/modules/construction/core/constants/standard-shingles.ts",
+        "src/shared/modules/construction/core/lib/assemblies/roof-attic/infer-existing-conditions.ts",
+        "src/shared/modules/construction/core/lib/resolve-assembly.ts",
+        "src/shared/modules/construction/core/lib/resolve-home-materials.ts",
+        "src/shared/modules/construction/core/types.ts"
+      ]
+    },
+    {
+      "a": "data-views",
+      "b": "trade-scenes",
+      "shared": 227,
+      "conflicts": 109,
+      "files": [
+        "scripts/verify-construction-model.ts",
+        "scripts/verify-trade-scene-layout.ts",
+        "scripts/verify-trade-scene-lot.ts",
+        "scripts/verify-trade-scene.ts",
+        "src/features/meeting-flow/constants/trade-outcomes.ts",
+        "src/features/trade-scenes/constants/home-details.ts",
+        "src/features/trade-scenes/constants/home-furnishings.ts",
+        "src/features/trade-scenes/constants/home-geometry.ts",
+        "src/features/trade-scenes/constants/home-life.ts",
+        "src/features/trade-scenes/constants/home-palette.ts",
+        "src/features/trade-scenes/constants/home-profile-choices.ts",
+        "src/features/trade-scenes/constants/home-scene-copy.ts",
+        "src/features/trade-scenes/constants/home-systems.ts",
+        "src/features/trade-scenes/constants/look-inside.ts",
+        "src/features/trade-scenes/constants/scene-change-words.ts",
+        "src/features/trade-scenes/constants/scope-verbs.ts",
+        "src/features/trade-scenes/constants/system-camera-views.ts",
+        "src/features/trade-scenes/constants/system-parts.ts",
+        "src/features/trade-scenes/constants/wear-looks.ts",
+        "src/features/trade-scenes/constants/weather-skies.ts",
+        "src/features/trade-scenes/lib/ceiling-opening-part.ts",
+        "src/features/trade-scenes/lib/cutaway-heat-lanes.ts",
+        "src/features/trade-scenes/lib/cutaway-rain-path.ts",
+        "src/features/trade-scenes/lib/deck-rot-spots.ts",
+        "src/features/trade-scenes/lib/downspout-boxes.ts",
+        "src/features/trade-scenes/lib/drip-edge-boxes.ts",
+        "src/features/trade-scenes/lib/home-material-patch.ts",
+        "src/features/trade-scenes/lib/home-roof-layout.ts",
+        "src/features/trade-scenes/lib/indoor-side.ts",
+        "src/features/trade-scenes/lib/keep-efficiency-upgrades.ts",
+        "src/features/trade-scenes/lib/keep-look-inside.ts",
+        "src/features/trade-scenes/lib/lean-point.ts",
+        "src/features/trade-scenes/lib/material-option-choices.ts",
+        "src/features/trade-scenes/lib/painted-surface-stains.ts",
+        "src/features/trade-scenes/lib/part-offers.ts",
+        "src/features/trade-scenes/lib/part-state.ts",
+        "src/features/trade-scenes/lib/pieces-in-span.ts",
+        "src/features/trade-scenes/lib/repairs-rows.ts",
+        "src/features/trade-scenes/lib/resolve-scene.ts",
+        "src/features/trade-scenes/lib/scene-change-slots.ts",
+        "src/features/trade-scenes/lib/scene-resolve-inputs.ts",
+        "src/features/trade-scenes/lib/scene-savings.ts",
+        "src/features/trade-scenes/lib/shake-layout.ts",
+        "src/features/trade-scenes/lib/shingle-layout.ts",
+        "src/features/trade-scenes/lib/spot-pin-point.ts",
+        "src/features/trade-scenes/lib/stain-boxes.ts",
+        "src/features/trade-scenes/lib/step-cut-back.ts",
+        "src/features/trade-scenes/lib/system-lit.ts",
+        "src/features/trade-scenes/lib/system-part-focus.ts",
+        "src/features/trade-scenes/lib/system-part-opacity.ts",
+        "src/features/trade-scenes/lib/system-parts-shown.ts",
+        "src/features/trade-scenes/lib/systems-at-spot.ts",
+        "src/features/trade-scenes/lib/tile-layout.ts",
+        "src/features/trade-scenes/lib/upgrade-row-state.ts",
+        "src/features/trade-scenes/lib/upgrade-rows.ts",
+        "src/features/trade-scenes/lib/work-details-kind.ts",
+        "src/features/trade-scenes/types.ts",
+        "src/features/trade-scenes/ui/components/controls/existing-chip.tsx",
+        "src/features/trade-scenes/ui/components/controls/modify-result-row.tsx",
+        "src/features/trade-scenes/ui/components/controls/proposed-chip.tsx",
+        "src/features/trade-scenes/ui/components/controls/system-card-body.tsx",
+        "src/features/trade-scenes/ui/components/controls/work-details.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/attic-ducts.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/attic-dust.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/attic-floor.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/attic-openings.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/attic-steps.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/condenser-unit.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/foundation.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/gable-roof.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/home-camera-rig.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/home-equipment.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/home-kit.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/home-rain.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/house-roof.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/house-shell.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/low-slope-roof.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/part-anchors-layer.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/roof-covering.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/roof-slope.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/roof-steps.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/rooms.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/spot-pins-layer.tsx",
+        "src/features/trade-scenes/ui/components/home-kit/thermostat.tsx",
+        "src/features/trade-scenes/ui/components/home-scene-canvas.tsx",
+        "src/features/trade-scenes/ui/components/panel/part-list.tsx",
+        "src/features/trade-scenes/ui/components/panel/wear-dots.tsx",
+        "src/features/trade-scenes/ui/components/spot-pin.tsx",
+        "src/features/trade-scenes/ui/lib/paint-chalk.ts",
+        "src/features/trade-scenes/ui/lib/paint-look.ts",
+        "src/shared/components/scene/types.ts",
+        "src/shared/components/scene/ui/instanced-pieces.tsx",
+        "src/shared/components/scene/ui/rain-field.tsx",
+        "src/shared/entities/customers/components/profile/customer-profile-tab-panels.tsx",
+        "src/shared/modules/construction/core/constants/assemblies/hvac-attic.ts",
+        "src/shared/modules/construction/core/constants/enums.ts",
+        "src/shared/modules/construction/core/constants/home-materials.ts",
+        "src/shared/modules/construction/core/constants/owens-corning-shingles.ts",
+        "src/shared/modules/construction/core/constants/scope-ids.ts",
+        "src/shared/modules/construction/core/constants/scope-installs.ts",
+        "src/shared/modules/construction/core/constants/scope-not-drawn.ts",
+        "src/shared/modules/construction/core/constants/standard-shingles.ts",
+        "src/shared/modules/construction/core/constants/upgrade-registry.ts",
+        "src/shared/modules/construction/core/lib/assemblies/hvac-attic/infer-existing-conditions.ts",
+        "src/shared/modules/construction/core/lib/assemblies/roof-attic/infer-existing-conditions.ts",
+        "src/shared/modules/construction/core/lib/install-kind.ts",
+        "src/shared/modules/construction/core/lib/resolve-assembly.ts",
+        "src/shared/modules/construction/core/lib/resolve-home-materials.ts",
+        "src/shared/modules/construction/core/types.ts"
+      ]
+    }
+  ]
+}

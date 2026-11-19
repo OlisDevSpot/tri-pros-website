@@ -22,7 +22,7 @@ for (const a of process.argv.slice(2)) {
   else if (k === "delay") { const [c, ms] = v.split("="); opt.delay[c] = Number(ms); }
   else if (k === "reject-next") opt.rejectNext = v || "unavailable";
   else if (k === "read-only") opt.readOnly = true;
-  else if (k === "script") opt.script = resolve(v);
+  else if (k === "script") opt.script = resolve(skillDir, v);
   else { console.error("unknown flag --" + k); process.exit(2); }
 }
 if (!hashes.length) hashes.push("now");
@@ -34,7 +34,7 @@ const decisions = loadDecisions();
 for (const spec of opt.briefs) {
   const i = spec.indexOf("=");
   const laneId = spec.slice(0, i);
-  const file = JSON.parse(readFileSync(resolve(spec.slice(i + 1)), "utf8"));
+  const file = JSON.parse(readFileSync(resolve(skillDir, spec.slice(i + 1)), "utf8"));
   const lane = lanes.find((l) => l.id === laneId);
   if (!lane) throw new Error("--brief: no lane " + laneId);
   const wrapped = file && typeof file === "object" && "brief" in file;
