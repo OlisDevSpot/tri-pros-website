@@ -247,8 +247,31 @@ async function run({ page, hash, viewport, scheme, opt, skillDir }, expect) {
   expect(eq(states, { answered: 14, open: 1, done: 1 }), "after the run: 14 answered, 1 open, 1 done check " + JSON.stringify(states));
   if (viewport === "1280x900" || viewport === "390x844") await shot("tab");
 
-  // Copy: the page says decision and owner check, never call.
+  // The lane page and its side panel both hold an editable copy; saving from both still writes once.
   await go(page, "#" + hash);
+  {
+    const id = "data-views-busy";
+    const opened = await page.evaluate((id) => {
+      const pin = document.querySelector(`#lane-view .lb-main [data-sel="decision:${id}"]`);
+      pin?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      return !!document.querySelector(`#lane-inspector .lb-card[data-id="${id}"]`);
+    }, id);
+    expect(opened, "the side panel holds a copy of the open decision");
+    const main = laneCard(page, id);
+    await main.locator("[name=own]").fill("");
+    await main.locator("input[type=radio]").nth(1).check();
+    const n = (await updates(page)).length;
+    const clicked = await page.evaluate((id) => {
+      const btns = [...document.querySelectorAll(`#lane-view .lb-card[data-id="${id}"] button[type=submit]`)];
+      btns.forEach((b) => b.click());
+      return btns.length;
+    }, id);
+    await settle(page, 500);
+    const got = await since(page, n);
+    expect(clicked === 2 && got.length === 1 && got[0].path === "decisions/" + id, `Save from both copies writes once (${clicked} buttons, ${got.length} writes)`);
+  }
+
+  // Copy: the page says decision and owner check, never call.
   const copyLane = await staticCopy(page);
   const hit = /\bcalls?\b/i.exec(copyLane);
   expect(!hit, "the page's own copy says call: …" + (hit ? copyLane.slice(Math.max(0, hit.index - 40), hit.index + 40) : "") + "…");

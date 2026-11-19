@@ -140,34 +140,34 @@ thead th{border-top:0;font:600 12px var(--mono);letter-spacing:.04em;text-transf
 .lb-card[data-state="answered"],.lb-card[data-state="done"]{background:var(--bg)}
 .lb-card.lb-compact{background:transparent;border:0;padding:0}
 .lb-card p{margin:0}
-.lb-card-h{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline}
+.lb-card .lb-card-h{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline}
 .lb-card .lb-q{flex:1 1 24ch;margin:0;font:650 17px/1.35 var(--display);font-stretch:95%;overflow-wrap:anywhere;text-wrap:pretty}
 .lb-card.lb-compact .lb-q{font-size:16px}
 .lb-card .lb-why{color:var(--muted);font-size:14px;max-width:70ch;overflow-wrap:anywhere}
-.lb-form{display:grid;gap:10px;min-width:0}
-.lb-opts{display:grid;gap:6px}
-.lb-opt{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;align-items:baseline;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font-size:14.5px;cursor:pointer}
-.lb-opt:hover{border-color:var(--accent)}
-.lb-opt:has(input:checked){border-color:var(--accent);background:var(--agent-soft)}
-.lb-opt:has(input:disabled){cursor:default}
-.lb-opt input{grid-row:span 2;align-self:center;width:16px;height:16px;margin:0;accent-color:var(--accent)}
-.lb-ot{font-weight:600;overflow-wrap:anywhere}
-.lb-oc{grid-column:2;font-size:13px;color:var(--muted)}
-.lb-pick{margin-left:6px;font:600 11px var(--mono);font-style:normal;color:var(--done);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
-.lb-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:10px;align-items:end}
-.lb-field{gap:3px}
-.lb-act{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
-.lb-ro{font-size:13px;color:var(--muted)}
-.lb-now,.lb-a,.lb-note,.lb-reply{display:grid;gap:2px;font-size:14px;overflow-wrap:anywhere}
-.lb-done{display:grid;gap:10px;min-width:0}
-.lb-a b{font-weight:600;font-size:15px}
-.lb-reply{padding-left:10px;border-left:2px solid var(--agent)}
-.lb-wait{font:500 12px var(--mono);color:var(--you)}
-.lb-wait.lb-applied{color:var(--done)}
-.lb-done .lb-act{justify-content:flex-start}
-.lb-tick{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:start;color:var(--ink);font-size:15px;cursor:pointer}
-.lb-tick input{width:20px;height:20px;margin:3px 0 0;accent-color:var(--done)}
-.lb-tick-t{display:grid;gap:4px;min-width:0}
+.lb-card .lb-form{display:grid;gap:10px;min-width:0}
+.lb-card .lb-opts{display:grid;gap:6px}
+.lb-card .lb-opt{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;align-items:baseline;padding:10px 12px;border:1px solid var(--line);border-radius:7px;background:var(--bg);color:var(--ink);font-size:14.5px;cursor:pointer}
+.lb-card .lb-opt:hover{border-color:var(--accent)}
+.lb-card .lb-opt:has(input:checked){border-color:var(--accent);background:var(--agent-soft)}
+.lb-card .lb-opt:has(input:disabled){cursor:default}
+.lb-card .lb-opt input{grid-row:span 2;align-self:center;width:16px;height:16px;margin:0;accent-color:var(--accent)}
+.lb-card .lb-ot{font-weight:600;overflow-wrap:anywhere}
+.lb-card .lb-oc{grid-column:2;font-size:13px;color:var(--muted)}
+.lb-card .lb-pick{margin-left:6px;font:600 11px var(--mono);font-style:normal;color:var(--done);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
+.lb-card .lb-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(260px,100%),1fr));gap:10px;align-items:end}
+.lb-card .lb-field{gap:3px}
+.lb-card .lb-act{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.lb-card .lb-ro{font-size:13px;color:var(--muted)}
+.lb-card .lb-now,.lb-card .lb-a,.lb-card .lb-note,.lb-card .lb-reply{display:grid;gap:2px;font-size:14px;overflow-wrap:anywhere}
+.lb-card .lb-done{display:grid;gap:10px;min-width:0}
+.lb-card .lb-a b{font-weight:600;font-size:15px}
+.lb-card .lb-reply{padding-left:10px;border-left:2px solid var(--agent)}
+.lb-card .lb-wait{font:500 12px var(--mono);color:var(--you)}
+.lb-card .lb-wait.lb-applied{color:var(--done)}
+.lb-card .lb-done .lb-act{justify-content:flex-start}
+.lb-card .lb-tick{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:start;color:var(--ink);font-size:15px;cursor:pointer}
+.lb-card .lb-tick input{width:20px;height:20px;margin:3px 0 0;accent-color:var(--done)}
+.lb-card .lb-tick-t{display:grid;gap:4px;min-width:0}
 .lb-card[data-state="done"] .lb-q{text-decoration:line-through;text-decoration-color:var(--muted)}
 .skill{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;gap:8px;align-content:start;min-width:0}
 .skill .cmd{font:600 16px var(--mono)}
@@ -365,9 +365,9 @@ dl.facts .mono{font-size:13px}
 #lane-view .lb-ib{display:grid;gap:10px;min-width:0}
 #lane-view .lb-ih{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
 #lane-view .lb-x{padding:3px 8px;font-size:12px;flex:none}
-#lane-view .lb-ib h4{font:700 17px/1.25 var(--display);font-stretch:92%;margin:0;overflow-wrap:anywhere}
-#lane-view .lb-ib p{margin:0;font-size:14px;overflow-wrap:anywhere}
-#lane-view .lb-ib ul{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:13.5px;overflow-wrap:anywhere}
+#lane-view .lb-ib h4:not(.lb-card *){font:700 17px/1.25 var(--display);font-stretch:92%;margin:0;overflow-wrap:anywhere}
+#lane-view .lb-ib p:not(.lb-card *){margin:0;font-size:14px;overflow-wrap:anywhere}
+#lane-view .lb-ib ul:not(.lb-card *){list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:13.5px;overflow-wrap:anywhere}
 #lane-view .lb-ib dl.facts{grid-template-columns:minmax(0,1fr);gap:0;font-size:13px}
 #lane-view .lb-ib dl.facts dt{font-size:12px}
 #lane-view .lb-ib dl.facts dd{margin-bottom:8px}
@@ -621,7 +621,7 @@ dl.facts .mono{font-size:13px}
 const STAGES=[["idea","Idea"],["spec","Spec"],["plan","Plan"],["build","Build"],["review","Self-review"],["preview","PR + preview"],["ready","Ready to merge"],["shipped","Shipped"]];
 const STAGE_I=Object.fromEntries(STAGES.map((s,i)=>[s[0],i]));
 const GROUPS=[["you","Waiting on you","your look, your answer or your merge"],["agent","Agents working","nothing needed from you"],["blocked","Blocked","waiting for another lane to merge"],["parked","Parked","held on purpose, or superseded"],["shipped","Shipped","on prod"]];
-const S={lanes:null,setup:null,decisions:null,skills:null,coll:null,canWrite:true,db:null,editing:null,sel:null,drafts:{}};
+const S={lanes:null,setup:null,decisions:null,skills:null,coll:null,canWrite:true,db:null,editing:null,sel:null,drafts:{},saving:new Set()};
 const $=s=>document.querySelector(s);
 const el=(t,a={},...kids)=>{const e=document.createElement(t);for(const[k,v]of Object.entries(a)){if(v==null||v===false)continue;if(k==="class")e.className=v;else if(k==="text")e.textContent=v;else if(k.startsWith("on"))e.addEventListener(k.slice(2),v);else e.setAttribute(k,v===true?"":v)}for(const k of kids.flat()){if(k==null||k===false)continue;e.append(k.nodeType?k:document.createTextNode(String(k)))}return e};
 const svgEl=(t,a,txt)=>{const e=document.createElementNS("http://www.w3.org/2000/svg",t);for(const k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;return e};

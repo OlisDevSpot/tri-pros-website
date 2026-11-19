@@ -290,6 +290,14 @@
   const drafts = () => (S.drafts ??= {});
   const copiesOf = (id, scope = document) => [...scope.querySelectorAll(`.lb-card[data-id="${CSS.escape(id)}"]`)];
   function redrawCards() { renderDecisions(); if (S.lane) renderLaneView(); }
+  // One write per change: every copy of a doc shares this guard, and a redraw mid-save keeps its controls disabled.
+  const inFlight = () => (S.saving ??= new Set());
+  function startSaving(id) {
+    if (inFlight().has(id)) return false;
+    inFlight().add(id);
+    for (const c of copiesOf(id)) for (const b of c.querySelectorAll("button[type=submit], input[name=done]")) b.disabled = true;
+    return true;
+  }
 
   function fillForm(form, dr) {
     for (const r of form.querySelectorAll("[name=choice]")) r.checked = dr.choice != null && +r.value === dr.choice;
@@ -315,17 +323,18 @@
     const choice = own || (picked ? +picked.value : null);
     if (choice == null) { toast("Pick an option or write your own answer"); return; }
     const patch = LaneCore.answerPatch(d, choice, form.elements.note ? form.elements.note.value : "", today());
-    const btn = form.querySelector("button[type=submit]");
-    if (btn) btn.disabled = true;
-    const ok = await save("decisions", d.id, patch);
+    if (!startSaving(d.id)) return;
+    let ok = false;
+    try { ok = await save("decisions", d.id, patch); } finally { inFlight().delete(d.id); }
     if (ok) delete drafts()[d.id];
-    else if (btn && btn.isConnected) btn.disabled = false;
-    if (ok) redrawCards();
+    redrawCards();
   }
 
   async function toggleCheck(e, d) {
-    const ok = await save("decisions", d.id, e.target.checked ? { done: true } : { done: DEL });
-    if (!ok) redrawCards();
+    const done = e.target.checked;
+    if (!startSaving(d.id)) { e.target.checked = !done; return; }
+    try { await save("decisions", d.id, done ? { done: true } : { done: DEL }); } finally { inFlight().delete(d.id); }
+    redrawCards();
   }
 
   function reopen(btn, d) {
@@ -365,7 +374,7 @@
         el("label", { class: "lb-field" }, el("span", { class: "lb-lbl", text: opts.length ? "Your own answer" : "Your answer" }), own),
         el("label", { class: "lb-field" }, el("span", { class: "lb-lbl", text: "Note (optional)" }), el("input", { type: "text", name: "note", disabled: off, autocomplete: "off" }))),
       can ? el("div", { class: "lb-act" },
-        el("button", { class: "primary", type: "submit" }, "Save answer"),
+        el("button", { class: "primary", type: "submit", disabled: inFlight().has(d.id) }, "Save answer"),
         editing ? el("button", { type: "button", onclick: () => { delete drafts()[d.id]; redrawCards(); } }, "Keep answer") : null)
         : el("p", { class: "lb-ro", text: "This view can't save answers" }));
     fillForm(form, drafts()[d.id] || {});
@@ -386,7 +395,7 @@
     if (problems.length) return card(el("div", { class: "lb-card-h" }, el("h4", { class: "lb-q", text: d.question || d.id }), area), why, el("p", { class: "lb-ro", text: "This doc can't be answered here: " + problems.join("; ") + "." }));
     if (isCheck(d)) return card(
       el("label", { class: "lb-tick" },
-        el("input", { type: "checkbox", name: "done", checked: !!d.done, disabled: !can, onchange: (e) => toggleCheck(e, d) }),
+        el("input", { type: "checkbox", name: "done", checked: !!d.done, disabled: !can || inFlight().has(d.id), onchange: (e) => toggleCheck(e, d) }),
         el("span", { class: "lb-tick-t" }, el("span", { class: "lb-q", text: d.question }), why), area),
       !can && !d.done ? el("p", { class: "lb-ro", text: "This view can't save answers" }) : null);
     return card(el("div", { class: "lb-card-h" }, el("h4", { class: "lb-q", text: d.question }), area), why,
