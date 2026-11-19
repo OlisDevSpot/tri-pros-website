@@ -48,6 +48,9 @@ const envSchema = z.object({
   // Better Auth
   BETTER_AUTH_URL: z.string().optional(),
   BETTER_AUTH_SECRET: z.string(),
+  // One value shared by production, previews and local dev: every copy that is
+  // not production seals its Google sign-in for production to finish (oAuthProxy).
+  OAUTH_PROXY_SECRET: z.string().min(32).optional(),
 
   // Tunnel (dev — public HTTPS URL for webhooks)
   NGROK_URL: z.string().optional(),
@@ -207,6 +210,12 @@ if (env.VERCEL_ENV === 'production' && env.EMAIL_DEV_OVERRIDE) {
 // silently divert every real Lead out of ad optimization — fail boot instead.
 if (env.VERCEL_ENV === 'production' && env.META_TEST_EVENT_CODE) {
   throw new Error('META_TEST_EVENT_CODE must NOT be set in production (test events are excluded from optimization)')
+}
+
+// Without the shared key a preview cannot relay Google sign-in through
+// production, and production cannot open what previews send.
+if ((env.VERCEL_ENV === 'production' || env.VERCEL_ENV === 'preview') && !env.OAUTH_PROXY_SECRET) {
+  throw new Error('OAUTH_PROXY_SECRET must be set on Vercel production and preview (preview Google sign-in relays through production)')
 }
 
 // -----------------------------------------------------------------------------

@@ -7,25 +7,11 @@ import type { FunnelSlug } from '@/shared/domains/funnels/constants/slugs'
 
 export const APP_HOSTS = {
   prod: ['triprosremodeling.com', 'www.triprosremodeling.com'],
-  // Funnel subdomains on every dev port so they resolve in worktrees too
-  // (browsers map *.localhost to loopback, no hosts-file edits). These mirror
-  // FUNNEL_SLUGS (the canonical source) × dev ports; they're literal here only
-  // because roots.ts cannot value-import FUNNEL_SLUGS (see import note above).
-  // Keep in sync with src/shared/domains/funnels/constants/slugs.ts.
-  dev: [
-    'localhost:3000',
-    'localhost:3001',
-    'localhost:3002',
-    'kitchens.localhost:3000',
-    'kitchens.localhost:3001',
-    'kitchens.localhost:3002',
-    'bathrooms.localhost:3000',
-    'bathrooms.localhost:3001',
-    'bathrooms.localhost:3002',
-    'complete-interior.localhost:3000',
-    'complete-interior.localhost:3001',
-    'complete-interior.localhost:3002',
-  ],
+  // Any port, so every worktree and the review slot can sign in; *.localhost
+  // covers the funnel subdomains (browsers map it to loopback, no hosts-file edits).
+  dev: ['localhost:*', '*.localhost:*'],
+  // Vercel names previews tri-pros-website-<deployment hash or git-branch slug>-<team>.vercel.app.
+  preview: ['tri-pros-website-*-olisdevspots-projects.vercel.app'],
   tunnel: ['destined-emu-bold.ngrok-free.app'],
 } as const
 
