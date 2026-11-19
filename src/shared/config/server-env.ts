@@ -33,6 +33,10 @@ const envSchema = z.object({
   // it answers "am I the deployed prod site?" in a way a laptop can't fake by
   // accident. NODE_ENV answers only "optimized build or dev build?".
   VERCEL_ENV: z.enum(['development', 'preview', 'production']).optional(),
+  // This deployment's own hosts, without protocol: the hash URL and, for a git
+  // deployment, the branch alias. Only these are trusted on a preview.
+  VERCEL_URL: z.string().optional(),
+  VERCEL_BRANCH_URL: z.string().optional(),
   // Dev-only: gates /api/dev/playwright-session (OAuth-bypass login for the
   // Playwright MCP browser). Optional so production builds never require it;
   // the route refuses unless this is set AND matches.

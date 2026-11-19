@@ -7,6 +7,20 @@ import { userRoles } from '@/shared/constants/enums'
 import { db } from '@/shared/db'
 import * as schema from '@/shared/db/schema'
 
+// Each deployment trusts only the hosts it answers on. Production relays
+// previews' sign-ins on the strength of the sealed state, not this list, so it
+// never needs preview or local hosts; and a wildcard over vercel.app would also
+// match hosts that other Vercel accounts can create.
+function hostsForThisDeployment(): string[] {
+  if (env.VERCEL_ENV === 'production') {
+    return [...APP_HOSTS.prod]
+  }
+  if (env.VERCEL_ENV === 'preview') {
+    return [env.VERCEL_URL, env.VERCEL_BRANCH_URL].filter((host): host is string => !!host)
+  }
+  return [...APP_HOSTS.dev, ...APP_HOSTS.tunnel, ...APP_HOSTS.prod]
+}
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     schema,
@@ -59,7 +73,7 @@ export const auth = betterAuth({
   // to http, tunnel/prod to https. allowedHosts entries are auto-added to
   // trustedOrigins, so we don't duplicate them.
   baseURL: {
-    allowedHosts: [...APP_HOSTS.dev, ...APP_HOSTS.preview, ...APP_HOSTS.tunnel, ...APP_HOSTS.prod],
+    allowedHosts: hostsForThisDeployment(),
     protocol: 'auto',
     fallback: env.NEXT_PUBLIC_BASE_URL,
   },

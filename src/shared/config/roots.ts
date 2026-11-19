@@ -10,8 +10,6 @@ export const APP_HOSTS = {
   // Any port, so every worktree and the review slot can sign in; *.localhost
   // covers the funnel subdomains (browsers map it to loopback, no hosts-file edits).
   dev: ['localhost:*', '*.localhost:*'],
-  // Vercel names previews tri-pros-website-<deployment hash or git-branch slug>-<team>.vercel.app.
-  preview: ['tri-pros-website-*-olisdevspots-projects.vercel.app'],
   tunnel: ['destined-emu-bold.ngrok-free.app'],
 } as const
 
