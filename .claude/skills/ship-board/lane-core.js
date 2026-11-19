@@ -39,6 +39,69 @@
     return out;
   }
 
+  const NODE = { w: 150, h: 52 }, NODE4 = { w: 110, h: 52 }, COL_GAP = 70, ROW_GAP = 36, MAX_COL = 4, OVERLAP_GAP = 20;
+  function layoutBlockerMap(laneId, lanes, snapshot) {
+    const m = Object.fromEntries(lanes.map((l) => [l.id, l]));
+    const me = m[laneId];
+    const placed = new Set([laneId]);
+    const mk = (id, col) => ({ id, col, ...(m[id] && m[id].move === "parked" && m[id].stage !== "shipped" ? { parked: true } : {}) });
+    const cols = [[], [mk(laneId, 1)], [], []];
+    activeDeps(me, m).forEach((id) => { placed.add(id); cols[0].push(mk(id, 0)); });
+    const dependents = (ids) => lanes.filter((l) => isLive(l) && !placed.has(l.id) && deps(l).some((d) => ids.includes(d))).map((l) => l.id);
+    const c2 = dependents([laneId]); c2.forEach((id) => placed.add(id));
+    const c3 = dependents(c2); c3.forEach((id) => placed.add(id));
+    c2.forEach((id) => cols[2].push(mk(id, 2)));
+    c3.forEach((id) => cols[3].push(mk(id, 3)));
+
+    const pairs = (snapshot && snapshot.pairs) || [];
+    const pairWith = (id) => pairs.find((p) => (p.a === laneId && p.b === id) || (p.b === laneId && p.a === id));
+    const overlap = [];
+    for (const p of pairs) {
+      const other = p.a === laneId ? p.b : p.b === laneId ? p.a : null;
+      if (!other || placed.has(other) || !m[other] || m[other].stage === "shipped") continue;
+      placed.add(other); overlap.push(mk(other, "overlap"));
+    }
+
+    const cap = (list, c) => {
+      if (list.length <= MAX_COL) return list;
+      return [...list.slice(0, MAX_COL - 1), { id: "more:" + c, col: c, more: list.slice(MAX_COL - 1).map((n) => n.id) }];
+    };
+    if (!cols[0].length) cols[0].push({ id: "none:0", col: 0 });
+    const shown = [cap(cols[0], 0), cols[1], cap(cols[2], 2), cap(cols[3], 3)];
+    const shownOverlap = cap(overlap, "overlap");
+
+    const stackH = (n) => n * NODE.h + Math.max(0, n - 1) * ROW_GAP;
+    const tallest = Math.max(...shown.map((c) => stackH(c.length)));
+    const nodes = [];
+    shown.forEach((list, c) => {
+      const size = c === 3 ? NODE4 : NODE;
+      const top = (tallest - stackH(list.length)) / 2;
+      list.forEach((n, i) => nodes.push({ ...n, x: c * (NODE.w + COL_GAP), y: top + i * (NODE.h + ROW_GAP), w: size.w, h: size.h }));
+    });
+    const baseW = 3 * (NODE.w + COL_GAP) + NODE4.w;
+    const rowW = shownOverlap.length * NODE.w + Math.max(0, shownOverlap.length - 1) * OVERLAP_GAP;
+    shownOverlap.forEach((n, i) => nodes.push({ ...n, x: i * (NODE.w + OVERLAP_GAP), y: tallest + ROW_GAP, w: NODE.w, h: NODE.h }));
+
+    const ids = new Set(nodes.map((n) => n.id));
+    const edges = [];
+    for (const n of nodes) {
+      const l = m[n.id];
+      if (!l) continue;
+      for (const d of activeDeps(l, m)) if (ids.has(d)) edges.push({ from: d, to: n.id, kind: l.stackedOn === d ? "stack" : "wait", label: l.stackedOn === d ? "built on" : "waits" });
+    }
+    for (const n of shownOverlap) {
+      if (n.more) continue;
+      const p = pairWith(n.id);
+      const conflicts = (p && p.conflicts) || 0, shared = (p && p.shared) || 0;
+      edges.push(conflicts > 0
+        ? { from: laneId, to: n.id, kind: "conflict", label: conflicts + (conflicts === 1 ? " file conflicts" : " files conflict") }
+        : { from: laneId, to: n.id, kind: "clean", label: shared + " shared, clean" });
+    }
+
+    const loop = findCycle(lanes);
+    return { width: Math.max(baseW, rowW), height: tallest + (shownOverlap.length ? ROW_GAP + NODE.h : 0), nodes, edges, cycle: loop.includes(laneId) ? loop : [] };
+  }
+
   const pad = (n) => String(n).padStart(2, "0");
   const localDay = (d) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
   const isEpic = (brief) => Array.isArray(brief && brief.phases) && brief.phases.length >= 5;
@@ -78,6 +141,7 @@
     const phases = (brief && brief.phases) || [];
     const stepOf = (d) => {
       const s = (phases.find((p) => p.id === d.phase) || {}).step;
+      if (s === "parked") return "later"; // a decision on parked work must not read as this-release work
       return STEPS.includes(s) ? s : "release";
     };
     const { open, checks } = laneDecisions(decisions, laneId);
@@ -165,5 +229,5 @@
     return { brief, notes, decisions };
   }
 
-  globalThis.LaneCore = { deps, activeDeps, isLive, groupOf, findCycle, localDay, isEpic, normalizeOptions, laneDecisions, openCount, answerPatch, pinsByStep, waitGap, collisionAsOf, collisionStale, validateBrief, validateDecision, docId, migrateBrief };
+  globalThis.LaneCore = { deps, activeDeps, isLive, groupOf, findCycle, layoutBlockerMap, localDay, isEpic, normalizeOptions, laneDecisions, openCount, answerPatch, pinsByStep, waitGap, collisionAsOf, collisionStale, validateBrief, validateDecision, docId, migrateBrief };
 })();

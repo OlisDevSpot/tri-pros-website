@@ -84,3 +84,10 @@ test("every live fixture lane migrates to a valid brief and valid docs", () => {
     for (const d of r.decisions) assert.deepEqual(C.validateDecision(d), [], d.id);
   }
 });
+test("a decision on a parked phase pins to later", () => {
+  const brief = {phases: [{id: "p1", name: "P", status: "parked", step: "parked"}, {id: "p2", name: "Q", status: "plan"}]};
+  const ds = [{id: "a", lane: "x", phase: "p1", question: "q"}, {id: "b", lane: "x", phase: "p2", question: "q"}, {id: "c", lane: "x", phase: "ghost", question: "q"}, {id: "d", lane: "x", phase: null, question: "q"}];
+  const p = C.pinsByStep(brief, ds, "x");
+  assert.deepEqual(p.later.map(x => x.id), ["a"]);
+  assert.deepEqual(p.release.map(x => x.id), ["b", "c", "d"]);
+});
