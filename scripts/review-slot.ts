@@ -8,7 +8,8 @@ import process from 'node:process'
 import { dbUrlLine, installNeeded, parseWorktrees, resolveBranch, REVIEW_PORT, REVIEW_SLOT_DIR, schemaChanged, slotEnvLocal } from './lib/review-slot'
 
 function git(args: string[], cwd?: string): string {
-  return execFileSync('git', args, { cwd, encoding: 'utf8' })
+  // pnpm-lock.yaml read via `git show` exceeds execFileSync's 1 MiB default
+  return execFileSync('git', args, { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
 }
 
 function readOr(path: string, fallback: string): string

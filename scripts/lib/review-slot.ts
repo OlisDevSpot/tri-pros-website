@@ -60,7 +60,12 @@ function lineFor(key: string, text: string): string | null {
 }
 
 export function dbUrlLine(envText: string): string | null {
-  return lineFor('DATABASE_DEV_URL', envText)
+  const line = lineFor('DATABASE_DEV_URL', envText)
+  if (line === null) {
+    return null
+  }
+  const value = line.slice(line.indexOf('=') + 1).trim()
+  return value === '' || value === '""' || value === '\'\'' ? null : line
 }
 
 export function slotEnvLocal(input: {
@@ -70,6 +75,7 @@ export function slotEnvLocal(input: {
 }): { text: string, db: 'lane copy' | 'shared dev' } {
   const laneLine = input.laneEnvLocal === null ? null : dbUrlLine(input.laneEnvLocal)
   const sharedLine = dbUrlLine(input.mainEnvLocal) ?? dbUrlLine(input.mainEnv)
+  const inheritedOnly = laneLine !== null && laneLine === sharedLine
   const chosen = laneLine ?? sharedLine
   if (chosen === null) {
     throw new Error('no DATABASE_DEV_URL in the lane .env.local, main .env.local or main .env')
@@ -80,7 +86,7 @@ export function slotEnvLocal(input: {
     .filter(line => line !== '' && !dropped.some(pattern => pattern.test(line)))
   return {
     text: `${[...kept, `PORT=${REVIEW_PORT}`, chosen].join('\n')}\n`,
-    db: laneLine === null ? 'shared dev' : 'lane copy',
+    db: laneLine === null || inheritedOnly ? 'shared dev' : 'lane copy',
   }
 }
 

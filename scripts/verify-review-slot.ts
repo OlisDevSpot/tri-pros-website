@@ -50,6 +50,21 @@ const fromEnv = slotEnvLocal({ mainEnvLocal: main, mainEnv: 'DATABASE_DEV_URL=po
 assert.equal(fromEnv.db, 'shared dev')
 assert.match(fromEnv.text, /^DATABASE_DEV_URL=postgres:\/\/shared$/m)
 
+const mainWithUrl = 'NEON_BRANCH_ID=br-main\nPORT=3000\nDATABASE_DEV_URL=postgres://mainlocal\n'
+const fromMainLocal = slotEnvLocal({ mainEnvLocal: mainWithUrl, mainEnv: 'DATABASE_DEV_URL=postgres://shared\n', laneEnvLocal: null })
+assert.equal(fromMainLocal.db, 'shared dev')
+assert.equal(fromMainLocal.text.split('\n').filter(line => line.startsWith('DATABASE_DEV_URL=')).length, 1)
+assert.match(fromMainLocal.text, /^DATABASE_DEV_URL=postgres:\/\/mainlocal$/m)
+assert.doesNotMatch(fromMainLocal.text, /NEON_BRANCH_ID|PORT=3000/)
+assert.match(fromMainLocal.text, /^PORT=3001$/m)
+
+const inherited = slotEnvLocal({ mainEnvLocal: main, mainEnv: 'DATABASE_DEV_URL=postgres://shared\n', laneEnvLocal: 'DATABASE_DEV_URL=postgres://shared\n' })
+assert.equal(inherited.db, 'shared dev')
+
+const emptyLane = slotEnvLocal({ mainEnvLocal: main, mainEnv: 'DATABASE_DEV_URL=postgres://shared\n', laneEnvLocal: 'DATABASE_DEV_URL=\n' })
+assert.equal(emptyLane.db, 'shared dev')
+assert.match(emptyLane.text, /^DATABASE_DEV_URL=postgres:\/\/shared$/m)
+
 assert.throws(() => slotEnvLocal({ mainEnvLocal: main, mainEnv: 'DATABASE_URL=postgres://prod\n', laneEnvLocal: 'PORT=3010\n' }), /no DATABASE_DEV_URL/)
 
 assert.equal(schemaChanged(['src/shared/db/schema/meetings.ts']), true)
@@ -57,6 +72,9 @@ assert.equal(schemaChanged(['src/shared/constants/enums/user.ts']), true)
 assert.equal(schemaChanged(['src/app/page.tsx']), false)
 
 assert.equal(dbUrlLine('PORT=3000\nDATABASE_DEV_URL="postgres://x"\n'), 'DATABASE_DEV_URL="postgres://x"')
+assert.equal(dbUrlLine('DATABASE_DEV_URL=\n'), null)
+assert.equal(dbUrlLine('DATABASE_DEV_URL=""\n'), null)
+assert.equal(dbUrlLine('DATABASE_DEV_URL=\'\'  \n'), null)
 assert.equal(dbUrlLine('PORT=3000\nDATABASE_URL=postgres://prod\n'), null)
 
 console.log('✅ review-slot decisions verified')
