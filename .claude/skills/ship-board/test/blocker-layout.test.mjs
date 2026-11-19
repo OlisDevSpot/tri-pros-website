@@ -36,3 +36,12 @@ test("nodes never overlap and stay inside width/height", () => {
   for (const a of m.nodes) for (const b of m.nodes) if (a !== b)
     assert.ok(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y, a.id + "/" + b.id);
 });
+test("only the loop through this lane is reported", () => {
+  const lanes = [lane("a", {blockedBy: ["b"]}), lane("b", {blockedBy: ["a"]}), lane("x", {blockedBy: ["y"]}), lane("y", {blockedBy: ["x"]})];
+  assert.deepEqual([...C.layoutBlockerMap("a", lanes, {pairs: []}).cycle].sort(), ["a", "b"]);
+});
+test("width follows the columns actually used", () => {
+  const m = C.layoutBlockerMap("solo", [lane("solo")], {pairs: []});
+  assert.ok(m.width < 770);
+  for (const n of m.nodes) assert.ok(n.x + n.w <= m.width, n.id);
+});

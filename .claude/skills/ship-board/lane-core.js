@@ -78,8 +78,6 @@
       const top = (tallest - stackH(list.length)) / 2;
       list.forEach((n, i) => nodes.push({ ...n, x: c * (NODE.w + COL_GAP), y: top + i * (NODE.h + ROW_GAP), w: size.w, h: size.h }));
     });
-    const baseW = 3 * (NODE.w + COL_GAP) + NODE4.w;
-    const rowW = shownOverlap.length * NODE.w + Math.max(0, shownOverlap.length - 1) * OVERLAP_GAP;
     shownOverlap.forEach((n, i) => nodes.push({ ...n, x: i * (NODE.w + OVERLAP_GAP), y: tallest + ROW_GAP, w: NODE.w, h: NODE.h }));
 
     const ids = new Set(nodes.map((n) => n.id));
@@ -98,8 +96,19 @@
         : { from: laneId, to: n.id, kind: "clean", label: shared + " shared, clean" });
     }
 
-    const loop = findCycle(lanes);
-    return { width: Math.max(baseW, rowW), height: tallest + (shownOverlap.length ? ROW_GAP + NODE.h : 0), nodes, edges, cycle: loop.includes(laneId) ? loop : [] };
+    const inLoops = new Set(findCycle(lanes));
+    const reach = (next) => {
+      const seen = new Set([laneId]), todo = [laneId];
+      while (todo.length) for (const w of next(todo.pop())) if (inLoops.has(w) && !seen.has(w)) { seen.add(w); todo.push(w); }
+      return seen;
+    };
+    let cycle = [];
+    if (inLoops.has(laneId)) {
+      const fwd = reach((v) => deps(m[v])), back = reach((v) => lanes.filter((l) => deps(l).includes(v)).map((l) => l.id));
+      cycle = [...fwd].filter((id) => back.has(id));
+    }
+    const width = Math.max(...nodes.map((n) => n.x + n.w));
+    return { width, height: tallest + (shownOverlap.length ? ROW_GAP + NODE.h : 0), nodes, edges, cycle };
   }
 
   const pad = (n) => String(n).padStart(2, "0");
