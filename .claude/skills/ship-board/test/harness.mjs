@@ -179,6 +179,12 @@ const wrapper = () => {
   return `<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>[hidden]{display:none!important}</style></head><body>\n${page}\n</body></html>`;
 };
 
+// The Reference tab and the Now grouping must not move while the lane page changes; every run guards them.
+const baseline = {
+  reference: readFileSync(join(here, "baseline", "reference.txt"), "utf8").replace(/\n$/, ""),
+  nowGroups: JSON.parse(readFileSync(join(here, "baseline", "now-groups.json"), "utf8")),
+};
+
 mkdirSync(join(here, "shots"), { recursive: true });
 const browser = await chromium.launch();
 let failed = false;
@@ -220,7 +226,7 @@ try {
     const checks = { nowGroups, text: {} };
     if (opt.script) {
       const mod = await import(pathToFileURL(opt.script).href);
-      Object.assign(checks, (await mod.default({ page, hash, viewport: vp, scheme })) || {});
+      Object.assign(checks, (await mod.default({ page, hash, viewport: vp, scheme, opt, skillDir })) || {});
     }
     const tabs = { now: ["now"], decisions: ["decisions"], reference: ["bottlenecks", "skills", "tools"] };
     const keep = await page.evaluate(() => location.hash);
@@ -231,8 +237,12 @@ try {
     }
     await page.evaluate((h) => { location.hash = h; }, keep);
     const updates = await page.evaluate(() => window.__updates);
+    const failures = [...(checks.failures || [])];
+    if (checks.text.reference !== baseline.reference) failures.push("Reference text differs from test/baseline/reference.txt");
+    if (JSON.stringify(checks.nowGroups) !== JSON.stringify(baseline.nowGroups)) failures.push("Now groups differ from test/baseline/now-groups.json");
+    checks.failures = failures;
     console.log(JSON.stringify({ hash, viewport: vp, scheme, overflowPx, consoleErrors, updates, checks }));
-    if (overflowPx !== 0 || consoleErrors.length) failed = true;
+    if (overflowPx !== 0 || consoleErrors.length || failures.length) failed = true;
     await ctx.close();
   }
 } finally {
