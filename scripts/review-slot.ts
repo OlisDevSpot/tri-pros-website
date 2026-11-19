@@ -78,6 +78,19 @@ async function main(): Promise<void> {
     return
   }
 
+  let env: ReturnType<typeof slotEnvLocal>
+  try {
+    env = slotEnvLocal({
+      mainEnvLocal: readOr(join(root, '.env.local'), ''),
+      mainEnv: readOr(join(root, '.env'), ''),
+      laneEnvLocal: lanePath === null ? null : readOr(join(lanePath, '.env.local'), null),
+    })
+  }
+  catch (error) {
+    fail(error instanceof Error ? error.message : String(error))
+    return
+  }
+
   const targetHash = createHash('sha256')
     .update(git(['show', `${sha}:package.json`], root))
     .update(git(['show', `${sha}:pnpm-lock.yaml`], root))
@@ -110,20 +123,7 @@ async function main(): Promise<void> {
   }
 
   const slotEnvPath = join(slot, '.env.local')
-  const oldEnv = readOr(slotEnvPath, '')
-  let env: ReturnType<typeof slotEnvLocal>
-  try {
-    env = slotEnvLocal({
-      mainEnvLocal: readOr(join(root, '.env.local'), ''),
-      mainEnv: readOr(join(root, '.env'), ''),
-      laneEnvLocal: lanePath === null ? null : readOr(join(lanePath, '.env.local'), null),
-    })
-  }
-  catch (error) {
-    fail(error instanceof Error ? error.message : String(error))
-    return
-  }
-  const dbChanged = dbUrlLine(oldEnv) !== dbUrlLine(env.text)
+  const dbChanged = dbUrlLine(readOr(slotEnvPath, '')) !== dbUrlLine(env.text)
   writeFileSync(slotEnvPath, env.text)
 
   const changed = git(['diff', '--name-only', `origin/main...${sha}`], root).split('\n').filter(Boolean)
