@@ -137,6 +137,12 @@ How a list of one entity's records is read and shown, on any surface. The `DataV
 - **Orchestrator** — the page or component that mounts a data view and writes the wrapper around it; it may drop the bar, swap the heading or pick toolbar pieces. No per-callsite layout component does this for it. _Avoid_: container (a records-management term).
 - **Loading screen** — a route's `loading.tsx`: the page's own component under `DataViewPending`, its data views showing their cached rows or none (`useLoadingScreenRead`). It starts no fetch; the page that replaces it refreshes the rows. _Avoid_: skeleton page.
 - **Pending view** — any render where `DataViewPendingContext` is not `false`. `'loading'`: a loading screen, a `DataViewBoundary`'s suspense fallback, the layout's document-load skeleton, the PWA launch shell. `'error'`: a boundary's error fallback. Reads never suspend inside one, and only `'loading'` shows cached rows (`useIsDataViewPending`).
+- **Filter rule** — one condition a viewer sets on a data view: a field, **is** or **is not**, and values (`FilterRule`). Planned (filter rules epic FR4). _Avoid_: rule alone in code (CASL rules live in the same server layer), condition, criterion.
+- **Filter group** — filter rules joined by AND or OR, one level deep inside a filter rule tree (`FilterGroup`). _Avoid_: group alone in code (analytics "group by" is a different thing), clause.
+- **Filter rule tree** — everything a viewer filters a data view by: an AND / OR root holding filter rules and filter groups, in one URL key `${prefix}_f` (`FilterRuleTree`). Fixed filters and the date window stay outside it. _Avoid_: query, filter state.
+- **Filter grouping field** — a multi-select field whose values are a classifier's groups (Sit: Sat · Didn't Sit · Not Set) and whose SQL expands them through the classifier's inverse (`valuesInGroups`); a new value classified in the map reaches every filter. Projects' `statusBucket` is the first. _Avoid_: derived filter, virtual field.
+- **Outcome type** — the UI name for a meeting outcome's group under `MEETING_OUTCOME_SENTIMENT`: Positive · Neutral · Negative · Not Set (field `outcomeSentiment`). _Avoid_: sentiment in UI copy (it is the code name only).
+- **Quick filter** — named filter rules declared once per entity and shown as a one-tap toggle on every view of it (meetings "Sits": Sit is Sat AND Meeting type is not Project). Code, not the database. _Avoid_: preset, saved view, smart filter.
 
 ## Records terms
 
@@ -149,9 +155,28 @@ How a list of one entity's records is read and shown, on any surface. The `DataV
 - **Stage** — one step of a pipeline; a customer sits in exactly one stage per pipeline. On the kanban board each stage shows as a lane, but the domain word is always stage (`PipelineStageConfig`, `KanbanStageFilter`). _Avoid_: column, lane, status.
 - **Confirmed** — a meeting whose homeowner, reached on the day of the meeting, said they will be home (`meetings.confirmedAt`). A soft confirmation: a confirmed meeting can still be rescheduled or cancelled before the rep arrives. It holds for one appointment time — moving `scheduledFor` clears it, and a reschedule books a new, unconfirmed meeting. Fresh pipeline: every booked meeting starts in **Needs Confirmation** and moves to **Confirmed** once confirmed.
 
+## Energy impact terms
+
+The proposal's bill-savings projection and the Remodel ROI calculator share these (logic in `src/shared/modules/construction/core`). Ruled 2026-10-21 and 2026-10-22 (energy impact tracker EI-D19–D25); the chapter's own label is decided at its UI exploration. The model is keyed by the calculator's bill categories (electric, water, gas, gardening, misc); there is no separate "energy category".
+
+- **Bill cut** — the share of a bill a trade or an add-on takes off, in percent: the team's working numbers, assuming old inefficient material is replaced with efficient material (`TRADE_BILL_CUTS`). Cuts stack multiplicatively. _Avoid_: savings rate, reduction.
+- **Bill-cutting scope** ("bill-cut scope" for short) — a scope that, on a proposal, makes its trade's bill cut count, for the bills named; only complete replacements are (all windows, full Cool Life repaint, roof tear-off/torch down/redeck/overlay, split or package HVAC, attic insulation, radiant barrier, every dryscaping scope but sod). An A/C replacement cuts only electric and a furnace replacement only gas (`BILL_CUTTING_SCOPES`, still to be built in the energy-impact foundation). An **add-on** (the catalog's kind: work we don't normally do standalone) can be bill-cutting too: ducts, assumed with every full HVAC, radiant barrier and the attic fan (`BILL_CUT_ADD_ON_IDS`). Cool roof is not an add-on: Tri Pros sells only cool roofs, so it is the roof's own bill cut. _Avoid_: qualifying scope (qualify is program eligibility), energy scope, earning scope; "add-on" for anything that isn't the catalog's kind.
+- **Electric utility** — the customer's power company, LADWP or SCE, priced at its average $/kWh; gas is always SoCalGas. Code: `electricProvider` (the `electricProviders` enum). _Avoid_: "provider" alone (service providers, finance providers and the lead-conversion provider already use it).
+- **Utility bills** — the customer's monthly electric, gas and water bills plus their electric utility, one row per customer, shared by all their proposals and settable by the homeowner through the share link (`customer_utility_bills`, stored in cents). _Avoid_: energy bills.
+
 ## Flagged ambiguities
 
 - "run" means two things: a presentation **Run** (consecutive column slides, Presentation terms) and a scheduled execution of an automation (`runAutomaticKind`, `VisitMessageRunReport`, `resolveRunInstant`). Both stay, each scoped to its section; in automation copy "run" is always the scheduled execution.
 - "sequence" was defined for visit messages only — resolved 2026-10-08: **Sequence** is the general automation kind (Automation terms); the visit-message sequence is one instance.
 - "body" is a data view's **Body** (Data view terms); on a presentation slide the word is **Content**, never body.
+- "qualify" means program eligibility (Energy Saver+ through `qualifyEnergySaver`, decided by a trade's category); whether a scope lowers a bill is a **Bill-cutting scope**, decided per scope. The two can differ: an A/C replacement qualifies for Energy Saver+ but cuts only the electric bill.
+- "sits" means two counts: the **Sit** filter grouping field and the "Sits" quick filter count meetings (every sat non-project meeting), while analytics "Sits" counts booked leads (first sit per lead, `pickBookedLead`). Both stay; the two numbers differ by design.
 - "campaign" means a lead-conversion provider campaign (`voip_campaigns`) and a Meta ad campaign; never a scheduled send to customers.
+## Planning terms
+
+- **Stage** — where a plan or epic stands, one of six words: **brainstorm** (grilled, no design doc) · **spec** (design written or approved, no plan) · **plan** (plan written, nothing built) · **building** (tasks in progress on a ref) · **built** (every task done on its ref, not on `origin/main`) · **shipped** (reachable from `origin/main`). A qualifier may follow (`stress-tested`, `awaiting iPad check`, `unmerged`). Owner agreed 2026-11-03.
+- **Orientation** — the verified delta between what a plan intended, what the tree and git show was done, and what moved underneath it since; produced by `/orient`. Not a recap of the plan file.
+- **Status block** — the structured header every tracker and plan carries (Stage · Built on · Verified at · page · Done · Next · Open · Blocked). `/orient` reads it as its checkpoint and rewrites it; `session-capture` writes it at session end as the hand-off. Replaces the old `> **Status:**` paragraph on first touch.
+- **Child** (of an epic) — a plan file under the epic, or a phase row in the tracker that has no plan yet; the latter is always `brainstorm` or `spec` and unverified.
+- _Avoid_: "handoff mode" (there is none; the hand-off is `session-capture` writing the status block), "resume block" (it is the status block).
+

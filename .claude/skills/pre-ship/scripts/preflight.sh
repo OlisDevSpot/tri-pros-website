@@ -14,6 +14,14 @@ echo "ahead: $(git rev-list --count "$BASE..$HEAD_REF")  behind: $(git rev-list 
 git diff --shortstat "$BASE..$HEAD_REF"
 echo "merges in range:"; git log --merges --oneline "$BASE..$HEAD_REF" | sed 's/^/  /'
 
+section "Prod-only commits (behind > 0: ask for pnpm hotfix sync before building a candidate)"
+git log --oneline "$HEAD_REF..$BASE" | sed 's/^/  /'
+echo "files prod changed since main forked (feed the ship cards' Workbench sync line):"
+git diff --name-only "$HEAD_REF...$BASE" | sed 's/^/  /'
+
+section "Releases main recorded with -s ours (never hotfix-sync across these)"
+git log --merges --format='%h %ad %s' --date=short "$HEAD_REF" | grep -i 'records the' | head -5 | sed 's/^/  /'
+
 section "Staged index (must be empty before committing anything)"
 git diff --cached --stat | tail -1
 [ -z "$(git diff --cached --name-only)" ] && echo "  clean"
