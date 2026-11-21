@@ -65,6 +65,7 @@ The owner's first real test (2026-10-09) showed that the visit summary email doe
 `meetings.homeowner_invited_at timestamptz NULL` records the intent: set = the homeowner should be a guest. The calendar sync makes the event match it.
 
 - The welcome-text action sets it (§5.3). A switch on the meeting form can set it later with no other change.
+  - **Built, parked (2026-10-12):** branch `parked/homeowner-invite-switch` (`e25894ec4`). On create the switch sets `homeowner_invited_at`; it defaults ON for Fresh and OFF for Project (owner), and the visit note shows only while it is on. It was not shipped because prod invites no homeowner yet and the event's visit link 404s until plan 4. Ship it with plan 4. Open gap: OFF stores nothing, so a later welcome text still invites.
 - Setting it back to null removes the homeowner from the event, and Google emails them a cancellation.
 - `homeowner_invited_at` is excluded from Duplicate (a fresh visit) and carried by a reschedule (§6).
 
@@ -106,9 +107,9 @@ Outside production (`env.VERCEL_ENV !== 'production'`):
 ### 6.1 The outcome
 
 - `rescheduled` joins `derivedMeetingOutcomes` (system-set, shown but disabled in pickers).
-- The visit did not occur, but `rescheduled` stays **out of** `DID_NOT_OCCUR_OUTCOMES`, the list a Reschedule may start from: the replacement is what gets rescheduled next, never the original. It is not live (`LIVE_MEETING_OUTCOMES` excludes it), it never requires a reason, and its sentiment is neutral.
+- The visit did not occur, but `rescheduled` stays **out of** `DID_NOT_OCCUR_OUTCOMES`, the list a Reschedule may start from: the replacement is what gets rescheduled next, never the original. It is not live (`LIVE_MEETING_OUTCOMES` excludes it), it never requires a reason, and its sentiment is negative, shown red (owner 2026-10-21; rules map R39).
 - It leaves the lead pipelines: the original does not go to `rehash`. It is not a cancellation in analytics.
-- Its class (neutral / did-not-occur) is added to `MEETING_OUTCOME_CLASS` on the permissions branch (wt 285) in the same release, so both branches agree.
+- Its class (negative / did-not-occur, R39) is added to `MEETING_OUTCOME_CLASS` on the permissions branch (wt 285) in the same release, so both branches agree.
 - The sales-lifecycle map (`docs/plans/2026-10-01-sales-lifecycle-rules-map.md`) records the ruling: **S2 resolved** (a reschedule's original leaves the lead pipelines), **M5 rewritten** (original → `rescheduled`, not `cancelled`).
 - The meeting outcome column is text checked in code, so no enum migration is needed.
 
@@ -181,7 +182,7 @@ The existing reschedule note (`buildRescheduleNote`) is linked to the replacemen
 
 - `meetingToGCalEvent`: title for a lead and a project meeting; description order; no agent notes, dashboard link, customer phone or email.
 - `decideCalendarNotice`: homeowner added, removed, unchanged; start moved; location moved; note-only change; past cancellation.
-- The outcome tables: `rescheduled` is derived, not live, not reschedulable, neutral; its pipeline mapping.
+- The outcome tables: `rescheduled` is derived, not live, not reschedulable, negative (R39); its pipeline mapping.
 - The welcome text with and without a visit note.
 
 **Wiring script** (stubs Google and Twilio; restores every row it touches): the reschedule order (token, event and invite move before the original becomes `rescheduled`; a `no_show` original keeps its outcome); the welcome-text action's `invite` result for invited, already invited and no email.

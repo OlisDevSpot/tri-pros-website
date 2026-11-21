@@ -54,12 +54,12 @@ const url = publicUrl(ROOTS.dashboard.customers.root())
 
 ### apphosts-is-source-of-truth-for-hosts
 
-The list of valid app hosts (prod, dev, ngrok tunnel, per-worktree ports) lives in `APP_HOSTS` in `src/shared/config/roots.ts`. Adding a new host means editing this list. better-auth derives the per-request base URL from `APP_HOSTS` and uses the matching Google OAuth callback automatically.
+The fixed app hosts (prod, any localhost port, the ngrok tunnel) live in `APP_HOSTS` in `src/shared/config/roots.ts`. A Vercel preview trusts only its own `VERCEL_URL` and `VERCEL_BRANCH_URL`; production trusts only its own hosts (`hostsForThisDeployment()` in `src/shared/domains/auth/server.ts`).
 
-If a new host needs Google sign-in: also register `<host>/api/auth/callback/google` in the Google Cloud OAuth Client.
+Google sign-in on any host other than production relays through `www` (better-auth `oAuthProxy`, keyed by `OAUTH_PROXY_SECRET`), so the Google Cloud OAuth Client lists production's callback only. A new host never needs a Google redirect URI.
 
-**Why**: one source of truth. Auth, OAuth, ngrok tunnel, vercel preview — everything reads from here.
-**Reference impl**: `src/shared/config/roots.ts:APP_HOSTS`
+**Why**: one source of truth for hosts, and no wildcard over `vercel.app`, which other Vercel accounts can match.
+**Reference impl**: `src/shared/config/roots.ts:APP_HOSTS`, `src/shared/domains/auth/server.ts`
 **Enforced by**: convention
 
 ### vapid-keys-never-rotate
