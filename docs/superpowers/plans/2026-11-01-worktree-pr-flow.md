@@ -13,6 +13,7 @@
 | # | Ruling | Date |
 |---|---|---|
 | WF1 | Execute the plan in order, Task 0 first. The orient page (above) is the living tracker for this plan: what is built, files affected, key code facts, infra and patterns, so the owner has visibility into the new structure as it lands. | owner, 2026-11-06 |
+| WF3 | "For now let's not disable it. We'll keep it convention." Squash and merge stays a convention: the repo keeps all three merge buttons, so Task 14's "Repo setting: squash-merge only" and Task 16's "allow squash merge only" are skipped until the owner reopens it. | owner, 2026-11-18 |
 | WF2 | Task 0 runs as one `/pre-ship` session this week with the owner present: sort the 189 commits and the dirty tree into ship / move to a branch / drop, then one push to `origin/main`. | owner, 2026-11-06 |
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
