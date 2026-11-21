@@ -41,7 +41,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": [
+  "exclude": [".worktrees", 
     "node_modules",
     "video"
   ]

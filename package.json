@@ -39,6 +39,7 @@
     "dispatch": "bash scripts/dispatch.sh",
     "hotfix": "bash scripts/hotfix.sh",
     "tunnel": "node scripts/tunnel.mjs",
+    "review": "tsx scripts/review-slot.ts",
     "push:test": "NODE_OPTIONS=\"--conditions=react-server\" tsx scripts/send-push.ts"
   },
   "dependencies": {
