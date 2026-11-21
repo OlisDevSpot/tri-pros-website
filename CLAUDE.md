@@ -13,7 +13,8 @@ Auto-loaded every session. Address book + commands. Keep it short.
 ## Commands
 
 ```bash
-pnpm dev              # Start dev server
+pnpm dev              # Dev server behind a router: stops after DEV_IDLE_MIN idle (5), wakes on the next request, restarts above DEV_MEM_LIMIT_GB (6). Use the PORT URL; the :PORT+1000 line in Next output is internal.
+pnpm review <branch|folder>   # Point the review slot (.worktrees/review, :3001) at a lane's latest commit; Oliver's dev server there shows it. Run it from the main checkout
 pnpm dev:mobile       # Dev + ngrok tunnel + QR (mobile testing)
 pnpm tunnel           # ngrok tunnel only
 pnpm lint             # ESLint
@@ -23,8 +24,9 @@ pnpm db:reset:dev / db:seed:dev
 pnpm db:refresh:dev [--dry-run]   # dev DB ← Neon reset from parent + scrub (no children allowed on the dev branch)
 # Scripts target the prod DB ONLY via DRIZZLE_TARGET=prod — never NODE_ENV (see src/shared/config/server-env.ts).
 pnpm push:test --to <email> --title "..." [--body "..."] [--navigate /path]
-pnpm dispatch help    # Parallel issue work
 ```
+
+**Only Oliver starts a dev server.** No session or subagent runs `pnpm dev`, `pnpm dev:mobile` or `next dev`. If a task needs the server and the port does not answer (`ss -ltnp`), stop and ask Oliver to start it. `permissions.deny` in `~/.claude/settings.json` blocks the commands.
 
 Package manager: **pnpm**. Path alias: `@/` → `src/`.
 
@@ -43,9 +45,10 @@ Package manager: **pnpm**. Path alias: `@/` → `src/`.
 
 **Planning**
 - `docs/plans/` — live epic trackers, standing contracts and ledgers, research that open work cites, and the VoIP epics. `docs/superpowers/specs|plans/` — pending, partial, or in-progress designs and plans only. Delete a plan when it ships.
+- `/orient <path|words>` — verified orientation on a plan or epic tracker (tasks vs tree, plan vs git, requirements vs delta), a lean page, a decision sheet, and the structured status block written back; `session-capture` writes the same block at session end so `/orient <path>` is a fresh session's whole prompt.
 
 **Session memory**
-- `memory/MEMORY.md` — auto-loaded index; `reference-dispatch-system.md`, `reference-github-workflow.md` for ops details
+- `memory/MEMORY.md` — auto-loaded index; `reference-github-workflow.md` for ops details
 
 ## Mobile testing
 
@@ -59,12 +62,19 @@ DevTools mobile viewport: Chrome `Cmd-Shift-M` / Safari Develop → Responsive D
 
 ## GitHub workflow
 
-- **Board:** https://github.com/users/OlisDevSpot/projects/3 (single source of truth for status)
-- **Issues:** https://github.com/OlisDevSpot/tri-pros-website/issues
-- **Branch:** `{type}/{issue-number}-{slug}` — types: `feat | fix | refactor | chore | docs`
-- **PR:** open with `Closes #N`, run `pnpm lint && pnpm tsc` first, use the template
-- **Parallel issue work:** `pnpm dispatch help` (full reference: `memory/reference-dispatch-system.md`)
-- **Full workflow reference** (labels, board IDs, automations): `memory/reference-github-workflow.md`
+One feature = one worktree branch = one session = one PR. `main` is prod.
+
+- **Start:** a new worktree per feature, in Orca (`orca.yaml` installs deps and claims a free `PORT`) or `claude --worktree`. `.worktreeinclude` copies `.env`, `.env.local`, `.claude/settings.local.json`.
+- **Base:** branch from `origin/main`. A branch off local main carries every unshipped commit on it and can't ship until they do.
+- **Branch:** `{type}/{issue-number}-{slug}`, or `{type}/{slug}` with no issue. Types: `feat | fix | refactor | chore | docs`
+- **Draft PR early:** open a draft PR at the first working screen; every push rebuilds its Vercel preview. Oliver's notes arrive as preview comments.
+- **Verify on the preview:** `pnpm lint && pnpm tsc`, the lane's tests, then Playwright against the lane's preview: first navigation to `/api/dev/playwright-session?secret=<DEV_LOGIN_SECRET>&x-vercel-protection-bypass=<VERCEL_AUTOMATION_BYPASS_SECRET>&x-vercel-set-bypass-cookie=true` (both secrets in `.env.local`). A lane reaches Oliver only after this passes; no dev server needed.
+- **PR:** `pnpm lint && pnpm tsc` first, use the template, `Closes #N` when there is an issue. The PR gets a Vercel preview; the owner checks it on the iPad and merges. Agents never merge or push to `main`.
+- **Ship (owner-standardized 2026-11-01):** push the branch, open the PR, check the Vercel preview on the iPad. If `main` moved, merge `origin/main` **into the branch** (GitHub "Update branch" or `git merge origin/main`); never rebase, never force-push. Merge the PR with **Squash and merge** only; that is the one step that deploys prod. Then `git pull --ff-only origin main` on local main (a refusal means local main has commits of its own: stop and look, never let it merge). Delete the branch and worktree; a squashed branch is never reused.
+- **Epic worktrees ship in slices:** the epic worktree is the workbench and never opens a PR. Each slice gets a new worktree and branch from `origin/main` (or the previous slice's branch when stacked), takes its files with `git checkout <epic-branch> -- <paths>`, opens a draft PR targeting its parent, and slices merge in order. After a slice squash-merges, `git merge origin/main` into the epic branch.
+- **End:** the session ends when its PR merges. New work starts a new session, not a compacted old one.
+- **Transition:** until the local-main queue is drained by one last `/pre-ship`, local main is still the workbench (stage by explicit path, prod fixes only via `pnpm hotfix`; memory `feedback-work-on-main.md`). After the drain a hotfix is an ordinary PR.
+- **Board / issues:** lane status lives on the lane board https://claude.ai/artifact/7D8kgccA7iy6f8ATWzLdqS (each session keeps its row current; the SessionStart hook says how) · backlog: https://github.com/users/OlisDevSpot/projects/3 and https://github.com/OlisDevSpot/tri-pros-website/issues · labels, board IDs, automations: `memory/reference-github-workflow.md`
 
 ## Who we are
 
