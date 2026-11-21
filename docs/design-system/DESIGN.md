@@ -23,8 +23,7 @@ Tri Pros Remodeling is a Southern California residential remodeling company with
 - **Display font:** Syne — used for all headings and display copy. Eyebrows are Nunito 700 uppercase (`BlockEyebrow`).
 - **Text font:** Nunito — used for body copy, labels, credentials, and UI text.
 - **No monospace, ever.** This is a remodeling business, not software. Monospace as decoration is a slop fingerprint. There is no mono token in this system.
-- **Use weight and size extremes.** The difference between `font-weight: 400` and `font-weight: 600` is mush. Use `800` or `900` for display text; `600` for credentials; `400` for body. Jump sizes aggressively: a headline at `clamp(2.5rem, 5vw, 4rem)` next to body at `1rem` has impact; splitting the difference does not.
-- Avoid `font-weight: 500` as a "safe middle" — pick a side.
+- **Contrast comes from size, not weight.** Weights stop at `700` (`font-bold`) and Syne stops at `600` (`font-semibold`): Syne turns wide and heavy above that, and Nunito past 700 reads as a different face (lint `heavy-font-weight/no-heavy-font-weight`, `eslint.config.js`). Display and headline Syne sit at `500` (root `DESIGN.md`), credentials and emphasis at `600`, body at `400`. Jump sizes aggressively: a headline at `clamp(2.5rem, 5vw, 4rem)` next to body at `1rem` has impact; splitting the difference does not.
 
 ### Color
 
