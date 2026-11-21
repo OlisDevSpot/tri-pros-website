@@ -1,12 +1,12 @@
 # Parallel Lanes Lean Cut Implementation Plan
 
 > **Status**
-> - Stage: build · Tasks 2–5 and 7 built 2026-11-18; final branch review passed
+> - Stage: review · Tasks 1–7 built; final branch review passed; draft PR #292 open
 > - Built on: `chore/dev-flow-foundation` (stacked on `release/2026-11-13-drain`, PR #289) · Verified at: `chore/dev-flow-foundation@4f6488b4a` 2026-11-18 · page: https://claude.ai/artifact/7D8kgccA7iy6f8ATWzLdqS (lane `foundation`)
-> - Done: `pnpm review` (slot `.worktrees/review` set up, hand run on `data-views` passed), dev server idles at 5 min + `dev.mjs` lint, `CLAUDE.md` lines (minus "Verify on the preview"), lane hook edit (orient spec §4.7, owner chose to land it here), Task 1 Step 1 (Preview `DATABASE_URL` = dev endpoint `ep-mute-sunset`)
-> - Next: Oliver does Task 1 Steps 2–3 (Vercel console); then push + draft PR (Task 6, on his OK); then Task 1 Steps 4–5 on this branch's preview and the held `CLAUDE.md` bullet
-> - Open: add "(run it from the main checkout)" to the `pnpm review` line? (owner); deferred minors: atomic `.env.local` write, failed install keeps the previous `.env.local`, `git diff origin/main` throw hides the summary, dirty listing `trimEnd`
-> - Blocked: Task 1 Step 4 on Steps 2–3 + this branch's preview; Task 8 is a new session
+> - Done: `pnpm review` (slot `.worktrees/review` set up, hand run on `data-views` passed), dev server idles at 5 min + `dev.mjs` lint, all `CLAUDE.md` lines, lane hook edit (orient spec §4.7, owner chose to land it here), Task 1 (Preview DB = dev endpoint `ep-mute-sunset`; `DEV_LOGIN_SECRET` in Preview; wall on + one bypass secret per consumer; Playwright check passed on PR #292's preview 2026-11-20)
+> - Next: Oliver merges #289, then reviews and merges #292. Task 8 runs in a new session: `~/claude-archive/2026-11-18-task8-google-preview-signin-handoff.md`
+> - Open: deferred minors: atomic `.env.local` write, failed install keeps the previous `.env.local`, `git diff origin/main` throw hides the summary, dirty listing `trimEnd`
+> - Blocked: #292 merges after #289; Task 8 is a new session
 
 > **Shared with the ship-board build (2026-11-18):** the session building `docs/superpowers/plans/2026-11-15-orient-lane-briefing.md` on local main owns `~/.claude/hooks/lane-context.sh`, `session-capture`, `/orient`, the board page, and every lane's `brief`. This plan writes only `pr`, `stage`, `next`, `move` on `lanes/foundation`. Its `CLAUDE.md` edits leave the `/orient` line to that plan. Oliver keeps Task 1's Vercel steps and that plan's board backfill in separate sittings. A handoff that says to write `brief.statusBlock` is overridden here.
 
@@ -49,10 +49,12 @@
 Tasks 2–5 do not wait on this task.
 
 - [x] **Step 1: Vercel env audit (parent Task 1 Step 4).** With Oliver's OK, read the Preview and Production scopes through the Vercel connector (read only) and list, for each of `DATABASE_URL`, `DATABASE_DEV_URL`, `BETTER_AUTH_URL`, `NEXT_PUBLIC_BASE_URL`, `NGROK_URL`, `EMAIL_DEV_OVERRIDE`, `VOIP_DEV_OVERRIDE_NUMBER`, `DEV_LOGIN_SECRET`, `QSTASH_*`, whether it is set and, for DB URLs, which Neon endpoint it points at (never print a value). **Any Preview DB URL on the prod endpoint → stop and tell Oliver.** Missing `EMAIL_DEV_OVERRIDE` / `VOIP_DEV_OVERRIDE_NUMBER` in Preview → Oliver adds them.
-- [ ] **Step 2: `DEV_LOGIN_SECRET` in Vercel Preview** (Preview scope only, never Production). Oliver adds it, same value as local.
-- [ ] **Step 3: Preview protection (parent Task 1 Step 7).** Oliver enables Vercel Authentication for Preview and Protection Bypass for Automation, and copies the bypass secret into the main checkout's `.env.local` as `VERCEL_AUTOMATION_BYPASS_SECRET` (`.worktreeinclude` copies it to new worktrees). Verify: a preview URL in a logged-out browser shows the Vercel login.
-- [ ] **Step 4: First agent check on a real preview** (PR #289's preview, or this branch's once Task 6 opens it). In a Playwright browser, navigate once to `<preview>/api/dev/playwright-session?secret=<DEV_LOGIN_SECRET>&x-vercel-protection-bypass=<bypass>&x-vercel-set-bypass-cookie=true`. Expected: lands on `/dashboard` signed in; a second navigation to `/dashboard/customers` stays signed in (the bypass cookie holds). Screenshot both.
-- [ ] **Step 5: Memory.** Add the preview ritual from Step 4 to `reference-playwright-auth.md` (the local ritual stays).
+- [x] **Step 2: `DEV_LOGIN_SECRET` in Vercel Preview** (Preview scope only, never Production). Oliver adds it, same value as local.
+- [x] **Step 3: Preview protection (parent Task 1 Step 7).** Oliver enables Vercel Authentication for Preview and Protection Bypass for Automation, and copies the bypass secret into the main checkout's `.env.local` as `VERCEL_AUTOMATION_BYPASS_SECRET` (`.worktreeinclude` copies it to new worktrees). Verify: a preview URL in a logged-out browser shows the Vercel login.
+  - **Ruling (Oliver, 2026-11-19): the wall stays on.** Vercel Authentication + Protection Bypass for Automation is Vercel's documented pattern for automation against protected previews; dropping the wall was weighed (simpler iPad review and vendor callbacks) and declined. Why it matters: previews read the dev DB, which keeps real customer names, phones and addresses (the refresh scrub clears only sessions, tokens and sync ids), and run unreviewed branch code at guessable branch URLs.
+  - **One bypass secret per consumer.** Vercel allows several bypass secrets per project, each with a note; one of them is flagged as the `VERCEL_AUTOMATION_BYPASS_SECRET` env var. This one is noted `Agent preview checks (Playwright)` and is the env-var secret. A vendor that must call a preview (Twilio, QStash, Meta webhooks) gets its own secret and note, passed as `?x-vercel-protection-bypass=` in its callback URL, so a secret exposed in a vendor's logs is revoked without breaking agent checks. Feeds the Task 8 brainstorm and the "preview addresses must work with every vendor" decision.
+- [x] **Step 4: First agent check on a real preview** (PR #289's preview, or this branch's once Task 6 opens it). In a Playwright browser, navigate once to `<preview>/api/dev/playwright-session?secret=<DEV_LOGIN_SECRET>&x-vercel-protection-bypass=<bypass>&x-vercel-set-bypass-cookie=true`. Expected: lands on `/dashboard` signed in; a second navigation to `/dashboard/customers` stays signed in (the bypass cookie holds). Screenshot both.
+- [x] **Step 5: Memory.** Add the preview ritual from Step 4 to `reference-playwright-auth.md` (the local ritual stays).
 
 ### Task 2: Review slot decisions (F1, pure functions)
 
@@ -169,7 +171,7 @@ console.log('✅ review-slot decisions verified')
 
 - [x] **Step 1: Commands.** In the `pnpm dev` line, `DEV_IDLE_MIN idle (30)` → `DEV_IDLE_MIN idle (5)`. Add after it:
   `pnpm review <branch|folder>   # Point the review slot (.worktrees/review, :3001) at a lane's latest commit; Oliver's dev server there shows it`
-- [ ] **Step 2: GitHub workflow.** After the **Branch** bullet, add:
+- [x] **Step 2: GitHub workflow.** After the **Branch** bullet, add:
   - `- **Draft PR early:** open a draft PR at the first working screen; every push rebuilds its Vercel preview. Oliver's notes arrive as preview comments.`
   - `- **Verify on the preview:** \`pnpm lint && pnpm tsc\`, the lane's tests, then Playwright against the lane's preview: first navigation to \`/api/dev/playwright-session?secret=<DEV_LOGIN_SECRET>&x-vercel-protection-bypass=<VERCEL_AUTOMATION_BYPASS_SECRET>&x-vercel-set-bypass-cookie=true\` (both secrets in \`.env.local\`). A lane reaches Oliver only after this passes; no dev server needed.` **Only once Task 1 Step 4 passed**; until then leave this bullet out and say so in the PR body.
   - After the **Ship** bullet: `- **Epic worktrees ship in slices:** the epic worktree is the workbench and never opens a PR. Each slice gets a new worktree and branch from \`origin/main\` (or the previous slice's branch when stacked), takes its files with \`git checkout <epic-branch> -- <paths>\`, opens a draft PR targeting its parent, and slices merge in order. After a slice squash-merges, \`git merge origin/main\` into the epic branch.`
@@ -182,7 +184,7 @@ console.log('✅ review-slot decisions verified')
 
 - [x] **Step 1:** `pnpm lint && pnpm tsc`; `pnpm exec eslint scripts/dev.mjs scripts/review-slot.ts scripts/lib/review-slot.ts scripts/verify-review-slot.ts`; `pnpm tsx scripts/verify-review-slot.ts` → all clean, ✅.
 - [x] **Step 2:** With Oliver's OK: commit the spec and this plan by path (`docs(dev-flow): lean cut spec and plan`), push `chore/dev-flow-foundation`, open a **draft** PR with base `release/2026-11-13-drain`, using the PR template. Body names #289 as the base and lists what Tasks 1 and 7 still owe.
-- [ ] **Step 3:** Board: `lanes/foundation` → `pr`, `stage: review`, `next`, pinned with `if_version`. Never write `brief.*`: the briefing belongs to `/orient`, and `brief.statusBlock` is an old key that the ship board's schema rejects. The status block lives in this plan file only.
+- [x] **Step 3:** Board: `lanes/foundation` → `pr`, `stage: review`, `next`, pinned with `if_version`. Never write `brief.*`: the briefing belongs to `/orient`, and `brief.statusBlock` is an old key that the ship board's schema rejects. The status block lives in this plan file only.
 
 ### Task 7: Lane hook, check only (K3, user-level, no PR)
 
