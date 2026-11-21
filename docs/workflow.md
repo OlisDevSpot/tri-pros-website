@@ -46,11 +46,9 @@ Once connected, Vercel automatically:
 
 `.github/workflows/pr-checks.yml` runs lint + build on every PR. PRs can't merge without green checks.
 
-### 3. Google OAuth (for preview URLs)
+### 3. Google sign-in on previews
 
-Add your Vercel preview domain pattern to Google Cloud Console:
-- **Authorized redirect URIs**: add `https://*.vercel.app/api/auth/callback/google`
-- This lets Google OAuth work on preview deployments
+Previews and local ports relay Google sign-in through production (better-auth `oAuthProxy`), so the Google OAuth client lists only `https://www.triprosremodeling.com/api/auth/callback/google`. Put one `OAUTH_PROXY_SECRET` (32+ characters) in Vercel Production + Preview and in the local `.env`; Vercel deployments refuse to boot without it.
 
 ### 4. Dispatch script (already done)
 

@@ -293,6 +293,8 @@ The meeting flow **is** the in-home meeting, the proposal's creation and its pre
 
 ### 4.4 Mined from `.worktrees/issue-29` (branch `feat/29-…`, tip `3e4a5b3e`, 2026-05-13/14) — record kept so the worktree can go (H9)
 
+> **2026-10-30:** the worktree was removed (owner); the branch stays, and its uncommitted diff is archived in `.superpowers/archive/2026-10-30-issue-29-worktree/`. Root causes of its struggles, what main has done since, and 15 decisions to settle before spec F: [`2026-10-30-multi-proposal-page-lessons-from-issue-29.md`](2026-10-30-multi-proposal-page-lessons-from-issue-29.md). That file also lists rows of this tracker that are now stale (Q14/C25/H2/H8, §5 X1/X2/H10, WD4/H10).
+
 **Decisions made there**
 
 - **W1** Token home: `meetings.token` (nullable) added; `proposals.token` made nullable; new proposals got `token: null`; `createProposal` lazily minted the meeting token. Format unchanged (`tpr-` + 8 random bytes hex). Also added `proposals.displayOrder` (next = MAX+1 per meeting).

@@ -83,7 +83,7 @@ Two items leak or allow writes on prod right now. The owner chooses: contain the
   - Sources: `features/landing/dal/server/projects.ts:36`, `shared/modules/projects/core/dal/server/queries.ts:78`.
   - Live check: `showroomDisplay.getDetail` returned a non-null `homeownerName`.
   - Two portfolio projects are slugged after the homeowner's full name and city, are in the sitemap, and their HTML carries street address and zip.
-- ✔ **Proposal view leaks gated phones.** `proposals/core/dal/server/queries.ts:91` selects raw `customers.phone`, so `getFullView` returns the phone where the pipelines gate it. 5 of 5 probes confirmed it. **Closed 2026-10-16** for the proposal page's read by the proposal page rework (T1): `proposalsRouter.business.getFullView` nulls `customer.phone` for a session reader who can't see it ungated (`canSeeUngatedPhone`) while the customer has no sent proposal (`core/lib/gate-customer-phone.ts`); the DAL read stays raw on purpose for contracts, the PDF and the send verb, and a share-link holder still gets their own number.
+- ✔ **Proposal view leaks gated phones.** `proposals/core/dal/server/queries.ts:91` selects raw `customers.phone`, so `getFullView` returns the phone where the pipelines gate it. 5 of 5 probes confirmed it.
 - **Proposals list payload:** about 300 KB per 20 rows (`form_meta_JSON`, `project_JSON`, `funding_JSON`).
 - **Agents receive full project rows** through `crud.getAll` (all 66).
 
