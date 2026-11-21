@@ -2,8 +2,9 @@
 
 ## Status
 
-Accepted (trial) — 2026-10-09. Owner chose to move dev to Turbopack carefully and watch
-for breakage. Production builds are unchanged (`next build` is still webpack).
+Accepted — 2026-10-30, after a trial from 2026-10-09. The owner moved dev to Turbopack
+carefully and watched for breakage; at the trial's end it "appears to work perfectly for
+now", so Turbopack stays. Production builds are unchanged (`next build` is still webpack).
 
 ## Context
 
