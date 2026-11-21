@@ -3,7 +3,7 @@
 // `next dev` runs behind it on an internal port and is managed by this script.
 //
 //   DEV_IDLE_MIN      stop the dev server after this many minutes without an
-//                     HTTP request (default 30; 0 = never). The next request
+//                     HTTP request (default 5; 0 = never). The next request
 //                     starts it again (~15 s + compile).
 //   DEV_MEM_LIMIT_GB  restart the dev server once its process tree passes this
 //                     (default 6; 0 = off). Turbopack grows without bound.
@@ -16,9 +16,9 @@ import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import process from 'node:process'
+import { createRouter, findFreePort, waitForPort } from './lib/dev-router.mjs'
 import { getPort } from './lib/get-port.mjs'
 import { startMemGuard } from './lib/mem-guard.mjs'
-import { createRouter, findFreePort, waitForPort } from './lib/dev-router.mjs'
 
 // Dev runs on Turbopack; production builds stay on webpack (`next build`).
 // `pnpm dev --webpack` is the fallback when Turbopack misbehaves — if the bug
@@ -26,7 +26,7 @@ import { createRouter, findFreePort, waitForPort } from './lib/dev-router.mjs'
 const useWebpack = process.argv.includes('--webpack')
 
 const publicPort = getPort()
-const idleMin = Number(process.env.DEV_IDLE_MIN ?? 30)
+const idleMin = Number(process.env.DEV_IDLE_MIN ?? 5)
 const limitGb = Number(process.env.DEV_MEM_LIMIT_GB ?? 6)
 const eager = process.env.DEV_EAGER !== '0'
 
@@ -45,23 +45,27 @@ const nextBin = [resolve(process.cwd(), 'node_modules/.bin/next')].find(existsSy
 
 function spawnNext(port) {
   const args = ['dev', '--port', String(port)]
-  if (!useWebpack) args.push('--turbopack')
+  if (!useWebpack)
+    args.push('--turbopack')
   // Own process group so a stop takes the whole tree (next-server, postcss
   // workers) with it. Signals are forwarded explicitly below.
   return spawn(nextBin, args, { stdio: 'inherit', shell: false, detached: true })
 }
 
 function signalTree(proc, signal) {
-  if (!proc || proc.exitCode !== null) return
+  if (!proc || proc.exitCode !== null)
+    return
   try {
     process.kill(-proc.pid, signal)
-  } catch {
+  }
+  catch {
     proc.kill(signal)
   }
 }
 
 function start() {
-  if (starting) return starting
+  if (starting)
+    return starting
   if (Date.now() < failedUntil) {
     return Promise.reject(new Error(`last start failed; retrying after ${Math.ceil((failedUntil - Date.now()) / 1000)}s`))
   }
@@ -72,15 +76,17 @@ function start() {
     startedAt = Date.now()
     log(`starting next dev on internal :${internalPort}`)
     const gone = new Promise((_, reject) => {
-      const handle = what => {
+      const handle = (what) => {
         reject(new Error(what))
-        if (child !== proc) return
+        if (child !== proc)
+          return
         child = null
         internalPort = null
         if (!stopping) {
           // Not one of ours: a crash, an OOM kill, or a failed spawn. Back off
           // so a broken setup does not retry on every request.
-          if (Date.now() - startedAt < 10_000) failedUntil = Date.now() + 15_000
+          if (Date.now() - startedAt < 10_000)
+            failedUntil = Date.now() + 15_000
           log(`${what}; will start again on the next request`)
         }
       }
@@ -90,7 +96,8 @@ function start() {
     gone.catch(() => {}) // observed through the race below
     try {
       await Promise.race([waitForPort(internalPort), gone])
-    } catch (err) {
+    }
+    catch (err) {
       signalTree(proc, 'SIGKILL')
       throw err
     }
@@ -103,11 +110,14 @@ function start() {
 }
 
 function stop(reason) {
-  if (!child) return Promise.resolve()
-  if (stopping) return stopping
+  if (!child)
+    return Promise.resolve()
+  if (stopping)
+    return stopping
   const proc = child
   log(`stopping next dev (${reason})`)
-  stopping = new Promise(resolve => {
+  stopping = new Promise((resolve) => {
+    let hardKill
     const done = () => {
       clearTimeout(hardKill)
       stopping = null
@@ -115,15 +125,17 @@ function stop(reason) {
     }
     proc.once('exit', done)
     signalTree(proc, 'SIGTERM')
-    const hardKill = setTimeout(() => signalTree(proc, 'SIGKILL'), 10_000)
+    hardKill = setTimeout(() => signalTree(proc, 'SIGKILL'), 10_000)
     hardKill.unref()
   })
   return stopping
 }
 
 async function ensureRunning() {
-  if (stopping) await stopping
-  if (child && !starting) return
+  if (stopping)
+    await stopping
+  if (child && !starting)
+    return
   await start()
 }
 
@@ -137,15 +149,18 @@ const router = createRouter({
 })
 
 router.listen(publicPort, () => {
-  log(`listening on http://localhost:${publicPort}` + (idleMin ? ` · stops after ${idleMin} min idle` : '') + (limitGb ? ` · restarts above ${limitGb} GB` : ''))
-  if (eager) start().catch(err => log(err.message))
+  log(`listening on http://localhost:${publicPort}${idleMin ? ` · stops after ${idleMin} min idle` : ''}${limitGb ? ` · restarts above ${limitGb} GB` : ''}`)
+  if (eager)
+    start().catch(err => log(err.message))
 })
 
 if (idleMin > 0) {
   setInterval(() => {
-    if (!child || starting || stopping) return
+    if (!child || starting || stopping)
+      return
     const idleFor = Date.now() - lastActivity
-    if (idleFor >= idleMin * 60_000) stop(`idle ${Math.round(idleFor / 60_000)} min`)
+    if (idleFor >= idleMin * 60_000)
+      stop(`idle ${Math.round(idleFor / 60_000)} min`)
   }, 15_000).unref()
 }
 
@@ -170,7 +185,8 @@ function shutdown(signal) {
     signalTree(proc, 'SIGKILL')
     process.exit(0)
   }, 5_000).unref()
-  if (!proc || proc.exitCode !== null) process.exit(0)
+  if (!proc || proc.exitCode !== null)
+    process.exit(0)
   proc.once('exit', () => process.exit(0))
 }
 process.on('SIGINT', () => shutdown('SIGINT'))
