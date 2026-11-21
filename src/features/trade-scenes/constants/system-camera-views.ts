@@ -5,7 +5,7 @@ import type { RoofForm } from '@/shared/modules/construction/core/constants/roof
 
 import { HOME_ANCHORS, READING_ANCHORS } from '@/features/trade-scenes/constants/home-anchors'
 import { ATTIC_FAN_SPOT, EQUIPMENT, FASCIA_CENTRE, FRONT_WALL, HOME_FRAMINGS, HOUSE, LOW_SLOPE, PARAPET_TOP, RAFTER_ORIGIN_Y, ROOF_HALF_LENGTH, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
-import { LOOK_INSIDE_WALL, LOOK_INSIDE_WINDOW } from '@/features/trade-scenes/constants/look-inside'
+import { LOOK_INSIDE_WALL, LOOK_INSIDE_WINDOW, STEP_CUTS } from '@/features/trade-scenes/constants/look-inside'
 import { liftedFraming } from '@/features/trade-scenes/lib/lifted-framing'
 import { packageUnitPlacement } from '@/features/trade-scenes/lib/package-unit-placement'
 
@@ -70,12 +70,9 @@ export const SYSTEM_CAMERA_VIEWS: Record<HomeSystemId, (form: RoofForm, shape: S
 // How each system is looked at up close, from its own view: `distance` is the share of that view's reach kept (by stage shape
 // where a tall stage's further view would leave its parts too small), `turn` swings the bearing toward the left gable
 // (radians, about the target's vertical) and `elevation` sets the angle above level in place of the view's own; `target`,
-// where given, is looked at in place of the view's. The roof comes straight in. The attic holds the house
-// open, so up close it comes in low through the lifted near slope over the cut, under the back slope, and looks across the
-// steps its floor opens on the span the open house keeps: the bare strip by the cut with the light can, the duct boot and
-// the vent pipe on it, each in its foam once sealed, and the blanket's step just past them, with the heat coming down onto
-// it. The condenser's pad is between the house and the lot's left wall, so up close swings in front of it and looks down
-// the side yard from inside the wall. Working numbers, set by eye.
+// where given, is looked at in place of the view's. The roof comes straight in. The condenser's pad is between the house
+// and the lot's left wall, so up close swings in front of it and looks down the side yard from inside the wall. Working
+// numbers, set by eye.
 interface LookInsideView {
   distance: number | Readonly<Record<StageShape, number>>
   turn: number
@@ -83,10 +80,22 @@ interface LookInsideView {
   target?: readonly [number, number, number]
 }
 
-const LOOK_INSIDE_VIEWS: Record<HomeSystemId | 'condenser-pad', LookInsideView> = {
+const ATTIC_LOOK_INSIDE_DISTANCE = { landscape: 0.36, narrow: 0.36, portrait: 0.25 } as const satisfies Record<StageShape, number>
+
+// The attic holds the house open, so up close it comes in through the lifted near slope, under the back slope, and looks
+// across the steps its floor opens where its roof's attic opens; a tall stage comes nearer, so the steps and their pins read
+// on a phone. Under a gable it stands at the attic's left end, just inside the gable wall, over the bare strip in the
+// left-end bay, with the light can, the duct boot and the vent pipe on it, each in its foam once sealed. The gable wall keeps
+// it near that end and the card covers the right of a wide stage, so it looks toward the right gable on a diagonal: turned
+// far enough that the blanket's edge runs away toward the far gable in the open part of the stage, not so far that the
+// bay's three openings leave the frame. Working numbers, set by a dark shot.
+const ATTIC_LOOK_INSIDE_VIEWS: Record<RoofForm, LookInsideView> = {
+  'pitched': { distance: ATTIC_LOOK_INSIDE_DISTANCE, turn: 0.29, elevation: 0.4, target: [STEP_CUTS.pitched.attic + 0.75, WALL_TOP_Y, HOUSE.atticFrontZ - 1.5] },
+  'low-slope': { distance: ATTIC_LOOK_INSIDE_DISTANCE, turn: 0.45, elevation: 0.3, target: [STEP_CUTS['low-slope'].attic + 0.9, WALL_TOP_Y, HOUSE.atticFrontZ - 1.4] },
+}
+
+const LOOK_INSIDE_VIEWS: Record<Exclude<HomeSystemId, 'attic'> | 'condenser-pad', LookInsideView> = {
   'roof': { distance: 0.62, turn: 0, elevation: null },
-  // A tall stage comes nearer, so the steps, the can and their pins read on a phone. Working numbers, set by a dark shot.
-  'attic': { distance: { landscape: 0.36, narrow: 0.36, portrait: 0.25 }, turn: 0.45, elevation: 0.3, target: [HOUSE.cutX + 0.9, WALL_TOP_Y, HOUSE.atticFrontZ - 1.4] },
   // The front window faces the home's own view nearly square, so pulled apart its parts would stack toward the camera: up
   // close swings round from the front yard toward the door, so the wall's outward normal runs across the view and the
   // window spreads sideways, from the flashing at the wall to the screen, and stays in frame. It comes about as near as the
@@ -127,7 +136,8 @@ function lookedAtFrom(look: LookInsideView, system: HomeSystemId, form: RoofForm
 }
 
 export function lookInsideView(system: HomeSystemId, form: RoofForm, shape: StageShape, lift: number, hvac: HomeHvac): CameraFraming {
-  return lookedAtFrom(LOOK_INSIDE_VIEWS[system === 'heating-cooling' && hvac.type !== 'package-unit' ? 'condenser-pad' : system], system, form, shape, lift, hvac)
+  const look = system === 'attic' ? ATTIC_LOOK_INSIDE_VIEWS[form] : LOOK_INSIDE_VIEWS[system === 'heating-cooling' && hvac.type !== 'package-unit' ? 'condenser-pad' : system]
+  return lookedAtFrom(look, system, form, shape, lift, hvac)
 }
 
 // The look a picked part has of its own, or null for one the system's view leans toward.

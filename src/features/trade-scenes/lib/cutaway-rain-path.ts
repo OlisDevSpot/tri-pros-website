@@ -2,11 +2,12 @@ import type { CutawayCrossing, CutawayRainPath, CutawayRotSpot, CutawaySteps, Sy
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 import type { ResolvedPart, WaterFlow } from '@/shared/modules/construction/core/types'
 
-import { ROOF_TRIM } from '@/features/trade-scenes/constants/home-details'
-import { COVERING_BASE, DOWNSPOUTS, EAVE_RUN, GUTTER_BACK, GUTTER_Y, HOUSE, LOW_SLOPE_DECK_Y, LOW_SLOPE_ROOF_Y, RADIANT_BARRIER_FACES, RAFTER_ORIGIN_Y, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
+import { COVERING_BASE, DOWNSPOUTS, EAVE_RUN, GUTTER_OUT, GUTTER_Y, HOUSE, LOW_SLOPE_DECK_Y, LOW_SLOPE_ROOF_Y, RADIANT_BARRIER_FACES, RAFTER_ORIGIN_Y, WALL_TOP_Y } from '@/features/trade-scenes/constants/home-geometry'
 import { LEAK } from '@/features/trade-scenes/constants/home-life'
-import { ATTIC_HEAT_LINE, CUTAWAY_COVERING_RISE, CUTAWAY_FLOW, CUTAWAY_ROT, ROTTING_SYSTEM_PARTS } from '@/features/trade-scenes/constants/look-inside'
+import { ATTIC_HEAT_LINE, CUTAWAY_COVERING_RISE, CUTAWAY_FLOW, CUTAWAY_ROT, ROTTING_SYSTEM_PARTS, STEP_CUTS, STEP_DEPTHS } from '@/features/trade-scenes/constants/look-inside'
 import { atticInsulationTop } from '@/features/trade-scenes/lib/attic-insulation-boxes'
+import { gutterCatches } from '@/features/trade-scenes/lib/gutter-run'
+import { drawnGutterWear } from '@/features/trade-scenes/lib/part-state'
 import { stepBottom, stepCentre, stepStarts } from '@/features/trade-scenes/lib/step-cut-back'
 
 const { pitch, deckThickness: DECK, underlaymentThickness: UNDERLAYMENT, halfDepth: D, wallThickness: T } = HOUSE
@@ -18,7 +19,6 @@ type LinePart = typeof LINE_PARTS[number]
 const FLOOR_PARTS: ReadonlySet<string> = new Set(['attic-insulation', 'ceiling'])
 const CEILING_Y = WALL_TOP_Y - HOUSE.ceilingThickness
 const MEMBRANE_Y = LOW_SLOPE_DECK_Y + DECK
-const GUTTER_OUT = D + GUTTER_BACK + ROOF_TRIM.gutter.size / 2
 // Working numbers, set by eye. A flat roof's water gathers this far in from its back parapet, and leaves by its scupper
 // this far over the membrane and inside the parapet's face, falling this far down the downspout before it leaves sight.
 // On a gable it runs down to this far short of the eave's edge before it goes over. It shows this far under the ceiling
@@ -72,19 +72,21 @@ function isLinePart(part: ResolvedPart): part is ResolvedPart & { id: LinePart }
 export function cutawayCrossings(form: RoofForm, parts: readonly ResolvedPart[], steps: CutawaySteps, flow: 'rain' | 'heat'): CutawayCrossing[] {
   const lowSlope = form === 'low-slope'
   const attic = flow === 'heat' && steps.system === 'attic'
-  const starts = stepStarts(steps.system, steps.shown, steps.peel)
+  const starts = stepStarts(steps.system, form, steps.shown, steps.peel)
   const bottom = stepBottom(steps.shown)
   const line = LINE_PARTS.flatMap(id => parts.filter(isLinePart).filter(part => part.id === id))
   const ownStart = (id: SystemPartId) => id === bottom ? undefined : starts.get(id)
   const own = line.map(part => ownStart(part.id))
-  const first = own.find(x => x !== undefined) ?? HOUSE.cutX
+  // Up close on the attic the roof's parts stand whole, and the open house keeps the near slope only past the roof's own
+  // cut, wherever the attic opens its floor, so the rain crosses them on that kept slope, one attic step in from the cut.
+  const first = steps.system === 'attic' ? STEP_CUTS[form].roof + STEP_DEPTHS.attic : own.find(x => x !== undefined) ?? STEP_CUTS[form].roof
   const xs: number[] = []
   own.forEach((x, index) => xs.push(x ?? (index === 0 ? first : xs[index - 1])))
 
   const crossings: CutawayCrossing[] = []
   const lowSlopeZ = attic ? ATTIC_HEAT_LINE.lowSlopeZ : CUTAWAY_FLOW.lowSlopeZ
   const floorTop = attic ? line.find(part => FLOOR_PARTS.has(part.id))! : undefined
-  const floorX = floorTop && stepCentre('attic', starts.get(floorTop.id) ?? HOUSE.cutX, steps.peel)
+  const floorX = floorTop && stepCentre('attic', starts.get(floorTop.id) ?? STEP_CUTS[form][steps.system], steps.peel)
   let dropZ: number = lowSlope ? lowSlopeZ : D
   line.forEach((part, index) => {
     const start = own[index]
@@ -141,9 +143,9 @@ function crossSpan(path: CutawayRainPath, entry: Vec3, exit: Vec3, entryWidth: n
 const SHEDS: ReadonlySet<string> = new Set(['surface', 'shed-water'])
 const has = (parts: readonly ResolvedPart[], id: string) => parts.some(part => part.id === id && part.material !== null)
 
-// Down the shedding part's step to the eave, over the drip edge (when there is one) and into the gutter, or off the roof
-// without one. A flat roof sheds to its back parapet and out through the scupper nearest the line. `outer` is the shedding
-// part's outer face: off the rafters' top on a gable, its height on a flat roof.
+// Down the shedding part's step to the eave, over the drip edge (when there is one) and into the gutter where it catches,
+// or off the roof where none does. A flat roof sheds to its back parapet and out through the scupper nearest the line.
+// `outer` is the shedding part's outer face: off the rafters' top on a gable, its height on a flat roof.
 function shedRun(path: CutawayRainPath, form: RoofForm, parts: readonly ResolvedPart[], landing: Vec3, outer: number, shed: number): void {
   if (form === 'pitched') {
     const over = scaled(NORMAL, CUTAWAY_FLOW.sheetOver)
@@ -153,7 +155,7 @@ function shedRun(path: CutawayRainPath, form: RoofForm, parts: readonly Resolved
     if (has(parts, 'drip-edge')) {
       push(path, add(slopePoint(landing[0], -EAVE_RUN, COVERING_BASE), CUTAWAY_FLOW.offEdge), shed)
     }
-    if (has(parts, 'gutter')) {
+    if (gutterCatches(drawnGutterWear(parts), landing[0])) {
       push(path, [landing[0], GUTTER_Y, GUTTER_OUT], shed)
       return
     }

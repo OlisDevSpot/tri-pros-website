@@ -18,7 +18,7 @@ const SHARED_ANCHORS: Omit<Record<HomeAnchorId, HomeAnchor>, 'roof'> = {
   'under-floor': { position: [0, HOUSE.floorY / 2, HOUSE.halfDepth - 0.4] },
 }
 
-// Where a system's view looks and, for the roof and the attic, where its spot pin stands, so the pin and the pick that
+// Where a system's view looks and, for the roof and the attic, where its spot chip is anchored, so the chip and the pick that
 // follows it land on the same spot. Pitched: mid-slope on the cut edge of the near slope, on the covering. Low-slope: the
 // same point of the cut, on the membrane.
 export const HOME_ANCHORS: Record<RoofForm, Record<HomeAnchorId, HomeAnchor>> = {
@@ -108,7 +108,7 @@ export const READING_ANCHORS: Record<RoofForm, Record<ReadingId, [number, number
   },
 }
 
-// While the windows are in focus the house is held closed, so the window reading stands on the window their Look inside
+// While the windows are framed the house is held closed, so the window reading stands on the window their Look inside
 // opens: on its glass at its inside face, toward the end clear of the parts' pins, low enough that its label stays under
 // the arrows and clear of the pins pulled apart. Working numbers, set by screenshot.
 const OPENED_WINDOW_SPOT = { along: 0.5, rise: 1.15 } as const
@@ -118,8 +118,8 @@ const OPENED_WINDOW_READING: [number, number, number] = LOOK_INSIDE_WINDOW.wall.
   ? [OPENED_WINDOW_ALONG, HOUSE.floorY + OPENED_WINDOW_SPOT.rise, OPENED_WINDOW_INSIDE]
   : [OPENED_WINDOW_INSIDE, HOUSE.floorY + OPENED_WINDOW_SPOT.rise, OPENED_WINDOW_ALONG]
 
-// Where each reading stands with this system in focus: the whole home's, but on the opened window while the windows are in
-// focus. The walls hold the house closed too, but open no window, so they keep the whole home's.
+// Where each reading stands with this system framed: the whole home's, but on the opened window while the windows are
+// framed. The walls hold the house closed too, but open no window, so they keep the whole home's.
 export function readingAnchors(form: RoofForm, cameraFocus: HomeSystemId | null): Record<ReadingId, [number, number, number]> {
   return cameraFocus === 'windows' ? { ...READING_ANCHORS[form], window: OPENED_WINDOW_READING } : READING_ANCHORS[form]
 }

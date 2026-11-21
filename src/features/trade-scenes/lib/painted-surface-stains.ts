@@ -161,11 +161,11 @@ export function paintedSurfaceStains(form: RoofForm, stainShare: number, fadeSha
 }
 
 // The see-through lists one painted face draws, each at its level's strength.
-export function surfaceStainLists(face: SurfaceStains, stainShare: number, fadeShare: number): StainBoxes[] {
+export function surfaceStainLists(face: SurfaceStains, stainShare: number, fadeShare: number, fadeColor: string): StainBoxes[] {
   const look = WEAR_LOOKS.paint
   return [
     { cell: 'streak', boxes: face.streaks, color: look.streakColor, alpha: Math.min(1, look.streakAlpha * stainShare) },
-    { cell: 'blotch', boxes: face.blotches, color: look.blotchColor, alpha: Math.min(1, look.blotchAlpha * fadeShare) },
+    { cell: 'blotch', boxes: face.blotches, color: fadeColor, alpha: Math.min(1, look.blotchAlpha * fadeShare) },
   ]
 }
 

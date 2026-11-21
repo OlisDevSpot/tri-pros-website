@@ -23,7 +23,7 @@ export function dockHeightFor(fold: DockFold): number {
 // never moves the dock.
 export function dockRegionFor(shape: StageShape, stage: { width: number, height: number }): { top: number, bottom: number } {
   const { dock, keysButton } = SCENE_LAYOUT
-  const covered = sceneVisibleAreaFor({ shape, ...stage, focusCardBottom: null }).bottom
+  const covered = sceneVisibleAreaFor({ shape, ...stage, openCardBottom: null }).bottom
   const keysRoom = shape === 'portrait' ? keysButton.gap + keysButton.size + keysButton.spacing : 0
   return { top: dock.gap, bottom: covered + keysRoom }
 }

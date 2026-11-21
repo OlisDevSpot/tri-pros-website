@@ -1,37 +1,26 @@
 'use client'
 
-import type { HomeSystemId, TradeSceneInputs } from '@/features/trade-scenes/types'
-import type { HVACType } from '@/shared/modules/construction/core/constants/enums'
+import type { TradeSceneInputs } from '@/features/trade-scenes/types'
 
-import { useShallow } from 'zustand/react/shallow'
-
-import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
-import { homeSpotContext } from '@/features/trade-scenes/lib/keep-look-inside'
 import { spotPinId } from '@/features/trade-scenes/lib/spot-pin-id'
-import { spotPinPoint } from '@/features/trade-scenes/lib/spot-pin-point'
-import { systemsAtSpot } from '@/features/trade-scenes/lib/systems-at-spot'
 import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
 import { SceneAnchor } from '@/shared/components/scene/ui/scene-anchor'
 
 interface SpotPinsLayerProps {
-  form: string | null
-  hvacType: HVACType | null
+  rides: 'lift' | 'ground'
 }
-
-const NO_SYSTEMS: readonly HomeSystemId[] = []
 
 // Up close the system's own parts take the pins, so a tapped spot shows none there.
-function selectSpotSystems(state: TradeSceneInputs): readonly HomeSystemId[] {
-  return state.tappedSpot === null || state.lookInside ? NO_SYSTEMS : systemsAtSpot(state.tappedSpot, homeSpotContext(state))
+function selectTapped(state: TradeSceneInputs) {
+  return state.lookInside ? null : state.tappedSpot
 }
 
-// On the house's lift, so each pin rises with the system it names.
-export function SpotPinsLayer({ form, hvacType }: SpotPinsLayerProps) {
-  const systems = useSceneInputs(useShallow(selectSpotSystems))
-  const roofForm = homeRoofForm(form)
-  return (
-    <>
-      {systems.map(system => <SceneAnchor key={system} id={spotPinId(system)} position={[...spotPinPoint(system, roofForm, hvacType)]} />)}
-    </>
-  )
+// One anchor at the tap, mounted in each group a part can ride and drawn only in the one the tap rode, so it moves with the
+// part it landed on.
+export function SpotPinsLayer({ rides }: SpotPinsLayerProps) {
+  const tapped = useSceneInputs(selectTapped)
+  if (tapped === null || tapped.rides !== rides) {
+    return null
+  }
+  return <SceneAnchor key={tapped.id} id={spotPinId(tapped.spot)} position={[...tapped.point]} />
 }

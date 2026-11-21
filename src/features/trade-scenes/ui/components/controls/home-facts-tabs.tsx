@@ -9,6 +9,7 @@ import { FACTS_TABS } from '@/features/trade-scenes/constants/facts-tabs'
 import { CONTROLS_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
 import { UNDERLINE_TAB_TRIGGER_CLASS } from '@/features/trade-scenes/constants/panel-layout'
 import { FACTS_TAB_ICONS } from '@/features/trade-scenes/constants/scene-control-icons'
+import { useLotIsData } from '@/features/trade-scenes/contexts/layout-editor-context'
 import { useSceneVisibleArea } from '@/features/trade-scenes/contexts/scene-visible-area-context'
 import { HOME_FACTS, missingFacts } from '@/features/trade-scenes/lib/missing-facts'
 import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
@@ -25,6 +26,7 @@ export function HomeFactsTabs() {
   const portrait = shape === 'portrait'
   const inHead = shape === 'landscape'
   const attention = toneClasses('attention')
+  const lotIsData = useLotIsData()
 
   return (
     <TabsList
@@ -35,7 +37,7 @@ export function HomeFactsTabs() {
       {FACTS_TABS.map((tab, index) => {
         const Icon = FACTS_TAB_ICONS[tab]
         const name = CONTROLS_COPY.facts.tabs[tab]
-        const soon = !HOME_FACTS.some(fact => fact.tab === tab)
+        const soon = !HOME_FACTS.some(fact => fact.tab === tab) && !(tab === 'lot' && lotIsData)
         const count = HOME_FACTS.filter(fact => fact.tab === tab && missing.includes(fact.id)).length
         return (
           <Fragment key={tab}>

@@ -85,8 +85,29 @@ export const HOME_RAIN = {
     field(CLEAR.maxX, LOT.right, lowestGround(CLEAR.minZ, GARAGE_CLEAR.minZ), SKY_FLOOR, CLEAR.minZ, GARAGE_CLEAR.minZ),
     field(GARAGE_CLEAR.maxX, LOT.right, lowestGround(GARAGE_CLEAR.minZ, CLEAR.maxZ), SKY_FLOOR, GARAGE_CLEAR.minZ, CLEAR.maxZ),
   ],
-  // Water out of each downspout's foot, as a short stream.
-  spout: { box: [0.08, 0.5, 0.08] as const, intensity: 0.06 },
 } as const
+
+// The roof's water where it leaves the roof: a curtain off an eave with no gutter to catch it, as many streaks along each
+// metre and as thin as a sheet; a thin sheet running out of each downspout's extension over the lawn, `box` across it, its
+// depth and its run, `lift` its centre over the lawn; and a thin trickle over a sagging gutter's front lip. A working
+// number, set by shot.
+export const GUTTER_WATER = {
+  curtain: { perMetre: 30, depth: 0.05 },
+  outlet: { box: [0.1, 0.01, 0.45] as const, lift: 0.012, streaks: 14 },
+  trickle: { width: 0.05, streaks: 22 },
+} as const
+
+// How far over the covering's base each covering's highest piece can stand, at any wear: a slipped tile cap or a curled
+// shingle or shake. Keyed by the covering's material; anything else is laid as shingle. A working number, set by shot.
+const SHEEN_RISE: Readonly<Record<string, number>> = {
+  'default': 0.09,
+  'tile': 0.2,
+  'wood-shake': 0.095,
+}
+
+// The rain's film on the roof: a thin sheen standing `lift` over the covering's highest point, so no piece pokes through
+// it, its streaks sliding down each slope at `speed` metres a second. `tile` is one repeat of its streaks in metres, [along
+// the ridge, down the slope]. A working number, set by shot.
+export const ROOF_SHEEN = { rise: SHEEN_RISE, lift: 0.012, color: '#dfe9f2', opacity: 0.5, speed: 0.6, tile: [1.5, 1] as const } as const
 
 export const CONDENSER_SHIMMER_POSITION = [EQUIPMENT.condenser.position[0], 1.05, EQUIPMENT.condenser.position[2] + 0.3] as const

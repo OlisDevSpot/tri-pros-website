@@ -7,7 +7,7 @@ import type { GlassLook } from '@/features/trade-scenes/ui/lib/glass-look'
 import { useMemo } from 'react'
 
 import { HOME_PALETTE } from '@/features/trade-scenes/constants/home-palette'
-import { LOOK_INSIDE_WINDOW_TAG } from '@/features/trade-scenes/constants/look-inside'
+import { FRONT_WALL_WINDOW_TAG } from '@/features/trade-scenes/constants/look-inside'
 import { PAIRED_PANE_OPACITY, PANE_LOOKS } from '@/features/trade-scenes/constants/system-part-looks'
 import { useStepPeel } from '@/features/trade-scenes/hooks/use-step-peel'
 import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
@@ -43,7 +43,7 @@ export function WindowPanes({ glass: glassLook, frame, lit, glow }: WindowPanesP
         const pane = isPane(id)
         const tint = pane ? null : PANE_LOOKS[id]
         return (
-          <group key={id} position={[...spread.get(id)!]} userData={systemPartTag(id, LOOK_INSIDE_WINDOW_TAG)}>
+          <group key={id} position={[...spread.get(id)!]} userData={systemPartTag(id, FRONT_WALL_WINDOW_TAG)}>
             <MergedBoxes
               boxes={boxes}
               color={tint === null ? glassLook.color : tint.color}

@@ -12,6 +12,7 @@ export function systemsAtSpot(spot: HomeSpotId, ctx: HomeSpotContext): HomeSyste
     case 'equipment': return HVAC_ATTIC.appliesTo({ ...HOME_SCENE_DEFAULTS.property, hvacType: ctx.hvacType }) ? ['heating-cooling'] : []
     case 'window': return ['windows']
     case 'wall': return ['walls']
+    case 'foundation': return ['foundation']
   }
 }
 

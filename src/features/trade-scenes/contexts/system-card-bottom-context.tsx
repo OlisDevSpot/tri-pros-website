@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import { createContext, use, useMemo, useState } from 'react'
 
 interface SystemCardBottomValue {
-  // Stage pixels; null while no system card is drawn.
+  // Stage pixels; null while no system action card is drawn.
   bottom: number | null
   setBottom: (bottom: number | null) => void
 }

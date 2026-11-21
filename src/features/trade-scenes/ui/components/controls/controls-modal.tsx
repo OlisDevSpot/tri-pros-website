@@ -48,7 +48,7 @@ export function ControlsModal({ id, children, onEscapeKeyDown }: ControlsModalPr
   const width = Math.min(controls.modalWidth, stage.width - 2 * side)
   const left = (stage.width - width) / 2
   const maxHeight = stage.height - top - bottom
-  // Modify hangs from the top, so the field typed in never moves as its results change; Home facts grows up from the
+  // Modify hangs from the top, so the field typed in never moves as its results change; Property facts grows up from the
   // group; Benefits keeps one size. A portrait iPad caps every window at the wide width, centred.
   const placement: CSSProperties = section === 'modify'
     ? { top, left, width, maxHeight }

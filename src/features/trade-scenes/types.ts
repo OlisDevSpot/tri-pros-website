@@ -1,26 +1,30 @@
 import type { FACTS_TABS } from '@/features/trade-scenes/constants/facts-tabs'
+import type { FENCE_KIND_IDS } from '@/features/trade-scenes/constants/fence-kinds'
+import type { GROUND_MATERIAL_IDS } from '@/features/trade-scenes/constants/ground-materials'
 import type { ReadingId } from '@/features/trade-scenes/constants/home-anchors'
 import type { HOME_FADES } from '@/features/trade-scenes/constants/home-fades'
 import type { BUILD_ROW_PART_IDS, HOME_SPOT_IDS, HOME_SYSTEM_IDS } from '@/features/trade-scenes/constants/home-systems'
 import type { LookDevView, MaterialTreatment } from '@/features/trade-scenes/constants/look-dev-options'
 import type { FULLY_OPEN_SYSTEM_IDS, PULLED_APART_SYSTEM_IDS, STEP_DEPTHS } from '@/features/trade-scenes/constants/look-inside'
 import type { PLANT_SPECIES } from '@/features/trade-scenes/constants/lot-plants'
+import type { TEXTURE_SET_IDS } from '@/features/trade-scenes/constants/material-textures'
 import type { HOME_VIEWS } from '@/features/trade-scenes/constants/scene-controls'
 import type { DOCK_FOLDS } from '@/features/trade-scenes/constants/scene-dock'
 import type { SCENE_LOAD_PHASES } from '@/features/trade-scenes/constants/scene-load'
 import type { PANE_LOOKS } from '@/features/trade-scenes/constants/system-part-looks'
 import type { SYSTEM_PARTS } from '@/features/trade-scenes/constants/system-parts'
+import type { AREA_GROUP_IDS, GROUND_SYSTEM_IDS, YARD_IDS, YARD_SYSTEM_IDS } from '@/features/trade-scenes/constants/yards'
 import type { OfferBlockedReason, PartOffer } from '@/features/trade-scenes/lib/part-offers'
 import type { RibbonStyle } from '@/shared/components/scene/constants/ribbon-styles'
 import type { ThermalSeason, ThermalStyle } from '@/shared/components/scene/constants/thermal-palettes'
-import type { SceneRenderer } from '@/shared/components/scene/types'
+import type { PieceLayout, SceneRenderer } from '@/shared/components/scene/types'
 import type { CustomerAgeGroup, HouseholdType } from '@/shared/constants/enums/customers'
 import type { Resolved } from '@/shared/lib/resolve-overridable'
 import type { AssemblyId } from '@/shared/modules/construction/core/constants/assembly-ids'
 import type { BenefitKind } from '@/shared/modules/construction/core/constants/benefit-kinds'
 import type { Climate } from '@/shared/modules/construction/core/constants/climate-presets'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
-import type { HVACType, PaintWearKind, PaintWearLevel, Wear } from '@/shared/modules/construction/core/constants/enums'
+import type { CoveringWearKind, FoundationType, HVACType, PaintWearKind, PaintWearLevel, Wear } from '@/shared/modules/construction/core/constants/enums'
 import type { HomeMaterialId } from '@/shared/modules/construction/core/constants/home-material-ids'
 import type { InstallStyleId } from '@/shared/modules/construction/core/constants/install-styles'
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
@@ -39,7 +43,20 @@ export interface LookDevOptions {
   emphasized: string | null
 }
 
-export type SurfaceTexture = 'grain' | 'grit' | 'fiber' | 'smooth'
+export type SectionLayerTexture = 'grain' | 'grit' | 'fiber' | 'smooth'
+
+export type TextureSetId = typeof TEXTURE_SET_IDS[number]
+
+export type TextureMapChoice = 'own' | 'grey' | { blend: string }
+
+export type WornStep = 'fair' | 'worn' | 'failing'
+
+export interface SurfaceTexture {
+  set: TextureSetId
+  map: TextureMapChoice
+  mapTint?: string
+  loadWhen?: boolean
+}
 
 export interface SectionLayer {
   id: string
@@ -47,7 +64,7 @@ export interface SectionLayer {
   group: 'roof' | 'attic'
   thickness: number
   color: string
-  texture: SurfaceTexture
+  texture: SectionLayerTexture
   /** [inner, outer] temperature per season and view, hand-set until relativeHeatFlow drives them. */
   temperature: Record<ThermalSeason, Record<LookDevView, readonly [number, number]>>
 }
@@ -74,13 +91,17 @@ export interface TradeSceneInputs {
   efficiencyUpgrades: EfficiencyUpgradeId[]
   installStyles: InstallStyleId[]
   homeMaterials: HomeMaterialFacts
+  // What the camera frames; only Focus and Look inside write it.
   cameraFocus: HomeSystemId | null
+  // The system whose action card is open; a pick never moves the camera.
+  pickedSystem: HomeSystemId | null
   peel: number
   emphasizedPart: SystemPartId | null
-  // Where the house was last tapped; its systems' pins show until a pick, a tap away, Escape or a home-view change.
-  tappedSpot: HomeSpotId | null
+  // Where the house was last tapped; its chip shows until a pick, a tap away, Escape or a home-view change.
+  tappedSpot: TappedSpot | null
   bills: Record<SavingsCategory, BillEntry>
   repairsOverrides: Partial<Record<TradeSlug, number | null>>
+  layout: PropertyLayout
 }
 
 // What resolveScene reads; the drawing-only inputs (peel, emphasis, a tapped spot, home view, thermal camera, look) change no target, so a write to
@@ -182,10 +203,15 @@ export interface SceneTargets {
   // The build replaces the rotted fascia: a new length over each rotted end, and a whole board where the rot has run along
   // its bottom edge.
   fasciaReplaced: boolean
+  // The home's gutter before the build, null where it has none: the stains its overflow left outlast a new gutter.
+  existingGutterWear: Wear | null
 }
 
 // What the home kit reads from the scene inputs: a narrower slice than the whole inputs, so a peel drag never redraws the house.
 export type HomeKitInputs = Pick<TradeSceneInputs, 'property' | 'weather' | 'homeMaterials' | 'homeView'> & { climate: Climate }
+
+// Each kind's share of the Worn look, 1 at Moderate.
+export type CoveringShares = Record<CoveringWearKind, number>
 
 // A covering's area, laid in a slope's own frame: x runs eave to ridge, y is the roof normal, z runs along the ridge.
 export interface CourseArea {
@@ -196,6 +222,19 @@ export interface CourseArea {
   zFrom: number
   zTo: number
   base: number
+  shares: CoveringShares
+  // A reused covering is the old one put back, so its pieces keep their places but not their breakage.
+  reused: boolean
+}
+
+export type CoveringCourseKind = 'shingle' | 'shake' | 'pan' | 'cap'
+
+// `crack` and `broken` each place that tile's own crack or broken corner, in (0, 1]. A replacement is a tile put in where one was
+// cracked or broken, so it takes a tint of its own.
+export interface CoveringPiece extends PieceLayout {
+  crack?: number
+  broken?: number
+  replacement?: true
 }
 
 export interface ShingleCourse {
@@ -230,6 +269,27 @@ export interface BoxSpec {
   size: readonly [number, number, number]
   position: readonly [number, number, number]
   rotation?: readonly [number, number, number]
+}
+
+/** One point on a gutter run's centre line. Drop is down from `GUTTER_Y`, out is away from the house, roll is about the run, in radians. */
+export interface GutterStation {
+  x: number
+  drop: number
+  out: number
+  roll: number
+}
+
+// Where along each wall's run the roof's water lands on it, as spans in the house frame; empty where nothing lands.
+export interface GutterWetSpans {
+  front: readonly (readonly [number, number])[]
+  back: readonly (readonly [number, number])[]
+}
+
+export interface GutterRun {
+  face: 'front' | 'back'
+  stations: readonly GutterStation[]
+  capStart: boolean
+  capEnd: boolean
 }
 
 export interface WallOpening {
@@ -455,6 +515,8 @@ export interface HomeSystemRows {
 export interface PaintLook {
   color: string
   trim: string
+  // The tone of the sun's fade patches on the body.
+  fade: string
   wear: number
   paintWear: PaintWear
 }
@@ -535,6 +597,7 @@ export interface SceneLoadState {
 }
 
 export type PaintWear = Record<PaintWearKind, PaintWearLevel>
+export type CoveringWear = Record<CoveringWearKind, PaintWearLevel>
 
 // Every write a control makes, so one function applies them all and the picks a write can no longer take go in the same write.
 export type SceneChange
@@ -544,7 +607,7 @@ export type SceneChange
     | { kind: 'option', field: ReplaceableField, value: string | null }
     | { kind: 'era-guess', id: HomeMaterialId }
     | { kind: 'era-code' }
-    | { kind: 'fact', patch: Partial<Pick<HomeMaterialFacts, 'gutters' | DrawingOnlyMaterialFact>> }
+    | { kind: 'fact', patch: Partial<Pick<HomeMaterialFacts, 'gutters' | 'gutterWear' | 'airSealing' | DrawingOnlyMaterialFact>> }
     | { kind: 'scope', offer: PartOffer, scopeId: ScopeId | null }
     | { kind: 'efficiency-upgrade', upgrade: EfficiencyUpgradeId, on: boolean }
     | { kind: 'install-style', style: InstallStyleId, on: boolean }
@@ -606,8 +669,10 @@ export interface TintedBoxes {
 
 export type ControlsSection = 'facts' | 'systems' | 'modify' | 'benefits'
 
-// A system in focus holds the camera (the store's cameraFocus); Year built is a card with no camera view.
-export type SystemsFocus = HomeSystemId | 'year-built' | null
+// A picked system is the store's pickedSystem; Year built is a card with no system, held in the controls.
+export type SystemsPick = HomeSystemId | 'year-built' | null
+
+export type SystemActionId = 'focus' | 'look-inside' | 'draw-region' | 'draw-fence'
 
 // Which of the stain atlas's soft shapes a stain draws: the band at a wall's foot, a runoff streak, or a fade blotch.
 export type StainCell = 'splash' | 'streak' | 'blotch'
@@ -658,12 +723,12 @@ export interface SceneChangeResult {
 // The change Modify last applied, counted so its row's flash replays on each apply.
 export type AppliedSceneChange = { id: string, count: number } | null
 
-// A part a system card's build row offers.
+// A part a system action card's build row offers.
 export type BuildRowPartId = typeof BUILD_ROW_PART_IDS[number]
 
 export type SceneChangeSlotId
   = | 'household' | 'age-group' | 'foundation' | 'roof-form' | 'year-built' | 'climate'
-    | HomeMaterialId | 'gutters' | 'hvac-components' | 'ac-tons' | `wear:${HomeMaterialId}`
+    | HomeMaterialId | 'gutters' | 'gutter-wear' | 'air-sealing' | 'hvac-components' | 'ac-tons' | `wear:${HomeMaterialId}`
     | `build:${BuildRowPartId}` | `upgrade:${EfficiencyUpgradeId}` | `style:${InstallStyleId}` | `bill:${SavingsCategory}` | 'replace:fascia'
 
 // What the Benefits window has picked: one dot, a whole system row, or a whole kind column.
@@ -696,6 +761,16 @@ export interface BenefitLine {
 // Where a tap on the house asks which systems are there.
 export type HomeSpotId = typeof HOME_SPOT_IDS[number]
 
+// A tap on the house: the point is in the space of the group the tapped part rides, since the lift moves the house with its
+// foundation and the ground does not. The id grows by one a tap, so a second tap on one spot is a new tap.
+export interface TappedSpot {
+  id: number
+  spot: HomeSpotId
+  point: Vec3
+  rides: 'lift' | 'ground'
+  editing: HomeSystemId | null
+}
+
 // What a spot needs to know to say which systems it opens.
 export interface HomeSpotContext {
   form: RoofForm
@@ -704,7 +779,7 @@ export interface HomeSpotContext {
 }
 
 // What a shared system part is lit for in each of its systems.
-export type SystemPartStory = 'leak' | 'air-gaps'
+export type SystemPartStory = 'leak' | 'sealing'
 
 // A whole construction part (its id is the part's) or a piece drawn on one, which names and steps open but never moves a
 // figure; membership is its own list because the part's group drives the heat math.
@@ -740,6 +815,59 @@ export interface SystemLit {
   emphasized: SystemPartId | null
 }
 
+export type RoofShape = 'gable' | 'hip' | 'flat'
+export type MassRole = 'main' | 'wing' | 'garage'
+export interface TileRect { c0: number, r0: number, cols: number, rows: number }
+export interface Mass extends TileRect { id: string, stories: 1 | 2, ridgeAxis?: 'x' | 'z', role: MassRole }
+export type LotSide = 'left' | 'right' | 'back' | 'front'
+export interface LotGrade { padEndRow: number, walkDrop: number, streetDrop: number }
+export type FenceAxis = 'across' | 'along'
+// Each map is a tile grid of its own: across has rows + 1 lines of cols cells (line 0 the front lot line), along has
+// cols + 1 lines of rows cells (line 0 the left lot line); a cell's index is line * cellsPerLine + cell on both.
+export interface FenceMap { across: Uint8Array, along: Uint8Array }
+export interface FenceLayers { existing: FenceMap, proposed: FenceMap }
+// Cells along one grid line, `to` exclusive.
+export interface LineRange { axis: FenceAxis, line: number, from: number, to: number }
+// A corner of the grid, 0..cols by 0..rows inclusive: where fence lines cross, never a tile.
+export type GridVertex = readonly [col: number, row: number]
+// `appearance` packs a pattern and a colour of the material's own looks; a byte past its list reads as its first look.
+export interface YardBase { material: GroundMaterialId, wear: Wear | null, appearance: number }
+export interface LotLayout { cols: number, rows: number, existing: Uint8Array, proposed: Uint8Array, wear: Uint8Array, appearance: { existing: Uint8Array, proposed: Uint8Array }, bases: Record<YardId, YardBase>, fence: FenceLayers, grade: LotGrade }
+export interface RoomStandIn { massId: string, kind: 'living' | 'kitchen' | 'bed' | 'bath', span: TileRect, story: 1 | 2 }
+export interface HouseLayout { masses: readonly Mass[], roof: RoofShape, foundation: FoundationType, rooms: readonly RoomStandIn[] }
+export interface DraftProvenance { address: string, imageryDate: string | null, sources: readonly string[], confidence: number }
+export type LayoutSource = 'default' | 'drafted' | 'edited'
+export interface PropertyLayout { version: 1, tile: number, lot: LotLayout, house: HouseLayout, source: LayoutSource, draft?: DraftProvenance }
+export type GroundMaterialId = typeof GROUND_MATERIAL_IDS[number]
+export type FenceKindId = typeof FENCE_KIND_IDS[number]
+export type YardId = typeof YARD_IDS[number]
+export type AreaGroupId = typeof AREA_GROUP_IDS[number]
+export type GroundSystemId = typeof GROUND_SYSTEM_IDS[number]
+export type YardSystemId = typeof YARD_SYSTEM_IDS[number]
+// A stretch of cells on one grid line whose (existing, proposed) pair is equal: the regions' rule on cells.
+export interface FenceLine extends LineRange { id: string, existing: FenceKindId | null, proposed: FenceKindId | null, perimeter: boolean, frontYard: boolean }
+export type GroundLayer = TradeSceneInputs['view']
+export interface LotRegion { id: string, existing: GroundMaterialId | null, proposed: GroundMaterialId | null, wear: Wear | null, appearanceExisting: number, appearanceProposed: number, yard: YardId, base: boolean, tiles: number, rings: readonly (readonly [number, number])[][], bbox: TileRect }
+// Not "frame": that word is the presentation's. Tile (0, 0) is the street-side left corner; rows run away from the street.
+export interface LotOrigin { originX: number, frontZ: number, tile: number }
+export interface WorldRect { x0: number, x1: number, z0: number, z1: number }
+export interface LotBounds { left: number, right: number, front: number, back: number }
+// The stoop and the driveway apron ride in `concrete`; the driveway, the walk and the beds are regions.
+export type LayoutLotBoxes = Pick<LotBoxes, 'concrete' | 'asphalt'>
+// One list per look, so each mounts as one merged mesh and a lot without that kind draws nothing for it.
+export interface FenceBoxes {
+  blockWalls: readonly BoxSpec[]
+  wallCaps: readonly BoxSpec[]
+  fenceBoards: readonly BoxSpec[]
+  fenceRails: readonly BoxSpec[]
+  vinylParts: readonly BoxSpec[]
+  compositeBoards: readonly BoxSpec[]
+  compositePosts: readonly BoxSpec[]
+  ironwork: readonly BoxSpec[]
+  chainPosts: readonly BoxSpec[]
+  chainMesh: readonly BoxSpec[]
+}
+export interface ResolvedLayout { layout: PropertyLayout, origin: LotOrigin, bounds: LotBounds, groundRows: readonly (readonly [number, number])[], heightAt: (z: number) => number, mask: Uint8Array, yards: Int8Array, regions: readonly LotRegion[], fenceMask: FenceMap, fences: readonly FenceLine[], main: WorldRect, garage: WorldRect | null, boxes: LayoutLotBoxes, fenceBoxes: Record<GroundLayer, FenceBoxes> }
 // A shown system part as its system's list and its pins name it.
 export type SystemPartRow = ResolvedPart & { id: SystemPartId, listed?: false }
 
@@ -813,8 +941,14 @@ export interface FaceLegPoints {
   bounce: readonly Vec3[] | null
 }
 
+/** A gutter the home draws: how worn it is, and its colour. */
+export interface DrawnGutter {
+  wear: Wear
+  hex: string
+}
+
 // The home material facts that only draw: no scope, part, material or figure reads them, so a change never re-resolves the scene.
-export type DrawingOnlyMaterialFact = 'acTons' | 'shingleColor' | 'paintWear' | 'existingPaintColors' | 'proposedPaintColors' | 'windowFrameColor'
+export type DrawingOnlyMaterialFact = 'acTons' | 'shingleColor' | 'paintWear' | 'coveringWear' | 'existingPaintColors' | 'proposedPaintColors' | 'windowFrameColor' | 'existingGutterColor' | 'proposedGutterColor'
 
 // The two hexes the house's paint draws: the body of the walls and the trim round them.
 export interface PaintHexes {

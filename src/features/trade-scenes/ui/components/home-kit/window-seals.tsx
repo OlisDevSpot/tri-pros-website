@@ -7,7 +7,7 @@ import type { BoxSpec, SystemLit, SystemPartId } from '@/features/trade-scenes/t
 import { useMemo } from 'react'
 
 import { HOUSE } from '@/features/trade-scenes/constants/home-geometry'
-import { LOOK_INSIDE_WINDOW, LOOK_INSIDE_WINDOW_TAG, PART_PIECES } from '@/features/trade-scenes/constants/look-inside'
+import { FRONT_WALL_WINDOW_TAG, LOOK_INSIDE_WINDOW, PART_PIECES } from '@/features/trade-scenes/constants/look-inside'
 import { WINDOW_SEAL_LOOKS } from '@/features/trade-scenes/constants/system-part-looks'
 import { useStepPeel } from '@/features/trade-scenes/hooks/use-step-peel'
 import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
@@ -59,7 +59,7 @@ export function WindowSeals({ frame, size, lit }: WindowSealsProps) {
       {pieces.map(({ id, boxes }) => {
         const look = WINDOW_SEAL_LOOKS[id as PieceId]
         return (
-          <group key={id} position={[...spread.get(id)!]} userData={systemPartTag(id, LOOK_INSIDE_WINDOW_TAG)}>
+          <group key={id} position={[...spread.get(id)!]} userData={systemPartTag(id, FRONT_WALL_WINDOW_TAG)}>
             <MergedBoxes boxes={boxes} color={wornColor(look.color, look.worn, frame.wear)} />
           </group>
         )

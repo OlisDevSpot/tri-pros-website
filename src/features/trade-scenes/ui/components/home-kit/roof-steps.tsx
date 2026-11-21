@@ -1,5 +1,7 @@
 'use client'
 
+import type { ReactNode } from 'react'
+import type { CoveringLook } from '@/features/trade-scenes/lib/covering-look'
 import type { PartState } from '@/features/trade-scenes/lib/part-state'
 import type { PaintLook, SystemLit, SystemPartId } from '@/features/trade-scenes/types'
 
@@ -12,7 +14,7 @@ import { EaveMembrane } from '@/features/trade-scenes/ui/components/home-kit/eav
 import { RoofSlope } from '@/features/trade-scenes/ui/components/home-kit/roof-slope'
 
 interface RoofStepsProps {
-  covering: PartState
+  covering: CoveringLook
   deck: PartState
   underlayment: PartState
   radiantBarrier: PartState
@@ -26,6 +28,8 @@ interface RoofStepsProps {
   thermal: boolean
   // The system up close; the roof steps its system parts open here. The attic's radiant barrier stays whole on the rafters.
   lit: SystemLit | null
+  // More of the kept run's parts, drawn in the slope's own frame.
+  children?: ReactNode
 }
 
 const KEPT_ENDS = ['to'] as const
@@ -34,9 +38,10 @@ const NO_STEPS: ReadonlyMap<SystemPartId, number> = new Map()
 // The near slope's run every home view keeps, from the cut to its end. Up close on the roof it steps open as the peel
 // asks: each system part starts a step further from the cut than the one under it. It reads the peel itself, so a
 // drag redraws only this run.
-export function RoofSteps({ covering, deck, underlayment, radiantBarrier, dripEdge, iceAndWater, shingleTone, layout, paint, fasciaBoards, thermal, lit }: RoofStepsProps) {
+export function RoofSteps({ covering, deck, underlayment, radiantBarrier, dripEdge, iceAndWater, shingleTone, layout, paint, fasciaBoards, thermal, lit, children }: RoofStepsProps) {
   const peel = useStepPeel(lit)
-  const steps = useMemo(() => lit === null ? NO_STEPS : stepStarts(lit.system, lit.shown, peel), [lit, peel])
+  // Only a gable's near slope steps through here; a flat roof's parts step as attic steps.
+  const steps = useMemo(() => lit === null ? NO_STEPS : stepStarts(lit.system, 'pitched', lit.shown, peel), [lit, peel])
   return (
     <RoofSlope
       face="front"
@@ -56,6 +61,7 @@ export function RoofSteps({ covering, deck, underlayment, radiantBarrier, dripEd
       steps={steps}
     >
       <EaveMembrane zFrom={steps.get('ice-and-water') ?? HOUSE.cutX} zTo={ROOF_HALF_LENGTH} iceAndWater={iceAndWater} />
+      {children}
     </RoofSlope>
   )
 }

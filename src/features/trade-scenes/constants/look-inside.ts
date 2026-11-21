@@ -1,7 +1,7 @@
-import type { HomeSystemId, PartPaintFaces, SystemPartId, Vec3 } from '@/features/trade-scenes/types'
+import type { CutawaySystemId, HomeSystemId, PartPaintFaces, SystemPartId, Vec3 } from '@/features/trade-scenes/types'
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 
-import { FRONT_WALL, HOME_GHOST_OPACITY, HOUSE_WALLS } from '@/features/trade-scenes/constants/home-geometry'
+import { FRONT_WALL, HOME_GHOST_OPACITY, HOUSE, HOUSE_WALLS } from '@/features/trade-scenes/constants/home-geometry'
 import { SYSTEM_PARTS } from '@/features/trade-scenes/constants/system-parts'
 
 export const LOOK_INSIDE = {
@@ -13,14 +13,24 @@ export const LOOK_INSIDE = {
 } as const
 
 // How far each system part is cut back past the one under it, fully peeled, in metres. Working numbers. The attic's is
-// one joist bay past the cut, so the blanket's step edge stands out in plain view, and the strip its air sealing shows holds
-// the light can, the duct boot and the vent pipe in that bay, each with its foam clear of the step. The wall is looked
-// inside whole and the window pulls apart, so neither steps.
+// one joist bay, so the blanket's step edge stands out in plain view; under a gable its bare strip, over the left-end bay,
+// holds the light can, the duct boot and the vent pipe, each with its foam clear of the step. The wall is looked inside
+// whole and the window pulls apart, so neither steps.
 export const STEP_DEPTHS = {
   'roof': 0.45,
   'attic': 0.8,
   'heating-cooling': 0.25,
 } as const satisfies Record<'roof' | 'attic' | 'heating-cooling', number>
+
+// Where each stepped system opens along the house, its bottom step's start, by roof form. The roof opens at the kitchen
+// wall, where the open house lifts its near slope. Under a gable the attic opens at its left end, over the joist bay its
+// can, boot and vent pipe share, so the strip shows each with its foam clear of the step and the blanket runs solid from
+// there to the right gable. A flat roof resolves no air sealing, so its attic has no ceiling row or foam story to open
+// that bay for, and it opens where the roof does. The gable attic's is a working number, set by screenshot.
+export const STEP_CUTS = {
+  'pitched': { roof: HOUSE.cutX, attic: -4.65 },
+  'low-slope': { roof: HOUSE.cutX, attic: HOUSE.cutX },
+} as const satisfies Record<RoofForm, Record<CutawaySystemId, number>>
 
 // These stand fully stepped open up close, with no peel to drag.
 export const FULLY_OPEN_SYSTEM_IDS = ['attic'] as const satisfies readonly (keyof typeof STEP_DEPTHS)[]
@@ -43,9 +53,9 @@ export const UNSTEPPED_SYSTEM_PARTS = ['ridge-vent', 'attic-fan', 'radiant-barri
 // seen from the front yard, where the side yard's fence never stands in the way.
 export const LOOK_INSIDE_WINDOW = { wall: FRONT_WALL, opening: FRONT_WALL.openings[1] } as const
 
-// The framed window stands in the front wall, which only the Complete house draws and every Look inside ghosts, so each of its
-// system parts is tagged to light over that faded front.
-export const LOOK_INSIDE_WINDOW_TAG = { overFront: true } as const
+// Every window in the front wall, the framed one and the plain one beside it, stands in a wall only the Complete house draws and
+// every Look inside ghosts, so each of their system parts is tagged to light over that faded front.
+export const FRONT_WALL_WINDOW_TAG = { overFront: true } as const
 
 // Where the window's heat lanes cross every one of its parts, along its wall: in the glass, clear of the frame's bars and of
 // the pins down the glass's other side. A working number, set by screenshot.
@@ -122,9 +132,11 @@ export const CUTAWAY_FLOW = {
 // The attic holds the house open, which lifts away the near slope over the rooms and the attic floor's front span, so its
 // heat comes down through the back slope onto the span the open house keeps, along the house where its floor's top step
 // shows: crossing the deck `along` up the slope from the back wall and meeting the foil `barrierAlong` further down it, so
-// the arrows into the foil read apart; under a flat roof, at `lowSlopeZ`. The roof's own line stays on the near slope.
+// the arrows into the foil read apart; under a flat roof, at `lowSlopeZ`. It comes down far enough back that the attic's
+// up-close camera, looking on its diagonal from the left end, sees it behind the duct boot, never through it; any further
+// back leaves its arrows too short to read under the low end of the slope. The roof's own line stays on the near slope.
 // Working numbers, set by a dark shot.
-export const ATTIC_HEAT_LINE = { along: 3.2, barrierAlong: 0.7, lowSlopeZ: -1.2 } as const
+export const ATTIC_HEAT_LINE = { along: 2, barrierAlong: 0.7, lowSlopeZ: -1.2 } as const
 
 // How far each covering stands off its underlayment, where a flow meets its outer face. Working numbers.
 export const CUTAWAY_COVERING_RISE: Readonly<Record<string, number>> = {
@@ -176,15 +188,18 @@ export const CUTAWAY_READINGS = {
   ceilingBelow: 0.05,
   ceilingFromFront: 0.5,
   // Up close on the attic the roof's and the attic's readings stand this far left of its line, the attic's in the air over
-  // the blanket, and the ceiling's this far behind the kept ceiling's cut edge, where the open house shows it.
-  attic: { aside: 0.6, ceilingBack: 0.35 },
+  // the blanket, and the ceiling's this far behind the kept ceiling's cut edge, where the open house shows it. Under a gable
+  // the view looks from the left end toward the right gable, so the line's ceiling crossing lands under the card on a wide
+  // stage: there the ceiling's reading stands beside the line with the other two, over the bare strip, and further back, so
+  // it reads in full left of the card and below it on a phone, and clear behind the left room's duct boot and its foam. A
+  // flat roof's is looked at from the kitchen wall and reads where it stands.
+  attic: { aside: 0.6, ceiling: { 'pitched': { aside: 0.6, back: 0.9 }, 'low-slope': { aside: 0, back: 0.35 } } },
 } as const
 
 // The readings a lit part's two faces take, so the painted steps and the zones round them wear one colour. Any part not
 // listed faces the attic inside and the roof's reading outside.
 export const PART_PAINT_FACES: Partial<Record<SystemPartId, PartPaintFaces>> = {
   'ceiling': { inner: 'ceiling', outer: 'attic' },
-  'air-sealing': { inner: 'ceiling', outer: 'attic' },
   'attic-insulation': { inner: 'ceiling', outer: 'attic' },
   'rafters': { inner: 'attic', outer: 'attic' },
   'ceiling-joists': { inner: 'attic', outer: 'attic' },
@@ -194,6 +209,6 @@ export const PART_PAINT_FACES: Partial<Record<SystemPartId, PartPaintFaces>> = {
 
 export const DEFAULT_PART_PAINT_FACES: PartPaintFaces = { inner: 'attic', outer: 'roof' }
 
-// The dust where the ceiling leaks air, lying on the blanket over each opening: a patch's side, its thickness, how far it
-// floats over the blanket's top, and how dark its middle reads. Working numbers, set by screenshot.
-export const ATTIC_DUST = { size: 0.6, thickness: 0.004, lift: 0.006, alpha: 0.7 } as const
+// The dust where the ceiling leaks air, lying on the ceiling round each opening: a patch's side, how far it floats over the
+// ceiling, and how dark its middle reads. Working numbers, set by screenshot.
+export const ATTIC_DUST = { size: 0.6, lift: 0.006, alpha: 0.7 } as const

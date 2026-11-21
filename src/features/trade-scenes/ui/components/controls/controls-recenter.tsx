@@ -9,6 +9,7 @@ import { useLayoutEffect, useRef } from 'react'
 
 import { CONTROLS_CLASSES } from '@/features/trade-scenes/constants/controls-classes'
 import { SCENE_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
+import { LEAVE_LOOK_INSIDE } from '@/features/trade-scenes/constants/scene-controls'
 import { CONTROLS_EASE_CSS } from '@/features/trade-scenes/constants/scene-layout'
 import { SCENE_SHORTCUT_KEYS } from '@/features/trade-scenes/constants/scene-shortcuts'
 import { useSceneControls } from '@/features/trade-scenes/contexts/scene-controls-context'
@@ -16,21 +17,23 @@ import { useSceneVisibleArea } from '@/features/trade-scenes/contexts/scene-visi
 import { keycapLabel } from '@/features/trade-scenes/lib/keycap-label'
 import { Keycap } from '@/features/trade-scenes/ui/components/keycap'
 import { useSceneCamera, useSceneCameraApi } from '@/shared/components/scene/contexts/scene-camera-context'
-import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
+import { useSceneInputs, useSceneInputsApi } from '@/shared/components/scene/contexts/scene-inputs-context'
 import { recenterCamera } from '@/shared/components/scene/lib/create-scene-camera'
 import { cn } from '@/shared/lib/utils'
 
-// Comes in at the group's right end once the camera has left its framing, a system in focus included. A window over the
+// Comes in at the group's right end once the camera has left its framing, a framed system included. A window over the
 // scene stops the camera moving, so it steps out while one is open; Systems is no window. It stays mounted so it can
 // leave as it came; while away it is out of the tab order and the accessibility tree.
 export function ControlsRecenter() {
   const moved = useSceneCamera(state => state.moved)
-  const systemHeld = useSceneInputs((state: TradeSceneInputs) => state.cameraFocus !== null)
+  const framed = useSceneInputs((state: TradeSceneInputs) => state.cameraFocus !== null)
+  const lookInside = useSceneInputs((state: TradeSceneInputs) => state.lookInside)
+  const store = useSceneInputsApi<TradeSceneInputs>()
   const camera = useSceneCameraApi()
-  const { open, focusSystem } = useSceneControls()
+  const { open } = useSceneControls()
   const { shape } = useSceneVisibleArea()
   const reduceMotion = useReducedMotion()
-  const shown = (moved || systemHeld) && (open === null || open === 'systems')
+  const shown = (moved || framed) && (open === null || open === 'systems')
   const button = useRef<HTMLButtonElement>(null)
   // Leaving makes the button inert under its own focus, which would drop a keyboard user to body; Modify keeps their
   // place in the group.
@@ -55,9 +58,7 @@ export function ControlsRecenter() {
         aria-label={SCENE_COPY.recenter}
         aria-keyshortcuts={SCENE_SHORTCUT_KEYS.recenter}
         onClick={() => {
-          if (systemHeld) {
-            focusSystem(null)
-          }
+          store.setState({ cameraFocus: null, ...(lookInside ? LEAVE_LOOK_INSIDE : {}) })
           recenterCamera(camera)
         }}
         className={cn(

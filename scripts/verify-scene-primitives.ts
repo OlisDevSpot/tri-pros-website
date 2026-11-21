@@ -360,7 +360,7 @@ assert.equal(classifyWheelStream([w({ deltaMode: 1, deltaY: 3 })]), 'mouse', 'li
 
 {
   const cam = createSceneCamera()
-  assert.deepEqual(cam.getState(), { moved: false, recenters: 0, tapMark: null })
+  assert.deepEqual(cam.getState(), { moved: false, recenters: 0, tapMark: null, drawing: false })
   cam.setState({ moved: true })
   recenterCamera(cam)
   assert.equal(cam.getState().moved, false, 'recenter clears moved')

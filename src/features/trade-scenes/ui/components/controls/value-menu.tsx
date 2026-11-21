@@ -4,7 +4,7 @@ import type { ReactElement, ReactNode } from 'react'
 
 import * as PopoverPrimitive from '@radix-ui/react-popover'
 import { CheckIcon } from 'lucide-react'
-import { useId, useRef, useState } from 'react'
+import { Fragment, useId, useRef, useState } from 'react'
 
 import { CONTROLS_CLASSES } from '@/features/trade-scenes/constants/controls-classes'
 import { useSceneVisibleArea } from '@/features/trade-scenes/contexts/scene-visible-area-context'
@@ -16,7 +16,8 @@ interface ValueMenuProps<T extends string> {
   // The chip the menu hangs from.
   trigger: ReactElement
   label: string
-  options: readonly { value: T, label: string }[]
+  // Options sharing a group sit together under its heading, in the order given.
+  options: readonly { value: T, label: string, group?: string }[]
   value: T | null
   onPick: (value: T) => void
   // A build's menu marks its pick in primary.
@@ -73,32 +74,36 @@ export function ValueMenu<T extends string>({ trigger, label, options, value, on
               }}
               className="grid gap-px"
             >
-              {options.map((option) => {
+              {options.map((option, index) => {
                 const picked = option.value === value
+                const opens = option.group !== undefined && option.group !== options[index - 1]?.group
                 return (
-                  <div
-                    key={option.value}
-                    className={cn(CONTROLS_CLASSES.menuItem, picked ? (proposed ? 'text-primary' : 'text-foreground') : 'text-muted-foreground')}
-                  >
-                    <span aria-hidden className="flex w-4 shrink-0 text-primary">{picked && <CheckIcon className="size-4" />}</span>
-                    <span aria-hidden>{option.label}</span>
-                    <RadioGroupItem
-                      value={option.value}
-                      aria-label={option.label}
-                      // A radio already on reports no change, so the pick is taken from the click; the current value again
-                      // only closes the menu.
-                      onClick={() => {
-                        if (!picked) {
-                          onPick(option.value)
-                        }
-                        if (!arrowKey.current && (picked || !staysOpenOn?.(option.value))) {
-                          closedByPick.current = true
-                          setOpen(false)
-                        }
-                      }}
-                      className={CONTROLS_CLASSES.menuRadio}
-                    />
-                  </div>
+                  <Fragment key={option.value}>
+                    {opens && index > 0 && <div aria-hidden className={CONTROLS_CLASSES.menuSeparator} />}
+                    {opens && <div data-menu-header className={CONTROLS_CLASSES.menuHeader}>{option.group}</div>}
+                    <div
+                      className={cn(CONTROLS_CLASSES.menuItem, picked ? (proposed ? 'text-primary' : 'text-foreground') : 'text-muted-foreground')}
+                    >
+                      <span aria-hidden className="flex w-4 shrink-0 text-primary">{picked && <CheckIcon className="size-4" />}</span>
+                      <span aria-hidden>{option.label}</span>
+                      <RadioGroupItem
+                        value={option.value}
+                        aria-label={option.label}
+                        // A radio already on reports no change, so the pick is taken from the click; the current value again
+                        // only closes the menu.
+                        onClick={() => {
+                          if (!picked) {
+                            onPick(option.value)
+                          }
+                          if (!arrowKey.current && (picked || !staysOpenOn?.(option.value))) {
+                            closedByPick.current = true
+                            setOpen(false)
+                          }
+                        }}
+                        className={CONTROLS_CLASSES.menuRadio}
+                      />
+                    </div>
+                  </Fragment>
                 )
               })}
             </RadioGroup>

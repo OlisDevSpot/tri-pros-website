@@ -12,11 +12,15 @@ import { CONTROLS_COPY, HOME_SYSTEM_LABELS, PROFILE_COPY, YEAR_BUILT_LABELS } fr
 import { HOME_SYSTEM_IDS } from '@/features/trade-scenes/constants/home-systems'
 import { YEAR_BUILT_ICON } from '@/features/trade-scenes/constants/scene-control-icons'
 import { CONTROLS_EASE, SCENE_LAYOUT } from '@/features/trade-scenes/constants/scene-layout'
+import { useLotIsData } from '@/features/trade-scenes/contexts/layout-editor-context'
 import { useSceneControls } from '@/features/trade-scenes/contexts/scene-controls-context'
 import { useSceneVisibleArea } from '@/features/trade-scenes/contexts/scene-visible-area-context'
 import { currentYear } from '@/features/trade-scenes/lib/current-year'
 import { upgradeRowState } from '@/features/trade-scenes/lib/upgrade-row-state'
 import { upgradeRows } from '@/features/trade-scenes/lib/upgrade-rows'
+import { AreaGroupSwitch } from '@/features/trade-scenes/ui/components/controls/area-group-switch'
+import { RailChip } from '@/features/trade-scenes/ui/components/controls/rail-chip'
+import { YardRailChips } from '@/features/trade-scenes/ui/components/controls/yard-rail-chips'
 import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
 import { toneClasses } from '@/shared/constants/status-tones'
 import { cn } from '@/shared/lib/utils'
@@ -25,10 +29,12 @@ interface SystemsRailProps {
   id: string
 }
 
-// Year built first, as it sets what the systems start from, then each system in the order the build lists them, marked
-// where the build changes it. A stage too narrow for it scrolls it, and the system in focus is brought to its middle.
+// Where the lot is data, the group switch first, and the Lot group holds the yards. Exterior is Year built first, as it
+// sets what the systems start from, then each system in the order the build lists them, marked where the build changes
+// it. A stage too narrow for it scrolls it, and the picked system is brought to its middle.
 export function SystemsRail({ id }: SystemsRailProps) {
-  const { focus, focusSystem } = useSceneControls()
+  const { picked, pickSystem, group } = useSceneControls()
+  const lotIsData = useLotIsData()
   const { shape } = useSceneVisibleArea()
   const reduceMotion = useReducedMotion()
   const yearBuilt = useSceneInputs((state: TradeSceneInputs) => state.property.yearBuilt)
@@ -46,7 +52,7 @@ export function SystemsRail({ id }: SystemsRailProps) {
     if (pressed) {
       element.scrollLeft = pressed.offsetLeft - (element.clientWidth - pressed.offsetWidth) / 2
     }
-  }, [focus, portrait])
+  }, [picked, group, portrait])
 
   return (
     <Toolbar.Root asChild aria-label={CONTROLS_COPY.systems.title}>
@@ -63,33 +69,41 @@ export function SystemsRail({ id }: SystemsRailProps) {
           portrait ? 'inset-x-2.5 rounded-[22px]' : 'left-1/2 w-max max-w-[calc(100%-20px)] -translate-x-1/2 rounded-full',
         )}
       >
-        <Toolbar.Button
-          data-rail-chip="year-built"
-          aria-pressed={focus === 'year-built'}
-          onClick={() => focusSystem('year-built')}
-          className={cn(CONTROLS_CLASSES.railChip, 'text-foreground')}
-        >
-          <YearIcon aria-hidden />
-          <span data-rail-key className={cn('font-semibold', yearBuilt === null ? toneClasses('attention').text : 'text-muted-foreground')}>
-            {yearBuilt === null ? CONTROLS_COPY.systems.yearBuilt : PROFILE_COPY.yearBuilt}
-          </span>
-          <span data-rail-value>{yearBuilt === null ? PROFILE_COPY.unknown : YEAR_BUILT_LABELS[yearBuilt]}</span>
-        </Toolbar.Button>
-        <Toolbar.Separator className="mx-0.5 h-5.5 w-px shrink-0 bg-border" />
-        {HOME_SYSTEM_IDS.map(system => (
-          <Toolbar.Button
-            key={system}
-            data-rail-chip={system}
-            // The dot is drawn only; the name says it.
-            aria-label={changed.includes(system) ? CONTROLS_COPY.systems.changedByBuild(HOME_SYSTEM_LABELS[system]) : undefined}
-            aria-pressed={focus === system}
-            onClick={() => focusSystem(system)}
-            className={CONTROLS_CLASSES.railChip}
-          >
-            {changed.includes(system) && <span aria-hidden data-build-dot className="size-1.5 shrink-0 rounded-full bg-primary" />}
-            {HOME_SYSTEM_LABELS[system]}
-          </Toolbar.Button>
-        ))}
+        {lotIsData && (
+          <>
+            <AreaGroupSwitch />
+            <Toolbar.Separator className="mx-0.5 h-5.5 w-px shrink-0 bg-border" />
+          </>
+        )}
+        {group === 'lot'
+          ? <YardRailChips />
+          : (
+              <>
+                <Toolbar.Button
+                  data-rail-chip="year-built"
+                  aria-pressed={picked === 'year-built'}
+                  onClick={() => pickSystem('year-built')}
+                  className={cn(CONTROLS_CLASSES.railChip, 'text-foreground')}
+                >
+                  <YearIcon aria-hidden />
+                  <span data-rail-key className={cn('font-semibold', yearBuilt === null ? toneClasses('attention').text : 'text-muted-foreground')}>
+                    {yearBuilt === null ? CONTROLS_COPY.systems.yearBuilt : PROFILE_COPY.yearBuilt}
+                  </span>
+                  <span data-rail-value>{yearBuilt === null ? PROFILE_COPY.unknown : YEAR_BUILT_LABELS[yearBuilt]}</span>
+                </Toolbar.Button>
+                <Toolbar.Separator className="mx-0.5 h-5.5 w-px shrink-0 bg-border" />
+                {HOME_SYSTEM_IDS.map(system => (
+                  <RailChip
+                    key={system}
+                    id={system}
+                    label={HOME_SYSTEM_LABELS[system]}
+                    changed={changed.includes(system)}
+                    pressed={picked === system}
+                    onPress={() => pickSystem(system)}
+                  />
+                ))}
+              </>
+            )}
       </motion.div>
     </Toolbar.Root>
   )

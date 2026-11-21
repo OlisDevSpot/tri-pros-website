@@ -1,5 +1,7 @@
+import type { YearBuiltRange } from '@/shared/constants/enums/customers'
 import type { Climate } from '@/shared/modules/construction/core/constants/climate-presets'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
+import type { Wear } from '@/shared/modules/construction/core/constants/enums'
 import type { InstallStyleId } from '@/shared/modules/construction/core/constants/install-styles'
 import type { ScopeId } from '@/shared/modules/construction/core/constants/scope-ids'
 import type { TradeBillCuts } from '@/shared/modules/construction/core/schemas/bill-cuts'
@@ -43,6 +45,7 @@ import { resolveHomeMaterials, wearInForce } from '@/shared/modules/construction
 import { roofFormOf } from '@/shared/modules/construction/core/lib/roof-form-of'
 import { seasonOf } from '@/shared/modules/construction/core/lib/season-of'
 import { thermalWalk } from '@/shared/modules/construction/core/lib/thermal-walk'
+import { wearChoices } from '@/shared/modules/construction/core/lib/wear-choices'
 import { wearForAge } from '@/shared/modules/construction/core/lib/wear-for-age'
 
 const SEASONS = ['summer', 'winter'] as const satisfies readonly Season[]
@@ -612,6 +615,14 @@ for (const id of HOME_MATERIAL_IDS) {
 }
 assert.equal(wearForAge(HOME_MATERIALS['exterior-paint'].bands.all, 10), 'worn', 'paint at 10 is Worn')
 assert.equal(wearForAge(HOME_MATERIALS.roof.bands.shingle, 20), 'failing', 'shingle at 20 is Failing')
+const shake = (yearBuilt: YearBuiltRange, wear?: Wear) => resolveHomeMaterials({ property: profile({ roofType: 'woodshake', yearBuilt }), materials: { ...HOME_MATERIAL_FACTS_UNSET, wear: wear ? { roof: wear } : {} }, year: 2026 }).roof
+assert.equal(shake('Post-2014')?.wear, 'failing', 'an unrated wood shake roof guesses Failing, however young the home')
+assert.equal(shake('Post-2014')?.wearBasis, 'era-typical')
+assert.equal(shake('1950-1978', 'worn')?.wear, 'worn', 'the rep can lower it to Worn')
+assert.equal(shake('1950-1978', 'good')?.wear, 'worn', 'a better level set on another roof type is raised to Worn')
+assert.deepEqual(wearChoices('roof', profile({ roofType: 'woodshake' })), ['worn', 'failing'])
+assert.deepEqual(wearChoices('roof', profile({ roofType: 'tile' })), wears)
+assert.deepEqual(wearChoices('windows', profile({ roofType: 'woodshake' })), wears, 'only the roof is limited')
 assert.equal(homeAge('1950-1978', 2026), 62)
 assert.equal(homeAge(null, 2026), 62, 'no era: the fallback era')
 
@@ -750,7 +761,11 @@ assert.deepEqual(resolveHomeMaterials(unsetFacts), resolveHomeMaterials(facts(pr
 const resolvedRoof = resolveAssembly(roofAttic, { existing: inferRoof(profile({})), proposedScopeIds: [], view: 'existing' })
 assert.ok(resolvedRoof.find(part => part.id === 'covering')?.wear, 'wear rides through the resolver')
 const installedRoof = resolveAssembly(roofAttic, { existing: inferRoof(profile({})), proposedScopeIds: [SCOPE_IDS.roofTearOff], view: 'proposed' })
-assert.equal(installedRoof.find(part => part.id === 'covering')?.wear, undefined, 'an installed part has no wear')
+assert.equal(installedRoof.find(part => part.id === 'covering')?.wear, undefined, 'a new install has no wear')
+const tileExisting = { form: 'pitched', parts: { covering: { material: 'tile', condition: 'worn' as const, wear: 'failing' as const } }, basis: 'recorded' as const } satisfies ExistingConditions
+const resetCovering = resolveAssembly(roofAttic, { existing: tileExisting, proposedScopeIds: [SCOPE_IDS.roofTileReset], view: 'proposed' }).find(part => part.id === 'covering')
+assert.equal(resetCovering?.wear, 'failing', 'a reused covering keeps the wear it had')
+assert.equal(resetCovering?.reused, true)
 
 // Attic insulation follows what is there: a top off lays its blanket over the old one, a replace takes the old one's place,
 // and batts change only how a replace looks.

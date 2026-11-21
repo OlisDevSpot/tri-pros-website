@@ -2,14 +2,15 @@ import type { WeatherSky } from '@/features/trade-scenes/types'
 import type { Weather } from '@/shared/modules/construction/core/types'
 
 // Each weather is a time of day as much as a sky: normal is a low golden afternoon, summer the hard high afternoon sun,
-// winter a cold blue evening with the rooms lit warm, rain a flat overcast that wets the yard. Working numbers, tuned by
+// winter a cold blue evening with the rooms lit warm, rain a flat overcast that wets the yard. The warm weathers' light is
+// white-balanced, so a black part reads black; the warmth comes from the sky and the afternoon sun. Working numbers, tuned by
 // eye under AgX; the ground's colour is a light tint over the lawn, so white leaves the grass as it is.
 export const WEATHER_SKIES = {
   normal: {
     sky: { top: '#8fb6d6', horizon: '#f3c999' },
-    sun: { day: 288, hour: 16.5, minElevation: 0, color: '#ffae5a', intensity: 5.2 },
-    fill: { sky: '#a9c4de', ground: '#b8875a', intensity: 0.45 },
-    bounce: { color: '#f7c991', intensity: 0.7 },
+    sun: { day: 288, hour: 16.5, minElevation: 0, color: '#ffe7ce', intensity: 3.3 },
+    fill: { sky: '#a9c4de', ground: '#9c8d80', intensity: 0.45 },
+    bounce: { color: '#fdefde', intensity: 0.5 },
     environment: { color: '#f6f4ec', intensity: 0.3, image: true },
     fog: { near: 32, far: 140 },
     ground: { color: '#ffffff', roughness: 0.95 },
@@ -18,9 +19,9 @@ export const WEATHER_SKIES = {
   },
   summer: {
     sky: { top: '#5f9fd8', horizon: '#f7d49c' },
-    sun: { day: 196, hour: 15, minElevation: 0, color: '#ffd08a', intensity: 7.2 },
-    fill: { sky: '#d8e2e6', ground: '#e8b878', intensity: 0.8 },
-    bounce: { color: '#ffb466', intensity: 2.6 },
+    sun: { day: 196, hour: 15, minElevation: 0, color: '#fff1dc', intensity: 5.5 },
+    fill: { sky: '#d8e2e6', ground: '#cbbdaa', intensity: 0.8 },
+    bounce: { color: '#ffe9d1', intensity: 1.7 },
     environment: { color: '#fff4e2', intensity: 0.38, image: true },
     fog: { near: 34, far: 135 },
     ground: { color: '#fbf2dc', roughness: 0.95 },

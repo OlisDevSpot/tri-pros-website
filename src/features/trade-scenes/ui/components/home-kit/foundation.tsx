@@ -1,23 +1,26 @@
 'use client'
 
+import type { ThreeEvent } from '@react-three/fiber'
 import type { Ref } from 'react'
 import type { Group } from 'three'
 import type { PartState } from '@/features/trade-scenes/lib/part-state'
-import type { BoxSpec, HouseWall, PaintLook, StainBoxes, SystemLit } from '@/features/trade-scenes/types'
+import type { BoxSpec, GutterWetSpans, HouseWall, PaintLook, StainBoxes, SystemLit } from '@/features/trade-scenes/types'
+import type { SpotHover } from '@/features/trade-scenes/ui/components/home-kit/spot-hover'
 
 import { useMemo } from 'react'
 
-import { FOUNDATION, FRONT_STEPS } from '@/features/trade-scenes/constants/home-details'
+import { FOUNDATION, FRONT_STEPS, FRONT_STOOP } from '@/features/trade-scenes/constants/home-details'
 import { HOME_FADE_TAGS } from '@/features/trade-scenes/constants/home-fades'
 import { CRAWL_SKIRT_BOXES, CRAWL_VENT_BOXES, FLOOR_FRAMING, FRONT_CRAWL_SKIRT_BOXES, FRONT_CRAWL_VENT_BOXES, FRONT_DOOR, HOUSE, PIERS } from '@/features/trade-scenes/constants/home-geometry'
 import { HOME_PALETTE } from '@/features/trade-scenes/constants/home-palette'
+import { CONCRETE_TEXTURE } from '@/features/trade-scenes/constants/material-textures'
 import { PAINT_WEAR_SHARE, PEELING_SEEDS } from '@/features/trade-scenes/constants/paint-wear'
-import { WEAR_LOOKS } from '@/features/trade-scenes/constants/wear-looks'
+import { WEAR_LOOKS, wetBand } from '@/features/trade-scenes/constants/wear-looks'
 import { facesSummerSun } from '@/features/trade-scenes/lib/faces-summer-sun'
-import { FOUNDATION_FRONT_WALL, FOUNDATION_WALLS, RAISED_GROUND_STRETCH } from '@/features/trade-scenes/lib/foundation-walls'
+import { FOUNDATION_FRONT_WALL, FOUNDATION_WALLS, RAISED_GROUND_STRETCH, SLAB_GROUND_STRETCH } from '@/features/trade-scenes/lib/foundation-walls'
 import { peelingMarks, wallPeeling } from '@/features/trade-scenes/lib/paint-peeling'
 import { wornShare } from '@/features/trade-scenes/lib/part-state'
-import { fadeBlotches, splashBand } from '@/features/trade-scenes/lib/stain-boxes'
+import { fadeBlotches, splashBand, wetBandBoxes } from '@/features/trade-scenes/lib/stain-boxes'
 import { stuccoCracks } from '@/features/trade-scenes/lib/stucco-cracks'
 import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
 import { CrawlInsulation } from '@/features/trade-scenes/ui/components/home-kit/crawl-insulation'
@@ -27,15 +30,22 @@ import { TintedMarks } from '@/features/trade-scenes/ui/components/home-kit/tint
 import { wallSkinLook } from '@/features/trade-scenes/ui/lib/wall-skin-look'
 
 interface FoundationProps {
+  // Only the skirt and the raised walls are a spot: the slab is the ground the home stands on, so a slab home has none.
+  onTap: (event: ThreeEvent<MouseEvent>) => void
+  hover: SpotHover
   // Spans grade to the floor's underside; the kit sets its height and stretch to the foundation's floor.
   ground: Ref<Group>
   // The raised foundation's floor insulation; a part with no material draws no batts.
   floorInsulation: PartState
   // The raised foundation's skirt is painted with the walls, so it wears their paint.
   paint: PaintLook
+  // A stucco home draws its body surfaces with the plaster map.
+  stucco: boolean
   thermal: boolean
   // The system up close: the skirt is the walls' skin, so it lights with their picks.
   lit: SystemLit | null
+  // Where the roof's water lands on the skirt's feet, darkening them while it rains.
+  wetSpans: GutterWetSpans
 }
 
 const UNDER_FLOOR = HOUSE.floorY - HOUSE.floorThickness
@@ -47,8 +57,9 @@ const SKIRT_CRACKS = 3
 // The stains and the peeling run out to the skirt's corners, as on the house: the side walls over the back skirt's ends, the
 // front wall over the front skirt's, which stretches the house's full length. Each with its seeds for the fade's blotches and
 // for the peeling.
+const BACK_SKIRT_STAIN_WALL = { wall: FOUNDATION_WALLS.back, seed: 71, peelingSeed: PEELING_SEEDS.foundation.back }
 const SKIRT_STAIN_WALLS = [
-  { wall: FOUNDATION_WALLS.back, seed: 71, peelingSeed: PEELING_SEEDS.foundation.back },
+  BACK_SKIRT_STAIN_WALL,
   { wall: { ...FOUNDATION_WALLS.left, from: -D }, seed: 72, peelingSeed: PEELING_SEEDS.foundation.left },
   { wall: { ...FOUNDATION_WALLS.right, from: -D }, seed: 73, peelingSeed: PEELING_SEEDS.foundation.right },
 ]
@@ -56,6 +67,10 @@ const FRONT_SKIRT_STAIN_WALL = { wall: { ...FOUNDATION_FRONT_WALL, from: -L, to:
 const sunlit = (wall: HouseWall) => facesSummerSun(wall.run === 'z' ? wall.outward : 0, wall.run === 'x' ? wall.outward : 0)
 
 const SLAB: BoxSpec[] = [{ size: [L * 2 - SLAB_SETBACK * 2, UNDER_FLOOR, D * 2 - SLAB_SETBACK * 2], position: [0, UNDER_FLOOR / 2, 0] }]
+
+// Drawn taller by the slab's fold, so it stands its own height at a slab home's floor.
+const STOOP_HEIGHT = FRONT_STOOP.height / SLAB_GROUND_STRETCH
+const STOOP: BoxSpec[] = [{ size: [FRONT_STOOP.width, STOOP_HEIGHT, FRONT_STOOP.depth], position: [FRONT_DOOR.along, STOOP_HEIGHT / 2, D + FRONT_STOOP.depth / 2] }]
 
 const CRAWL_GROUND: BoxSpec[] = [{ size: [L * 2 - T * 2, FOUNDATION.crawlGround.thickness, D * 2 - T * 2], position: [0, FOUNDATION.crawlGround.y, 0] }]
 
@@ -70,8 +85,8 @@ const STEPS: BoxSpec[] = Array.from({ length: FRONT_STEPS.risers }, (_, index) =
 
 // Both foundations are always mounted; their fades show one. What stands on grade sits in the ground frame and grows or folds
 // with the floor; the framing, piers and vents hang under the floor at fixed depths.
-export function Foundation({ ground, floorInsulation, paint, thermal, lit }: FoundationProps) {
-  const skin = wallSkinLook(lit, paint.color)
+export function Foundation({ onTap, hover, ground, floorInsulation, paint, stucco, thermal, lit, wetSpans }: FoundationProps) {
+  const skin = wallSkinLook(lit, paint.color, stucco)
   const crackShare = PAINT_WEAR_SHARE[paint.paintWear.cracks]
   const cracks = useMemo(() => {
     const crack = (wall: HouseWall, seed: number) => [{
@@ -96,22 +111,25 @@ export function Foundation({ ground, floorInsulation, paint, thermal, lit }: Fou
   const fadeShare = wornShare(paint.wear)
   const stains = useMemo(() => {
     const look = WEAR_LOOKS.paint
-    const on = (walls: readonly { wall: HouseWall, seed: number }[]): StainBoxes[] => [
+    const on = (walls: readonly { wall: HouseWall, seed: number }[], wet: readonly BoxSpec[]): StainBoxes[] => [
       { cell: 'splash', boxes: walls.flatMap(({ wall }) => splashBand(wall, 0, stainShare, wall.openings, RAISED_GROUND_STRETCH)), color: look.splashColor, alpha: Math.min(1, look.splashAlpha * stainShare) },
-      { cell: 'blotch', boxes: walls.flatMap(({ wall, seed }) => fadeBlotches(wall, 0, UNDER_FLOOR, fadeShare, seed, sunlit(wall), wall.openings, RAISED_GROUND_STRETCH)), color: look.blotchColor, alpha: Math.min(1, look.blotchAlpha * fadeShare) },
+      { cell: 'splash', boxes: wet, color: wetBand.color, alpha: wetBand.alpha },
+      { cell: 'blotch', boxes: walls.flatMap(({ wall, seed }) => fadeBlotches(wall, 0, UNDER_FLOOR, fadeShare, seed, sunlit(wall), wall.openings, RAISED_GROUND_STRETCH)), color: paint.fade, alpha: Math.min(1, look.blotchAlpha * fadeShare) },
     ]
-    return { kept: on(SKIRT_STAIN_WALLS), front: on([FRONT_SKIRT_STAIN_WALL]) }
-  }, [stainShare, fadeShare])
+    const wetOn = ({ wall }: { wall: HouseWall }, spans: GutterWetSpans['front']) => spans.flatMap(span => wetBandBoxes(wall, span, 0, wetBand.height, wall.openings, RAISED_GROUND_STRETCH))
+    return { kept: on(SKIRT_STAIN_WALLS, wetOn(BACK_SKIRT_STAIN_WALL, wetSpans.back)), front: on([FRONT_SKIRT_STAIN_WALL], wetOn(FRONT_SKIRT_STAIN_WALL, wetSpans.front)) }
+  }, [stainShare, fadeShare, paint.fade, wetSpans])
 
   return (
     <group>
       <group ref={ground}>
         <group userData={HOME_FADE_TAGS.slab}>
-          <MergedBoxes boxes={SLAB} color={HOME_PALETTE.concrete} radius={0.02} castShadow receiveShadow />
+          <MergedBoxes boxes={SLAB} color={HOME_PALETTE.concrete} texture={CONCRETE_TEXTURE} radius={0.02} castShadow receiveShadow />
+          <MergedBoxes boxes={STOOP} color={HOME_PALETTE.path} texture={CONCRETE_TEXTURE} roughness={0.9} castShadow receiveShadow />
         </group>
-        <group userData={HOME_FADE_TAGS.raised}>
+        <group userData={HOME_FADE_TAGS.raised} onClick={onTap} {...hover}>
           <group userData={skin.tag}>
-            <MergedBoxes boxes={CRAWL_SKIRT_BOXES} color={skin.color} radius={0.02} castShadow receiveShadow />
+            <MergedBoxes boxes={CRAWL_SKIRT_BOXES} color={skin.color} texture={skin.texture} radius={0.02} castShadow receiveShadow />
           </group>
           <group userData={skin.finish}>
             <TintedMarks lists={marks.kept} thermal={thermal} />
@@ -120,10 +138,10 @@ export function Foundation({ ground, floorInsulation, paint, thermal, lit }: Fou
           <group userData={thermalTag('crawl')}>
             <MergedBoxes boxes={CRAWL_GROUND} color={HOME_PALETTE.crawlGround} roughness={1} />
           </group>
-          <MergedBoxes boxes={STEPS} color={HOME_PALETTE.concrete} radius={0.015} castShadow receiveShadow />
+          <MergedBoxes boxes={STEPS} color={HOME_PALETTE.concrete} texture={CONCRETE_TEXTURE} radius={0.015} castShadow receiveShadow />
           <group userData={HOME_FADE_TAGS.complete}>
             <group userData={skin.tag}>
-              <MergedBoxes boxes={FRONT_CRAWL_SKIRT_BOXES} color={skin.color} radius={0.02} castShadow receiveShadow />
+              <MergedBoxes boxes={FRONT_CRAWL_SKIRT_BOXES} color={skin.color} texture={skin.texture} radius={0.02} castShadow receiveShadow />
             </group>
             <group userData={skin.finish}>
               <TintedMarks lists={marks.front} thermal={thermal} />

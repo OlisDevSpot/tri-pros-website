@@ -5,7 +5,7 @@ import type { ReactNode } from 'react'
 import { createContext, useEffect, useState } from 'react'
 
 export interface SceneTapClaim {
-  // A tap on the house that answers itself (a part emphasised, the pins a spot shows) keeps the tap-away from undoing it.
+  // A tap on the house that answers itself (a part emphasised, the spot chip a tap shows) keeps the tap-away from undoing it.
   claimTap: () => void
   claimed: () => boolean
 }

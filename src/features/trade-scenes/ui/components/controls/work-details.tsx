@@ -7,6 +7,7 @@ import { CONTROLS_CLASSES } from '@/features/trade-scenes/constants/controls-cla
 import { coolRoofOn } from '@/features/trade-scenes/lib/cool-roof-on'
 import { UpgradeSwitch } from '@/features/trade-scenes/ui/components/controls/upgrade-switch'
 import { FrameColors } from '@/features/trade-scenes/ui/components/panel/frame-colors'
+import { GutterColors } from '@/features/trade-scenes/ui/components/panel/gutter-colors'
 import { PaintColors } from '@/features/trade-scenes/ui/components/panel/paint-colors'
 import { ShingleColors } from '@/features/trade-scenes/ui/components/panel/shingle-colors'
 import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
@@ -17,7 +18,7 @@ interface WorkDetailsProps {
   upgrade: SceneChangeSlot | null
 }
 
-// A picked piece of work's colours and its switch, the same wherever they show: in the roof's menu, under a toggle, in Modify.
+// A picked piece of work's colours and its switch, the same wherever they show: in a build's menu, in Modify.
 export function WorkDetails({ kind, upgrade }: WorkDetailsProps) {
   const cool = useSceneInputs((state: TradeSceneInputs) => coolRoofOn(state.proposedScopeIds, state.efficiencyUpgrades))
   switch (kind) {
@@ -39,5 +40,7 @@ export function WorkDetails({ kind, upgrade }: WorkDetailsProps) {
       )
     case 'vinyl-frame':
       return <div className={CONTROLS_CLASSES.detailsPiece}><FrameColors /></div>
+    case 'gutter':
+      return <div className={CONTROLS_CLASSES.detailsPiece}><GutterColors side="proposed" /></div>
   }
 }

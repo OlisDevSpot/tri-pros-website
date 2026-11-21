@@ -12,9 +12,10 @@ import { ControlsChip } from '@/features/trade-scenes/ui/components/controls/con
 import { ValueMenu } from '@/features/trade-scenes/ui/components/controls/value-menu'
 import { cn } from '@/shared/lib/utils'
 
-// toggle: a build with one thing to add, or an efficiency upgrade; menu: a build with several ways to do it; reason: a
-// build or an upgrade the home cannot take yet, which says why. `text` is what the chip says; a menu's `label` heads it,
-// and its chip says `add` until a way is picked, then `short` of the picked way's verb.
+// toggle: a build with one thing to add and nothing to choose, or an efficiency upgrade; menu: a build with several ways to
+// do it, or whose work has something to choose, which the menu holds under its ways; reason: a build or an upgrade the home
+// cannot take yet, which says why. `text` is what the chip says; a menu's `label` heads it, and its chip says `add` until a
+// way is picked, then `short` of the picked way's verb.
 type ProposedChipProps = { id: string } & (
   | { kind: 'toggle', text: string, on: boolean, onToggle: () => void }
   | { kind: 'menu', label: string, add: string, short: (verb: string) => string, slot: SceneChangeSlot, extra?: ReactNode, staysOpenOn?: (value: string) => boolean }

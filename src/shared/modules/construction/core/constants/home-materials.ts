@@ -9,7 +9,7 @@ export const HOME_MATERIALS: Record<HomeMaterialId, HomeMaterialDefinition> = {
     repairs: true,
     parts: ['covering', 'deck', 'gutter', 'drip-edge', 'underlayment'].map(part => ({ assembly: 'roof-attic' as const, part })),
     repairsEndWith: [{ assembly: 'roof-attic', part: 'covering' }],
-    bands: { shingle: [5, 10, 15, 20], tile: [10, 20, 28, 35], woodshake: [5, 12, 18, 25], flat: [4, 8, 12, 18], metal: [10, 25, 40, 50] },
+    bands: { shingle: [5, 10, 15, 20], tile: [10, 20, 28, 35], flat: [4, 8, 12, 18], metal: [10, 25, 40, 50] },
     replaceable: null,
     eraGuess: null,
   },
@@ -71,4 +71,4 @@ export const HOME_MATERIALS: Record<HomeMaterialId, HomeMaterialDefinition> = {
   },
 }
 
-export const HOME_MATERIAL_FACTS_UNSET: HomeMaterialFacts = { wear: {}, gutters: null, exteriorPaint: null, ducts: null, crawlInsulation: null, acTons: null, shingleColor: null, paintWear: {}, existingPaintColors: { body: null, trim: null }, proposedPaintColors: { body: null, trim: null, combo: null }, windowFrameColor: 'white' }
+export const HOME_MATERIAL_FACTS_UNSET: HomeMaterialFacts = { wear: {}, gutters: null, gutterWear: null, airSealing: null, exteriorPaint: null, ducts: null, crawlInsulation: null, acTons: null, shingleColor: null, paintWear: {}, coveringWear: {}, existingPaintColors: { body: null, trim: null }, proposedPaintColors: { body: null, trim: null, combo: null }, windowFrameColor: 'white', existingGutterColor: null, proposedGutterColor: null }
