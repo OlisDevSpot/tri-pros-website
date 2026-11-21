@@ -4,9 +4,9 @@
 > - Stage: review · Tasks 1–7 built; final branch review passed; draft PR #292 open
 > - Built on: `chore/dev-flow-foundation` (stacked on `release/2026-11-13-drain`, PR #289) · Verified at: `chore/dev-flow-foundation@4f6488b4a` 2026-11-18 · page: https://claude.ai/artifact/7D8kgccA7iy6f8ATWzLdqS (lane `foundation`)
 > - Done: `pnpm review` (slot `.worktrees/review` set up, hand run on `data-views` passed), dev server idles at 5 min + `dev.mjs` lint, all `CLAUDE.md` lines, lane hook edit (orient spec §4.7, owner chose to land it here), Task 1 (Preview DB = dev endpoint `ep-mute-sunset`; `DEV_LOGIN_SECRET` in Preview; wall on + one bypass secret per consumer; Playwright check passed on PR #292's preview 2026-11-20)
-> - Next: Oliver merges #289, then reviews and merges #292. Task 8 runs in a new session: `~/claude-archive/2026-11-18-task8-google-preview-signin-handoff.md`
+> - Next: Oliver merges #289, then reviews and merges #292. Task 8: PR #293 merged 2026-11-20; Oliver finishes Step 3 (local + ngrok sign-in, prod session recount) then Step 4 (remove localhost redirect URIs)
 > - Open: deferred minors: atomic `.env.local` write, failed install keeps the previous `.env.local`, `git diff origin/main` throw hides the summary, dirty listing `trimEnd`
-> - Blocked: #292 merges after #289; Task 8 is a new session
+> - Blocked: #292 merges after #289
 
 > **Shared with the ship-board build (2026-11-18):** the session building `docs/superpowers/plans/2026-11-15-orient-lane-briefing.md` on local main owns `~/.claude/hooks/lane-context.sh`, `session-capture`, `/orient`, the board page, and every lane's `brief`. This plan writes only `pr`, `stage`, `next`, `move` on `lanes/foundation`. Its `CLAUDE.md` edits leave the `/orient` line to that plan. Oliver keeps Task 1's Vercel steps and that plan's board backfill in separate sittings. A handoff that says to write `brief.statusBlock` is overridden here.
 
@@ -201,7 +201,7 @@ The orient-lane-briefing plan (on local main, `docs/superpowers/plans/2026-11-15
 
 Runs in its own worktree off `origin/main`: `git worktree add .worktrees/google-preview-signin -b feat/google-signin-previews origin/main` (ask first).
 
-- [ ] **Step 1:** Parent Task 1 Step 5 (canonical prod host, `curl -sI`), recorded in the PR body.
-- [ ] **Step 2:** Parent Task 12 Steps 1–3 and 6 as written there.
-- [ ] **Step 3:** Parent Task 12 Step 4, with one substitution: the prod-script Action (parent Task 7) does not exist yet, so Oliver reads prod's `session` row count in the Neon console before and after the test sign-ins (a read; no SQL from the agent).
+- [x] **Step 1:** Parent Task 1 Step 5 (canonical prod host, `curl -sI`), recorded in the PR body. *(PR #293: apex 307 → www 200; Google lists the www callback.)*
+- [x] **Step 2:** Parent Task 12 Steps 1–3 and 6 as written there. *(PR #293 squash-merged 2026-11-20 as `f722657a6`. Beyond the plan: prod disables `/oauth-proxy-callback`, and each deployment trusts only its own hosts (no `vercel.app` wildcard). Prod checked from outside: door 404, www sign-in direct.)*
+- [ ] **Step 3:** *(Partly done 2026-11-20: preview sign-in works on the #293 branch preview; prod `session` count before = 142. Open: `localhost:<port>`, `kitchens.localhost:<port>`, ngrok on the iPad, count after.)* Parent Task 12 Step 4, with one substitution: the prod-script Action (parent Task 7) does not exist yet, so Oliver reads prod's `session` row count in the Neon console before and after the test sign-ins (a read; no SQL from the agent).
 - [ ] **Step 4:** Parent Task 12 Step 5 (remove localhost redirect URIs) only after Oliver confirms preview and local sign-in work. After this, the review slot's port no longer matters for sign-in.
