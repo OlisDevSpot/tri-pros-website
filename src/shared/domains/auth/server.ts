@@ -1,11 +1,25 @@
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { openAPI } from 'better-auth/plugins'
+import { oAuthProxy, openAPI } from 'better-auth/plugins'
 import { APP_HOSTS } from '@/shared/config/roots'
 import env from '@/shared/config/server-env'
 import { userRoles } from '@/shared/constants/enums'
 import { db } from '@/shared/db'
 import * as schema from '@/shared/db/schema'
+
+// Each deployment trusts only the hosts it answers on. Production relays
+// previews' sign-ins on the strength of the sealed state, not this list, so it
+// never needs preview or local hosts; and a wildcard over vercel.app would also
+// match hosts that other Vercel accounts can create.
+function hostsForThisDeployment(): string[] {
+  if (env.VERCEL_ENV === 'production') {
+    return [...APP_HOSTS.prod]
+  }
+  if (env.VERCEL_ENV === 'preview') {
+    return [env.VERCEL_URL, env.VERCEL_BRANCH_URL].filter((host): host is string => !!host)
+  }
+  return [...APP_HOSTS.dev, ...APP_HOSTS.tunnel, ...APP_HOSTS.prod]
+}
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -16,11 +30,11 @@ export const auth = betterAuth({
     google: {
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
-      // redirectURI omitted — better-auth derives the OAuth callback URL per
-      // request from the baseURL.allowedHosts list below. Each environment
-      // (localhost ports, ngrok tunnel, prod) gets its own correct callback.
-      // APP_HOSTS in roots.ts is the single source of truth — every host in
-      // there must also be registered in the Google Cloud OAuth Client.
+      // redirectURI omitted: production derives its own callback from the
+      // request host, and previews and any localhost port relay through
+      // production via oAuthProxy below. The ngrok tunnel skips the relay (see
+      // the Google sign-in button), so Google lists production's callback and
+      // the tunnel's.
       accessType: 'offline',
       // No `prompt`: Google issues the refresh token on the first consent and
       // better-auth keeps the stored one on later logins, so `consent` here
@@ -53,14 +67,14 @@ export const auth = betterAuth({
   },
   // Dynamic baseURL: better-auth picks the per-request origin from the
   // allowlist below (matched against x-forwarded-host on tunneled/proxied
-  // requests, request.url otherwise). OAuth callbacks, cookies, and redirects
-  // all derive from the resolved host, so localhost (any port), the ngrok
-  // tunnel, and prod each get their own correct URLs without env juggling.
+  // requests, request.url otherwise). Cookies and redirects derive from the
+  // resolved host, so localhost (any port), previews, the ngrok tunnel, and
+  // prod each get their own correct URLs without env juggling.
   // `protocol: 'auto'` derives from x-forwarded-proto; localhost falls back
   // to http, tunnel/prod to https. allowedHosts entries are auto-added to
   // trustedOrigins, so we don't duplicate them.
   baseURL: {
-    allowedHosts: [...APP_HOSTS.dev, ...APP_HOSTS.tunnel, ...APP_HOSTS.prod],
+    allowedHosts: hostsForThisDeployment(),
     protocol: 'auto',
     fallback: env.NEXT_PUBLIC_BASE_URL,
   },
@@ -103,7 +117,16 @@ export const auth = betterAuth({
   },
   plugins: [
     openAPI(),
+    // Without the shared key production could not open what a copy seals, so a
+    // copy without it signs in directly instead of relaying.
+    ...(env.OAUTH_PROXY_SECRET
+      ? [oAuthProxy({ productionURL: `https://${APP_HOSTS.prod[1]}`, secret: env.OAUTH_PROXY_SECRET })]
+      : []),
   ],
+  // Production relays sign-ins and never receives a sealed profile back, so its
+  // hand-back endpoint stays shut: anyone holding OAUTH_PROXY_SECRET could
+  // otherwise seal a profile for any email and get a production session.
+  disabledPaths: env.VERCEL_ENV === 'production' ? ['/oauth-proxy-callback'] : [],
   advanced: {
     // Cookie domain auto-derives from the resolved request host (per docs).
     // No `domain` override needed — Vercel canonicalizes www↔apex so each

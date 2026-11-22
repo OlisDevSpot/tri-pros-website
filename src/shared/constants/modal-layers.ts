@@ -1,2 +1,2 @@
-// The deepest real chain is profile → visit sheet (host state, not a layer) → profile → one dialog.
-export const MODAL_LAYER_CAP = 3
+// Set well above the deepest real chain (profile → visit sheet → profile → one dialog) so it is a runaway guard, not a limit anyone meets.
+export const MODAL_LAYER_CAP = 8
