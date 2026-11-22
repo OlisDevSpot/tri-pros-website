@@ -1,0 +1,15 @@
+{
+  "answer": "Leave as is",
+  "answeredOn": "2026-11-14",
+  "area": "collisions",
+  "context": "CONTEXT.md conflicts in 8 of the 13 lane pairs that conflict at all. Union merge keeps both sides' lines; the risk is an occasional duplicated or out-of-order entry, fixed by hand.",
+  "note": "Before union merge, the merging agent must reconcile whether the changes are duplicates or out of orders. Otherwise, union merge feels right",
+  "options": [
+    "Yes, union merge",
+    "Glossary edits only through their own small PR",
+    "Leave as is"
+  ],
+  "order": 7,
+  "question": "Mark CONTEXT.md and the ubiquitous-language file merge=union?",
+  "recommended": "Yes, union merge"
+}

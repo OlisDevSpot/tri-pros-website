@@ -1,0 +1,160 @@
+{
+  "blockedBy": [],
+  "branch": "feat/office-tv-mode",
+  "brief": {
+    "aheadBehind": {
+      "ahead": 15,
+      "behind": 0,
+      "onCurrentProd": true
+    },
+    "decided": [
+      {
+        "date": "2026-11-11",
+        "text": "Kiosk is an ordinary app: no device owner, lock task or hidden system apps"
+      },
+      {
+        "date": "2026-11-11",
+        "text": "No command/build guards on the TV for now; no auto-return"
+      },
+      {
+        "date": "2026-11-09",
+        "text": "Build subagent-driven (D38)"
+      },
+      {
+        "date": "2026-11-09",
+        "text": "Dev DB: two hand-run statements, schema backfilled in code (D39)"
+      },
+      {
+        "date": "2026-11-03",
+        "text": "TV shows existing dashboards only; no new dashboards"
+      },
+      {
+        "date": "2026-11-03",
+        "text": "One shared read-only Office TV account, role office-tv"
+      }
+    ],
+    "files": 64,
+    "goal": "An office TV pairs with a code approved in Settings and shows the analytics dashboard full screen, refreshing itself during office hours.",
+    "lastCommit": {
+      "date": "2026-11-11",
+      "sha": "17ee804d1",
+      "subject": "fix(office-tv): the pair-a-TV code field opens the letter keyboard, not a number pad"
+    },
+    "notes": "Status block stale ('Done: none') though T1-T8 are committed and memory says 32 browser checks pass. Schema change: needs db:push:prod. Own Neon copy wt/office-tv-mode.",
+    "open": [
+      {
+        "id": null,
+        "owner": "you",
+        "text": "Pair a TV on dev end to end (T9)"
+      },
+      {
+        "id": null,
+        "owner": "you",
+        "text": "db:push:prod for device_code before merge"
+      },
+      {
+        "id": "D30",
+        "owner": "you",
+        "text": "TV viewport choice"
+      },
+      {
+        "id": null,
+        "owner": "you",
+        "text": "Cold-boot (unplug) test on the TV"
+      },
+      {
+        "id": null,
+        "owner": "agent",
+        "text": "Open the PR"
+      },
+      {
+        "id": null,
+        "owner": "agent",
+        "text": "Port 3002 clashes with trade-scenes worktree"
+      }
+    ],
+    "orientPage": "https://claude.ai/artifact/SbEbmatn6QSMFqcKVAmfun",
+    "phases": [
+      {
+        "id": "T0",
+        "name": "Worktree and carried docs",
+        "status": "built"
+      },
+      {
+        "id": "T1",
+        "name": "office-tv role, read AnalyticsReport, session fix",
+        "status": "built"
+      },
+      {
+        "id": "T2",
+        "name": "Constants, routes, analytics gate",
+        "status": "built"
+      },
+      {
+        "id": "T3",
+        "name": "device_code table + device plugin",
+        "note": "dev DB by hand (D39)",
+        "status": "built"
+      },
+      {
+        "id": "T4",
+        "name": "Office TV account + officeTvs router",
+        "status": "built"
+      },
+      {
+        "id": "T5",
+        "name": "/office-tv pairing page",
+        "status": "built"
+      },
+      {
+        "id": "T6",
+        "name": "Settings: Office TVs card",
+        "status": "built"
+      },
+      {
+        "id": "T7",
+        "name": "TV-mode layout",
+        "status": "built"
+      },
+      {
+        "id": "T8",
+        "name": "TV-mode runtime: hours, refresh, deploys",
+        "status": "built"
+      },
+      {
+        "id": "T9",
+        "name": "Renames, glossary, end-to-end pairing",
+        "note": "owner pairing on dev owed",
+        "status": "building"
+      },
+      {
+        "id": "Kiosk",
+        "name": "Android kiosk app (separate repo)",
+        "note": "v0.2.0 uncommitted in kiosk repo",
+        "status": "building"
+      }
+    ],
+    "plan": "docs/superpowers/plans/2026-11-03-office-tv-mode.md",
+    "pr": null,
+    "spec": "docs/superpowers/specs/2026-11-03-office-tv-mode-design.md",
+    "statusBlock": {
+      "blocked": "none",
+      "next": "T0 worktree → T1 … T8 → T9 (owner pairing)",
+      "open": "TV IP for adb · owner starts worktree dev server · D30 viewport · db:push:dev from main would drop device_code",
+      "stage": "plan · build approved 2026-11-09, subagent-driven"
+    },
+    "tracker": null,
+    "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/office-tv-mode"
+  },
+  "briefAt": "2026-11-14",
+  "kind": "feature",
+  "move": "you",
+  "name": "Office TV mode",
+  "neon": "wt/office-tv-mode",
+  "next": "Pair the TV on dev with an agent, then the PR. Needs a prod schema push for auth.ts (yours) before merge, until migrations land.",
+  "order": 7,
+  "port": 3002,
+  "risk": "Port 3002 clashes with the trade-scenes worktree. Never device-owner or lock the TV.",
+  "stage": "review",
+  "updated": "2026-11-13"
+}
