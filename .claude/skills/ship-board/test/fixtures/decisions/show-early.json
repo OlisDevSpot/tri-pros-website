@@ -1,0 +1,15 @@
+{
+  "answer": "Yes, draft PR at the first working screen",
+  "answeredOn": "2026-11-14",
+  "area": "rework",
+  "context": "Rework after your first look was the second-biggest stall (proposal v1, FR0's O15 revert, PE4 round 2). A draft PR gives a live preview within a day, and a two-minute look then catches direction problems before the whole build.",
+  "note": "This will happen in 90%+ of the time. Therefore it's important to get it right - not too rigid and not too loose. The way I am envisioning it is a worktree / PR is pushed to origin/feat... and until merged is simply showing on a preview deployment. We then often need to still do work related to the epic at hand (the main \"project\" of the worktree) and we would want to do it in the worktree, not open a new worktree. Given this, tell me what you think is an appropriate approach",
+  "options": [
+    "Yes, draft PR at the first working screen",
+    "Only for epics",
+    "No, show at the end"
+  ],
+  "order": 3,
+  "question": "Show a draft preview as soon as the first screen works?",
+  "recommended": "Yes, draft PR at the first working screen"
+}

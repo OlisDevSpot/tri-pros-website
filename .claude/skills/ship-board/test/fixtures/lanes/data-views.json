@@ -1,0 +1,165 @@
+{
+  "blockedBy": [],
+  "branch": "feat/data-views",
+  "brief": {
+    "aheadBehind": {
+      "ahead": 21,
+      "behind": 0,
+      "onCurrentProd": true
+    },
+    "decided": [
+      {
+        "date": "2026-10-23",
+        "text": "Edit Profile action removed; customer surfaces offer only View Profile, Schedule Meeting, Delete (D69)"
+      },
+      {
+        "date": "2026-10-23",
+        "text": "Schedule Meeting opens through the modal layer; a booking refreshes the customers list (D68)"
+      },
+      {
+        "date": "2026-10-16",
+        "text": "Every data view's UI lives under shared/components/data-view/"
+      },
+      {
+        "date": "2026-10-14",
+        "text": "Data-view spec approved; DV3, DV3a and DV4 ship to prod together"
+      },
+      {
+        "date": "2026-10-12",
+        "text": "Nothing dims on a background refresh; a hairline is the only sign (D67)"
+      }
+    ],
+    "files": 227,
+    "goal": "Every records table is built from one shared data-view kit, and the customers table becomes a proper entity table that opens instantly with cached rows.",
+    "lastCommit": {
+      "date": "2026-11-13",
+      "sha": "a6548d23e",
+      "subject": "docs(records): D69 says each customer surface offers at most View Profile, Schedule Meeting and Delete"
+    },
+    "notes": "Tracker still says 'built on local main'; work was rebuilt onto this branch 2026-11-13. filter-rules stacks on it. Has its own Neon copy wt/data-views.",
+    "open": [
+      {
+        "id": "A1",
+        "owner": "you",
+        "text": "Prod check: no skeleton flash when returning to any list page"
+      },
+      {
+        "id": null,
+        "owner": "you",
+        "text": "Table footer says 'Updating…' under an error screen: fix now or own step?"
+      },
+      {
+        "id": null,
+        "owner": "you",
+        "text": "Add aria-busy while a view draws its first skeleton?"
+      },
+      {
+        "id": "A3",
+        "owner": "agent",
+        "text": "Glossary entries: data view, body, orchestrator, loading screen, pending view"
+      },
+      {
+        "id": "A5",
+        "owner": "agent",
+        "text": "Re-point three plans to the dashboard/(home) path"
+      }
+    ],
+    "orientPage": null,
+    "phases": [
+      {
+        "id": "DV0",
+        "name": "Instant tab return",
+        "status": "shipped"
+      },
+      {
+        "id": "DV1",
+        "name": "Edge-to-edge layout",
+        "status": "shipped"
+      },
+      {
+        "id": "DV2",
+        "name": "Data-view spec",
+        "note": "approved 2026-10-14",
+        "status": "spec"
+      },
+      {
+        "id": "DV3",
+        "name": "DataView compound + tables",
+        "note": "ships with DV3a and DV4",
+        "status": "built"
+      },
+      {
+        "id": "DV3a",
+        "name": "One folder for every data view",
+        "note": "path moves only",
+        "status": "built"
+      },
+      {
+        "id": "DV4",
+        "name": "Customers entity table",
+        "note": "lead-sources panes too; getCustomers gone",
+        "status": "built"
+      },
+      {
+        "id": "DV5",
+        "name": "Calendars on data views",
+        "note": "plan to write",
+        "status": "spec"
+      },
+      {
+        "id": "DV6",
+        "name": "Kanban on data views",
+        "note": "plan to write",
+        "status": "spec"
+      },
+      {
+        "id": "DV7",
+        "name": "#285 rebases onto R2",
+        "note": "overtaken",
+        "status": "parked"
+      },
+      {
+        "id": "DV8",
+        "name": "Proposals entity table (R3)",
+        "status": "idea"
+      },
+      {
+        "id": "DV9",
+        "name": "Bulk actions on all tables",
+        "status": "idea"
+      },
+      {
+        "id": "DV10",
+        "name": "Loading screens for remaining routes",
+        "status": "idea"
+      },
+      {
+        "id": "DV11",
+        "name": "Dashboard card lists as data views",
+        "status": "idea"
+      }
+    ],
+    "plan": "docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters-part-2.md",
+    "pr": null,
+    "spec": "docs/superpowers/specs/2026-10-07-data-view-surface-design.md",
+    "statusBlock": {
+      "blocked": null,
+      "next": "The ship, then DV5 and DV6 (calendars, kanban) and R3 (proposals)",
+      "open": "A1 prod check, A3 glossary, A5 re-points",
+      "stage": "BUILDING: DV0, DV1 on prod; DV3, DV3a, DV4 built, awaiting owner ship together"
+    },
+    "tracker": "docs/plans/2026-10-12-data-views-epic.md",
+    "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/data-views"
+  },
+  "briefAt": "2026-11-14",
+  "kind": "feature",
+  "move": "agent",
+  "name": "Data views DV3 · DV3a · DV4",
+  "neon": "wt/data-views",
+  "next": "Agent: type-check this branch merged with proposal page, home visit and office TV (DV3a moves 92 files), then open the PR.",
+  "order": 3,
+  "port": 3010,
+  "risk": "DV3a's path moves break other lanes' imports even where git merges cleanly. Merge it before the lanes that import moved paths, or fix their imports at their catch-up.",
+  "stage": "review",
+  "updated": "2026-11-13"
+}

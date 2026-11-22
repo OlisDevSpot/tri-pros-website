@@ -1,0 +1,13 @@
+{
+  "blockedBy": [
+    "data-views"
+  ],
+  "branch": "feat/long-names",
+  "kind": "feature",
+  "move": "agent",
+  "name": "Long running cross-cutting permissions and sharing work with an extraordinarily lengthy la",
+  "next": "Agent: rebase onto the current drain, re-run the type check across every touched module, then open the pull request and wait for the preview before asking for a look. Agent: rebase onto the current drain, re-run the type check across every touched module, then open the pull request and wait for the ",
+  "order": 15,
+  "stage": "build",
+  "updated": "2026-11-13"
+}

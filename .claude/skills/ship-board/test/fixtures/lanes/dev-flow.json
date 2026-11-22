@@ -1,0 +1,123 @@
+{
+  "blockReason": {
+    "drain": "the spec and plan ship in #289"
+  },
+  "blockedBy": [
+    "drain"
+  ],
+  "brief": {
+    "aheadBehind": null,
+    "decided": [
+      {
+        "date": "2026-11-13",
+        "text": "Drain splits local main into PR #289, PR #290 and epic branches with Neon copies"
+      },
+      {
+        "date": "2026-11-06",
+        "text": "Execute the plan in order, Task 0 first; orient page is the living tracker (WF1)"
+      },
+      {
+        "date": "2026-11-06",
+        "text": "Task 0 = one /pre-ship session with the owner present (WF2)"
+      },
+      {
+        "date": "2026-11-02",
+        "text": "Neon upgraded to Launch plan; photos-only prod login on the laptop"
+      },
+      {
+        "date": "2026-11-01",
+        "text": "Orca worktrees; no issue gate; migrations replace db:push; no prod creds locally"
+      }
+    ],
+    "files": 0,
+    "goal": "Each feature gets its own worktree, database copy and PR with a signed-in preview; main mirrors prod and no laptop holds full prod credentials.",
+    "lastCommit": null,
+    "notes": "No branch yet. Status block (2026-11-06) predates the T0 drain run of 2026-11-13. Spec and plan ride in drain PR #289.",
+    "open": [
+      {
+        "id": null,
+        "owner": "you",
+        "text": "Merge #289, then reset local main and realign dev DB"
+      },
+      {
+        "id": null,
+        "owner": "you",
+        "text": "Neon console state unread since 2026-11-06 (connector reconnect)"
+      },
+      {
+        "id": null,
+        "owner": "you",
+        "text": "Approve each console step in T1 (GitHub, Vercel, Neon)"
+      },
+      {
+        "id": null,
+        "owner": "agent",
+        "text": "Roadmap q367 still open though answered 2026-11-01"
+      }
+    ],
+    "orientPage": "https://claude.ai/artifact/1zmUgoWD6NQKsmJvJJR138",
+    "phases": [
+      {
+        "id": "T0",
+        "name": "Drain local main",
+        "note": "PR #289 open; see drain lane",
+        "status": "built"
+      },
+      {
+        "id": "T1",
+        "name": "Lock the doors (console steps)",
+        "status": "plan"
+      },
+      {
+        "id": "T2-T3",
+        "name": "Neon client + pnpm wt:db",
+        "status": "plan"
+      },
+      {
+        "id": "T4-T8",
+        "name": "Safe dev DB, guards, prod Action, credentials",
+        "status": "plan"
+      },
+      {
+        "id": "T9-T10",
+        "name": "Migrations baseline + on deploy",
+        "status": "plan"
+      },
+      {
+        "id": "T11",
+        "name": "Preview databases",
+        "status": "plan"
+      },
+      {
+        "id": "T12",
+        "name": "Google sign-in through proxy",
+        "status": "plan"
+      },
+      {
+        "id": "T13-T16",
+        "name": "Orca wiring, agent git, retire old, branch protection",
+        "status": "plan"
+      }
+    ],
+    "plan": "docs/superpowers/plans/2026-11-01-worktree-pr-flow.md",
+    "pr": null,
+    "spec": "docs/superpowers/specs/2026-11-01-worktree-pr-flow-design.md",
+    "statusBlock": {
+      "blocked": "T1-T16 on T0",
+      "next": "T0 drain → T1 lock the doors → T2-T3 wt:db → T4-T8 → T9 baseline → T10-T16",
+      "open": "Neon console state unread · roadmap q367 · trade-scenes R282/T23 wait on T2-T3, T9-T10",
+      "stage": "plan · stress-tested 2026-11-02 · owner said execute in order 2026-11-06"
+    },
+    "tracker": "docs/superpowers/plans/2026-11-01-worktree-pr-flow.md",
+    "worktree": null
+  },
+  "briefAt": "2026-11-14",
+  "kind": "platform",
+  "move": "agent",
+  "name": "Worktree → PR flow (plan T1–T16)",
+  "next": "Task 0 finishes when #289 merges. Then Task 1 (lock the doors) in a session with you.",
+  "notes": "Spec and plan live in the drain PR's docs.",
+  "order": 10,
+  "stage": "plan",
+  "updated": "2026-11-13"
+}

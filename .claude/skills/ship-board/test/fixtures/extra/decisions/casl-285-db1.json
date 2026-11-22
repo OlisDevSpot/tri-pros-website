@@ -1,0 +1,9 @@
+{
+  "askedBy": "migrated",
+  "kind": "decision",
+  "lane": "casl-285",
+  "options": [],
+  "order": 30,
+  "question": "Which database branch does the permissions lane migrate first?",
+  "ref": "DB1"
+}

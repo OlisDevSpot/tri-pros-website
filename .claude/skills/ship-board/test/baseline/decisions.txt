@@ -1,0 +1,162 @@
+Decisions waiting on you
+
+Questions from lane sessions and from this flow land here instead of holding a session at its prompt. Pick an answer and save; the session that asked reads it from here.
+
+Under an error screen, the table footer still says "Updating…". When do we fix it?
+polish
+
+When a list fails to load, its footer still says it is refreshing. The design already fixed the same contradiction for the row count, and the fix is a few lines.
+
+[object Object]
+[object Object]
+Note (optional)
+Save answer
+Should a list tell screen readers it is loading?
+accessibility
+
+While a list draws its first placeholder rows, nothing marks it as busy (aria-busy). The design does not say. Only screen-reader users notice.
+
+[object Object]
+[object Object]
+[object Object]
+Note (optional)
+Save answer
+After it ships: open a few list pages on prod, leave, and come back.
+
+Rows should appear at once, with no grey placeholder flash. Dev cannot show this, so only you can check it on prod.
+
+Note (optional)
+Save answer
+Which database branch does the permissions lane migrate first?
+Note (optional)
+Save answer
+When is your daily review sitting?
+your time
+answered 2026-11-14
+
+The biggest stall is review time: 8 branches hold about 20 actions only you can take. A fixed sitting lets agents prepare everything beforehand and lets /review-queue run it.
+
+Once a day, morningsRECOMMENDED
+Once a day, end of day
+Twice a day, short
+No fixed time
+Note (optional)
+Change answer
+Leave your iPad notes as comments on the Vercel preview, read by the lane's agent?
+your time
+answered 2026-11-14
+
+Vercel's toolbar lets you comment on the preview page itself. The lane's agent lists the unresolved threads for its branch, fixes them and resolves them. It needs the Vercel MCP connected for agents.
+
+Yes, preview commentsRECOMMENDED
+No, I'll keep telling sessions directly
+Note (optional)
+Change answer
+Show a draft preview as soon as the first screen works?
+rework
+answered 2026-11-14
+
+Rework after your first look was the second-biggest stall (proposal v1, FR0's O15 revert, PE4 round 2). A draft PR gives a live preview within a day, and a two-minute look then catches direction problems before the whole build.
+
+Yes, draft PR at the first working screenRECOMMENDED
+Only for epics
+No, show at the end
+Note (optional)
+Change answer
+Split any lane that would take more than about three build days or more than one review sitting?
+flow
+answered 2026-11-14
+
+The proposal page carried 77 commits into one review; data views waited 21 days under a ship-together rule.
+
+Yes, about three daysRECOMMENDED
+Yes, about a week
+No size budget
+Note (optional)
+Change answer
+May finished-but-unchecked work merge behind a switch that keeps it hidden on prod?
+dependencies
+answered 2026-11-14
+
+This lets lanes that depend on it build on prod instead of stacking. The cost is hidden code on prod and a switch to remove later. Trade scene release 1 shipped half-ready by a one-off waiver.
+
+Allow for epics that span more than one sitting
+Decide per laneRECOMMENDED
+Never
+Note (optional)
+Change answer
+Where does live lane status live?
+collisions
+answered 2026-11-14
+
+Lanes editing shared trackers in docs/plans/ and the glossaries cause most conflicts. Proposal: this board holds live status; trackers keep only rulings and decisions. GitHub issues stay the backlog.
+
+This board; trackers keep rulings onlyRECOMMENDED
+GitHub Projects
+Keep status in the tracker files
+Note (optional)
+Change answer
+Mark CONTEXT.md and the ubiquitous-language file merge=union?
+collisions
+answered 2026-11-14
+
+CONTEXT.md conflicts in 8 of the 13 lane pairs that conflict at all. Union merge keeps both sides' lines; the risk is an occasional duplicated or out-of-order entry, fixed by hand.
+
+Yes, union mergeRECOMMENDED
+Glossary edits only through their own small PR
+Leave as is
+Note (optional)
+Change answer
+Run the parallel-lane skills alongside plan Tasks 1–16, or after?
+plan
+answered 2026-11-14
+
+You ruled 'execute in order, Task 0 first'. The skills (/lane-sync, /collisions, /review-queue, /ship-lane) need no infrastructure and target today's top bottleneck, while Tasks 1–16 lock prod and add migrations.
+
+Alongside: skills track starts now, plan continues in orderRECOMMENDED
+After the plan
+Fold the skills into the plan as new tasks
+Note (optional)
+Change answer
+Re-cut the trade-scene branches and #285 onto prod?
+cleanup
+answered 2026-11-14
+
+They carry old main's 600+ commits. Each scene release needs the file-copy script, and the lab can't merge prod directly.
+
+Re-cut now, as the drain did
+Re-cut each at its next releaseRECOMMENDED
+Leave them
+Note (optional)
+Change answer
+Add one AI reviewer on every PR?
+review
+answered 2026-11-14
+
+claude-code-action runs in our own CI on an API key and keeps working once the repo is private. CodeRabbit is free only while the repo is public (Task 1 makes it private). Either way, only one bot.
+
+claude-code-action
+CodeRabbit until the repo goes private
+None, keep the local review in /ship-laneRECOMMENDED
+Note (optional)
+Change answer
+Delete the superseded edit-proposal-layout and filter-grouping-fields worktrees and branches?
+cleanup
+answered 2026-11-14
+
+PE4 (edit-proposal-layout-2) and filter rules replaced them on 13 Nov. Every line was checked to land in a live branch.
+
+Yes, delete bothRECOMMENDED
+Keep for now
+Note (optional)
+Change answer
+Which lane merges first, given that DV3a moves 92 files?
+flow
+answered 2026-11-15
+
+DV3a moves 92 files. Git merges it cleanly with other lanes, but their imports to the old paths break.
+
+[object Object]
+[object Object]
+Note (optional)
+Change answer

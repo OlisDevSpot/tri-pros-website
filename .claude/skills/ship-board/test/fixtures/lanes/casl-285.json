@@ -1,0 +1,141 @@
+{
+  "blockedBy": [],
+  "branch": "refactor/285-refactor-permissions-casl-scope-compiler",
+  "brief": {
+    "aheadBehind": {
+      "ahead": 48,
+      "behind": 69,
+      "onCurrentProd": false
+    },
+    "decided": [
+      {
+        "date": "2026-10-15",
+        "text": "Intake procedures check the lead source's link token (D-36)"
+      },
+      {
+        "date": "2026-10-15",
+        "text": "Activities belong to their owner; reading also needs the linked record (D-35)"
+      },
+      {
+        "date": "2026-10-14",
+        "text": "Applications left to the applications epic; VoIP deferred later in the epic"
+      },
+      {
+        "date": "2026-10-14",
+        "text": "No separate hotfixes: security holes ship with the epic merge (D-31)"
+      },
+      {
+        "date": "2026-10-07",
+        "text": "Outcome/pipeline derivation belongs to the lifecycle work, not this epic"
+      }
+    ],
+    "files": 113,
+    "goal": "Permissions come from one set of rules for server, database and browser, closing known data leaks (share links, agents seeing others' projects).",
+    "lastCommit": {
+      "date": "2026-10-15",
+      "sha": "ac7c77ad0",
+      "subject": "docs(permissions): hand check H4 matches the proposal cards, which all carry status"
+    },
+    "notes": "Idle since 2026-10-15 and 69 behind prod. Tracker status table dated 2026-10-14. Owner declined parking or pushing it 2026-11-13.",
+    "open": [
+      {
+        "id": "DB1",
+        "owner": "you",
+        "text": "Rules held in the database, edited per role from an admin screen?"
+      },
+      {
+        "id": "Q8",
+        "owner": "you",
+        "text": "Remaining report-10 rulings (#8 blocked on cancelled_scopes)"
+      },
+      {
+        "id": "J6",
+        "owner": "you",
+        "text": "Shape of the lint wall"
+      },
+      {
+        "id": "Q9",
+        "owner": "you",
+        "text": "Which legacy-engine docs to rewrite vs delete"
+      },
+      {
+        "id": "N1",
+        "owner": "agent",
+        "text": "A naming scheme for system reasons that scales"
+      },
+      {
+        "id": "E2E",
+        "owner": "you",
+        "text": "Which dev records browser tests may change"
+      }
+    ],
+    "orientPage": null,
+    "phases": [
+      {
+        "id": "U1",
+        "name": "Typed foundation",
+        "note": "owner release 2026-10-12",
+        "status": "shipped"
+      },
+      {
+        "id": "U2",
+        "name": "One actor per request",
+        "status": "shipped"
+      },
+      {
+        "id": "U3",
+        "name": "Compiler + per-family DAL scoping",
+        "note": "parts 1-5; VoIP and engine seam left",
+        "status": "shipped"
+      },
+      {
+        "id": "U4.1",
+        "name": "Rules matrix part 1",
+        "status": "built"
+      },
+      {
+        "id": "U4.2",
+        "name": "Own rows, public intake, client copies",
+        "note": "guess: commits match plan goals",
+        "status": "built"
+      },
+      {
+        "id": "U5",
+        "name": "Lint wall + financial reads",
+        "note": "after J6",
+        "status": "plan"
+      },
+      {
+        "id": "U6",
+        "name": "Delete the legacy engine",
+        "status": "plan"
+      },
+      {
+        "id": "U7",
+        "name": "Full browser pass, single merge",
+        "note": "needs E2E data ruling",
+        "status": "plan"
+      }
+    ],
+    "plan": "docs/superpowers/plans/2026-10-15-permissions-unit-4-part-2-own-rows-and-client-copies.md",
+    "pr": null,
+    "spec": "docs/superpowers/specs/2026-10-05-permissions-structure-design.md",
+    "statusBlock": {
+      "blocked": "Unit 6 on units 3-5; unit 7 on E2E data ruling",
+      "next": "Unit 4 rulings batches, then units 5-7",
+      "open": "Q8, J6, Q9, N1, DB1, E2E data",
+      "stage": "Units 1-2 and unit 3 parts 1-5 in the tree; unit 4 part 1 built (as of 2026-10-14)"
+    },
+    "tracker": "docs/plans/2026-08-10-casl-scope-compiler-epic.md",
+    "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/issue-285"
+  },
+  "briefAt": "2026-11-14",
+  "kind": "refactor",
+  "move": "parked",
+  "name": "Permissions scope compiler (#285)",
+  "next": "Idle since 15 Oct, on old main. Re-cut onto prod when it restarts.",
+  "notes": "Home visit re-applies one #285 permissions commit.",
+  "order": 12,
+  "stage": "build",
+  "updated": "2026-11-13"
+}
