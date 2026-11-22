@@ -1,0 +1,17 @@
+{
+  "area": "accessibility",
+  "askedBy": "orient",
+  "askedOn": "2026-11-15",
+  "context": "While a list draws its first placeholder rows, nothing marks it as busy (aria-busy). The design does not say. Only screen-reader users notice.",
+  "kind": "decision",
+  "lane": "data-views",
+  "options": [
+    {"label": "Add it in this release", "consequence": "One attribute on each list"},
+    {"label": "Add it with the loading-screens step (DV10)", "consequence": "Batched with the other loading work"},
+    {"label": "Leave it out", "consequence": "No change"}
+  ],
+  "order": 21,
+  "phase": "DV10",
+  "question": "Should a list tell screen readers it is loading?",
+  "recommended": "Add it with the loading-screens step (DV10)"
+}

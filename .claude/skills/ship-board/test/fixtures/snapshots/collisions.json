@@ -1,0 +1,301 @@
+{
+  "asOf": "2026-11-13, branches as held after the drain",
+  "hot": [
+    {
+      "count": 8,
+      "file": "CONTEXT.md",
+      "fix": "merge=union in .gitattributes (decision)"
+    },
+    {
+      "count": 2,
+      "file": "docs/plans/2026-10-14-prod-stress-audit.md",
+      "fix": "status off shared trackers (decision)"
+    },
+    {
+      "count": 2,
+      "file": "src/shared/entities/customers/components/profile/customer-profile-tab-panels.tsx",
+      "fix": "data views lands first (DV path move), then home visit"
+    },
+    {
+      "count": 2,
+      "file": "src/shared/components/dialogs/sheets/responsive-sheet.tsx",
+      "fix": "merge order: whichever lands second merges main first"
+    },
+    {
+      "count": 2,
+      "file": "src/shared/constants/company/index.ts",
+      "fix": "small; resolve at the second lane's catch-up"
+    },
+    {
+      "count": 1,
+      "file": "docs/plans/2026-10-21-data-view-filter-rules-epic.md",
+      "fix": "plan docs: status off shared trackers"
+    },
+    {
+      "count": 1,
+      "file": "docs/superpowers/plans/2026-10-22-filter-grouping-fields.md",
+      "fix": "plan docs: status off shared trackers"
+    },
+    {
+      "count": 1,
+      "file": "docs/superpowers/specs/2026-10-21-data-view-filter-rules-design.md",
+      "fix": "plan docs: status off shared trackers"
+    },
+    {
+      "count": 1,
+      "file": "src/shared/services/notification.service.ts",
+      "fix": "home visit vs office TV: resolve at the second lane's catch-up"
+    }
+  ],
+  "lanes": [
+    {
+      "id": "drain",
+      "short": "drain"
+    },
+    {
+      "id": "r19",
+      "short": "r19"
+    },
+    {
+      "id": "data-views",
+      "short": "dv"
+    },
+    {
+      "id": "filter-rules",
+      "short": "fr"
+    },
+    {
+      "id": "proposal-page",
+      "short": "prop"
+    },
+    {
+      "id": "pe4",
+      "short": "pe4"
+    },
+    {
+      "id": "hv",
+      "short": "hv"
+    },
+    {
+      "id": "office-tv",
+      "short": "tv"
+    }
+  ],
+  "pairs": [
+    {
+      "a": "drain",
+      "b": "r19",
+      "conflicts": 1,
+      "files": [
+        "CONTEXT.md"
+      ],
+      "shared": 1
+    },
+    {
+      "a": "drain",
+      "b": "filter-rules",
+      "conflicts": 4,
+      "files": [
+        "CONTEXT.md",
+        "docs/plans/2026-10-21-data-view-filter-rules-epic.md",
+        "docs/superpowers/plans/2026-10-22-filter-grouping-fields.md",
+        "docs/superpowers/specs/2026-10-21-data-view-filter-rules-design.md"
+      ],
+      "shared": 5
+    },
+    {
+      "a": "drain",
+      "b": "proposal-page",
+      "conflicts": 2,
+      "files": [
+        "CONTEXT.md",
+        "docs/plans/2026-10-14-prod-stress-audit.md"
+      ],
+      "shared": 3
+    },
+    {
+      "a": "drain",
+      "b": "pe4",
+      "conflicts": 2,
+      "files": [
+        "CONTEXT.md",
+        "docs/plans/2026-10-14-prod-stress-audit.md"
+      ],
+      "shared": 9
+    },
+    {
+      "a": "drain",
+      "b": "hv",
+      "conflicts": 0,
+      "files": [],
+      "shared": 1
+    },
+    {
+      "a": "drain",
+      "b": "office-tv",
+      "conflicts": 0,
+      "files": [],
+      "shared": 1
+    },
+    {
+      "a": "r19",
+      "b": "filter-rules",
+      "conflicts": 0,
+      "files": [],
+      "shared": 1
+    },
+    {
+      "a": "r19",
+      "b": "proposal-page",
+      "conflicts": 0,
+      "files": [],
+      "shared": 1
+    },
+    {
+      "a": "r19",
+      "b": "pe4",
+      "conflicts": 0,
+      "files": [],
+      "shared": 1
+    },
+    {
+      "a": "r19",
+      "b": "hv",
+      "conflicts": 0,
+      "files": [],
+      "shared": 1
+    },
+    {
+      "a": "r19",
+      "b": "office-tv",
+      "conflicts": 0,
+      "files": [],
+      "shared": 1
+    },
+    {
+      "a": "data-views",
+      "b": "filter-rules",
+      "conflicts": 0,
+      "shared": 227,
+      "stacked": true
+    },
+    {
+      "a": "data-views",
+      "b": "proposal-page",
+      "conflicts": 0,
+      "files": [],
+      "shared": 4
+    },
+    {
+      "a": "data-views",
+      "b": "pe4",
+      "conflicts": 0,
+      "files": [],
+      "shared": 4
+    },
+    {
+      "a": "data-views",
+      "b": "hv",
+      "conflicts": 1,
+      "files": [
+        "src/shared/entities/customers/components/profile/customer-profile-tab-panels.tsx"
+      ],
+      "shared": 3
+    },
+    {
+      "a": "data-views",
+      "b": "office-tv",
+      "conflicts": 0,
+      "files": [],
+      "shared": 4
+    },
+    {
+      "a": "filter-rules",
+      "b": "proposal-page",
+      "conflicts": 1,
+      "files": [
+        "CONTEXT.md"
+      ],
+      "shared": 6
+    },
+    {
+      "a": "filter-rules",
+      "b": "pe4",
+      "conflicts": 1,
+      "files": [
+        "CONTEXT.md"
+      ],
+      "shared": 6
+    },
+    {
+      "a": "filter-rules",
+      "b": "hv",
+      "conflicts": 1,
+      "files": [
+        "src/shared/entities/customers/components/profile/customer-profile-tab-panels.tsx"
+      ],
+      "shared": 4
+    },
+    {
+      "a": "filter-rules",
+      "b": "office-tv",
+      "conflicts": 0,
+      "files": [],
+      "shared": 5
+    },
+    {
+      "a": "proposal-page",
+      "b": "pe4",
+      "conflicts": 0,
+      "shared": 275,
+      "stacked": true
+    },
+    {
+      "a": "proposal-page",
+      "b": "hv",
+      "conflicts": 1,
+      "files": [
+        "src/shared/components/dialogs/sheets/responsive-sheet.tsx"
+      ],
+      "shared": 3
+    },
+    {
+      "a": "proposal-page",
+      "b": "office-tv",
+      "conflicts": 2,
+      "files": [
+        "CONTEXT.md",
+        "src/shared/constants/company/index.ts"
+      ],
+      "shared": 4
+    },
+    {
+      "a": "pe4",
+      "b": "hv",
+      "conflicts": 1,
+      "files": [
+        "src/shared/components/dialogs/sheets/responsive-sheet.tsx"
+      ],
+      "shared": 3
+    },
+    {
+      "a": "pe4",
+      "b": "office-tv",
+      "conflicts": 2,
+      "files": [
+        "CONTEXT.md",
+        "src/shared/constants/company/index.ts"
+      ],
+      "shared": 4
+    },
+    {
+      "a": "hv",
+      "b": "office-tv",
+      "conflicts": 1,
+      "files": [
+        "src/shared/services/notification.service.ts"
+      ],
+      "shared": 5
+    }
+  ]
+}
