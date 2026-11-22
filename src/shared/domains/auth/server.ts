@@ -31,9 +31,10 @@ export const auth = betterAuth({
       clientId: env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET,
       // redirectURI omitted: production derives its own callback from the
-      // request host, and every other host (previews, any localhost port, the
-      // tunnel) relays through production via oAuthProxy below, so the Google
-      // OAuth client needs production's callback only.
+      // request host, and previews and any localhost port relay through
+      // production via oAuthProxy below. The ngrok tunnel skips the relay (see
+      // the Google sign-in button), so Google lists production's callback and
+      // the tunnel's.
       accessType: 'offline',
       // No `prompt`: Google issues the refresh token on the first consent and
       // better-auth keeps the stored one on later logins, so `consent` here
