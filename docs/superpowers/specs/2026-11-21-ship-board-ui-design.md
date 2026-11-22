@@ -1,7 +1,7 @@
 # Ship board UI: design
 
 > **Status**
-> - Stage: spec · written 2026-11-21 · every choice ruled by the owner the same day (decisions 13–30) · waiting on the owner's approval of the whole
+> - Stage: spec · written 2026-11-21 · every choice ruled by the owner the same day (decisions 13–31) · approved by the owner 2026-11-21 · adjusted the same day for #296 (a lane outlives its first PR, §14)
 > - Baseline: studies page https://claude.ai/artifact/2FEogNBKoCdV58gKcDmUGn (version 3; Study B, the epic map, picked 2026-11-21 with corrections; v7's lane page folded in). Source copy: `~/claude-archive/2026-11-21-ship-board-studies/ship-board-studies-v3.html` + `lane-core.js` + `v7data.js`.
 > - Builds on: board v7 (live since 2026-11-21), source `.claude/skills/ship-board/` on main since #295.
 > - Order (owner): ship the orient work (done, #295) → the dev-cycle epic tracker → the sync skill's design (decision 19) → this.
@@ -163,7 +163,7 @@ When a row, card or epic changes because someone else wrote it (the voice agent,
 
 ## 7. Architecture
 
-- **Pure logic in `lane-core.js`** (unit-tested, the one schema): `kindOf`, `stateOf` (parked, shipped, you, working, blocked, quiet, agent), `quietDays`, the five status-filter predicates, `readyToMerge`, `searchMatch`, `stepFor` (phase → step), requirement-table parsing from an issue body, and the existing `layoutBlockerMap`, `pinsByStep`, `waitGap`, `openCount`.
+- **Pure logic in `lane-core.js`** (unit-tested, the one schema): `kindOf`, `stateOf` (parked, shipped, you, working, blocked, quiet, agent), `quietDays`, the five status-filter predicates, `readyToMerge`, `searchMatch`, `stepFor` (phase → step), requirement-table parsing from a tracker file (decision 14), and the existing `layoutBlockerMap`, `pinsByStep`, `waitGap`, `openCount`.
 - **Renderers in `lane-view.js`**: map, epic block, row, status strip, toolbar, epic overview, lane page (reusing v7's decision card, release map and blocker map renderers).
 - **State**: one object; filter, kind, search text, open panel and tab are page state; folds go to browser storage (try/catch).
 - **Live data**: GitHub and Vercel through the `mcp` capability with `watchTool` (displays) as v7 does for Vercel. Failures per connector use v7's message table pattern (`VC_MSG`): the map still renders from board data, with a one-line notice of what is missing.
@@ -275,3 +275,6 @@ Ruled by the owner on 2026-11-21 (decisions 13 and 27–30). Left as Claude's ca
 
 - "Type Bug" means the issue type Bug, which is enabled on the repo (Task / Bug / Feature); the `type:bug` label is kept alongside it until labels are reconciled.
 - Folds persist per device in browser storage; nothing else is stored in the browser.
+- A lane outlives its first PR (#296, owner ruling WF6): a lane that ships when it is good enough keeps its branch and worktree and opens a new PR later. So the page reads every PR on the lane's head branch: the PR chip shows the open PR, else the newest merged one, with "N shipped"; each merge is a tick on the activity timeline.
+- Closing the issue: a lane that ships and keeps going writes `Refs #N` on its PRs; only the PR that finishes the lane writes `Closes #N`. A plan reaches On prod (decision 27) when its lane is finished, not at its first good-enough ship. **Owner to confirm.** The alternative is that each good-enough ship closes the issue and the follow-on work opens a new issue and row.
+- A row's stage becomes `shipped` only when the lane is finished; a lane that merged a PR and keeps going stays in its working stage, and its merged PR shows on the chip.
