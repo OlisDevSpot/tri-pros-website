@@ -52,7 +52,7 @@ The stress test of 2026-10-21 led to EI-D19–D22, and the second one (2026-10-2
   - Stage exact files with one `git add <files>` call. Then commit with a separate call that **starts with** `git commit -m … -- <same files>`. The pre-commit gate only fires on a command starting with `git commit`, and its timeout is fixed at 120 s.
   - Never add a folder.
   - The index must be empty before each `git add` (`git diff --cached --name-only` prints nothing). If it isn't, someone else staged it: stop and ask.
-  - `CONTEXT.md` § Energy impact terms ships in the docs commit before Task 1. No task edits `CONTEXT.md`.
+  - `GLOSSARY.md` § Energy impact terms ships in the docs commit before Task 1. No task edits `GLOSSARY.md`.
   - Never stash, switch branches, reset or amend.
   - The only branch read allowed is Task 1's pathspec checkout (`git checkout feat/trade-scenes-foundation -- <path>`).
   - Never edit `.worktrees/trade-scenes`. Another session owns it.
@@ -61,7 +61,7 @@ The stress test of 2026-10-21 led to EI-D19–D22, and the second one (2026-10-2
   - External constants (utility rates, EPA factors) carry their source URL in a comment.
   - No file banners, and no citations of plans or specs in code.
   - One thing per file, named exports, and the module's `constants/`, `lib/`, `schemas/` layout. `lib/` files are `verb-noun.ts`.
-- **Vocabulary (EI-D22, `CONTEXT.md` § Energy impact terms):**
+- **Vocabulary (EI-D22, `GLOSSARY.md` § Energy impact terms):**
   - **bill cut**: a trade's or add-on's share off a bill.
   - **bill-cutting scope**: a scope that makes its trade's bill cut count. Never "qualify" or "qualifying"; those mean program eligibility.
   - **electric utility**: LADWP or SCE. The code name is `electricProvider` everywhere (column, patch, `EnergyImpactInput`, `electricRateFor`), matching the `electricProviders` enum. Never "provider" alone in copy.
@@ -160,7 +160,7 @@ git status --short src/shared/modules/construction/core src/shared/lib/resolve-o
 ```
 
 Expected:
-- **First command:** prints a hash. The plan, spec, tracker and `CONTEXT.md` must be committed as a docs commit before Task 1. If nothing prints, stop and ask the owner to commit them.
+- **First command:** prints a hash. The plan, spec, tracker and `GLOSSARY.md` must be committed as a docs commit before Task 1. If nothing prints, stop and ask the owner to commit them.
 - **Second command:** prints nothing, once its anchor is the post-fold tip recorded in §3.1. The branch tip moves (it was `167a661bf` on 2026-10-22, before the fold), but the slice must not move after the analysis. If anything prints, stop and re-run tracker §3.1's analysis.
 - **Third command:** exactly these five files. Any other calculator file means main gained an overlap: stop.
   - `contexts/story-ui-context.tsx`
@@ -919,7 +919,7 @@ Expected:
 - **Next:**
   - EI4 `/ui-exploration` of the chapter. Its numbers come from `projectEnergyImpact`, and the slider ranges must sit within `MONTHLY_BILL_MAX_CENTS`.
   - Then a second plan for EI3 and EI5. That plan also:
-    - updates `CONTEXT.md`'s "Proposal chapter" (six → seven sections);
+    - updates `GLOSSARY.md`'s "Proposal chapter" (six → seven sections);
     - handles cache invalidation of `getFullView` across a customer's proposals after a save (a `pathFilter` covers the session and token keys);
     - adds S2, `getFullView`'s `.leftJoin(customerUtilityBills, …)` with the four fields flattened into `ProposalCustomer` (the only builder is `queries.ts:130`; `toShareableCustomer` is generic and needs no change). It checks the join by reading one dev proposal as staff and by its share link, where the four fields come back null;
     - carries the prod gate as an enforced STOP. `pnpm db:push:prod` pushes the whole schema, so it runs from a checkout of exactly what ships, and aborts on any DDL beyond what that range adds. It runs before the join reaches origin/main.

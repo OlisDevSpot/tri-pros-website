@@ -8,7 +8,7 @@
 
 **Tech Stack:** Next.js 15, React 19, Tailwind CSS 4.1.18 (`@theme inline` tokens, named container queries `[container:presentation/size]`, `@max-[56rem]/presentation:`, `@container/comparison`), `motion/react` v12 (`useInView` with `margin`, `AnimatePresence mode="wait"`, `useReducedMotion`), `next/image`, shadcn `Button`/`Dialog`, lucide icons, Playwright (verification scripts only), `tsx` (pure-function checks).
 
-**Spec:** `docs/superpowers/specs/2026-09-20-presentation-config-and-critique-design.md` (spec C, revised 2026-09-22 with the CSS review, §11, and with the semantics grilling, §12). **§12 "Semantics and homes" is binding** over §2, §4, §5 and §8 wherever they differ; the vocabulary is `CONTEXT.md#presentation-terms`. Tracker: `docs/plans/2026-09-14-upgrading-meeting-flow-epic.md` (IDs C33–C46, L1–L9, U1–U14, E1–E8, S1–S18).
+**Spec:** `docs/superpowers/specs/2026-09-20-presentation-config-and-critique-design.md` (spec C, revised 2026-09-22 with the CSS review, §11, and with the semantics grilling, §12). **§12 "Semantics and homes" is binding** over §2, §4, §5 and §8 wherever they differ; the vocabulary is `GLOSSARY.md#presentation-terms`. Tracker: `docs/plans/2026-09-14-upgrading-meeting-flow-epic.md` (IDs C33–C46, L1–L9, U1–U14, E1–E8, S1–S18).
 
 ## Global Constraints
 
@@ -20,7 +20,7 @@
 - **Files off limits:** `src/trpc/**`, `src/shared/entities/**`, `src/shared/modules/**`, `src/shared/db/**`, `src/shared/services/**`, `src/shared/dal/**`, `docs/design-system/**`, seeds, `scripts/**`. If a task seems to need one, stop and report BLOCKED. (`src/shared/components/**` is in scope: the splash folder always was, and the engine's new home is there.)
 - **Owner rule.** Anything outside a task's brief, or touching a shared component or the realtime/data path beyond what the task names, goes to the owner as a question. Never a controller ruling.
 - Coding conventions (repo memory `coding-conventions`): one React component per file; no file-level constants or helpers in component, view, hook or context files (feature constants go to `constants/`, feature pure functions to `lib/`; the engine keeps its constants in `PE/motion.ts` and its pure functions in their own sibling `.ts` files, `group-slides.ts` and `slide-scroll-top.ts`, following the sibling-file precedent of `src/shared/components/splash-screen/`, with no nested `lib/`); named exports only; prop interfaces stay in the component file; `import type` for type-only imports; explicit `{ }` on every `if`; memoize every context value; `'use client'` on every component that uses hooks or motion, and on every `PE/*.tsx` component for consistency. Run `pnpm exec eslint --fix <files>` after writing a file.
-- **Vocabulary (spec §12.1, `CONTEXT.md#presentation-terms`).** Code says *presentation*, *slide*, *frame* (`column` | `full`), *run*, *heading column*, *content*, *subheading*. "Beat" is the story word in `docs/sales/` and appears nowhere in code, not in a comment, not in the keyboard hint. "Stage" is the shell's word (`StageFrame`, `data-stage`, `--stage-inset-b`, `--stage-clear-b`) and the engine never uses it: the engine reads `var(--presentation-clear-b, 0px)`, never `--stage-clear-b`. Tools under `$WS/` may keep any name (they are git-ignored, not code).
+- **Vocabulary (spec §12.1, `GLOSSARY.md#presentation-terms`).** Code says *presentation*, *slide*, *frame* (`column` | `full`), *run*, *heading column*, *content*, *subheading*. "Beat" is the story word in `docs/sales/` and appears nowhere in code, not in a comment, not in the keyboard hint. "Stage" is the shell's word (`StageFrame`, `data-stage`, `--stage-inset-b`, `--stage-clear-b`) and the engine never uses it: the engine reads `var(--presentation-clear-b, 0px)`, never `--stage-clear-b`. Tools under `$WS/` may keep any name (they are git-ignored, not code).
 - **Type:** no `font-medium` (weight 500, DESIGN.md) in any file this plan creates or touches. Titles `font-sans font-semibold` (Syne), figures `font-bold`, body inherits Nunito at normal weight. No serif italic (DESIGN.md "No serif-italic accent words"); the one serif left is the heading column's decorative numeral.
 - **Sizes:** in the presentation, text sizes come only from the six role tokens (`text-presentation-{display,title,figure,lead,body,label}`) created in Task 2, with one exception: the heading column's decorative, `aria-hidden` numeral (`text-[11cqw]`). Spacing between groups uses `gap-presentation-{tight,group,zone}` / `p*-presentation-*`. No viewport `lg:`/`sm:`/`md:` variants in `PE/**` or `MF/ui/components/steps/who-we-are/**` once Task 6 lands (U7); mode changes use `@max-[56rem]/presentation:` (never `/stage:`) and the table uses `@max-[44rem]/comparison:`.
 - **Colour:** no new colour literals. Accent is `text-(--presentation-accent)`, ground `bg-(--presentation-ground)`, scrim `oklch(var(--presentation-scrim) / <alpha>)`, white ink `text-white/NN`.
@@ -143,7 +143,7 @@ Each is recorded so the owner can see it; none widens scope.
 10. **`N4` is not adopted** (spec §4.5): `activeIndex` stays on `PresentationContext`.
 11. **The presentation palette moves from `[data-stage]` to `:root`.** U8 puts the document dialog's background on `--presentation-scrim`, and the dialog portals out of the stage, where a `[data-stage]` variable does not reach. The three tokens are theme-independent and have no other readers outside the flow. Cost if wrong: one selector.
 12. **Spec §7.1 is taken as recommended, (c):** the heading column keeps shell correction C2's centring, and U1's alignment clause is recorded as superseded (Task 9).
-13. **Semantics and homes: spec §12 (2026-09-22) is binding; vocabulary in `CONTEXT.md#presentation-terms`.** The engine lives in `src/shared/components/presentation/` with sibling `.ts` files and its own `DOCS.md`; beats are slides, `split` is `column`, `content` is `content`, `line`/`lineAccent` is `subheading: { text, accent? }`, the pinned column is the heading column, and the shell reaches the engine only through named props (`rootAttributes`, `keyShortcuts`, `clearBottom`). Where this plan and spec §2/§4/§5/§8 disagree, §12 wins and the plan follows it.
+13. **Semantics and homes: spec §12 (2026-09-22) is binding; vocabulary in `GLOSSARY.md#presentation-terms`.** The engine lives in `src/shared/components/presentation/` with sibling `.ts` files and its own `DOCS.md`; beats are slides, `split` is `column`, `content` is `content`, `line`/`lineAccent` is `subheading: { text, accent? }`, the pinned column is the heading column, and the shell reaches the engine only through named props (`rootAttributes`, `keyShortcuts`, `clearBottom`). Where this plan and spec §2/§4/§5/§8 disagree, §12 wins and the plan follows it.
 
 ---
 
@@ -152,7 +152,7 @@ Each is recorded so the owner can see it; none widens scope.
 Owner answers, 2026-09-22. Copy them into the ledger before dispatching Task 1.
 
 - [x] **H1: released 2026-09-22.** Step 2's V1 failures are fixed and re-run at `77c30a9f`: 28 PASS / 3 FAIL / 0 NOT RUN (`.superpowers/sdd/2026-09-14-specialties-stage-and-rail/task-v1-rerun-report.md`). Product fixes `725954a9` (focus handoff when unticking a trade's last item) and `77c30a9f` (top bar tabs hidden below a 42rem bar); G1, G3, W2 and the image check were harness bugs, now fixed. The 3 remaining FAILs are contrast on shared colour tokens — **owner: follow-ups, not part of this run** (runbook §7). Task 1 may be dispatched.
-- [x] **Naming authority.** `CONTEXT.md#presentation-terms` is written and spec §12 is the naming authority for every identifier, file and token this plan creates. A worker who finds a name in this plan that contradicts §12 follows §12 and reports the line.
+- [x] **Naming authority.** `GLOSSARY.md#presentation-terms` is written and spec §12 is the naming authority for every identifier, file and token this plan creates. A worker who finds a name in this plan that contradicts §12 follows §12 and reports the line.
 - [ ] **U8 reaches step 2: change it everywhere.** `--presentation-accent` moves from indigo `oklch(0.8 0.12 259.8)` to brand blue `#5cc6f2`. Step 2 reads the same variable at `showcase-text.tsx:42` and `showcase-fallback.tsx:18`, and the owner accepts that its accent changes too. Task 2 as written.
 - [ ] **scrim.tsx: commit the foreign line on its own first.** Before Task 4, commit the other session's one-line doc comment in `src/features/meeting-flow/ui/components/presentation/scrim.tsx` as its own `docs(who-we-are): scrim doc comment` commit (path-only, commit recipe above). Task 4 then moves the file to `PE/scrim.tsx` on top of it, doc line kept verbatim.
 - [x] **Execution (owner, 2026-09-22):** subagent-driven development in a fresh session after a compact. **One commit per task** on `main`, unpushed. **Owner gates after Tasks 2, 4, 6 and 8, plus the final report** — see the runbook §3; between gates the controller rules and keeps going. Verification injects a CSS build made from source that run; the owner restarts the dev server when they want to look.
@@ -645,7 +645,7 @@ Create the folder and `src/shared/components/presentation/types.ts`:
 
 ```ts
 /**
- * The presentation engine's public types. Vocabulary: CONTEXT.md#presentation-terms.
+ * The presentation engine's public types. Vocabulary: GLOSSARY.md#presentation-terms.
  * Rules: see ./DOCS.md#frames and ./DOCS.md#runs
  */
 
@@ -4160,7 +4160,7 @@ Expected: `ALL PASS`, then `PASS`. `openStep1` presses through the splash now.
 - Modify: `docs/superpowers/specs/2026-09-12-who-we-are-scroll-presentation-design.md` (status line)
 - Modify: `docs/plans/2026-09-14-upgrading-meeting-flow-epic.md` (header status, §0 row C, §1 C33, §3.1, §3.2, §3.2b, §3.6 K8)
 - Modify: `/home/olis-solutions/.claude/projects/-home-olis-solutions-olis-v3-nextjs-tri-pros-website/memory/project-who-we-are-presentation.md` and `MEMORY.md` (the index line)
-- Already done, nothing to write: `CONTEXT.md#presentation-terms` holds the glossary (Presentation, Slide, Frame, Run, Heading column, Content, Subheading, Splash screen). Both DOCS files point at it rather than restating it.
+- Already done, nothing to write: `GLOSSARY.md#presentation-terms` holds the glossary (Presentation, Slide, Frame, Run, Heading column, Content, Subheading, Splash screen). Both DOCS files point at it rather than restating it.
 
 **Interfaces:**
 - Produces: the slug anchors the engine's code cites as `// see ./DOCS.md#<slug>` and the feature's code cites as `// see ./DOCS.md#<slug>` or `// see src/shared/components/presentation/DOCS.md#<slug>`. Step 6 reconciles the headings below with whatever slugs Tasks 1–8 actually cited: the code's citation wins, and the heading here is renamed to match it.
@@ -4175,7 +4175,7 @@ Expected: `ALL PASS`, then `PASS`. `openStep1` presses through the splash now.
 The engine behind a `presentation`-layout step: a full-height scroll surface that shows one
 slide per screen. Meeting-flow step 1 (Who We Are) is the first consumer; Program and
 Portfolio are next. The words (presentation, slide, frame, run, heading column, content,
-subheading, splash screen) are defined once in `CONTEXT.md#presentation-terms`; "beat" and
+subheading, splash screen) are defined once in `GLOSSARY.md#presentation-terms`; "beat" and
 "stage" never appear in this folder. Design: spec C,
 `docs/superpowers/specs/2026-09-20-presentation-config-and-critique-design.md` (§4 mechanics,
 §12 semantics and homes).
@@ -4326,7 +4326,7 @@ headings below, lower-cased and hyphenated; they survive reordering.
 Rules the meeting-flow UI relies on that the code alone does not make obvious. Meeting
 business rules live in `src/shared/entities/meetings/DOCS.md`; the presentation engine's
 rules live in `src/shared/components/presentation/DOCS.md`; the vocabulary in
-`CONTEXT.md#presentation-terms`.
+`GLOSSARY.md#presentation-terms`.
 
 ## Who We Are
 
@@ -4436,7 +4436,7 @@ In `project-who-we-are-presentation.md` (read it first; these are its current st
 - `**NOT EXECUTED — BLOCKED on H1:**` becomes `**EXECUTED <date> (H1 was released 2026-09-22; the note that follows is history):**`.
 - Append a final paragraph after the "Execution runbook" paragraph:
 
-  `**Semantics and homes (spec C §12, built <date>):** the engine is \`src/shared/components/presentation/\` (\`Presentation\`, one \`Slide\` switching on \`frame: 'column' | 'full'\`, \`SlideRun\`, \`HeadingColumn\`, \`Reveal\`, \`Scrim\`, \`SlideImage\`; sibling \`types.ts\`, \`context.tsx\`, \`motion.ts\`, \`group-slides.ts\`, \`slide-scroll-top.ts\`), with its rules in its own \`DOCS.md\`. "Beat" → "slide", \`split\` → \`column\`, \`line\`/\`lineAccent\` → \`subheading: { text, accent? }\`; the scroller is the \`presentation\` container and the tokens are \`text-presentation-*\` / \`gap-presentation-*\`; the engine reads \`--presentation-clear-b\`, never the shell's \`--stage-clear-b\`. The deck (\`WHO_WE_ARE_SLIDES\`, inline kind switch) and the splash use live in \`src/features/meeting-flow/DOCS.md\`. The splash is one shared \`SplashScreen\` (\`dismiss: { mode: 'timed' } | { mode: 'press', label }\`, reduced motion gated inside); visibility is \`useSessionOnce\` + feature-owned keys via \`sessionStorageKey\`; \`useSplashVisibility\`, \`SplashOverlay\` and \`SplashAnimation\` are gone. Glossary: \`CONTEXT.md#presentation-terms\`. READ the two DOCS files, not this note, before touching the presentation or the splash.`
+  `**Semantics and homes (spec C §12, built <date>):** the engine is \`src/shared/components/presentation/\` (\`Presentation\`, one \`Slide\` switching on \`frame: 'column' | 'full'\`, \`SlideRun\`, \`HeadingColumn\`, \`Reveal\`, \`Scrim\`, \`SlideImage\`; sibling \`types.ts\`, \`context.tsx\`, \`motion.ts\`, \`group-slides.ts\`, \`slide-scroll-top.ts\`), with its rules in its own \`DOCS.md\`. "Beat" → "slide", \`split\` → \`column\`, \`line\`/\`lineAccent\` → \`subheading: { text, accent? }\`; the scroller is the \`presentation\` container and the tokens are \`text-presentation-*\` / \`gap-presentation-*\`; the engine reads \`--presentation-clear-b\`, never the shell's \`--stage-clear-b\`. The deck (\`WHO_WE_ARE_SLIDES\`, inline kind switch) and the splash use live in \`src/features/meeting-flow/DOCS.md\`. The splash is one shared \`SplashScreen\` (\`dismiss: { mode: 'timed' } | { mode: 'press', label }\`, reduced motion gated inside); visibility is \`useSessionOnce\` + feature-owned keys via \`sessionStorageKey\`; \`useSplashVisibility\`, \`SplashOverlay\` and \`SplashAnimation\` are gone. Glossary: \`GLOSSARY.md#presentation-terms\`. READ the two DOCS files, not this note, before touching the presentation or the splash.`
 
 In `MEMORY.md`, the Who We Are line's `**C written + PLANNED + RUNBOOK 2026-09-22 (plan \`2026-09-22-presentation-config-and-critique.md\` + \`…-runbook.md\` — READ THE RUNBOOK FIRST; H1 released, SDD ready to run: per-task commits, gates after Tasks 2/4/6/8)**` becomes `**C BUILT <date> — engine in \`src/shared/components/presentation/\` (rules in its DOCS.md), deck + splash rules in \`src/features/meeting-flow/DOCS.md\`; "beat" → "slide", \`split\` → \`column\`**`.
 
@@ -4445,8 +4445,8 @@ In `MEMORY.md`, the Who We Are line's `**C written + PLANNED + RUNBOOK 2026-09-2
 Run: `grep -rnoE "DOCS\.md#[a-z0-9-]+" src/shared/components/presentation src/features/meeting-flow src/shared/components/splash-screen | sort -u`
 For each cited slug, the heading must exist in the file the path names (a slug is the heading lower-cased with spaces as hyphens and punctuation dropped). If Tasks 1–8 cited a slug this task's headings do not produce (say `#snap-arithmetic` is cited as `#snap`), rename the heading here to produce the cited slug; the code's citation wins over the doc's wording. Then re-run the grep and confirm every slug resolves. Expected at minimum: the engine's `presentation.tsx` and `slide.tsx` cite this folder's `DOCS.md`, and the feature's `steps/who-we-are/index.tsx` cites `src/features/meeting-flow/DOCS.md#who-we-are` or one of its subsections.
 
-Run: `grep -n "presentation-terms" CONTEXT.md src/shared/components/presentation/DOCS.md src/features/meeting-flow/DOCS.md`
-Expected: the `## Presentation terms` heading in `CONTEXT.md` and one reference in each DOCS file.
+Run: `grep -n "presentation-terms" GLOSSARY.md src/shared/components/presentation/DOCS.md src/features/meeting-flow/DOCS.md`
+Expected: the `## Presentation terms` heading in `GLOSSARY.md` and one reference in each DOCS file.
 
 - [ ] **Step 7: Commit**
 

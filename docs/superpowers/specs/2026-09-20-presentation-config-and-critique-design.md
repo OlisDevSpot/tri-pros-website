@@ -681,7 +681,7 @@ the accent value.
   each frame is used, the kind switch in `WhoWeAreStep`, `--stage-clear-b` and how it reaches
   the engine (§6), and the splash use (`useMeetingSplash`, `meetingSplashKey`, the entrance
   contract).
-- `CONTEXT.md#presentation-terms` — already written; the glossary §12.1 summarises.
+- `GLOSSARY.md#presentation-terms` — already written; the glossary §12.1 summarises.
 - `docs/plans/2026-09-14-upgrading-meeting-flow-epic.md` — C33–C42 into §1; C23 marked
   reversed; U2's first clause struck (§7.2); E1–E7 added; spec C's row filled in. Then
   C44–C46 into §1 and the E4/E7 amendments (2026-09-22).
@@ -731,7 +731,7 @@ stands, because `"user"` keeps opacity animations and their delays.
 
 Decided with the owner in a grilling session after the plan was written and before anything was
 built. **This section is binding over §2, §4, §5 and §8 where they differ**, and the plan is
-revised against it. Glossary entries are in `CONTEXT.md#presentation-terms`.
+revised against it. Glossary entries are in `GLOSSARY.md#presentation-terms`.
 
 ### 12.1 Vocabulary
 

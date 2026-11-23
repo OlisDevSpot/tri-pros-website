@@ -92,7 +92,7 @@ The data-view spec's decisions are in its §11, #1–#16.
 | R3 | `staleTime` stays 30 s. Client `gcTime` is 30 min (the server's is unchanged) until Ably realtime takes over freshness. |
 | R4 | The refresh hairline shows only while refetching rows older than `staleTime`, or invalidated by a save or the refresh button. A return within 30 s refreshes silently. **Nothing dims on a refresh** (re-affirmed 2026-10-12, D67). |
 | R5 | Scope: the six routes with a loading screen plus dashboard home. Detail pages, analytics and lead sources wait for DV10. |
-| R6 | Names: `useLoadingScreenRead`, the route group `(home)`, and the term "loading screen" (a `CONTEXT.md` entry is owed, A3). |
+| R6 | Names: `useLoadingScreenRead`, the route group `(home)`, and the term "loading screen" (a `GLOSSARY.md` entry is owed, A3). |
 | R7 | A data view's error fallback stays row-less (`DataViewPendingContext` is `'error'`), so rows that failed to render never escape their boundary. |
 | R8 | Home's loading screen greets by name from the client session. |
 | R9 | The R4 rule lives in the two shared read hooks, so every data view inherits it. |
@@ -105,7 +105,7 @@ The data-view spec's decisions are in its §11, #1–#16.
 |---|---|---|
 | **A1** | Production check for DV0: no skeleton flash on any return to pipeline, schedule, meetings, projects, proposals, customers or home. Dev can't show it, because dev doesn't prefetch `loading.tsx`. | [ ] |
 | **A2** | Review the amended data-view spec (DV2), including Claude's call in §11 #16 (`Count` renders nothing on the error screen). Then commit it with the D67 row in the records tracker and this file. | [x] 2026-10-14 |
-| **A3** | Glossary in `CONTEXT.md`, once the session holding it releases the file: *data view*, *body*, *orchestrator*, *loading screen*, *pending view*. | [ ] |
+| **A3** | Glossary in `GLOSSARY.md`, once the session holding it releases the file: *data view*, *body*, *orchestrator*, *loading screen*, *pending view*. | [ ] |
 | **A4** | Delete the shipped DV0 spec and plan. This tracker's §3 keeps the rulings. First, re-point the data-view spec's citations of the DV0 spec (header, §3.0, §9) to this file. | [x] 2026-10-14 |
 | **A5** | Re-point three plans that still cite the old `dashboard/page.tsx` path, which is now `dashboard/(home)/page.tsx`: the customers entity table plan, the data-view date windows plan, and the PWA cold start plan's build-manifest key `'/(frontend)/dashboard/(home)/page'`. | [ ] |
 

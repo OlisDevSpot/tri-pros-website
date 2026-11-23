@@ -162,7 +162,7 @@ The systems are the Upgrades groups, with the same names (`HOME_SYSTEMS`, `HOME_
 
 ## 10. Terms
 
-Recorded in `CONTEXT.md`:
+Recorded in `GLOSSARY.md`:
 - **System part** (R135, R136): everything up close shows, whether a whole construction part, a piece of one, or a shared system part.
 - **Look inside** (R228): the system card's step from a system in focus to up close.
 

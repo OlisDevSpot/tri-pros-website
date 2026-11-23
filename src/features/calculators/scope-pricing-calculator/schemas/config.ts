@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { PRICING_KEYS } from '@/features/calculators/scope-pricing-calculator/constants/pricing-keys'
+
 const unitCost = z.number().min(0)
 const permitFee = z.object({ amount: z.number().min(0), enabled: z.boolean() })
 
@@ -54,15 +56,24 @@ export const scopePricingConfigSchema = z.object({
       waterPaintSm: unitCost,
       waterPaintAvg: unitCost,
       waterPaintLarge: unitCost,
+      garage: unitCost,
+      additionalStory: unitCost,
     }),
   }),
-  exteriorPaintTiers: z
-    .object({ smallBelowSqFt: z.number().positive(), largeAboveSqFt: z.number().positive() })
-    .refine(tiers => tiers.smallBelowSqFt < tiers.largeAboveSqFt, { message: 'The small-home threshold must be below the large-home threshold' }),
+  exteriorPaintHomeSizes: z
+    .object({ smallMaxSqFt: z.number().positive(), averageMaxSqFt: z.number().positive(), largeMaxSqFt: z.number().positive() })
+    .refine(sizes => sizes.smallMaxSqFt < sizes.averageMaxSqFt && sizes.averageMaxSqFt < sizes.largeMaxSqFt, { message: 'Home sizes must ascend: small, average, large' }),
   permitFees: z.object({ roof: permitFee, hvac: permitFee }),
   multiplier: z
-    .object({ default: z.number().positive(), floor: z.number().positive() })
-    .refine(multiplier => multiplier.default >= multiplier.floor, { message: 'The default multiplier cannot be below the floor' }),
+    .object({
+      default: z.number().positive(),
+      floor: z.number().positive(),
+      byScope: z.partialRecord(z.enum(PRICING_KEYS), z.number().positive()),
+    })
+    .refine(
+      multiplier => multiplier.default >= multiplier.floor && Object.values(multiplier.byScope).every(scopeDefault => scopeDefault >= multiplier.floor),
+      { message: 'No multiplier default can be below the floor' },
+    ),
   taxRatePercent: z.number().min(0).max(20),
 })
 

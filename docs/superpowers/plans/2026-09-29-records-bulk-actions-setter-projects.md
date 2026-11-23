@@ -75,7 +75,7 @@ Settlements 1–13 and the names they introduce were approved by the owner on 20
 | Meetings UI (B3) | `entities/meetings/{constants/actions.ts, constants/bulk-actions.ts (new), hooks/use-meeting-actions.ts, hooks/use-meeting-action-configs.tsx, hooks/use-meeting-bulk-action-configs.tsx (new), components/meetings-table/use-meetings-table.tsx}` |
 | Campaign leads (B4) | `features/campaigns-admin/{constants/lead-bulk-actions.ts (new), hooks/use-lead-bulk-action-configs.tsx (new), ui/components/leads/bulk-enroll-form.tsx (new), ui/lib/leads-columns.tsx, ui/views/campaigns-leads-view.tsx}` · delete `lead-select-cell.tsx`, `lead-select-header.tsx`, `leads-bulk-action-bar.tsx`, `bulk-enroll-popover.tsx` |
 | Projects (B5) | Moved: `docs/superpowers/plans/2026-10-01-projects-entity-table.md` (Tasks 11–13) and the all-tables bulk step (Task 14). |
-| Hand-off (B7, partial) | `components/data-table/types.ts` · `components/data-table/hooks/use-table-url-filters.ts` · `CONTEXT.md` · records tracker · spec |
+| Hand-off (B7, partial) | `components/data-table/types.ts` · `components/data-table/hooks/use-table-url-filters.ts` · `GLOSSARY.md` · records tracker · spec |
 
 All paths above are under `src/shared/` unless they start with `features/`, `trpc/` or `app/` (then `src/`), or are repo-root docs.
 
@@ -1678,7 +1678,7 @@ Tasks 11–13 are replaced by `docs/superpowers/plans/2026-10-01-projects-entity
 **Files:**
 - Modify: `src/shared/components/data-view/table/types.ts:44-49`
 - Modify: `src/shared/components/data-view/table/hooks/use-table-url-filters.ts:9-16`
-- Modify: `CONTEXT.md:62`
+- Modify: `GLOSSARY.md:62`
 - Modify: `docs/plans/2026-09-26-records-management-epic.md`
 - Modify: `docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md`
 
@@ -1699,7 +1699,7 @@ In `use-table-url-filters.ts`, replace the `@deprecated` lead line with `@deprec
 
 - [ ] **Step 2: Glossary**
 
-In `CONTEXT.md:62` (Setter row), replace the code cell `\`meetings.setBy\` (planned, analytics Spec D; not built)` with `\`meetings.setBy\` · picked on the add-meeting form, else the meeting's creator; kept by a duplicate and a reschedule; only super-admins change it, per row or in bulk`.
+In `GLOSSARY.md:62` (Setter row), replace the code cell `\`meetings.setBy\` (planned, analytics Spec D; not built)` with `\`meetings.setBy\` · picked on the add-meeting form, else the meeting's creator; kept by a duplicate and a reschedule; only super-admins change it, per row or in bulk`.
 
 - [ ] **Step 3: Records tracker**
 
@@ -1725,10 +1725,10 @@ In the spec, add under the header a `> **Plan:** \`docs/superpowers/plans/2026-0
 Run: `pnpm tsc && pnpm lint` → clean.
 
 ```bash
-git add src/shared/components/data-view/table/types.ts src/shared/components/data-view/table/hooks/use-table-url-filters.ts CONTEXT.md docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md
+git add src/shared/components/data-view/table/types.ts src/shared/components/data-view/table/hooks/use-table-url-filters.ts GLOSSARY.md docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md
 git commit -m "docs(records): setter and bulk actions shipped; spec and tracker follow the plan-time settlements
 
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/components/data-view/table/types.ts src/shared/components/data-view/table/hooks/use-table-url-filters.ts CONTEXT.md docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/components/data-view/table/types.ts src/shared/components/data-view/table/hooks/use-table-url-filters.ts GLOSSARY.md docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md
 git show --stat HEAD
 ```
 

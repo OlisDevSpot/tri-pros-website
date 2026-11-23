@@ -1,6 +1,6 @@
 # WS-5: `lead_meta` Table (Coherent Lead-Metadata Home) Implementation Plan
 
-> **Vocabulary (owner, 2026-09-27):** the `closedBy` / `closed_by_user_id` below is the **setter** (appointment setter). Name the column `set_by_user_id` (`setBy`) when this plan runs; the stored JSONB key `closedBy` is legacy input only. See `CONTEXT.md` → Setter.
+> **Vocabulary (owner, 2026-09-27):** the `closedBy` / `closed_by_user_id` below is the **setter** (appointment setter). Name the column `set_by_user_id` (`setBy`) when this plan runs; the stored JSONB key `closedBy` is legacy input only. See `GLOSSARY.md` → Setter.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. This is the LARGEST workstream in the JSONB restructure — every task below is bite-sized and independently committable; do NOT batch tasks into one commit.
 

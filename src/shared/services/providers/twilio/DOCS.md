@@ -1,7 +1,7 @@
 # Twilio Provider
 
 The Twilio API client for voip-in-house (Phase 2 — agent comms post-conversion).
-See [CONTEXT.md](../../../../../../CONTEXT.md) for the voip-in-house vs
+See [GLOSSARY.md](../../../../../../GLOSSARY.md) for the voip-in-house vs
 voip-campaigns split, and [docs/codebase-conventions/service-architecture.md](../../../../../../docs/codebase-conventions/service-architecture.md)
 for the four-tier backend convention.
 

@@ -20,7 +20,7 @@
 | Other sessions | A construction-p1 session commits in `src/features/meeting-flow/**` concurrently. Treat every foreign hunk as a hard stop |
 | Dev server | Port 3000 is the owner's. Never start, stop or restart it. It compiled CSS at boot; `touch globals.css` does **not** make it recompile |
 | Uncommitted docs | Spec C, the plan, this runbook and the tracker edits are untracked or modified on purpose |
-| Semantics | **Grilled 2026-09-22; spec §12 is binding.** The engine lives in `src/shared/components/presentation/`; beat → slide; frame `'column' \| 'full'`; vocabulary in `CONTEXT.md#presentation-terms`. The plan was revised to match; Task 4 now includes the move |
+| Semantics | **Grilled 2026-09-22; spec §12 is binding.** The engine lives in `src/shared/components/presentation/`; beat → slide; frame `'column' \| 'full'`; vocabulary in `GLOSSARY.md#presentation-terms`. The plan was revised to match; Task 4 now includes the move |
 
 ## 1. Pre-flight, before Task 1
 
@@ -99,7 +99,7 @@ These are the specific ways this work has gone wrong before, and what prevents e
 | A script left the dev meeting dirty, or a forced click hit an overlay | Step 1 writes nothing but `sessionStorage`; no `force: true`; any script that writes restores and verifies |
 | Unapproved scope creep (the reverted realtime work, 2026-09-16) | The owner rule in §2; declined alternatives never return |
 | Design drift | Sizes only from the six role tokens; spacing from `gap-presentation-*`; no `font-medium`; no new colour literals; no viewport variants in presentation code after Task 6; utility classes stay in `.tsx` |
-| Vocabulary drift | No "beat", "section", "pinned" or "stage" in engine code, names or new comments; names exactly as spec §12 and `CONTEXT.md#presentation-terms` give them. The task review greps for the avoid-words |
+| Vocabulary drift | No "beat", "section", "pinned" or "stage" in engine code, names or new comments; names exactly as spec §12 and `GLOSSARY.md#presentation-terms` give them. The task review greps for the avoid-words |
 | Review theatre | Both verdicts required per task; scoped re-review after every fix round; final whole-branch review on the most capable model |
 | Git accidents in a shared tree | Pathspec commits only; no `add -A`, stash, reset or broad restore; staged count N verified before and after |
 | A stale doc quietly misleading the next session | Ping the moment it appears: `⚠️ Stale ref — <doc>:<line> says X, but code at <path> does Y` |

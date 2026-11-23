@@ -7,7 +7,7 @@ import { toNationalDigits } from '@/shared/lib/phone'
 // the `customers` row. Both voip-in-house (Twilio) and voip-campaigns (the dialer)
 // gate outbound through `canOutboundTo` and INSERT through `addToDnc`.
 //
-// see CONTEXT.md (DNC section)
+// see GLOSSARY.md (DNC section)
 
 export type DncReason
   = | 'customer_request' // live ask on a call
