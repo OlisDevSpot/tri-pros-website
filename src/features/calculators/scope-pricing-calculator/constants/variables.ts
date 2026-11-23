@@ -17,5 +17,5 @@ export const VARIABLES = {
   relocationRequired: { trade: 'electricals', label: 'Relocation required?', kind: 'boolean', unit: null, default: false },
   paintType: { trade: 'exteriorPaintSiding', label: 'Paint type', kind: 'select', unit: null, options: ['coolLife', 'water'], optionLabels: { coolLife: 'CoolLife', water: 'Water' } },
   homeSqFt: { trade: 'exteriorPaintSiding', label: 'Home square footage', kind: 'number', unit: 'sqft', min: 0, max: 20000 },
-  garageSqFt: { trade: 'exteriorPaintSiding', label: 'Garage square footage', kind: 'number', unit: 'sqft', min: 0, max: 20000 },
+  garageIncluded: { trade: 'exteriorPaintSiding', label: 'Garage included?', kind: 'boolean', unit: null, default: false },
 } as const satisfies Record<string, VariableDef>
