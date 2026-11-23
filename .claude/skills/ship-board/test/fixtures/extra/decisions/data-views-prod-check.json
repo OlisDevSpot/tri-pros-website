@@ -1,0 +1,12 @@
+{
+  "askedBy": "orient",
+  "askedOn": "2026-11-15",
+  "context": "Rows should appear at once, with no grey placeholder flash. Dev cannot show this, so only you can check it on prod.",
+  "kind": "check",
+  "lane": "data-views",
+  "options": [],
+  "order": 23,
+  "phase": "DV4",
+  "question": "After it ships: open a few list pages on prod, leave, and come back.",
+  "ref": "A1"
+}

@@ -1,0 +1,15 @@
+{
+  "answer": "Leave them",
+  "answeredOn": "2026-11-14",
+  "area": "cleanup",
+  "context": "They carry old main's 600+ commits. Each scene release needs the file-copy script, and the lab can't merge prod directly.",
+  "note": "What is wrong with these worktrees? not sure what 're-cut' means, be more semantically accurate",
+  "options": [
+    "Re-cut now, as the drain did",
+    "Re-cut each at its next release",
+    "Leave them"
+  ],
+  "order": 9,
+  "question": "Re-cut the trade-scene branches and #285 onto prod?",
+  "recommended": "Re-cut each at its next release"
+}

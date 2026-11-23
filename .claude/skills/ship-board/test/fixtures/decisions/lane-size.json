@@ -1,0 +1,15 @@
+{
+  "answer": "No size budget",
+  "answeredOn": "2026-11-14",
+  "area": "flow",
+  "context": "The proposal page carried 77 commits into one review; data views waited 21 days under a ship-together rule.",
+  "note": "Not sure how this is relevant",
+  "options": [
+    "Yes, about three days",
+    "Yes, about a week",
+    "No size budget"
+  ],
+  "order": 4,
+  "question": "Split any lane that would take more than about three build days or more than one review sitting?",
+  "recommended": "Yes, about three days"
+}

@@ -1,0 +1,14 @@
+{
+  "answer": "Yes, preview comments",
+  "answeredOn": "2026-11-14",
+  "area": "your time",
+  "context": "Vercel's toolbar lets you comment on the preview page itself. The lane's agent lists the unresolved threads for its branch, fixes them and resolves them. It needs the Vercel MCP connected for agents.",
+  "note": "",
+  "options": [
+    "Yes, preview comments",
+    "No, I'll keep telling sessions directly"
+  ],
+  "order": 2,
+  "question": "Leave your iPad notes as comments on the Vercel preview, read by the lane's agent?",
+  "recommended": "Yes, preview comments"
+}

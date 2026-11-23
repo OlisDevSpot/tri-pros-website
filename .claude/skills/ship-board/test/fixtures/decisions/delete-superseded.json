@@ -1,0 +1,14 @@
+{
+  "answer": "Yes, delete both",
+  "answeredOn": "2026-11-14",
+  "area": "cleanup",
+  "context": "PE4 (edit-proposal-layout-2) and filter rules replaced them on 13 Nov. Every line was checked to land in a live branch.",
+  "note": "Before deleting, I know we made a lot of progress on these epics (edit proposal layout and filter grouping) so I want to make sure no data loss. These are active epics we plan to work on and ship",
+  "options": [
+    "Yes, delete both",
+    "Keep for now"
+  ],
+  "order": 11,
+  "question": "Delete the superseded edit-proposal-layout and filter-grouping-fields worktrees and branches?",
+  "recommended": "Yes, delete both"
+}

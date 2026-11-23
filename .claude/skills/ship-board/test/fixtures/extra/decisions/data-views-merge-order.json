@@ -1,0 +1,23 @@
+{
+  "answer": "Merge data views first, then each lane fixes its own imports at catch-up",
+  "answeredOn": "2026-11-15",
+  "appliedOn": "2026-11-16",
+  "area": "flow",
+  "askedBy": "orient",
+  "askedOn": "2026-11-14",
+  "context": "DV3a moves 92 files. Git merges it cleanly with other lanes, but their imports to the old paths break.",
+  "kind": "decision",
+  "lane": "data-views",
+  "note": "Do not hold Proposal page for this; a catch-up merge is cheaper than a wait.",
+  "options": [
+    {"label": "Merge data views before Proposal page and Filter rules", "consequence": "Both lanes wait for the data views PR"},
+    {"label": "Merge data views last", "consequence": "Each lane rewrites its imports to the new paths before it ships"}
+  ],
+  "order": 22,
+  "own": true,
+  "phase": "DV4",
+  "question": "Which lane merges first, given that DV3a moves 92 files?",
+  "recommended": "Merge data views before Proposal page and Filter rules",
+  "reply": "Data views merges first. Proposal page and Filter rules fix their imports at their next catch-up merge.",
+  "replyOn": "2026-11-16"
+}

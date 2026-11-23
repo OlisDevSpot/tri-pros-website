@@ -1,0 +1,136 @@
+{
+  "blockReason": {
+    "data-views": "its imports point at paths DV3a moves (92 files)"
+  },
+  "blockedBy": [
+    "data-views"
+  ],
+  "branch": "feat/proposal-page",
+  "brief": {
+    "aheadBehind": {
+      "ahead": 77,
+      "behind": 0,
+      "onCurrentProd": true
+    },
+    "decided": [
+      {
+        "date": "2026-10-23",
+        "text": "Every scope phase opens on load, with collapse-all and sticky chapter/part/phase headers"
+      },
+      {
+        "date": "2026-10-16",
+        "text": "Phone gate sits only in the business.getFullView router, never in getFullView (T1)"
+      },
+      {
+        "date": "2026-10-15",
+        "text": "No agent/homeowner view toggle; permissions alone decide who sees the cockpit"
+      },
+      {
+        "date": "2026-10-15",
+        "text": "Funding: cash-down slider in $200 steps plus an All cash toggle"
+      },
+      {
+        "date": "2026-10-15",
+        "text": "Deposit = min($1,000, 10% of price); payments 20/35/35, completion is the remainder"
+      },
+      {
+        "date": "2026-10-15",
+        "text": "Age is not secret: concealAge goes"
+      }
+    ],
+    "files": 275,
+    "goal": "The homeowner's proposal page is rebuilt as a story: per-part pricing, cash-down slider, a sticky Scope chapter, an agent cockpit, and formatted money and phone inputs everywhere.",
+    "lastCommit": {
+      "date": "2026-11-13",
+      "sha": "14abb3b82",
+      "subject": "docs(audit): the stress audit ledger matches the drain release, plus this branch's line closing the proposal phone leak"
+    },
+    "notes": "No epic tracker; the rework spec and memory are the record (spec header still says 'built on local main'). pe4 stacks on this. Own Neon copy wt/proposal-page.",
+    "open": [
+      {
+        "id": null,
+        "owner": "you",
+        "text": "iPad check of the Scope chapter (iOS Safari unverified)"
+      },
+      {
+        "id": null,
+        "owner": "agent",
+        "text": "Explain the cash-down backfill, then owner runs it on prod"
+      },
+      {
+        "id": null,
+        "owner": "you",
+        "text": "Confirm the California payment-schedule law line wording (C4)"
+      },
+      {
+        "id": null,
+        "owner": "you",
+        "text": "Pricing-hold line: add a real field or drop it?"
+      },
+      {
+        "id": null,
+        "owner": "you",
+        "text": "Zoho template changes Z1-Z3 before the first live test"
+      },
+      {
+        "id": "F1",
+        "owner": "you",
+        "text": "Chapter-wrapper background hole and the well must change together"
+      }
+    ],
+    "orientPage": null,
+    "phases": [
+      {
+        "id": "v1",
+        "name": "First proposal page build",
+        "note": "2026-10-15, reworked in place",
+        "status": "built"
+      },
+      {
+        "id": "Rework",
+        "name": "Proposal page rework P1-P40",
+        "note": "2026-10-17",
+        "status": "built"
+      },
+      {
+        "id": "Scope",
+        "name": "Scope chapter: all phases open, sticky stack, well",
+        "note": "awaits iPad check",
+        "status": "built"
+      },
+      {
+        "id": "Inputs",
+        "name": "MoneyField and PhoneField everywhere",
+        "status": "built"
+      },
+      {
+        "id": "Backfill",
+        "name": "Cash-down backfill on prod",
+        "note": "owner wants explanation, then runs it",
+        "status": "plan"
+      },
+      {
+        "id": "F1-F2",
+        "name": "Scope chapter follow-ups (wrapper hole, well)",
+        "status": "idea"
+      }
+    ],
+    "plan": "docs/superpowers/plans/2026-10-23-proposal-scope-chapter.md",
+    "pr": null,
+    "spec": "docs/superpowers/specs/2026-10-16-proposal-page-rework-design.md",
+    "statusBlock": null,
+    "tracker": null,
+    "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/proposal-page"
+  },
+  "briefAt": "2026-11-14",
+  "kind": "epic",
+  "move": "you",
+  "name": "Proposal page + Scope chapter",
+  "neon": "wt/proposal-page",
+  "next": "Agent first fixes the token-path cost-line leak (release gate). Then you: Scope iPad check, Zoho template edits, and the cash-down backfill explanation before you run it.",
+  "notes": "v1 + rework + Scope chapter + Money/PhoneField. Unshipped for 29 days. Imports paths that DV3a moves.",
+  "order": 5,
+  "port": 3011,
+  "stage": "review",
+  "updated": "2026-11-13"
+}

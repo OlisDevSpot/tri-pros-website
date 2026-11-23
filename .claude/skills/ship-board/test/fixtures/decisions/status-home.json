@@ -1,0 +1,15 @@
+{
+  "answer": "This board; trackers keep rulings only",
+  "answeredOn": "2026-11-14",
+  "area": "collisions",
+  "context": "Lanes editing shared trackers in docs/plans/ and the glossaries cause most conflicts. Proposal: this board holds live status; trackers keep only rulings and decisions. GitHub issues stay the backlog.",
+  "note": "If you truly think a claude.ai artifact can be used as our live trackers and do a good job at it (become our \"parallel ship dashboard\") then using gh as a backlog while anything active is being tracked in the artifact feels good for now",
+  "options": [
+    "This board; trackers keep rulings only",
+    "GitHub Projects",
+    "Keep status in the tracker files"
+  ],
+  "order": 6,
+  "question": "Where does live lane status live?",
+  "recommended": "This board; trackers keep rulings only"
+}

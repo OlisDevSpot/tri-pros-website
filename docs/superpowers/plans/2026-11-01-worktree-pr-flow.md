@@ -3,17 +3,20 @@
 > **Status**
 > - Stage: plan · stress-tested 2026-11-02 · owner said execute in order 2026-11-06
 > - Built on: `main` (plan and spec untracked) · Verified at: `main@dc1a2d7a3` (2026-11-06) · page: https://claude.ai/artifact/1zmUgoWD6NQKsmJvJJR138
-> - Done: none (T0–T16 unstarted; CLAUDE.md already carries the squash-merge flow and PR #287 shipped by branch + PR on 11-04)
-> - Next: T0 drain in one /pre-ship session this week, owner present → T1 lock the doors → T2–T3 wt:db → T4–T8 → T9 baseline (after T0: main's schema is 9 files ahead of origin/main) → T10–T16
-> - Open: Neon console state unread 2026-11-06 (connector reconnect) · roadmap q367 still open though answered 11-01 · trade-scenes R282/T23 wait on T2–T3 and T9–T10
-> - Blocked: T1–T16 on T0 (phases ship as PRs off origin/main once main is drained)
+> - Done: T0 (2026-11-21, done by cherry-pick split + PRs, not /pre-ship: #289 drain with #292 folded in and #293 merged in, squash `e482d5060`; local main = origin/main; every epic on its own lane branch, merged up to prod; shared dev `db:push:dev` realigned). T14 in part: the commit-folder pre-commit gate (`.claude/hooks/pre-commit-gate.sh`) and `/pre-ship` retired, on `chore/orient-lane-briefing`.
+> - Next: T1 lock the doors → T2–T3 wt:db → T4–T8 → T9 baseline → T10–T13 → T14 rest (`ship-worktree` skill) → T15 (as amended by WF4) → T16
+> - Open: Neon console state unread 2026-11-06 (connector reconnect) · roadmap q367 still open though answered 11-01 · trade-scenes R282/T23 wait on T2–T3 and T9–T10 · old-main branches still carry its history (trade-scenes-foundation, scene-layout-lab, merge/lab-into-foundation, issue-285, feat/29)
+> - Blocked: none
 
 ## Rulings
 
 | # | Ruling | Date |
 |---|---|---|
 | WF1 | Execute the plan in order, Task 0 first. The orient page (above) is the living tracker for this plan: what is built, files affected, key code facts, infra and patterns, so the owner has visibility into the new structure as it lands. | owner, 2026-11-06 |
+| WF3 | "For now let's not disable it. We'll keep it convention." Squash and merge stays a convention: the repo keeps all three merge buttons, so Task 14's "Repo setting: squash-merge only" and Task 16's "allow squash merge only" are skipped until the owner reopens it. | owner, 2026-11-18 |
 | WF2 | Task 0 runs as one `/pre-ship` session this week with the owner present: sort the 189 commits and the dirty tree into ship / move to a branch / drop, then one push to `origin/main`. | owner, 2026-11-06 |
+| WF4 | Keep a quick hotfix path, tiered by risk: UI, copy or style = a small `fix/<slug>` lane from `origin/main` → PR → squash; business or server logic = the same plus the lane's tests and the preview Playwright check; a schema change is never a hotfix. Task 15 rewrites `scripts/hotfix.sh` for this (start a `fix/` worktree, open its PR) instead of deleting it. | owner, 2026-11-21 |
+| WF5 | No guard on local main: editing there stays an escape hatch. The rule is to commit on a branch (`git switch -c fix/<slug>` carries the edits), and every doc must stop telling sessions to work on local main. | owner, 2026-11-21 |
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -335,8 +338,9 @@ Create order: name → if `wt/<slug>` exists: `isScrubbed` (unpooled) → true: 
 ### Task 15: Retire the old system
 
 **Files:**
-- Delete: `scripts/dispatch.sh`, `scripts/hotfix.sh`, `docs/workflow.md` (stale: wildcard redirect URI, "PRs can't merge without green checks"), the `.worktrees/prod` checkout
-- Modify: `package.json` — remove `dispatch`, `hotfix`
+- Delete: `scripts/dispatch.sh`, `docs/workflow.md` (stale: wildcard redirect URI, "PRs can't merge without green checks"), the `.worktrees/prod` checkout
+- Rewrite (WF4): `scripts/hotfix.sh` — `start <slug>` makes a `fix/<slug>` worktree from `origin/main` with deps and env files; `pr` runs `pnpm lint && pnpm tsc`, pushes and opens the PR. The workbench commands (`sync`, `backup`, `ship`, `.worktrees/prod`) go.
+- Modify: `package.json` — remove `dispatch`
 - Modify: `CLAUDE.md` — Commands (`wt:db`, `db:generate`, `db:migrate:dev`, no `db:push:*`; line 22's "only via DRIZZLE_TARGET=prod" now true and naming `photos_writer`), GitHub workflow (Orca, squash merge, prod-script Action), Mobile testing (ports per worktree, claimed by Orca)
 - Modify: `docs/codebase-conventions/environment.md` (line 59 tells you to register each new host with Google; line 57; line 19's gate list), `drizzle.config.ts:7-14` comment (dispatch worktrees)
 - Modify: pending docs that gate on deleted commands — `docs/superpowers/plans/2026-10-21-proposal-energy-impact-foundation.md:36,713,925`, `docs/plans/2026-10-21-proposal-energy-impact-epic.md:44,161`, `docs/superpowers/specs/2026-09-24-proposal-applications-design.md:217`, `docs/superpowers/specs/2026-10-20-r2-storage-design.md:48-49` (Q-A database side superseded) → "migration in the PR" / prod-script Action
