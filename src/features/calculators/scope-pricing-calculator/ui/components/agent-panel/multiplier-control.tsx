@@ -1,5 +1,6 @@
 'use client'
 
+import type { PricingKey } from '@/features/calculators/scope-pricing-calculator/constants/pricing-keys'
 import type { ScopePricingConfig } from '@/features/calculators/scope-pricing-calculator/schemas/config'
 import type { ScopePricingFormValues } from '@/features/calculators/scope-pricing-calculator/schemas/form'
 
@@ -7,6 +8,7 @@ import { MinusIcon, PlusIcon } from 'lucide-react'
 import { useFormContext } from 'react-hook-form'
 
 import { MULTIPLIER_STEP } from '@/features/calculators/scope-pricing-calculator/constants/agent-panel'
+import { describeMultiplierDefaults } from '@/features/calculators/scope-pricing-calculator/lib/describe-multiplier-defaults'
 import { stepMultiplier } from '@/features/calculators/scope-pricing-calculator/lib/step-multiplier'
 import { Button } from '@/shared/components/ui/button'
 import { FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
@@ -16,10 +18,11 @@ import { formatMultiplier } from '@/shared/modules/proposals/core/lib/financials
 interface Props {
   config: ScopePricingConfig
   appliedMultiplier: number
+  pricingKeys: readonly PricingKey[]
   targetActive: boolean
 }
 
-export function MultiplierControl({ config, appliedMultiplier, targetActive }: Props) {
+export function MultiplierControl({ config, appliedMultiplier, pricingKeys, targetActive }: Props) {
   const { control } = useFormContext<ScopePricingFormValues>()
   const { floor } = config.multiplier
 
@@ -51,7 +54,7 @@ export function MultiplierControl({ config, appliedMultiplier, targetActive }: P
                   disabled={targetActive}
                   inputMode="decimal"
                   min={floor}
-                  placeholder={String(config.multiplier.default)}
+                  placeholder={config.multiplier.default.toFixed(2)}
                   step={MULTIPLIER_STEP}
                 />
               </FormControl>
@@ -70,7 +73,7 @@ export function MultiplierControl({ config, appliedMultiplier, targetActive }: P
             <FormDescription>
               {targetActive
                 ? `Set by the target price: ${formatMultiplier(appliedMultiplier)}`
-                : `Floor ${formatMultiplier(floor)} · default ${formatMultiplier(config.multiplier.default)}`}
+                : describeMultiplierDefaults(config, pricingKeys, appliedMultiplier)}
             </FormDescription>
             <FormMessage />
             {field.value != null && !targetActive && (

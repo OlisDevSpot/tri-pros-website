@@ -12,7 +12,7 @@ export function createFormulaLine(pricingKey: PricingKey): FormulaLineValues {
     const def: VariableDef = VARIABLES[key]
     variables[key] = formula.defaults?.[key] ?? def.default ?? null
   }
-  return { id: crypto.randomUUID(), kind: 'formula', pricingKey, variables }
+  return { id: crypto.randomUUID(), kind: 'formula', pricingKey, variables, multiplierOverride: null, price: null }
 }
 
 export function createManualLine(): ManualLineValues {
