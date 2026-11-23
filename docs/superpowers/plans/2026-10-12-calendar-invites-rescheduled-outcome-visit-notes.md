@@ -41,7 +41,7 @@ Tasks 1 and 5 edit both files. The controller records the owner's answer for eac
 ## Global Constraints
 
 - Package manager is **pnpm**. Verify with `pnpm tsc` and `pnpm lint`. **Never** run `pnpm build`. `pnpm lint` never lints `scripts/`; lint a script with `pnpm exec eslint <path>`.
-- Work on local `main`, in the shared tree. No branch, no worktree, no `git stash`, `git checkout` or `git reset`. Stage by explicit path, never `git add -A` or `git add .`. Another session has uncommitted files here (`CONTEXT.md`, `docs/plans/2026-10-01-sales-lifecycle-rules-map.md`, customer profile components, and more): never stage them.
+- Work on local `main`, in the shared tree. No branch, no worktree, no `git stash`, `git checkout` or `git reset`. Stage by explicit path, never `git add -A` or `git add .`. Another session has uncommitted files here (`GLOSSARY.md`, `docs/plans/2026-10-01-sales-lifecycle-rules-map.md`, customer profile components, and more): never stage them.
 - A commit hook runs `pnpm tsc`, `pnpm lint` and `pnpm theme:check` and takes about 110 s. Put the whole `git add … && git commit …` in one Bash call with a timeout of at least 400000 ms. End every commit message with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 - **Never run `pnpm db:push:dev` or `pnpm db:push:prod`.** Task 1 asks the owner. Never accept a truncate prompt.
 - **No database writes for testing**, dev included, except a wiring script that deletes every row it created and restores every row it changed before it exits, in a `finally`. Never run a script's `--apply` mode.
@@ -55,7 +55,7 @@ Tasks 1 and 5 edit both files. The controller records the owner's answer for eac
 - Company data comes from `src/shared/constants/company/`. Never hardcode the company name or phone.
 - A move or removal is non-defensive: consumers switch and the old code is deleted in the same change. No re-export shims, no fallbacks.
 - Vocabulary: **meeting welcome text** (code keeps `visit_summary`), **visit note**, **internal note**, **calendar invite**, coordinator (the setter), specialist (the rep), plus the parent spec's §3a terms. Do not coin others.
-- Never edit `CONTEXT.md`, `docs/ubiquitous-language.md` or `docs/plans/2026-10-01-sales-lifecycle-rules-map.md` while `git status` shows them modified; Task 7 checks.
+- Never edit `GLOSSARY.md`, `docs/ubiquitous-language.md` or `docs/plans/2026-10-01-sales-lifecycle-rules-map.md` while `git status` shows them modified; Task 7 checks.
 
 ## Review Focus
 

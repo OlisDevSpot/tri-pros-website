@@ -36,7 +36,7 @@ Not blocking: TS3b.1, TS3b.2, TS3b.3 and the glass-HUD layout are built, unmerge
 
 1. **The tracker**: §2 (order), §3 R9, R18, R20, R23, R34, R69, R80, §2a (look pick), §5 (T15, T16), §6 (change log).
 2. **Memory** `project-3d-trade-scenes.md` (loads automatically): the epic's state and rulings.
-3. **`CONTEXT.md`**: the trade-scene terms (home view, Complete, Partly open, lens, wear, home stress…). Use them as written; agree any new term with the owner first.
+3. **`GLOSSARY.md`**: the trade-scene terms (home view, Complete, Partly open, lens, wear, home stress…). Use them as written; agree any new term with the owner first.
 4. **The TS3b.3 spec** `docs/superpowers/specs/2026-10-23-home-views-and-thermal-lens-design.md`: the Complete house, the part fades, floor heights.
 5. **The TS3b.4a spec and plan** (`docs/superpowers/specs/2026-10-24-upgrades-that-follow-the-home-design.md`, plan above): §7 is how parts will look their wear and how the build swaps parts.
 6. **The code** (source of truth), in `src/features/trade-scenes/`:
@@ -75,7 +75,7 @@ Not blocking: TS3b.1, TS3b.2, TS3b.3 and the glass-HUD layout are built, unmerge
 ## 7. Rules for the session
 
 - **Requirements change in the tracker first**: a register row or a status change, plus a §6 change-log line, then the spec.
-- **Other sessions work in this worktree.** Uncommitted files belong to them (the tracker, `CONTEXT.md`, the TS3b.3 spec, the TS3b.4a spec and plan, the TS3b.4 handoff). Never revert or commit them unless the owner asks. Commit only your own files, by explicit path.
+- **Other sessions work in this worktree.** Uncommitted files belong to them (the tracker, `GLOSSARY.md`, the TS3b.3 spec, the TS3b.4a spec and plan, the TS3b.4 handoff). Never revert or commit them unless the owner asks. Commit only your own files, by explicit path.
 - **The dev server on :3002 is the owner's.** Check `ss -ltnp` before starting one; use another port.
 - **Stale refs to flag to the owner, not fix silently:** the tracker's status line (line 3) still says "TS3b.3 next" though §2 marks TS3b.3 and the glass-HUD layout built; R34's status is "open" though the rafters fix shipped in TS3b.3.
 - Check the code before quoting any rule from this file, the tracker or memory.

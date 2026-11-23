@@ -30,7 +30,7 @@
   - `src/shared/entities/customers/types/pipeline-item.ts`
   - `src/shared/entities/meetings/dal/**`
 
-  Also do not edit `CONTEXT.md`, `docs/ubiquitous-language.md` or `docs/plans/2026-10-01-sales-lifecycle-rules-map.md` (another session has edits in flight). A task that seems to need any of these stops and reports.
+  Also do not edit `GLOSSARY.md`, `docs/ubiquitous-language.md` or `docs/plans/2026-10-01-sales-lifecycle-rules-map.md` (another session has edits in flight). A task that seems to need any of these stops and reports.
 - **Coding conventions:**
   - One React component per file. The `MeetingOverviewCard` compound's parts stay in `overview-card.tsx`, the existing exception.
   - No file-level constants in component files; they go in `constants/`.

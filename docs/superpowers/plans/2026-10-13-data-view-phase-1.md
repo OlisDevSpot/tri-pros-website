@@ -30,7 +30,7 @@
 1. **New names this plan adds** (beyond spec §2): component functions `DataViewRoot`, `DataViewTitle`, `DataViewCount`, `DataViewToolbar`, `DataViewBody`, `DataViewEmpty` (the spec's `Root`/`Title`/… as exported functions, after `QueryToolbarRoot`); context `DataViewContext` + type `DataViewContextValue`; the boundary bit `DataViewBoundaryContext`; `data-slot` values `data-view-body`, `data-view-count`; view `ProposalsRecordsView` (`src/features/records-management/ui/views/proposals-records-view.tsx`, beside `MeetingsRecordsView`/`ProjectsRecordsView`); workspace `.superpowers/sdd/2026-10-13-data-view-phase-1/` with `check-data-view-parts.tsx` and `check-states.mjs`. **Recommend: yes.**
 2. **Campaign leads keeps its empty message and stale dim.** Removing them from `DataTable` (spec §4) would strip both from campaign leads for good, because campaign leads never moves onto the parts (spec non-goal, D57). The recommendation is that Task 3 wraps its table in `DataView` + `DataView.Body empty`, which is about 6 lines; its `LeadsFilterBar` stays as it is. The alternative is accepting a blank table body and no dim there. **Recommend: wrap it.**
 3. **Customers page and the two lead-sources panes between DV3 and DV4.** They still render `DataTable` outside a data view until R2 Part 2 rewrites them, so on local main they lose the stale dim and the "No customers match" row until DV4 lands. Wrapping them now would move them twice (D14). **Recommend: accept on local main, and ship DV3 to prod together with DV4** (or accept the gap on prod if DV3 ships alone).
-4. **Docs that cite the moved boundary path.** `@/shared/components/data-view-boundary` moves into `data-view/ui/boundary.tsx`. Eleven docs cite the old path (`grep -rln "data-view-boundary" docs CONTEXT.md`); most are historical, and the R2 Part 2 plan is re-checked at DV4 anyway. **Recommend: don't edit them here; the DV3 tracker row names the move so DV4's re-check catches it.**
+4. **Docs that cite the moved boundary path.** `@/shared/components/data-view-boundary` moves into `data-view/ui/boundary.tsx`. Eleven docs cite the old path (`grep -rln "data-view-boundary" docs GLOSSARY.md`); most are historical, and the R2 Part 2 plan is re-checked at DV4 anyway. **Recommend: don't edit them here; the DV3 tracker row names the move so DV4's re-check catches it.**
 5. **Records tracker ledger §3.1 "DataView parts" column** (spec §6, §10) lives in `docs/plans/2026-09-26-records-management-epic.md`, which this plan may not edit. **Recommend: defer it to the owner's next pass on that tracker.**
 
 ## Review Focus
@@ -1135,4 +1135,4 @@ git show --stat HEAD
   - Calendars and kanban (DV5, DV6).
   - The customers table and panes (DV4).
   - The records tracker ledger column (owner confirm #5).
-  - `CONTEXT.md` glossary (tracker A3).
+  - `GLOSSARY.md` glossary (tracker A3).

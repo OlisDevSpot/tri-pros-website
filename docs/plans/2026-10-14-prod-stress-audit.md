@@ -258,7 +258,7 @@ Each one needs a doc fix, made to match the code.
 - Vocabulary:
   - `scope` means both the row filter and the construction **Scope** (`crud.router.ts:36`).
   - "Reach", "actor" and "share link" are in neither glossary.
-  - There are two glossaries (`CONTEXT.md`, `docs/ubiquitous-language.md`).
+  - There are two glossaries (`GLOSSARY.md`, `docs/ubiquitous-language.md`).
 
 ---
 

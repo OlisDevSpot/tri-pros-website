@@ -49,7 +49,7 @@ Every reviewer prompt starts with this preamble:
 > 3. Check that each task's verify step could actually fail if the task were wrong.
 
 **D: Vocabulary, placement and plan hygiene** (`general-purpose`)
-> 1. Check every new name (types, hooks, components, procedures, columns, copy labels) against `CONTEXT.md` (including its _Avoid_ lists), `docs/ubiquitous-language.md` and existing primitives. Flag invented terms and synonyms for things that already exist.
+> 1. Check every new name (types, hooks, components, procedures, columns, copy labels) against `GLOSSARY.md` (including its _Avoid_ lists), `docs/ubiquitous-language.md` and existing primitives. Flag invented terms and synonyms for things that already exist.
 > 2. Run `ls` on every path the plan cites. Flag paths that do not exist yet are not marked Create, stale `entities/` paths, and files that other in-flight plans under `docs/superpowers/plans/` and `docs/plans/` also edit (collision risk).
 > 3. Check for task ordering errors: a task that uses an export a later task creates.
 > 4. Check that the plan's Global Constraints carry this repo's standing rules: explicit-path commits, no stash/reset, CRLF check, no DB writes for testing, tsc and lint only.

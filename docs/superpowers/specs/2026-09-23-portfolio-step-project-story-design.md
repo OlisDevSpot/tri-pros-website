@@ -2,7 +2,7 @@
 
 > **Source:** the `/ui-warmup` artifact https://claude.ai/artifact/Bqp9UCTg2Gf5n13zXbx6wM, **Option D** (owner's pick, 2026-09-23). "D · Walkthrough" was that artifact's option label; it is not a domain or code term. The artifact's baseline captures and findings F1–F9 are the "why"; this spec is the "what".
 > **Baseline:** `main` at `c8ce1956` (2026-09-23).
-> **Status:** brainstormed with the owner 2026-09-23; every ruling is in §7. Vocabulary agreed 2026-09-23 (§2) and recorded in `CONTEXT.md` as part of the build. Placement critique 2026-09-24 (W17–W19): generic primitives moved into `modules/projects` (core and the project-media unit) and `modules/construction`.
+> **Status:** brainstormed with the owner 2026-09-23; every ruling is in §7. Vocabulary agreed 2026-09-23 (§2) and recorded in `GLOSSARY.md` as part of the build. Placement critique 2026-09-24 (W17–W19): generic primitives moved into `modules/projects` (core and the project-media unit) and `modules/construction`.
 > **Constraint:** no data writes in any environment. One schema change: four empty `projects` columns are dropped (§5.3); dev gets `pnpm db:push:dev`, prod is the owner's push.
 
 ---
@@ -15,7 +15,7 @@ Option D turns that sentence into the step: one project at a time, its photo fil
 
 The same work settles how every surface tells a project: **challenge → solution → result** is the project story, told against the media phases. The unused per-phase caption fields are retired.
 
-## 2. Vocabulary (agreed 2026-09-23; added to `CONTEXT.md`)
+## 2. Vocabulary (agreed 2026-09-23; added to `GLOSSARY.md`)
 
 | Term | Meaning | Code |
 |---|---|---|
@@ -27,11 +27,11 @@ The same work settles how every surface tells a project: **challenge → solutio
 | **Match labels** | The pills: matched scope names, or the trade name. | `PortfolioMatch.matchLabels` |
 | **Step handle** | What a presentation-layout meeting step exposes to the flow's key map: `next`, `prev`, and optional `advance` (the Space key). | `MeetingStepHandle` |
 
-Words not used: walkthrough, chapter (CONTEXT.md avoids it), stage (CONTEXT.md avoids it), queue, tier, featured, cursor, beat.
+Words not used: walkthrough, chapter (GLOSSARY.md avoids it), stage (GLOSSARY.md avoids it), queue, tier, featured, cursor, beat.
 
 ## 3. Scope
 
-**In:** the portfolio step (D) with the owner's rulings (§7); the project story standard and its helper in `modules/projects/core`; media-phase code in the project-media unit (`PHASE_LABELS` moved there, `MediaPhaseCounts`, the grouped count read); retirement of `before/during/after/mainDescription`; `phaseCounts` on portfolio list rows; the construction module's id resolver (`scopesById`, `resolveTrades`, `resolveScopes` — construction P2's F9 primitives, built here first, exactly as P2 specifies); shared portfolio primitives in `modules/projects/core` (hero predicate, story strength, project caption, the portfolio list hook); `CONTEXT.md` entries.
+**In:** the portfolio step (D) with the owner's rulings (§7); the project story standard and its helper in `modules/projects/core`; media-phase code in the project-media unit (`PHASE_LABELS` moved there, `MediaPhaseCounts`, the grouped count read); retirement of `before/during/after/mainDescription`; `phaseCounts` on portfolio list rows; the construction module's id resolver (`scopesById`, `resolveTrades`, `resolveScopes` — construction P2's F9 primitives, built here first, exactly as P2 specifies); shared portfolio primitives in `modules/projects/core` (hero predicate, story strength, project caption, the portfolio list hook); `GLOSSARY.md` entries.
 
 **Out:** distance (no coordinates: 0 of 788 customers geocoded; 8 of 43 public projects have a zip); profile echoes (projects carry no property attributes); a before/after slider; a Shift+Space back key; persisting the step's position to flow state; testimonials; any link to the marketing site; **the public project page adopting `buildProjectStoryPhases`** (owner: later — this work only removes the retired fields from its timeline).
 
@@ -109,7 +109,7 @@ src/features/meeting-flow/
     project-list-row.tsx    narrow: the next PROJECT_LIST_ROW_COUNT cards + "All N"
     project-list-sheet.tsx  the full list in a bottom Sheet
 
-CONTEXT.md                         "Project story" section; Presentation terms line updated (§5.9)
+GLOSSARY.md                         "Project story" section; Presentation terms line updated (§5.9)
 docs/superpowers/specs/2026-09-22-construction-p2-rules-and-identity-design.md,
 docs/plans/2026-09-15-construction-data-standardization-epic.md   record the resolver as delivered (§8)
 ```
@@ -228,7 +228,7 @@ List section labels: `scope` and `trade` → "For your project"; `fallback` → 
 | one photo in a story phase | no thumbnails |
 | last photo of the last project | no "Next" cue; Space does nothing |
 
-### 5.9 `CONTEXT.md`
+### 5.9 `GLOSSARY.md`
 
 A "Project story" section with the §2 terms (project story, story phase, story strength, portfolio match, match labels; media phase noted as existing). The Presentation-terms intro line ("Program and Portfolio will be too") changes to say Portfolio uses the presentation layout and ground but shows one project at a time with its story phases, not slides.
 
@@ -269,7 +269,7 @@ A "Project story" section with the §2 terms (project story, story phase, story 
 
 **Construction P2** (`docs/superpowers/specs/2026-09-22-construction-p2-rules-and-identity-design.md`): its F9 resolver (`scopesById`, `resolveTrades`, `resolveScopes`) and its `index-showcase-projects` / `use-showcase-projects` row are built here, to P2's contracts. When they land, the P2 spec and `docs/plans/2026-09-15-construction-data-standardization-epic.md` (F9) record them as delivered so P2 plan 2 does not build them again. P2 plan 1 is in progress in another session (untracked backfill scripts; the trades property map); this work does not touch those files.
 
-**Working tree (2026-09-24).** Uncommitted work from other sessions sits in five files this build edits: `CONTEXT.md` (the Presentation terms section), `build-catalog-index.ts`, `use-showcase-projects.ts`, `use-meeting-flow-keys.ts`, `meeting-flow.tsx` (mostly the docs prune's comment trims; `meeting-flow.tsx` also carries a `syncStatus` prop). `git commit -- <path>` commits the whole file, so the build checks each before editing it and stops for the owner while foreign hunks remain.
+**Working tree (2026-09-24).** Uncommitted work from other sessions sits in five files this build edits: `GLOSSARY.md` (the Presentation terms section), `build-catalog-index.ts`, `use-showcase-projects.ts`, `use-meeting-flow-keys.ts`, `meeting-flow.tsx` (mostly the docs prune's comment trims; `meeting-flow.tsx` also carries a `syncStatus` prop). `git commit -- <path>` commits the whole file, so the build checks each before editing it and stops for the owner while foreign hunks remain.
 
 ## 9. Follow-ups
 

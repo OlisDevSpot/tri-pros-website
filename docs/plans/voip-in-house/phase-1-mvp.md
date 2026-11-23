@@ -12,7 +12,7 @@
 
 A mid-Phase 1 `grill-with-docs` session against the original task plan revealed that the schema baked in cross-EPIC fusion (a `source: 'in_house' | 'cloudtalk'` discriminator + forward-compat `cloudtalk_*` columns + a shared `voip_dnc` table). This contradicts the 2026-05-23 total-separation stance. The grill cut the plan down significantly.
 
-**Canonical decisions are in [EPIC.md decisions log 2026-05-30](./EPIC.md#decisions-log-post-spec-made-during-implementation) and [CONTEXT.md](../../../CONTEXT.md).**
+**Canonical decisions are in [EPIC.md decisions log 2026-05-30](./EPIC.md#decisions-log-post-spec-made-during-implementation) and [GLOSSARY.md](../../../GLOSSARY.md).**
 
 ### Summary
 

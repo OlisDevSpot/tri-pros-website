@@ -16,7 +16,7 @@
 - **No test runner.** No vitest/jest, no `package.json` change. Pure-function checks are throwaway `tsx` scripts in the session scratchpad, never committed. `$SCRATCH` = `/tmp/claude-1000/-home-olis-solutions-olis-v3-nextjs-tri-pros-website/b2219856-9a14-407a-ab52-f91e3f5d57d6/scratchpad` (or the executing session's own scratchpad). Run them from the repo root: `pnpm exec tsx $SCRATCH/portfolio-checks/<file>.ts` — `tsx` then resolves `@/` inside project files (verified 2026-09-23). Check files import project code by absolute path.
 - Verification per task: `pnpm tsc` and `pnpm lint` clean (`pnpm lint:fix` for import order). **Never `pnpm build`.**
 - **Commits:** on `main`; `git add <explicit paths>` then `git commit -m "…" -- <same paths>`. The index holds unrelated staged deletions (docs prune) that a bare `git commit` would sweep in. Never `git add -A`, never stash / checkout / reset.
-- **Foreign hunks (preflight).** `git commit -- <path>` commits the whole file. On 2026-09-24 these files carried uncommitted work from other sessions: `CONTEXT.md`, `src/shared/modules/construction/core/lib/build-catalog-index.ts`, `src/features/meeting-flow/hooks/use-showcase-projects.ts`, `src/features/meeting-flow/hooks/use-meeting-flow-keys.ts`, `src/features/meeting-flow/ui/views/meeting-flow.tsx`. Before a task edits any file, run `git diff --stat -- <file>`; if it shows changes this plan did not make, **stop and ask the owner** to land them (or to say how to proceed) — never commit them, never revert them. Same check for the two construction docs in Task 5.
+- **Foreign hunks (preflight).** `git commit -- <path>` commits the whole file. On 2026-09-24 these files carried uncommitted work from other sessions: `GLOSSARY.md`, `src/shared/modules/construction/core/lib/build-catalog-index.ts`, `src/features/meeting-flow/hooks/use-showcase-projects.ts`, `src/features/meeting-flow/hooks/use-meeting-flow-keys.ts`, `src/features/meeting-flow/ui/views/meeting-flow.tsx`. Before a task edits any file, run `git diff --stat -- <file>`; if it shows changes this plan did not make, **stop and ask the owner** to land them (or to say how to proceed) — never commit them, never revert them. Same check for the two construction docs in Task 5.
 - Every commit message ends with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 - **Comments say why, never what.** No file banners, no restating code, no citations of plans / specs / tasks / docs in code. A `// path/to/file.ts` first line in a code block below only labels the file — do not copy it.
 - One React component per file; no file-level constants in component files; components fetch nothing (data comes from hooks); named exports; `@/` → `src/`.
@@ -936,7 +936,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- docs/superpowers/spe
 - Create: `src/features/meeting-flow/lib/match-portfolio-projects.ts`
 - Create: `src/features/meeting-flow/lib/group-portfolio-matches.ts`
 - Create: `src/features/meeting-flow/hooks/use-portfolio-matches.ts`
-- Modify: `CONTEXT.md` ⚠️ preflight (foreign hunks on 2026-09-24 — the Presentation terms section this step edits)
+- Modify: `GLOSSARY.md` ⚠️ preflight (foreign hunks on 2026-09-24 — the Presentation terms section this step edits)
 - Scratch: `$SCRATCH/portfolio-checks/match.check.ts`
 
 **Interfaces:**
@@ -1212,7 +1212,7 @@ export function usePortfolioMatches() {
 }
 ```
 
-- [ ] **Step 8: `CONTEXT.md`** — preflight `git diff --stat -- CONTEXT.md`; if it shows hunks this plan did not make, stop and ask the owner before editing. Then add after the "Presentation terms" section:
+- [ ] **Step 8: `GLOSSARY.md`** — preflight `git diff --stat -- GLOSSARY.md`; if it shows hunks this plan did not make, stop and ask the owner before editing. Then add after the "Presentation terms" section:
 
 ```markdown
 ## Project story terms
@@ -1234,10 +1234,10 @@ And in "Presentation terms", replace the intro sentence "Meeting-flow step 1 (Wh
 - [ ] **Step 10: Commit**
 
 ```bash
-git add src/features/meeting-flow/types/index.ts src/features/meeting-flow/constants/portfolio-step.ts src/features/meeting-flow/lib/match-portfolio-projects.ts src/features/meeting-flow/lib/group-portfolio-matches.ts src/features/meeting-flow/hooks/use-portfolio-matches.ts CONTEXT.md
+git add src/features/meeting-flow/types/index.ts src/features/meeting-flow/constants/portfolio-step.ts src/features/meeting-flow/lib/match-portfolio-projects.ts src/features/meeting-flow/lib/group-portfolio-matches.ts src/features/meeting-flow/hooks/use-portfolio-matches.ts GLOSSARY.md
 git commit -m "feat(meeting-flow): match portfolio projects to the meeting by scope, trade, then fallback
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- src/features/meeting-flow/types/index.ts src/features/meeting-flow/constants/portfolio-step.ts src/features/meeting-flow/lib/match-portfolio-projects.ts src/features/meeting-flow/lib/group-portfolio-matches.ts src/features/meeting-flow/hooks/use-portfolio-matches.ts CONTEXT.md
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- src/features/meeting-flow/types/index.ts src/features/meeting-flow/constants/portfolio-step.ts src/features/meeting-flow/lib/match-portfolio-projects.ts src/features/meeting-flow/lib/group-portfolio-matches.ts src/features/meeting-flow/hooks/use-portfolio-matches.ts GLOSSARY.md
 ```
 
 ---

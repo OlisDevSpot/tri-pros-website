@@ -67,7 +67,7 @@
   - Check whether `feat/trade-scene-ship` has merged (`git branch -r --merged origin/main | grep trade-scene-ship`). If it has, stop and ask the owner which base 4b builds on (CLAUDE.md: one feature, one worktree branch, one PR off `origin/main`).
   - Re-run `grep -rnw 'zoom\|zoomed' src/features/trade-scenes scripts`, matching identifiers, not comments. Add any reader that isn't in Task 8's list to Task 8's brief.
 - **Hands off other sessions' work:** never stage, revert or reformat another session's hunks, Benefits' least of all (`controls-window.tsx`, `ui/components/benefits/**`, `r-value-scopes.ts` and the rest while it builds).
-- **Docs:** builders never stage `docs/**` or `CONTEXT.md`. The tracker, the energy-impact tracker and `CONTEXT.md` edits are the controller's steps, committed only when the owner asks.
+- **Docs:** builders never stage `docs/**` or `GLOSSARY.md`. The tracker, the energy-impact tracker and `GLOSSARY.md` edits are the controller's steps, committed only when the owner asks.
 - **Database:**
   - The insulation column is `text(..., { enum })`, so `db:push` changes nothing.
   - Old values are cleared by Task 1's script: the controller runs it on dev after the owner's yes, and on prod only when the owner asks.
@@ -916,7 +916,7 @@ Read the deleted code with `git show PRE_SWITCH:<path>`. Port the behaviour, not
   List each spec §2 line with its shot in the ledger.
 - [ ] **Step 3 (controller): the docs,** committed only when the owner asks:
   - **The tracker:** TS3b.4b built, with a §6 line naming the commit range.
-  - **`CONTEXT.md`:** reword the entries the switch made stale:
+  - **`GLOSSARY.md`:** reword the entries the switch made stale:
     - Close-up card (retired);
     - Assembly kit (retired);
     - Anchor (now the pins' spots and the crawl framing);
@@ -930,5 +930,5 @@ Read the deleted code with `git show PRE_SWITCH:<path>`. Port the behaviour, not
   - R-38's wording in Benefits (R226, the R-value Rule);
   - the ROI calculator not listing add-ons other than ducts;
   - the x-rayed heading and leads leaving with the close-up card;
-  - recording "Stepped cutaway" in `CONTEXT.md`;
+  - recording "Stepped cutaway" in `GLOSSARY.md`;
   - the iPad and phone check.

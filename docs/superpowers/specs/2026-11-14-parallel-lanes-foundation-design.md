@@ -78,7 +78,7 @@ Parent plan Task 12 as written (`oAuthProxy`, `APP_HOSTS.preview`, `localhost:*`
 | 2026-11-18 | One local dev server at a time, the rest on previews, **without blocking several dev servers when he wants them**; preview addresses must be stable enough for Google sign-in, QStash and the other vendors (B2). |
 | 2026-11-18 | Keep the epic branch going after a slice ships, **pending a brainstorm on whether worktrees should be disposable instead** (B3). |
 | 2026-11-18 | The status block stays in the tracker file and is copied to the board. |
-| 2026-11-18 | Add a dev flow block to `CONTEXT.md`, **after Oliver sees what the terms look like in use** (F8). |
+| 2026-11-18 | Add a dev flow block to `GLOSSARY.md`, **after Oliver sees what the terms look like in use** (F8). |
 | 2026-11-18 | The F2 PR also fixes `scripts/dev.mjs`'s lint errors. |
 
 ## What already exists (verified 2026-11-18)
@@ -210,9 +210,9 @@ Built under the `artifact-design` skill; screenshots at phone and desktop width,
 
 Placeholder until B4: shared env variables come from Doppler, synced to Vercel; per-worktree overrides stay local. It touches parent Tasks 1, 7, 8 and 13 and the no-prod-credentials-on-the-laptop rule.
 
-## F8. Dev flow terms in `CONTEXT.md` (R7) · DEFERRED: Oliver sees and agrees each term first
+## F8. Dev flow terms in `GLOSSARY.md` (R7) · DEFERRED: Oliver sees and agrees each term first
 
-A `## Dev flow terms` block, each term agreed by Oliver after he sees it in use. Draft terms: **Lane**, **Lane stage** (the board's shipping stage, distinct from a plan's **Stage**), **Review slot**, **Lane preview**, **Lane registry**. Two existing entries change: Pipeline **Stage**'s Avoid list names "lane" (kanban column) and gains a pointer to the dev flow sense; Planning **Stage** gains "not the lane stage". `CONTEXT.md` merge rule (ruling 2026-11-14): reconcile duplicates and out-of-order entries first.
+A `## Dev flow terms` block, each term agreed by Oliver after he sees it in use. Draft terms: **Lane**, **Lane stage** (the board's shipping stage, distinct from a plan's **Stage**), **Review slot**, **Lane preview**, **Lane registry**. Two existing entries change: Pipeline **Stage**'s Avoid list names "lane" (kanban column) and gains a pointer to the dev flow sense; Planning **Stage** gains "not the lane stage". `GLOSSARY.md` merge rule (ruling 2026-11-14): reconcile duplicates and out-of-order entries first.
 
 ## Brainstorms, all after the lean cut has run 1–2 weeks
 

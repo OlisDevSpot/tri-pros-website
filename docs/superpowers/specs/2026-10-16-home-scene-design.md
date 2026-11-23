@@ -26,10 +26,10 @@ It must stay **general** (R6). The home is drawn once. Every later trade (HVAC a
 
 ## 3. Vocabulary
 
-Added to `CONTEXT.md` § *Trade scene terms*:
+Added to `GLOSSARY.md` § *Trade scene terms*:
 
 - **Home kit**: the scene kit that draws the whole house from the property profile, plus the residents, the sky and the yard. It exposes anchors. One per app.
-- **Assembly kit**: the scene kit for one assembly (`roof-attic` first), drawn at its anchor when zoomed. It replaces the foundation's "scene kit" for this meaning (folder `assembly-kits/<assembly-id>/`). _Avoid_: section kit (CONTEXT.md avoids "section" for assemblies).
+- **Assembly kit**: the scene kit for one assembly (`roof-attic` first), drawn at its anchor when zoomed. It replaces the foundation's "scene kit" for this meaning (folder `assembly-kits/<assembly-id>/`). _Avoid_: section kit (GLOSSARY.md avoids "section" for assemblies).
 - **Anchor**: a named place on the home where an assembly kit sits, plus its camera framing (`roof`, `attic`, `exterior-wall`, `yard`, `under-floor`).
 - **Weather**: `summer | winter | rain`. Picks the assembly's mode (heat or water) and the sky. _Avoid_: condition (taken by part condition), season (code keeps `Season` only inside the heat walk).
 - **Climate**: `coastal | inland`, the preset behind the °F readings.

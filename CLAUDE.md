@@ -36,7 +36,7 @@ Package manager: **pnpm**. Path alias: `@/` → `src/`.
 - `docs/adr/` — why: 0001 entity actions · 0002 entity server system · 0003 service/provider tiers · 0004 proposal/contract independence · 0005 JSONB vs column vs child table · 0006 dev on Turbopack, server SDKs unbundled, realtime only in the meeting flow
 - `docs/codebase-conventions/` — cross-cutting rules that pending plans still cite. Verify each against the code before asserting it; delete a file when the plan that cites it ships.
 - `src/**/DOCS.md` — business-rule notes that survive only where a pending spec or plan cites them (proposals core, meetings, customers, applications, projects, construction, media, notion, meta, trpc, proposal-flow, funnels, lead-sources, file-optimization, twilio). Same rule: verify against code, delete when the citing work ships, never add one.
-- `CONTEXT.md` and `docs/ubiquitous-language.md` — domain terms (two glossaries today; merge pending)
+- `GLOSSARY.md` and `docs/ubiquitous-language.md` — domain terms (two glossaries today; merge pending)
 - `DESIGN.md` (root: tokens, ladder, states) · `PRODUCT.md` (audiences) · `docs/design-system/` (app-wide constitution, anti-slop checklist, `theme-conventions.md`: which token to use, with examples and a self-check; read before any colour, surface, edge or state work)
 - `docs/ui-design-playbook.md` + `docs/how-to/ui-exploration.md` — the UI process behind `/ui-exploration`
 
@@ -77,7 +77,21 @@ One feature = one worktree branch = one session = one PR. `main` is prod.
 - **Hotfix:** a small lane. Start it like any lane (Orca or `claude --worktree`) on `fix/<slug>` from `origin/main`, change only the fix, `pnpm lint && pnpm tsc`, PR, preview, Squash and merge. UI, copy or style: that is all. Business or server logic: also the lane's tests and the preview Playwright check. A schema change is never a hotfix: it is a lane with its own Neon copy.
 - **Local main:** mirrors prod and only moves by `git pull --ff-only origin main`. Editing there is an allowed escape hatch, but commit on a branch: `git switch -c fix/<slug>` first carries the edits over, so main never holds a commit.
 - **Older docs:** a plan, spec or memory that says "work on main", "the workbench", "stage on local main", `/pre-ship` or `pnpm hotfix` predates lanes; this section wins.
-- **Board / issues:** lane status lives on the lane board https://claude.ai/artifact/7D8kgccA7iy6f8ATWzLdqS (each session keeps its row current; the SessionStart hook says how) · backlog: https://github.com/users/OlisDevSpot/projects/3 and https://github.com/OlisDevSpot/tri-pros-website/issues · labels, board IDs, automations: `memory/reference-github-workflow.md`
+- **Board / issues:** lane status lives on the lane board https://claude.ai/artifact/7D8kgccA7iy6f8ATWzLdqS (each session keeps its row current; the SessionStart hook says how) · issues: https://github.com/OlisDevSpot/tri-pros-website/issues, the record of all work (see Agent skills below) · in flight: https://github.com/users/OlisDevSpot/projects/3 · board IDs, automations: `memory/reference-github-workflow.md`
+
+## Agent skills
+
+### Issue tracker
+
+GitHub issues are the record of all work; specs live in issue bodies, readiness in labels, flight in Project 3 Status. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Matt Pocock's five state labels plus `bug` / `enhancement` / `refactor` / `chore`; `area:*` and `P0`–`P3` kept. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` + `docs/adr/`. See `docs/agents/domain.md`.
 
 ## Who we are
 
