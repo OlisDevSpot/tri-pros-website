@@ -2,7 +2,7 @@
 
 > **Tracker:** `docs/plans/2026-09-26-analytics-epic.md` (the source of truth). This spec owns **A1–A9**. It cites decisions by ID (C1–C43) and does not restate them. If this spec and the tracker disagree, the tracker wins.
 > **Baseline:** `main` at `e8c5d97a`; re-verified against `7e5cc00e` on 2026-09-26 (the commits in between touch only calculators). Prod counts read 2026-09-26 (read-only): 767 customers, 285 meetings, 114 proposals (39 approved), 66 projects (42 portfolio-only).
-> **Ships:** named rule exports, read-only fact loaders, the per-person lead record (`LeadRecord`), one aggregator, a verify script, and the CONTEXT.md rule index. **No UI, no router, no schema change.**
+> **Ships:** named rule exports, read-only fact loaders, the per-person lead record (`LeadRecord`), one aggregator, a verify script, and the GLOSSARY.md rule index. **No UI, no router, no schema change.**
 
 ## 1. Goal
 
@@ -10,7 +10,7 @@ Every analytics number comes from one chain: **fact loaders → person grouping 
 
 ## 2. Rule index (C28, C38)
 
-This table becomes CONTEXT.md's `## Analytics terms` section (A9) — the one place to look a rule up. The symbol is the one place to change it.
+This table becomes GLOSSARY.md's `## Analytics terms` section (A9) — the one place to look a rule up. The symbol is the one place to change it.
 
 | Term | Rule | Symbol · file |
 |---|---|---|
@@ -53,7 +53,7 @@ This table becomes CONTEXT.md's `## Analytics terms` section (A9) — the one pl
 | 14 | `src/features/analytics/lib/aggregate-lead-records.ts` | new | `aggregateLeadRecords(leadRecordSet, filters, groupBy) → AnalyticsCounts[]` (§5). The only file that turns records into numbers |
 | 15 | `src/features/analytics/dal/server/load-analytics-facts.ts` | new | Calls the three loaders in parallel through `dalVerifySuccess`. The one entry point Spec F's router uses |
 | 16 | `src/shared/entities/customers/lib/signed-customer-sql.ts` | changed | Reuses the `EXISTS_PROJECT` SQL exported from `derived-pipeline-sql.ts` (one copy). Its comment says this is the pipeline's "has a project" bucket, not a sale. No rename, no behavior change |
-| 17 | `CONTEXT.md` | changed | New `## Analytics terms` section = §2's table |
+| 17 | `GLOSSARY.md` | changed | New `## Analytics terms` section = §2's table |
 | 18 | `scripts/verify-analytics-rules.ts` | new | §6 |
 
 The fact loaders follow the `entities/customers/dal/server/ad-performance.ts` precedent: system-level reads, no ctx, `dalDbOperation`, rows out, no counting. Callers are super-admin-gated at the router (Spec F).

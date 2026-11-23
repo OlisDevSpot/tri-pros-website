@@ -3,7 +3,7 @@
 > **Status:** written 2026-10-30 from the owner's brainstorm and field photos; builder-checked the same day (calls 7–9 in §6 came from it); the owner's answers folded in (§3.6, §3.7, §10); approved by the owner 2026-10-30 (`4206462ab`). Plan `docs/superpowers/plans/2026-10-30-exterior-paint-wear-kinds.md` stress-tested the same day; its rulings are §10.4–§10.5 and the amended §6.2, §6.6, §7. No code yet.
 > **Branch:** `feat/trade-scenes-foundation` (worktree `.worktrees/trade-scenes`). Builds after the TS3b.4a fixes (`docs/superpowers/specs/2026-10-30-ts3b4a-fixes-design.md`), which give walls, gables and parapets one paint look (`ui/lib/paint-look.ts`) and touch `house-shell.tsx`.
 > **Requirement:** R121 in `docs/plans/2026-10-16-trade-scenes-epic.md`.
-> **Binds:** `CONTEXT.md` for vocabulary.
+> **Binds:** `GLOSSARY.md` for vocabulary.
 
 `F` = `src/features/trade-scenes/`.
 
@@ -20,7 +20,7 @@ The trade scene is the meeting's product-benefits presentation (R118). Worn exte
 - What shows from whole-house distance looks like the owner's field photos (§4).
 
 **Non-goals**
-- Changing any heat figure, reading, load or bill cut. Wear never changes a heat figure (CONTEXT.md, Wear).
+- Changing any heat figure, reading, load or bill cut. Wear never changes a heat figure (GLOSSARY.md, Wear).
 - Wear kinds for any other material (roof, windows, ducts). Paint only.
 - Rust, scuffs, efflorescence, grime in the texture, corner-bead splits, impact gouges: real, but close-up only in the photos (§4.3). Not drawn this round.
 - Up close on the walls system (TS3b.4b). The look must be reusable there (R120: up close draws the home's own state), but building that view is not this project.
@@ -111,7 +111,7 @@ Roof and patio shadows; the speckle of raking sun on the stucco texture; reveal 
 - **Wear tiers** live in `constants/wear-looks.ts` (`WEAR_AMOUNT`, `WEAR_LOOKS.paint`); the paint look in `ui/lib/paint-look.ts`; the pure tier is guarded by `verify-trade-scene`.
 - **Write rules** for materials live in `lib/home-material-patch.ts`; a kind override is one more change kind there.
 
-## 8. Vocabulary (agreed, in CONTEXT.md)
+## 8. Vocabulary (agreed, in GLOSSARY.md)
 
 - **Paint wear**: the three kinds of wear on exterior paint besides the fade: `cracks | stains | peeling`. On screen: Cracks, Stains, Peeling. _Avoid_: damage, defects, condition (Part condition owns it), wear alone (Wear is the five-step Condition).
 - **Paint wear level**: how much of one kind a home shows: `none | light | moderate | heavy`. _Avoid_: amount in code (`WEAR_AMOUNT` is the numeric Condition share), severity.
@@ -127,6 +127,6 @@ Roof and patio shadows; the speckle of raking sun on the stucco texture; reveal 
 
 1. The raised foundation wall takes the wall's paint and wear (§3.6).
 2. The rep's own settings are never reset by a Condition change (§3.7, §6.9).
-3. The words in §8 are agreed and in `CONTEXT.md`.
+3. The words in §8 are agreed and in `GLOSSARY.md`.
 4. The level rows use the stops-on-a-track control (§6.2), from the plan's stress test.
 5. Draw calls (§7): the stress test set a 10% cap; the owner then accepted the estimated overage on the raised pitched home for now. Measure and record; revisit if performance degrades.

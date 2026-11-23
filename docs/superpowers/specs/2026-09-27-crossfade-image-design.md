@@ -1,6 +1,6 @@
 # F1 — `CrossfadeImage`: one crossfade per photo change
 
-Media display epic, finding F1 (`docs/plans/2026-09-27-media-display-epic.md`). Terms: CONTEXT.md "Media display terms".
+Media display epic, finding F1 (`docs/plans/2026-09-27-media-display-epic.md`). Terms: GLOSSARY.md "Media display terms".
 
 ## 1. Problem
 

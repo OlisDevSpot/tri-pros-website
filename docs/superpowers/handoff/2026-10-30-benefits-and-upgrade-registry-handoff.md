@@ -34,7 +34,7 @@ Mockups kept locally (gitignored) in `.superpowers/brainstorm/1509949-1793400812
 ## Open
 
 1. The Benefits tab's UI (the UI pass).
-2. The list of kinds of benefit and their names (CONTEXT.md first; the owner agrees new terms).
+2. The list of kinds of benefit and their names (GLOSSARY.md first; the owner agrees new terms).
 3. Bill cut by colour vs picks limited to the assumed colours (R117).
 4. The product and document list, gathered with the owner: every product above, the documents each needs (spec sheet, warranty, certifications such as Title 24 or ENERGY STAR), then the PDFs and pictures.
 5. How a document is reached from the scene beyond the Benefits tab (the upgrade's row, the part's pin, up close in TS3b.4b).

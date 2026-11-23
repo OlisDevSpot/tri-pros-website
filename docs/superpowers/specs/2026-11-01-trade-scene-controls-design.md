@@ -527,7 +527,7 @@ All paths are under `src/features/trade-scenes/` unless noted.
 |---|---|
 | S1 | **Build order:** Controls builds before TS3b.4b (up close on a system). TS3b.4b's plan cites the scene card, panel, build switch and `'under-floor'` focus this build removes, so it is re-planned on the Controls head. |
 | S2 | **Colours follow the theme rules** where the mock breaks one: fields, chips and the era block on `input-background` (not the canvas), the value menu on `popover`, a pill track inside the window on `bg-(--card)`. Everything else keeps the mock's look through the stage's tokens. |
-| S3 | **Names:** the glossary gains Controls, Controls window, Today ⇄ Build toggle, Home facts, Missing fact, Systems rail, System in focus, System card, Modify (and its change slots), Scene change, Benefits and Close-up card (`CONTEXT.md`). In code the two sides are `existing` / `proposed` (`existing-chip.tsx`, `proposed-chip.tsx`, `proposed-tint.tsx`); Modify's groups are `SlotGroup`, not a scope. |
+| S3 | **Names:** the glossary gains Controls, Controls window, Today ⇄ Build toggle, Home facts, Missing fact, Systems rail, System in focus, System card, Modify (and its change slots), Scene change, Benefits and Close-up card (`GLOSSARY.md`). In code the two sides are `existing` / `proposed` (`existing-chip.tsx`, `proposed-chip.tsx`, `proposed-tint.tsx`); Modify's groups are `SlotGroup`, not a scope. |
 | S4 | **A part-pin tap closes an open window** before the zoom (§6). |
 
 **Corrections the code required**

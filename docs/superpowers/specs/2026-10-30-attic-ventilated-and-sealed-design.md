@@ -85,7 +85,7 @@ It also draws ducts to today's code: new ducts are hung from the rafters.
 - So collars, cans, pipes inside the attic and boots show wherever the attic shows, not in every view.
 - Gable vents and the pipes' roof stubs are on the outside, so they show in every view.
 
-**Words.** Use the glossary: gable vent, attic fan, fan thermostat, Running and Idle, ceiling opening, foam collar, hung ducts. The owner agreed them in `CONTEXT.md` 2026-10-30. Never "swap" or "add-on" in a new name; extending `BILL_CUT_ADD_ON_IDS` is not a new name.
+**Words.** Use the glossary: gable vent, attic fan, fan thermostat, Running and Idle, ceiling opening, foam collar, hung ducts. The owner agreed them in `GLOSSARY.md` 2026-10-30. Never "swap" or "add-on" in a new name; extending `BILL_CUT_ADD_ON_IDS` is not a new name.
 
 ## The owner's decisions (as decided)
 

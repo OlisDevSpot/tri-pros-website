@@ -21,7 +21,7 @@ Copy this checklist into the todo list and work it in order.
 4. **Send the reviewers out**: four read-only subagents in ONE message, in the background, one per lens in [REFERENCE.md §Lenses](REFERENCE.md#lenses). Lens A goes to the `convention-auditor` agent and lenses B–D go to `general-purpose`. Give each one the inventory path, the plan and spec paths, and its lens prompt.
 5. **Check every BLOCKER and HIGH finding yourself** before you repeat it. Open the cited `file:line` and run the grep. Drop a finding you cannot confirm, or label it UNVERIFIED. When a doc or memory disagrees with the code, report it as `⚠️ Stale ref — <doc>:<line> says X, but code at <path> does Y.`
 6. **Report** in the shape of [REFERENCE.md §Report](REFERENCE.md#report): summary, verdict, findings, coverage matrix, owner questions. Ask the owner questions with `AskUserQuestion` (max 4 per call, recommended option first) and only for decisions the code cannot settle.
-7. **Amend on rulings.** Once the owner rules, edit the spec and plan to fold in each accepted finding and ruling: fix the task's files and steps, its interface block, the Review Focus, and the spec's decision list. Record any new term in `CONTEXT.md` in the same edit. Then say what changed. Do not commit unless asked.
+7. **Amend on rulings.** Once the owner rules, edit the spec and plan to fold in each accepted finding and ruling: fix the task's files and steps, its interface block, the Review Focus, and the spec's decision list. Record any new term in `GLOSSARY.md` in the same edit. Then say what changed. Do not commit unless asked.
 
 ## What counts as a finding
 
@@ -29,7 +29,7 @@ Copy this checklist into the todo list and work it in order.
 - **Wrong owner or layer.** A router writes another entity's rows, a service runs raw `db.*`, entity UI is built outside its module, or new code goes outside the module it belongs in.
 - **Convention breaks.** The plan breaks a rule in `docs/codebase-conventions/`, an ADR, or the coding rules (one component per file, constants in `constants/`, named exports, comments say why).
 - **Scope drift.** A task touches a file or shared config the spec never names, or a spec decision has no task.
-- **Invented vocabulary.** A name is missing from `CONTEXT.md` and `docs/ubiquitous-language.md`, appears on an _Avoid_ list, or duplicates an existing primitive.
+- **Invented vocabulary.** A name is missing from `GLOSSARY.md` and `docs/ubiquitous-language.md`, appears on an _Avoid_ list, or duplicates an existing primitive.
 - **Unhandled reality.** Loading, empty, error or forbidden states; phone and dark mode; permissions (CASL); cache invalidation and prefetch keys; idempotent jobs and webhooks; a `db:push` order; consumers of deleted files; prod-only traps (UTC, hydration, serverless sends).
 - **Untestable task.** A task has no verify step, or its verify step cannot fail.
 

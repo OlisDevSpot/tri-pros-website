@@ -6,7 +6,7 @@
 
 **Architecture:** the shared scene tier (`src/shared/components/scene/`, `S/` below) gains pure camera and gesture helpers, a small camera store, and opt-in pan and double-tap in `CameraRig`. The trade scene (`src/features/trade-scenes/`, `F/` below) passes its pan box, mounts the store, the Recenter chip and the tap ring, and adds the `R` shortcut.
 
-**Code words (owner, 2026-10-29):** "slide" and "tap to look" are the spec's words for the gestures only. "Slide" is already a presentation slide (`CONTEXT.md`) and "Look" is the dock's Look drawer, so code says **pan** for the slide (OrbitControls' word: `PanBox`, `HOME_PAN`, `panSpeedFor`, the rig's `pan` option) and names the double-tap pieces after the gesture (`doubleTapFraming`, `TapRing`, `tapMark`, `doubleTapDistance`). Never `focus` (taken by `cameraFocus` and `partFocus`). On screen only "Recenter" appears.
+**Code words (owner, 2026-10-29):** "slide" and "tap to look" are the spec's words for the gestures only. "Slide" is already a presentation slide (`GLOSSARY.md`) and "Look" is the dock's Look drawer, so code says **pan** for the slide (OrbitControls' word: `PanBox`, `HOME_PAN`, `panSpeedFor`, the rig's `pan` option) and names the double-tap pieces after the gesture (`doubleTapFraming`, `TapRing`, `tapMark`, `doubleTapDistance`). Never `focus` (taken by `cameraFocus` and `partFocus`). On screen only "Recenter" appears.
 
 **Tech Stack:** three 0.180.0, @react-three/fiber 9.8.2, @react-three/drei 10.7.9 (`OrbitControls` = three-stdlib 2.36.1), zustand vanilla stores, React 19, Next.js 15, Tailwind v4, motion/react.
 

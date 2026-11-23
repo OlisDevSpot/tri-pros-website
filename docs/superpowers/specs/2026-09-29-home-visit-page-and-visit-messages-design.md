@@ -17,7 +17,7 @@ The means:
 - 27% are booked for the same day, 31% for the next day, 36% for 2–7 days out;
 - 31% of customers have no email.
 
-**Success** is a higher **Sit** rate (`CONTEXT.md` "Sit") and a lower share of meetings that end `cancelled` or `no_show`, measured as §13 defines. The data comes from `meeting_messages`, the homeowner-confirmation columns and meeting outcomes. No dashboard in v1.
+**Success** is a higher **Sit** rate (`GLOSSARY.md` "Sit") and a lower share of meetings that end `cancelled` or `no_show`, measured as §13 defines. The data comes from `meeting_messages`, the homeowner-confirmation columns and meeting outcomes. No dashboard in v1.
 
 ## 2. Scope
 
@@ -68,7 +68,7 @@ The means:
 | D12 | The decision-maker ask is a polite request with a share link: *"We kindly request that everyone needed to make this decision is present during our meeting. Want to keep your partner in the loop? Copy link to meeting"* (owner, 2026-09-29). |
 | D13 | The setter sends the visit summary by hand during the booking call. The booking scripts' step 5.7 ("reply yes to my text") points at it (§14). |
 | D14 | The day-before reminder is skipped when a visit summary for the current time went out after 12:00 PM Pacific on the day before the meeting. A Fri 10 AM visit booked Thu 2 PM gets the summary and Friday's rep confirmation; booked before Thu noon, it gets all three. If no summary went out, the reminder still goes (safety net). |
-| D15 | Only the office moves a meeting to **Confirmed** (`confirmedAt`; the `CONTEXT.md` meaning does not change). The homeowner's confirmation is a separate fact, **homeowner confirmed**, shown on the home visit page and on the office's meeting cards so the office can act on it. |
+| D15 | Only the office moves a meeting to **Confirmed** (`confirmedAt`; the `GLOSSARY.md` meaning does not change). The homeowner's confirmation is a separate fact, **homeowner confirmed**, shown on the home visit page and on the office's meeting cards so the office can act on it. |
 | D16 | No way to reply from the main line in v1. Staff answer replies by calling. |
 | D17 | A cancelled meeting whose invite went out gets a calendar cancellation email. |
 | D18 | The main line is one DID for now. It will change later, so nothing assumes a fixed number. The owner chose the 818 DID (+18182084904) as the main line "for now" on 2026-10-08. Which number production uses is the owner's choice at deploy time (owner, 2026-10-09). |
@@ -85,7 +85,7 @@ The means:
 
 ## 3a. Vocabulary (approved, D19)
 
-`CONTEXT.md:113` reserves **Stage** for pipelines, and `CONTEXT.md:93` avoids "rank / tier / featured" for portfolio projects. This spec uses:
+`GLOSSARY.md:113` reserves **Stage** for pipelines, and `GLOSSARY.md:93` avoids "rank / tier / featured" for portfolio projects. This spec uses:
 
 | Term | Meaning | Code |
 |---|---|---|
@@ -891,7 +891,7 @@ The analytics epic can add the view later. v1 only has to write the data.
 
 ## 14. Coordination and doc updates (made in the build, in the change that makes them true)
 
-- **`CONTEXT.md`:**
+- **`GLOSSARY.md`:**
   - the §3a terms (D19), including **Homeowner confirmed** next to **Confirmed**, whose meaning does not change (D15);
   - add **Rep confirmed**;
   - fix the stale **DID** entry (`:28`), which lists three DID kinds the schema doesn't have. It becomes "a DID is assigned to a user, or is the one main line (`is_main_line`)".
@@ -905,7 +905,7 @@ The analytics epic can add the view later. v1 only has to write the data.
   - §5.3: its merged `isStopKeyword` (first-token, with `cancel` / `end` / `remove` / `revoke`) must match whole messages like Twilio, or stay off main-line replies (§7.4).
 - **Campaigns admin:** `CadenceMessageRow` composes `SmsBodyEditor`, and `features/campaigns-admin/lib/{sms-segments,insert-at-cursor}.ts` are deleted in the same change (§4.4). Campaign bodies get the encoding-aware counter too.
 - **Records bulk-actions spec** (`2026-09-28-records-bulk-actions-and-entity-tables-design.md` §4.4) edits `CreateMeetingForm` for its setter picker. The booking toast (§7.5) is additive; whichever lands second rebases.
-- **`CONTEXT.md`:** the D22 terms once approved (Visit messages page, Sequence, Visit message template, Skip, Paused).
+- **`GLOSSARY.md`:** the D22 terms once approved (Visit messages page, Sequence, Visit message template, Skip, Paused).
 - **Memory:**
   - `project-dispatcher-role.md`: dispatchers get visit messages with the permissions rework (#285), not through a capability branch here (D25);
   - fix `project-voip-in-house.md`, which is stale: it says no `voip_*` tables and puts compliance at `services/compliance.service.ts`;

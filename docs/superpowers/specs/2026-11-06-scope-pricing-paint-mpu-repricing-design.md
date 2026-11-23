@@ -1,6 +1,6 @@
 # Scope Pricing: exterior paint and MPU repricing, per-scope multipliers
 
-> Owner brainstorm 2026-11-06, stress-tested the same day (rulings in §Stress-test rulings). Amends the Sales Calculators epic (`docs/plans/2026-09-26-sales-calculators-epic.md`): ruling **R19** supersedes **D3** ("one global default; per-trade defaults wait for C2"). Delete this file when the work ships; the tracker keeps the rulings. Vocabulary: `CONTEXT.md` §Scope Pricing terms.
+> Owner brainstorm 2026-11-06, stress-tested the same day (rulings in §Stress-test rulings). Amends the Sales Calculators epic (`docs/plans/2026-09-26-sales-calculators-epic.md`): ruling **R19** supersedes **D3** ("one global default; per-trade defaults wait for C2"). Delete this file when the work ships; the tracker keeps the rulings. Vocabulary: `GLOSSARY.md` §Scope Pricing terms.
 
 ## Intent
 
@@ -50,7 +50,7 @@ The owner's instruction is to **keep Cost honest and fix the price through the m
 | Large | 1,800 – 3,000 | $7,720 → $27,020 | $5,570 → $19,495 |
 | Custom scope | > 3,000 | no formula price; the agent enters the price | same |
 
-- **Garage** is yes/no. Cost **+$485** (≈ $1,700 on the price). The garage square footage input goes away; the home size comes from home square footage alone. Unit Cost label: "Garage" ("add-on" is the catalog's kind, `CONTEXT.md`).
+- **Garage** is yes/no. Cost **+$485** (≈ $1,700 on the price). The garage square footage input goes away; the home size comes from home square footage alone. Unit Cost label: "Garage" ("add-on" is the catalog's kind, `GLOSSARY.md`).
 - **Stories**: cost **+$1,000 per story above the first** (owner: "$6,000 → $7,000"), read from the existing job-level `numStories`. About +$3,500 on the price per story at 3.5. Unit Cost `additionalStory`, label "Each additional story" — its own name, because roof's `dollarPerAdditionalStory` is $25 **per BSQ** per story and the two sit in the same Unit Costs list (stress-test ruling).
 - Scope default multiplier **3.5**.
 
@@ -129,13 +129,13 @@ Size edges (owner-confirmed by reading): a house exactly on an edge takes the sm
 - §3.6: "Default multiplier and multiplier floor" row gains "and per-scope defaults (paint 3.5, MPU 2.5)"; the paint thresholds row reads 1,350 / 1,800 / 3,000 with a custom scope above; add an Agent-only row for the scope multiplier override.
 - §7 formula table: `installExteriorPaint` row reads the new variables and home-size rule; `mpu` costs.
 - PR2's MPU figure and D6's historical note stay as history; add a one-line "superseded by R19" marker on D3 and PR2.
-- New terms live in `CONTEXT.md` §Scope Pricing terms (written with the stress-test amendment, 2026-11-06).
+- New terms live in `GLOSSARY.md` §Scope Pricing terms (written with the stress-test amendment, 2026-11-06).
 
 ## Stress-test rulings (owner, 2026-11-06)
 
 1. **Below-floor = unreachable, not "a scope would clamp".** A scope that would go under the floor is held there and the others carry the target. `below-floor` only when the target is under the floor total; then the floor and the floor total are reported (CF4).
 2. **Paint's per-story cost has its own name**: `additionalStory`, "Each additional story". Roof's `dollarPerAdditionalStory` ($/BSQ) is untouched.
-3. **Vocabulary**: *Proposal-wide multiplier* (not job-wide), *Scope multiplier override* (not line override / pinned / fixed), *Custom scope*, *Home size* (not tier / band). Users are *agents*, not reps (`CONTEXT.md` §People terms). Config field `exteriorPaintHomeSizes`; form field `multiplierOverride`.
+3. **Vocabulary**: *Proposal-wide multiplier* (not job-wide), *Scope multiplier override* (not line override / pinned / fixed), *Custom scope*, *Home size* (not tier / band). Users are *agents*, not reps (`GLOSSARY.md` §People terms). Config field `exteriorPaintHomeSizes`; form field `multiplierOverride`.
 4. Accepted from the reviewers without an owner call: `all-overridden` solver status with its own copy and `'multiplier' in solved` gates; the resolver stays private to the engine; `formatMultiplier` for the shift text; the readouts' uncosted copy; "Garage" label; the `Scope multipliers` list keeps a row for an overridden custom scope; every verify step runs lint + tsc + theme:check; UI tasks carry pure row/predicate helpers with goldens because no dev server is available to the build.
 
 ## Left to the builder

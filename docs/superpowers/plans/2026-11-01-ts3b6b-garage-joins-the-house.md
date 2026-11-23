@@ -49,7 +49,7 @@ Abbreviations:
 - Never start a dev server and never `rm -rf .next`. Shots and probes use the owner's server on `http://localhost:3002`.
 - Sign in with `/api/dev/playwright-session?…&as=info%40triprosremodeling.com`, never `role=`. Read the secret through `.superpowers/sdd/2026-10-24-upgrades-that-follow-the-home/shots/t7-lib.mjs`, and never print it. No DB writes of any kind.
 - Commit with a 300000 ms timeout. Never `git add -A`, `git stash`, `git reset` or `git checkout -- <file>` (`standing-rules.md`). Run `git diff --shortstat` after any scripted edit.
-- Builders never stage `docs/**` or `CONTEXT.md`. Tracker and spec edits are the controller's, left unstaged for the owner.
+- Builders never stage `docs/**` or `GLOSSARY.md`. Tracker and spec edits are the controller's, left unstaged for the owner.
 - **No import cycle:** `home-geometry.ts` and `home-details.ts` never import `home-lot.ts` or `garage-boxes.ts`. Modules that load after them (`home-anchors.ts`, `home-heat-lanes.ts`, `F/lib/*`) may import `GARAGE` from `home-lot.ts`.
 - **No three.js** in `F/lib/`, `F/constants/` or `F/types.ts`, type-only imports included. The scene check enforces it.
 - Every geometry a component builds goes through `useOwnedGeometry`. Box lists handed to `MergedBoxes` are module-level or memoized.

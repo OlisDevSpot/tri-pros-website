@@ -34,7 +34,7 @@
   - File-level constants in `constants/`, hooks in `hooks/`, contexts in `contexts/`.
   - Named exports (pages and layouts excepted).
   - Comments say why, never what. No banners. Never cite plans, specs, tasks or R-ids in code.
-- **Vocabulary** (`CONTEXT.md` § Trade scene terms):
+- **Vocabulary** (`GLOSSARY.md` § Trade scene terms):
   - Use: home kit, assembly kit, anchor, weather, climate, readings, comfort, residents, burst, thermal camera, part, part condition, existing conditions, proposed build.
   - Never use in new code: "experience", "visualization", "variant", "section kit", "condition" for weather, "layer" for a part, or "Tri Pros build" (screen copy only).
 - **Tiers and imports:**

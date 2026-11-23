@@ -42,17 +42,17 @@
 
 ### Task 0: Commit the approved docs (controller, before any dispatch)
 
-The spec, this plan and the tracker are untracked, and the CONTEXT.md filter terms share a diff with another session's energy-impact edits. A worktree or subagent would see none of them.
+The spec, this plan and the tracker are untracked, and the GLOSSARY.md filter terms share a diff with another session's energy-impact edits. A worktree or subagent would see none of them.
 
 - [ ] **Step 1:** `git diff --cached --name-only` prints nothing.
 - [ ] **Step 2:** Stage the docs:
   - `git add docs/superpowers/specs/2026-10-21-data-view-filter-rules-design.md docs/superpowers/plans/2026-10-22-filter-grouping-fields.md docs/plans/2026-10-21-data-view-filter-rules-epic.md`
-  - Save `git diff CONTEXT.md` to a patch in the scratchpad.
+  - Save `git diff GLOSSARY.md` to a patch in the scratchpad.
   - Cut the patch down to the filter hunks only: the Data view terms "Filter rule" … "Quick filter" and "Outcome type", plus the Flagged ambiguities "sits" note.
   - `git apply --cached` that patch.
 - [ ] **Step 3:** Check the index before committing:
   - `git diff --cached --name-only` lists exactly those 4 paths;
-  - `git diff --cached CONTEXT.md` shows only filter hunks.
+  - `git diff --cached GLOSSARY.md` shows only filter hunks.
 
   Then, in a separate call that starts with `git commit -F -` (no pathspec here, because a pathspec would commit the energy hunks too), commit with the message `docs(filter-rules): data-view filter rules spec, FR0 plan, tracker and filter terms`.
 

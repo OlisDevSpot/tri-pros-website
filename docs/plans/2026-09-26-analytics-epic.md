@@ -75,7 +75,7 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⚠️ blocked on a §2
 | **C35** | **Meeting-type dimension is derived**, not read from the stored `meetingType` (`Fresh` on every non-project meeting). *(Values redefined by C37.)* | 2026-09-26 |
 | **C36** | **Dimension semantics:** person-level dimensions (source, city/zip) filter people for every stage; event-level dimensions (closer, outcome, meeting type) filter meetings/sales, and stages with no such event show "not applicable", never an unfiltered number. Rates are same-period ratios; totals are Σ÷Σ. | 2026-09-26 |
 | **C37** | **Meeting order (amends C35):** `first` = the person's **first sat** non-project meeting (cancelled → `pns` ⇒ the `pns` is `first`) · `repeat` = any non-project meeting after the first sit · `not_sat` = any non-project meeting before the first sit, or of a person who never sat · `project` = a project meeting. A reschedule's cancelled original is `not_sat`, never `first`. | 2026-09-26 |
-| **C38** | **Every business rule is tweakable in one obvious place:** one named export per rule (data map or small pure function) with a one-line *why*, in its owner per C29; analytics' own composition rules all in `src/features/analytics/lib/analytics-rules.ts`; builder and aggregator hold no inline rule logic; CONTEXT.md `## Analytics terms` is the index (term → one-sentence rule → symbol + file); the verify script pins each rule with a numbered check. | 2026-09-26 |
+| **C38** | **Every business rule is tweakable in one obvious place:** one named export per rule (data map or small pure function) with a one-line *why*, in its owner per C29; analytics' own composition rules all in `src/features/analytics/lib/analytics-rules.ts`; builder and aggregator hold no inline rule logic; GLOSSARY.md `## Analytics terms` is the index (term → one-sentence rule → symbol + file); the verify script pins each rule with a numbered check. | 2026-09-26 |
 | **C39** | **`additional_work` counts as a sit** in the sit map (the rep met the homeowner and sold more work). It only happens on project meetings (C43), so no lead-chain number changes. | 2026-09-26 |
 | **C40** | **The meeting count covers every meeting row**, project or not; the meeting-order dimension narrows it. It is the base for outcome ratios. | 2026-09-26 |
 | **C41** | **Under an event-level filter, booked leads and sits are tested against the booked lead's own meeting**; outcome and meeting-order filters make sales "not applicable" (a closer filter still applies to the sale meeting). | 2026-09-26 |
@@ -91,7 +91,7 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⚠️ blocked on a §2
 
 | ID | Question | Blocks |
 |---|---|---|
-| ~~**Q1**~~ | ✅ Resolved → C28. **Vocabulary.** "Seat" vs "sit"; "appointment" as the customer-level analytics term vs `ubiquitous-language.md:261` ("Meeting, not appointment"); "setter", "closer", "junk lead", "valid lead", "total closes", "at risk". Owner agrees the terms once; A writes them to CONTEXT.md. | A |
+| ~~**Q1**~~ | ✅ Resolved → C28. **Vocabulary.** "Seat" vs "sit"; "appointment" as the customer-level analytics term vs `ubiquitous-language.md:261` ("Meeting, not appointment"); "setter", "closer", "junk lead", "valid lead", "total closes", "at risk". Owner agrees the terms once; A writes them to GLOSSARY.md. | A |
 | **Q2** | **#285 / #217 alignment for C20.** `#285` (`b40403b6`) keeps `meetings.ownerId` NOT NULL as a permission level (dispatcher-booked meetings are system-owned because the role lacks `own Meeting`; the planned agent `Meeting.delete` condition is `{ ownerId: me }`); #217 removes `owner` from participants because "ownership lives on `meetings.ownerId`". Both need rewriting to the `createdBy` + participants model before D. Who gains delete / full-update rights once `ownerId` is gone is a #285 ruling. | D |
 | **Q3** | **Setter backfill targets.** Do past setters have user accounts? Is the setter a column (`setBy`) only, or also a participant role? (C20 says column.) What date ranges? | D |
 | ~~**Q4**~~ | ✅ Resolved → C30. **Person identity: computed on read or stored?** Chained phone/email matching is a connected-components problem. Options for spec A: recursive CTE on read · a stored person / cluster id maintained at intake + backfill · a derived table refreshed by a job. | A |
@@ -113,7 +113,7 @@ Legend: `[ ]` open · `[x]` done · `[~]` in progress · ⚠️ blocked on a §2
 - [x] **A6** Sale per C6, dated at signing; `kind` splits initial vs upsell (C11).
 - [x] **A7** Event-month bucketing in **America/Los_Angeles**, never UTC (C7, C21).
 - [x] **A8** Pure-portfolio projects (no meetings) never count (`hasAssociatedMeeting`, `src/shared/modules/projects/core/lib/visibility.ts:43`).
-- [x] **A9** Glossary terms per Q1 in CONTEXT.md.
+- [x] **A9** Glossary terms per Q1 in GLOSSARY.md.
 
 ### B — Sales money rules
 

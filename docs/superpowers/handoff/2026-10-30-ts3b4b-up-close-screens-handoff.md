@@ -52,7 +52,7 @@ No. Nothing in the code or the tracker stops a design session. Settle these in i
    This is a design decision to make with evidence: read the readers before you recommend. (a) looks smaller.
 3. **"System" already means something on screen.** TS3b.4a groups the Upgrades rows by system: Roof & gutters, Attic, Windows, Walls, Heating & cooling, Foundation. Foundation replaced Crawl space there (owner, 2026-10-25). R92 says "crawl space system".
    - Settle whether the up-close systems are the same list, with the same names, as the Upgrades groups.
-   - Record any new term in `CONTEXT.md`, but only after the owner agrees it.
+   - Record any new term in `GLOSSARY.md`, but only after the owner agrees it.
 4. **Two of the four have no kit yet, and the sizes vary by home.**
    - **Windows:** the assembly exists as data only, with parts `frame` and `glazing` (`single-pane`, `double-pane`). The 4a spec says 4b adds `gap`, `seals` and `flashing`, plus the up-close kit.
    - **Crawl space:** the assembly exists. There's a whole-home crawl framing in `home-camera-rig.tsx`, and an `under-floor` anchor in `constants/home-anchors.ts`. A slab home has no crawl space.
@@ -69,7 +69,7 @@ No. Nothing in the code or the tracker stops a design session. Settle these in i
    - §3 rows R8, R52, R55, R60, R73, R77, R81, R84–R95, R92, R103, R105–R111;
    - §6, the change log from 2026-10-24 on.
 2. **Memory** `project-3d-trade-scenes.md` and `project-trade-scene-layout-exploration.md` (both load automatically).
-3. **`CONTEXT.md`:** the trade-scene terms (home view, Complete, Partly open, lens, wear, home stress, system…). Use them as written.
+3. **`GLOSSARY.md`:** the trade-scene terms (home view, Complete, Partly open, lens, wear, home stress, system…). Use them as written.
 4. **The TS3b.4a spec**, mainly §4 (the assemblies resolved, the build's swaps), §7 (wear looks) and §10 (4b).
 5. **The attic spec**, in full.
 6. **The camera spec and plan**, for the up-close slide and what going up close or back out does to it.
@@ -109,7 +109,7 @@ No. Nothing in the code or the tracker stops a design session. Settle these in i
 
 - **Requirements change in the tracker first:** a register row or a status change, plus a §6 change-log line, then the spec.
 - **Other sessions work in this worktree at the same time.**
-  - Uncommitted files and hunks are theirs: parts of the tracker, `CONTEXT.md`, several untracked specs, plans and handoffs. Never revert them, stash, checkout or reset.
+  - Uncommitted files and hunks are theirs: parts of the tracker, `GLOSSARY.md`, several untracked specs, plans and handoffs. Never revert them, stash, checkout or reset.
   - Commit only your own files, by explicit path. For a shared file like the tracker, stage only your own lines.
 - **The dev server on :3002 is the owner's.** Never start, stop or restart it, and never `rm -rf .next`.
 - **Playwright sign-in:**
