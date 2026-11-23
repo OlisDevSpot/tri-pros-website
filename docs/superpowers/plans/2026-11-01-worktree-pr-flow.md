@@ -10,6 +10,8 @@
 
 ## Rulings
 
+WF = Worktree Flow: the owner's rulings on this plan, cited elsewhere (board lane `dev-flow`, issue #311, memory) as WF1, WF2, … This table is their one home.
+
 | # | Ruling | Date |
 |---|---|---|
 | WF1 | Execute the plan in order, Task 0 first. The orient page (above) is the living tracker for this plan: what is built, files affected, key code facts, infra and patterns, so the owner has visibility into the new structure as it lands. | owner, 2026-11-06 |
