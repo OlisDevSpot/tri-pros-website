@@ -6,7 +6,7 @@
 
 ## 1. Intent
 
-Every data view (CONTEXT.md: one surface listing one entity's records through `useDataViewQuery`) can be narrowed with the same builder: add a filter rule, pick a field from a dropdown, choose **is** or **is not**, pick values, and combine filter rules with AND / OR in filter groups. Filter rules speak the business's own categories, not only raw column values: a meeting can be filtered by **Sit** (Sat · Didn't Sit · Not Set) or **Outcome type** (Positive · Neutral · Negative · Not Set), because the app already classifies outcomes that way.
+Every data view (GLOSSARY.md: one surface listing one entity's records through `useDataViewQuery`) can be narrowed with the same builder: add a filter rule, pick a field from a dropdown, choose **is** or **is not**, pick values, and combine filter rules with AND / OR in filter groups. Filter rules speak the business's own categories, not only raw column values: a meeting can be filtered by **Sit** (Sat · Didn't Sit · Not Set) or **Outcome type** (Positive · Neutral · Negative · Not Set), because the app already classifies outcomes that way.
 
 The owner's trigger questions are instances, not the scope:
 - "Leave out 1 of 10 values" → **is not** on any field.
@@ -80,7 +80,7 @@ A filter grouping field is an ordinary `multiSelect({ values, optionLabel })` fi
 | `sit` | Sit | Sat · Didn't Sit · Not Set | `inArray(meetings.meetingOutcome, valuesInGroups(MEETING_OUTCOME_SIT, v))` |
 | `outcomeSentiment` | Outcome type | Positive · Neutral · Negative · Not Set | `inArray(meetings.meetingOutcome, valuesInGroups(MEETING_OUTCOME_SENTIMENT, v))` |
 
-`meetingOutcome` is non-null with default `not_set` (`db/schema/meetings.ts:31`), so no `coalesce`. Edits to `meeting-fields.ts` / `meeting-field-sql.ts` stay in place (they move with the modules consolidation, not here). The per-meeting Sit differs from analytics' "Sits" count by design (CONTEXT.md, Flagged ambiguities).
+`meetingOutcome` is non-null with default `not_set` (`db/schema/meetings.ts:31`), so no `coalesce`. Edits to `meeting-fields.ts` / `meeting-field-sql.ts` stay in place (they move with the modules consolidation, not here). The per-meeting Sit differs from analytics' "Sits" count by design (GLOSSARY.md, Flagged ambiguities).
 
 Ship note: unshipped `0d0d33896` reclassifies `rescheduled` as negative, so "Outcome type: Negative" differs between local main and prod until it ships.
 
@@ -271,7 +271,7 @@ New filter rule defaults: the first filterable field not yet used, is, empty val
 - O6. A filter rule can use every field the viewer's role may filter by; per-view `toolbar` lists go; the gate is enforced on the server.
 - O7. A project visit is a sit of that meeting; "Sits" leaves project meetings out.
 - "Real meetings" = sits; Not set is its own group; filters use the app's existing classifications; "terminal negative" dropped; systems, not single use cases.
-- **O8 (2026-10-22). Names:** keep the original names, prefixed with `filter` so they read as filter machinery: **filter rule**, **filter group**, **filter rule tree**, **filter grouping field** (CONTEXT.md, Data view terms). Code: `FilterRule`, `FilterGroup`, `FilterRuleTree`, `filterRuleTreeSchema`, `filterRules` / `setFilterRules` / `filterRulesKey`, `addFilterRule` …
+- **O8 (2026-10-22). Names:** keep the original names, prefixed with `filter` so they read as filter machinery: **filter rule**, **filter group**, **filter rule tree**, **filter grouping field** (GLOSSARY.md, Data view terms). Code: `FilterRule`, `FilterGroup`, `FilterRuleTree`, `filterRuleTreeSchema`, `filterRules` / `setFilterRules` / `filterRulesKey`, `addFilterRule` …
 - **O9 (2026-10-22). Old filter links are dropped:** flat-key links open unfiltered; no compatibility layer.
 - **O10 (2026-10-22). View opt-outs:** `filters: false` on views with no filters (the six dashboard lists), `omit: ['pipeline']` on the kanban.
 - **O11 (2026-10-22). Sort is gated** by the same per-field gate as filtering.

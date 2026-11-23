@@ -20,7 +20,7 @@
 - **Shared working tree.**
   - No `git stash`, `git checkout .`, `git restore`, `git reset`, `git commit --amend` in any form, or `git add -A`/`git add .`/`git add -u <dir>`.
   - Commit only if the owner answered yes to committing per task.
-  - **`git commit -- <path>` commits the path's whole working-tree file**, not your staged hunks. Before committing, run `git diff <path>` on every path: if a file holds another session's hunks (`types.ts`, `home-scene-copy.ts`, `CONTEXT.md`, the tracker are likely), stage only your hunks with `git apply --cached <patch>`, check `git diff --cached --stat` lists only your paths, then run a bare `git commit`. Otherwise `git add <paths>` and `git commit -- <paths>`.
+  - **`git commit -- <path>` commits the path's whole working-tree file**, not your staged hunks. Before committing, run `git diff <path>` on every path: if a file holds another session's hunks (`types.ts`, `home-scene-copy.ts`, `GLOSSARY.md`, the tracker are likely), stage only your hunks with `git apply --cached <patch>`, check `git diff --cached --stat` lists only your paths, then run a bare `git commit`. Otherwise `git add <paths>` and `git commit -- <paths>`.
   - Check `git show --stat HEAD` after every commit. If a commit comes out wrong, stop and tell the owner.
   - After any scripted edit, check `git diff --shortstat` (no target file is CRLF today).
 - **Conventions:**
@@ -33,7 +33,7 @@
 - **Copy:** every new string lives in one new `CONTROLS_COPY` object in `constants/home-scene-copy.ts`, under the comment `// Placeholder copy until the owner's copy pass.` Use the mock's words exactly. Existing strings come from the existing constants (spec §3).
 - **Company facts** come only from `src/shared/constants/company/`. No solar, anywhere.
 - **Design tokens only, by the theme rules (owner, 2026-11-01).** Use the stage's dark tokens; the stage is `dark`-scoped (`SCENE_STAGE_CLASS`). Never write a literal colour; the token map in the Mock reference below gives them. Where the mock's fill breaks `docs/design-system/theme-conventions.md`, the theme rule wins (fields on `input-background`, menus on `popover`). Read that file before the first class string. States: `hover:bg-hover`, `pressed:` (never `active:`), the shared focus ring.
-- **Names (owner, 2026-11-01):** the glossary terms in `CONTEXT.md` (Controls, Controls window, Today ⇄ Build toggle, Home facts, Missing fact, Systems rail, System in focus, System card, Modify, change slot, Scene change, Benefits, Close-up card). In code, the two sides are `existing` / `proposed`, never `today` / `build` (`existing-chip.tsx`, `proposed-chip.tsx`, `ProposedTint`); "Today" and "Tri Pros build" are on-screen copy only. Modify's on-screen groups are `SlotGroup`, not a scope.
+- **Names (owner, 2026-11-01):** the glossary terms in `GLOSSARY.md` (Controls, Controls window, Today ⇄ Build toggle, Home facts, Missing fact, Systems rail, System in focus, System card, Modify, change slot, Scene change, Benefits, Close-up card). In code, the two sides are `existing` / `proposed`, never `today` / `build` (`existing-chip.tsx`, `proposed-chip.tsx`, `ProposedTint`); "Today" and "Tri Pros build" are on-screen copy only. Modify's on-screen groups are `SlotGroup`, not a scope.
 - **Motion:**
   - Every transition uses `cubic-bezier(.2,.8,.2,1)` (`CONTROLS_EASE`, Task 3) unless the Mock reference names another curve.
   - Under `prefers-reduced-motion: reduce`, every one of them jumps (`duration: 0`, or `motion-reduce:transition-none` on CSS transitions), and the camera cuts.
@@ -162,7 +162,7 @@ iPad portrait (820 × 1180) takes the portrait placements, with each modal cappe
 
 - [ ] **Step 1:** The owner has said build, execute or run in words.
 - [ ] **Step 2:** Ask the owner whether the blueprint-load session and the paint-wear session are finished. A clean tree at one moment proves nothing; both committed or edited on 2026-11-01.
-- [ ] **Step 3:** Run `git status --short` on every path this plan creates, modifies or deletes, plus `src/shared/components/scene/` and `CONTEXT.md`. On 2026-11-01 these held other sessions' edits: `scene-stage.tsx`, `trade-scene-view.tsx`, `use-scene-shortcuts.ts`, `home-scene-canvas.tsx`, `home-scene-copy.ts`, `ui/components/panel/material-choices.tsx`, `ui/components/panel/paint-wear-fields.tsx` (new), `ui/lib/compile-scene.ts`, `ui/components/blueprint/*`, `src/shared/components/scene/ui/scene-shell.tsx`. If any is still dirty with someone else's work, stop and tell the owner.
+- [ ] **Step 3:** Run `git status --short` on every path this plan creates, modifies or deletes, plus `src/shared/components/scene/` and `GLOSSARY.md`. On 2026-11-01 these held other sessions' edits: `scene-stage.tsx`, `trade-scene-view.tsx`, `use-scene-shortcuts.ts`, `home-scene-canvas.tsx`, `home-scene-copy.ts`, `ui/components/panel/material-choices.tsx`, `ui/components/panel/paint-wear-fields.tsx` (new), `ui/lib/compile-scene.ts`, `ui/components/blueprint/*`, `src/shared/components/scene/ui/scene-shell.tsx`. If any is still dirty with someone else's work, stop and tell the owner.
 - [ ] **Step 4:** Confirm TS3b.4b (`docs/superpowers/plans/2026-10-30-up-close-on-a-system.md`) has not started. It builds after this plan, re-planned on this head.
 - [ ] **Step 5:** Ask the owner whether each task commits when it passes. Create `.superpowers/sdd/2026-11-01-trade-scene-controls/` (gitignored) for reports.
 
@@ -791,7 +791,7 @@ assert.deepEqual(pressFocus(at('systems', 'roof'), 'attic'), { ...at('systems', 
 - [ ] **Step 5: Commit**, then hand the owner the device check: the real iPad and the phone, through `pnpm dev:mobile`.
 - [ ] **Step 6: Close out.**
   - Update the tracker's Controls row to "built" with the commit range, and its TS3b.4b row to "re-plan on the Controls head: its plan cites the scene card, panel, build switch and `'under-floor'` focus this build removed".
-  - In `CONTEXT.md`, delete the Scene panel, Build switch and Knob entries (marked "goes when the Controls build ships"), and update Assembly screen ("what the close-up card shows up close").
+  - In `GLOSSARY.md`, delete the Scene panel, Build switch and Knob entries (marked "goes when the Controls build ships"), and update Assembly screen ("what the close-up card shows up close").
   - Update the session memory `project-trade-scene-layout-exploration.md` (under `~/.claude/projects/…/memory/`, not the repo).
   - Write `docs/plans/2026-11-01-trade-scene-controls-follow-ups.md` for any decision the build made on the owner's behalf, plus: the Heating & cooling camera aims at the condenser pad for every HVAC type (TS3b.4b's system views).
   - Delete this plan and the spec once the owner says it shipped.

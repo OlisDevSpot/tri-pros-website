@@ -13,13 +13,6 @@ export type ProjectContext = z.infer<typeof projectContextSchema>
 
 const variableInputValue = z.union([z.number(), z.string(), z.boolean()]).nullable()
 
-const formulaLineSchema = z.object({
-  id: z.string(),
-  kind: z.literal('formula'),
-  pricingKey: z.enum(PRICING_KEYS),
-  variables: z.record(z.string(), variableInputValue),
-})
-
 const manualLineSchema = z.object({
   id: z.string(),
   kind: z.literal('manual'),
@@ -28,6 +21,15 @@ const manualLineSchema = z.object({
 })
 
 export function createScopePricingFormSchema(multiplierFloor: number) {
+  const formulaLineSchema = z.object({
+    id: z.string(),
+    kind: z.literal('formula'),
+    pricingKey: z.enum(PRICING_KEYS),
+    variables: z.record(z.string(), variableInputValue),
+    multiplierOverride: z.number().min(multiplierFloor, { message: `The multiplier can't go below ${multiplierFloor}` }).nullable(),
+    price: z.number().min(0).nullable(),
+  })
+
   return z.object({
     context: projectContextSchema,
     lines: z.array(z.discriminatedUnion('kind', [formulaLineSchema, manualLineSchema])),

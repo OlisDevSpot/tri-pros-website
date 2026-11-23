@@ -50,7 +50,7 @@
 | **orchestrator** | The page or component that mounts a data view and writes the wrapper around its parts. | "container" (a records-management term) |
 | **common truth** | A rule every data view renders the same way, owned by a part: boundary + pending, count, empty, stale. | — |
 | **Entity View Context** (glossary) | The concept a data view implements; unchanged. | — |
-| **loading screen** | A route's `loading.tsx`: the page's own component under `DataViewPending`, its data views showing their cached rows (instant tab return R6; glossary entry owed to `CONTEXT.md`). | "skeleton page" |
+| **loading screen** | A route's `loading.tsx`: the page's own component under `DataViewPending`, its data views showing their cached rows (instant tab return R6; glossary entry owed to `GLOSSARY.md`). | "skeleton page" |
 | **pending view** | Any render under `DataViewPendingContext` other than `false`: a loading screen, a boundary's suspense fallback (`'loading'`), or its error fallback (`'error'`). | — |
 
 New names (owner-approved 2026-10-07): `DataView`, parts `Bar`, `Title`, `Count`, `Toolbar`, `Body`, `Empty`, `Boundary`; prop `empty`; type `EntityTableResult`; folder `shared/components/data-view/`. The attribute `data-busy` is dropped (2026-10-12, §3.5): the one dim marks rows of another key, which the code already calls `data-stale`. Nothing else is coined; a plan that needs another name lists it under "Owner confirms".
@@ -259,7 +259,7 @@ Pipeline-speed Phase 2 (action hosts) shipped before this spec was built (`5bc02
 
 ## 10. Records
 
-- Tracker §1 terms table gains **data view** (§2); ledger §3.1 gains a "DataView parts" column; D65 is the ruling. `CONTEXT.md` "Records terms" gains *data view*, *body*, *orchestrator*, *loading screen* and *pending view* (when the session holding `CONTEXT.md` releases it).
+- Tracker §1 terms table gains **data view** (§2); ledger §3.1 gains a "DataView parts" column; D65 is the ruling. `GLOSSARY.md` "Records terms" gains *data view*, *body*, *orchestrator*, *loading screen* and *pending view* (when the session holding `GLOSSARY.md` releases it).
 - The glossary's "Entity View Context" entry gets one sentence: a data view is its implementation.
 - This spec is deleted when phase 3 ships; its plans are deleted as each ships.
 

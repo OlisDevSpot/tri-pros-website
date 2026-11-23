@@ -254,11 +254,11 @@ Every `@migration` comment in the voip code points to a future swap.
 **Impact:**
 - Phase 1 plan tasks 2-10 substantially rewritten (this commit + follow-up).
 - INTEGRATION-SEAM.md §5, §8 rewritten — §8 (cross-system table conventions with source discriminator) deleted entirely; §5 (DNC propagation) rewritten for shared-canonical-on-customers model.
-- New domain glossary file: `CONTEXT.md` at repo root.
+- New domain glossary file: `GLOSSARY.md` at repo root.
 - voip-campaigns plans (parallel user work in `docs/plans/voip-campaigns/`) get their own clean schema namespace — no `source` field needed there either.
 - Committed enums (Task 2: `28e9b32e`) and pgEnums (Task 3: `d5d973fe`) need cleanup commits removing the dropped values + renaming `voipMessageDirections`.
 
-**Link:** This commit + [phase-1-mvp.md](./phase-1-mvp.md) + [CONTEXT.md](../../../CONTEXT.md).
+**Link:** This commit + [phase-1-mvp.md](./phase-1-mvp.md) + [GLOSSARY.md](../../../GLOSSARY.md).
 
 ### 2026-05-24 — Phase 1 plan rewritten (post-pivot descope complete)
 

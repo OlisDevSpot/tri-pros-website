@@ -16,7 +16,7 @@
 
 ## Global Constraints
 
-- Names are owner-agreed (CONTEXT.md "Media display terms"): `CrossfadeImage`, `CrossfadeImageSource`, `decodeImage`, `OptimizedImageFile`, `CROSSFADE_TRANSITION`, `CROSSFADE_HOLD_MS`. Never use "stage" in new code (CONTEXT.md: Stage = pipeline stage).
+- Names are owner-agreed (GLOSSARY.md "Media display terms"): `CrossfadeImage`, `CrossfadeImageSource`, `decodeImage`, `OptimizedImageFile`, `CROSSFADE_TRANSITION`, `CROSSFADE_HOLD_MS`. Never use "stage" in new code (GLOSSARY.md: Stage = pipeline stage).
 - `CROSSFADE_TRANSITION = { duration: 0.4, ease: BRAND_EASE }`; `CROSSFADE_HOLD_MS = 300`.
 - `CrossfadeImage` takes `{ file } | { src }`; `OptimizedImage` keeps its `file` prop (feature-layering D2 stays open).
 - Media UI lives in the media module's one unit (owner 2026-10-02, revising feature-layering D1): display components in `src/shared/modules/media/core/components/display/`, management components in `src/shared/modules/media/core/components/`, their helpers in `core/lib/` and `core/hooks/`. No separate `display` unit.
@@ -1044,5 +1044,5 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- $FILES
 
 ## After the last task
 
-- `CONTEXT.md` holds the "Media display terms" section (owner-agreed 2026-09-27) but is not committed: another session has uncommitted edits in the same file. The controller commits that section on its own once that session's edits are in, or tells the owner.
+- `GLOSSARY.md` holds the "Media display terms" section (owner-agreed 2026-09-27) but is not committed: another session has uncommitted edits in the same file. The controller commits that section on its own once that session's edits are in, or tells the owner.
 - Delete this plan and the spec once F1 has shipped (CLAUDE.md), and keep the tracker: F2–F4 and N1 are still open.

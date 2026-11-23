@@ -52,5 +52,7 @@ export const UNIT_COST_LABELS = {
     waterPaintSm: 'Water Paint (Small Home)',
     waterPaintAvg: 'Water Paint (Average Home)',
     waterPaintLarge: 'Water Paint (Large Home)',
+    garage: 'Garage',
+    additionalStory: 'Each additional story',
   },
 } as const satisfies UnitCostLabels

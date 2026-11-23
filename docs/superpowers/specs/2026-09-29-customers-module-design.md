@@ -164,7 +164,7 @@ A no-show shows as **Fresh** in the customers table and **Rehash** on the kanban
 
 - A customer's **pipeline** (one value, the table column) is the first member in the order **projects > fresh > rehash > dead > leads**.
 - A **pipeline filter** matches a customer that is a member of any selected pipeline.
-- The kanban keeps showing a customer in each lane they belong to (CONTEXT.md Pipeline terms: one stage per pipeline).
+- The kanban keeps showing a customer in each lane they belong to (GLOSSARY.md Pipeline terms: one stage per pipeline).
 
 **Change from today's kanban:** a customer with a project and no meeting leaves the Leads lane.
 
@@ -229,7 +229,7 @@ Other intake fixes:
 
 ### 5.3 Do-not-call: per phone, owned by customers
 
-⚠️ **Stale ref.** `CONTEXT.md:31-33` says do-not-call is "a shared canonical registry of phone numbers… both systems INSERT into it". The code at `src/shared/db/schema/customers.ts:42-50` stores it as three columns on `customers` (`dncOptedOutAt`, `dncReason`, `dncAddedByUserId`), written only through `src/shared/services/voip/compliance.service.ts`, and voip-in-house never writes it. §6 fixes CONTEXT.md to match the code.
+⚠️ **Stale ref.** `GLOSSARY.md:31-33` says do-not-call is "a shared canonical registry of phone numbers… both systems INSERT into it". The code at `src/shared/db/schema/customers.ts:42-50` stores it as three columns on `customers` (`dncOptedOutAt`, `dncReason`, `dncAddedByUserId`), written only through `src/shared/services/voip/compliance.service.ts`, and voip-in-house never writes it. §6 fixes GLOSSARY.md to match the code.
 
 **Customers owns the flag and the question "may we contact this number?"**
 
@@ -268,7 +268,7 @@ Other intake fixes:
 |---|---|---|
 | `docs/adr/0006-one-module-tree.md` (new) | Why: one tree (D1), the service as the interface for outside code (D2), DAL open inside `modules/` (D3), sealed-list rollout (D5). The rules themselves live in the lint config. | 2 |
 | `docs/codebase-conventions/service-architecture.md` | `#entities-vs-modules` is replaced by a pointer to ADR-0006. Fix two stale lines: `:12` says construction is "planned, not yet built" (`modules/construction/service.ts` exists); `:374` lists a `construction-data` service that doesn't exist. | 2 |
-| `CONTEXT.md` | Do-not-call section describes the code (columns on `customers`, owned by the customers module, per-phone check). `:11,15,27` say CloudTalk; the code binds JustCall (the CloudTalk move is planned, not built). New Pipeline-terms entry: **Customer pipeline**, the first of projects > fresh > rehash > dead > leads. | 3 |
+| `GLOSSARY.md` | Do-not-call section describes the code (columns on `customers`, owned by the customers module, per-phone check). `:11,15,27` say CloudTalk; the code binds JustCall (the CloudTalk move is planned, not built). New Pipeline-terms entry: **Customer pipeline**, the first of projects > fresh > rehash > dead > leads. | 3 |
 | `modules/customers/core/DOCS.md` (moved) | Update the pipeline and do-not-call rules it states; delete the file if nothing cites it after this ships (CLAUDE.md rule). | 3 |
 | `docs/plans/2026-09-26-records-management-epic.md` | Row M1 points to this spec. | on approval |
 

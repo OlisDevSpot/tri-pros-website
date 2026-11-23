@@ -39,7 +39,7 @@
   - Constants in `constants/`, hooks in `hooks/`, pure helpers in `lib/`.
   - Named exports.
   - Comments say why, never what. Never cite plans, specs, tasks or R-ids in code.
-- **Vocabulary** (`CONTEXT.md` § Trade scene terms):
+- **Vocabulary** (`GLOSSARY.md` § Trade scene terms):
   - In code an assembly is never a "section" and a part is never a "layer". The up-close screen is the **assembly screen**, and its blocks are `parts` and `peel`. Screen copy may say "Layers".
   - "Tri Pros build" is screen copy only; in code it is `view: 'proposed'`.
   - "Season" lives only inside the heat walk.
@@ -79,7 +79,7 @@
 - Modify: `src/shared/modules/construction/core/lib/thermal-walk.ts`
 - Modify: `src/shared/modules/construction/core/lib/relative-heat-flow.ts`
 - Modify: `src/shared/modules/construction/core/constants/assemblies/{roof-attic,exterior-wall,hvac-attic,crawl-space}.ts` (the `modes` line)
-- Modify: `CONTEXT.md` § Trade scene terms (Weather line; add Heat weather)
+- Modify: `GLOSSARY.md` § Trade scene terms (Weather line; add Heat weather)
 - Test: `scripts/verify-construction-model.ts`
 
 **Interfaces:**
@@ -109,7 +109,7 @@
   - **`thermalWalk`:** the direction and reflectance come from the profile's `season`. A summer-direction source becomes `outside + SOLAR_GAIN_F * sun * (1 − reflectance)`.
   - **`relativeHeatFlow`:** multiply every boundary by the profile's `flow`. `reflected` stays the raw share.
   - **Assemblies:** add `normal: 'thermal'` beside every `summer: 'thermal'`. Leave `yard-ground` alone.
-  - **`CONTEXT.md`:**
+  - **`GLOSSARY.md`:**
     - Weather becomes `normal | summer | winter | rain`, with Normal "a mild average afternoon, the default".
     - Add **Heat weather**: "a weather whose assembly mode can be heat (every weather but rain); carries the season, sun share and flow share the heat walk reads."
 - [ ] **Step 4:** Run `pnpm tsx scripts/verify-construction-model.ts` and `pnpm tsx scripts/verify-remodel-roi.ts`. Expected: both pass. Then run `pnpm tsc`. Expected: errors only in `src/features/trade-scenes/` and `scripts/verify-trade-scene.ts`, which are the trade-scene files keyed by `Weather` that Task 2 fixes. Any error elsewhere is this task's to fix.
@@ -439,7 +439,7 @@
 **Files:**
 - Create: `public/scenes/stills/normal.webp`
 - Modify: the widths and spacing in the panel, dock and view files, from the layout pass
-- Modify: `CONTEXT.md` § Trade scene terms: add **Scene panel**, **Rail**, **Dock**, **View mode** and **Assembly screen** (whose blocks are `parts` and `peel`)
+- Modify: `GLOSSARY.md` § Trade scene terms: add **Scene panel**, **Rail**, **Dock**, **View mode** and **Assembly screen** (whose blocks are `parts` and `peel`)
 - Modify: `docs/plans/2026-10-16-trade-scenes-epic.md`: the TS3b.1 row becomes built (unmerged); add a §6 change-log line naming what the build decided (the meter follows the electric bill, and the cause of the black shape)
 - Modify: memory `project-3d-trade-scenes.md`: TS3b.1 built; next is the TS3b.2 brainstorm
 
@@ -465,5 +465,5 @@
   - `pnpm tsx scripts/verify-remodel-roi.ts`
   - `pnpm tsx scripts/check-scene-assets.ts`
   - then `pnpm tsc` and `CI=1 pnpm lint`
-- [ ] **Step 5:** Update `CONTEXT.md`, the tracker and the memory file.
-- [ ] **Step 6: Commit** (the code, still, `CONTEXT.md` and tracker; memory lives outside the repo): `feat(trade-scenes): the meeting layout's spacing, the Normal still, and the tracker`.
+- [ ] **Step 5:** Update `GLOSSARY.md`, the tracker and the memory file.
+- [ ] **Step 6: Commit** (the code, still, `GLOSSARY.md` and tracker; memory lives outside the repo): `feat(trade-scenes): the meeting layout's spacing, the Normal still, and the tracker`.
