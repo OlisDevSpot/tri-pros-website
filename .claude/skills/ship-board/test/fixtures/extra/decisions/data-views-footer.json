@@ -1,0 +1,16 @@
+{
+  "area": "polish",
+  "askedBy": "orient",
+  "askedOn": "2026-11-15",
+  "context": "When a list fails to load, its footer still says it is refreshing. The design already fixed the same contradiction for the row count, and the fix is a few lines.",
+  "kind": "decision",
+  "lane": "data-views",
+  "options": [
+    {"label": "Fix it in this release", "consequence": "Goes into the DV4 PR"},
+    {"label": "A small step of its own after the release", "consequence": "Ships sooner; the wrong label stays on prod a little longer"}
+  ],
+  "order": 20,
+  "phase": "DV4",
+  "question": "Under an error screen, the table footer still says \"Updating…\". When do we fix it?",
+  "recommended": "Fix it in this release"
+}

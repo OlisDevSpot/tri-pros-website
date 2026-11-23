@@ -1,0 +1,138 @@
+{
+  "blockReason": {
+    "data-views": "FR4/FR5 build on the data-view surface; PR targets feat/data-views"
+  },
+  "blockedBy": [],
+  "branch": "feat/filter-rules",
+  "brief": {
+    "aheadBehind": {
+      "ahead": 29,
+      "behind": 0,
+      "onCurrentProd": true
+    },
+    "decided": [
+      {
+        "date": "2026-10-23",
+        "text": "A quick filter is a preset of an existing field's values; Sit/Outcome type fields dropped (O15)"
+      },
+      {
+        "date": "2026-10-23",
+        "text": "First quick filters: Sits, Didn't Sit, Positive, Neutral, Negative (O16)"
+      },
+      {
+        "date": "2026-10-23",
+        "text": "Quick filters combine freely, ANDed (O18)"
+      },
+      {
+        "date": "2026-10-22",
+        "text": "Old filter links are dropped: they open unfiltered, no compatibility layer (O9)"
+      },
+      {
+        "date": "2026-10-22",
+        "text": "A field a role may not filter by is not sortable either (O11)"
+      },
+      {
+        "date": "2026-10-21",
+        "text": "Rule fields = every field the viewer's role may read, enforced on the server (O6)"
+      }
+    ],
+    "files": 240,
+    "goal": "Any table can be narrowed with a rule builder (field, is / is not, values, AND/OR groups) plus one-tap quick filters like Sits, limited to fields the role may see.",
+    "lastCommit": {
+      "date": "2026-11-13",
+      "sha": "79da206ad",
+      "subject": "docs(filter-rules): the tracker names the rebuilt feat/filter-rules branch and its shas"
+    },
+    "notes": "Stacked on feat/data-views: only 8 commits are its own; the other 21 and most of the 240 files are data-views. Superseded worktree feat/filter-grouping-fields still exists.",
+    "open": [
+      {
+        "id": null,
+        "owner": "you",
+        "text": "Say build/execute for FR4+FR5 once DV4 and FR0 are on main"
+      },
+      {
+        "id": null,
+        "owner": "you",
+        "text": "Saved views or presets in v1, or later?"
+      },
+      {
+        "id": "FR7",
+        "owner": "you",
+        "text": "Breakdown by classifier group: take it on as its own spec?"
+      }
+    ],
+    "orientPage": null,
+    "phases": [
+      {
+        "id": "FR0",
+        "name": "Classifier value lists + scrolling Filters popover",
+        "note": "Sit/Outcome type fields reverted by O15",
+        "status": "built"
+      },
+      {
+        "id": "FR1",
+        "name": "Filter builder UI warm-up",
+        "note": "owner picked A + quick filters",
+        "status": "spec"
+      },
+      {
+        "id": "FR2",
+        "name": "Architecture spec",
+        "note": "approved 2026-10-22, revised by O15",
+        "status": "spec"
+      },
+      {
+        "id": "FR3",
+        "name": "Stress tests of spec and plans",
+        "note": "all three done",
+        "status": "plan"
+      },
+      {
+        "id": "FR4",
+        "name": "Core rule model, server where, URL codec",
+        "note": "ships with FR5",
+        "status": "plan"
+      },
+      {
+        "id": "FR5",
+        "name": "Builder UI, desktop and phone",
+        "note": "ships with FR4",
+        "status": "plan"
+      },
+      {
+        "id": "FR6",
+        "name": "Verification per view",
+        "status": "plan"
+      },
+      {
+        "id": "FR7",
+        "name": "Breakdown by classifier group",
+        "note": "proposed, own spec",
+        "status": "idea"
+      }
+    ],
+    "plan": "docs/superpowers/plans/2026-10-23-filter-rules-core-and-builder.md",
+    "pr": null,
+    "spec": "docs/superpowers/specs/2026-10-21-data-view-filter-rules-design.md",
+    "statusBlock": {
+      "blocked": "DV4 ship (data-views lane)",
+      "next": "Build FR4+FR5 after DV4 and FR0 are on main",
+      "open": null,
+      "stage": "OPENED 2026-10-21; FR0 built, FR4+FR5 plan written and stress-tested"
+    },
+    "tracker": "docs/plans/2026-10-21-data-view-filter-rules-epic.md",
+    "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/filter-rules"
+  },
+  "briefAt": "2026-11-14",
+  "kind": "feature",
+  "move": "agent",
+  "name": "Filter rules FR4 · FR5",
+  "neon": "shared dev",
+  "next": "Build FR4/FR5 on top of data views; its PR targets feat/data-views.",
+  "notes": "FR0 built 23 Oct, half reverted the same day by your O15 correction.",
+  "order": 4,
+  "port": 3015,
+  "stackedOn": "data-views",
+  "stage": "build",
+  "updated": "2026-11-13"
+}

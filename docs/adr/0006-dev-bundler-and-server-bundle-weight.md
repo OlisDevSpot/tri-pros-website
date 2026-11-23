@@ -72,8 +72,8 @@ webpack:
   them is possible. When something looks wrong in dev, re-check with `pnpm dev --webpack`
   before debugging the code. A Turbopack-only bug does not reach production, but record
   it here.
-- Before each production push, the release candidate is still built with webpack
-  (`/pre-ship`), so production regressions are caught where they ship.
+- Every PR's Vercel preview is a production webpack build, so production regressions
+  are caught on the preview before the squash merge ships them.
 - Turbopack in Next 15.5 keeps no compile cache between restarts. A restart costs a cold
   start, which is still faster than webpack's cached restart (~88 s for the measured
   routes).
