@@ -1,0 +1,15 @@
+{
+  "answer": "Decide per lane",
+  "answeredOn": "2026-11-14",
+  "area": "dependencies",
+  "context": "This lets lanes that depend on it build on prod instead of stacking. The cost is hidden code on prod and a switch to remove later. Trade scene release 1 shipped half-ready by a one-off waiver.",
+  "note": "For now should default to no",
+  "options": [
+    "Allow for epics that span more than one sitting",
+    "Decide per lane",
+    "Never"
+  ],
+  "order": 5,
+  "question": "May finished-but-unchecked work merge behind a switch that keeps it hidden on prod?",
+  "recommended": "Decide per lane"
+}

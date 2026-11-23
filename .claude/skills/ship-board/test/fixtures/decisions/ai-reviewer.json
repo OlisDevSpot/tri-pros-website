@@ -1,0 +1,15 @@
+{
+  "answer": "None, keep the local review in /ship-lane",
+  "answeredOn": "2026-11-14",
+  "area": "review",
+  "context": "claude-code-action runs in our own CI on an API key and keeps working once the repo is private. CodeRabbit is free only while the repo is public (Task 1 makes it private). Either way, only one bot.",
+  "note": "For now none, but keep this as an open task (AI adversarial review and 'back and forth' is crucial)",
+  "options": [
+    "claude-code-action",
+    "CodeRabbit until the repo goes private",
+    "None, keep the local review in /ship-lane"
+  ],
+  "order": 10,
+  "question": "Add one AI reviewer on every PR?",
+  "recommended": "None, keep the local review in /ship-lane"
+}

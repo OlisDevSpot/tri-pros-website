@@ -1,0 +1,82 @@
+{
+  "blockReason": {
+    "drain": "builds on the dev router, /orient and the worktree plan that ship in #289"
+  },
+  "blockedBy": [],
+  "branch": "chore/dev-flow-foundation",
+  "brief": {
+    "aheadBehind": null,
+    "decided": [
+      {
+        "date": "2026-11-14",
+        "text": "Draft PR at the first working screen; one review a day, end of day; Vercel preview comments"
+      },
+      {
+        "date": "2026-11-14",
+        "text": "No AI reviewer; skills track runs after plan Tasks 1–16"
+      },
+      {
+        "date": "2026-11-14",
+        "text": "This board is where status lives; trackers keep rulings only"
+      },
+      {
+        "date": "2026-11-14",
+        "text": "No size budget per lane; the switched-off question is decided per lane"
+      }
+    ],
+    "files": 0,
+    "goal": "Review lanes on previews, agents verify without dev servers, one review slot for hands-on looks, and one live board every lane session keeps current.",
+    "lastCommit": null,
+    "notes": "Items 1, 2 and 9 of the brief are context: 1–2 need plan Task 1 (preview protection) and Task 12 (sign-in proxy); 9 waits for the GitHub connector.",
+    "open": [],
+    "orientPage": null,
+    "phases": [
+      {
+        "id": "F1",
+        "name": "Review slot: one worktree, your only dev server",
+        "status": "spec"
+      },
+      {
+        "id": "F2",
+        "name": "Dev server sleeps after 5 idle minutes",
+        "status": "spec"
+      },
+      {
+        "id": "F3",
+        "name": "preview/today: ready lanes combined, rebuilt daily",
+        "status": "spec"
+      },
+      {
+        "id": "F4",
+        "name": "Lane registry + session hook",
+        "status": "spec"
+      },
+      {
+        "id": "F5",
+        "name": "/orient and session-capture write the lane row",
+        "status": "spec"
+      },
+      {
+        "id": "F6",
+        "name": "Board redesign: dependency map first",
+        "status": "spec"
+      }
+    ],
+    "plan": null,
+    "pr": null,
+    "spec": "docs/superpowers/specs/2026-11-14-parallel-lanes-foundation-design.md",
+    "tracker": null,
+    "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/dev-flow-foundation"
+  },
+  "briefAt": "2026-11-14",
+  "kind": "platform",
+  "move": "agent",
+  "name": "Parallel lanes foundation",
+  "neon": "none (no schema change)",
+  "next": "Spec, stress test and plan; then waits for you to say execute.",
+  "order": 10.5,
+  "port": null,
+  "stackedOn": "drain",
+  "stage": "spec",
+  "updated": "2026-11-14"
+}

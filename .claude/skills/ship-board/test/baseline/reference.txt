@@ -1,0 +1,112 @@
+Where the last features stalled
+
+Evidence from git, the project memory and session transcripts, 15 Oct to 13 Nov. In those four weeks prod received two PRs, both trade-scene releases. Eight branches now hold work that was built 2 to 29 days ago. The drain fixed one cause, ready work queued behind unready work on a shared main. The causes below remain.
+
+LANE	BUILT	WAITING	WHAT IT WAITS ON
+Drain #289	from 10-15	29 d	Your merge. 50 files; decisions took four rounds of questions.
+R19 calculators #290	11-07	6 d	Your iPad check and copy read. CI is green; it conflicts with only one drain file.
+Proposal page + Scope	10-17 · 11-03	10–29 d	Your Scope iPad check, Zoho template edits, the backfill explanation, and one release-gate fix (token-path cost-line leak).
+Edit proposal layout PE4	10-24	20 d	Your merge choice; stacked on the proposal page.
+Data views DV3 · DV4	10-23	21 d	A "ship together" rule; nothing else. An agent called it blocked by proposals; git shows no conflict.
+Home visit HV5–HV7	10-16	28 d	Held by you. Nine schema files; HV7 needs a dev meeting you set up. Its 15 Oct batch release was reverted on prod the next day (8 reverts).
+Office TV	11-11	2 d	TV pairing with you and a prod schema push for auth. The only lane already on the new flow.
+Trade scenes, release 3	11-10 →	open	Gutter colours, the streak look, an iPad check. Both scene branches still carry old main's history.
+The bottlenecks, ranked
+1
+Your review time
+
+About 20 actions across eight branches can only be done by you: iPad checks, copy reads, merge choices, Zoho edits, a TV pairing, two prod schema pushes. Built-to-ready waits ran 6, 10, 20 and 21 days. The iPad isn't always at hand ("no ipad I can test it on for now", 30 Oct).
+
+Fix: one review sitting a day with a prepared queue; screenshots and a check list on every PR; your notes left as comments on the preview, read by that lane's agent; questions on the Decisions tab instead of in a session prompt; lanes small enough to judge in one sitting.
+
+Worktrees alone don't help here. More lanes without this would make the queue longer.
+
+2
+Rework after your first look
+
+Proposal v1 was rebuilt as the rework; filter rules FR0 was half reverted the same day (O15); PE4 needed a second round; "Too many bugs to count" on the iPad, 25 Oct. There were 29 plan stress-tests in 23 days, yet the correction still arrived after the build.
+
+Fix: show before building. A screenshot or clickable mock at spec time for any screen change, and a draft PR with a live preview as soon as the first screen works, so a two-minute look happens on day one instead of after the build. Every correction becomes a rule, check or skill edit, so it doesn't recur.
+
+Not a worktree problem.
+
+3
+Couplings git can't see
+
+DV3a moves 92 files. The proposal, PE4, home-visit and office-TV branches import moved paths, so they merge cleanly and then fail the type check. On top of that, CONTEXT.md changes on 7 of 8 held branches and the meeting overview card on 5, and the list of merge follow-ups between epics keeps growing.
+
+Fix: a collision check that trial-merges each pair and type-checks the result; a fixed merge order; short-lived lanes; union merges for glossaries; live status kept off shared files.
+
+Worktrees help only partly; long-lived worktrees make the drift worse.
+
+4
+Schema reaches prod by hand, one change at a time
+
+There is no migrations baseline yet. The HV release is a five-step sequence (additive push, script, deploy, script, destructive push), and office TV needs your db:push:prod before merge.
+
+Fix: the migrations baseline (plan Tasks 9–10), so prod applies migrations during its build; one schema-owning lane per area; Neon's schema diff posted on the PR.
+
+Neon copies isolate dev but don't order prod.
+
+5
+One machine
+
+WSL crashed on 4 Nov, the scene's visual pass took the machine down on 8 Nov, two lanes clash on port 3002, and only you start dev servers.
+
+Fix: review on Vercel previews, not local dev servers. Lanes verify with type-check, lint, tests and screenshots of the preview, and a local dev server runs only for the lane you're shaping with an agent.
+
+More worktrees make this worse unless review moves to previews.
+
+6
+Losing the thread
+
+About 1,015 messages from you, 114 compactions and 17 clears in three weeks. "Plans just get lost" (3 Nov). "I am not sure why another session is working on it" (30 Oct). "I don't understand what is going on anymore" (9 Nov).
+
+Fix: this board as the one place for state. Every lane session reads its row at start and writes it at each step, and a resumed session starts from the row, not from memory.
+
+7
+Branches still on old main
+
+Both trade-scene branches and #285 carry old main's history (600+ commits over prod). Each scene release needs the file-copy script, and the layout lab can't merge prod directly (43 add/add conflicts).
+
+Fix: re-cut each onto prod once, as the drain did for the others.
+Skills for parallel lanes
+
+Your chain stays: brainstorming → spec → stress-test → plan → build → review. These skills sit around it and handle what changes when many lanes run at once: opening a lane, staying out of each other's way, preparing your review, and catching up after a merge. Approve or park each one; approved ones get built in this order.
+
+No skills proposed yet.
+What other developers use, checked against our rules
+
+Researched 13 Nov from each project's own docs and releases. Our rules: Orca owns worktrees, Claude Code is the agent, squash-merge only, merge main into a branch, never rebase or force-push. Two facts change several verdicts. The repo is still public and user-owned, so GitHub's merge queue isn't available to it. Making it private (plan Task 1) also ends the free tiers some review bots give public repos.
+
+TOOL OR PRACTICE	VERDICT	WHAT IT REMOVES	WHY
+Orca	KEEP	lane setup	Already does worktrees, ports, coordinator and worker agents, diff review with comments sent back to the agent, failed checks sent back to the agent.
+Plain GitHub stacking	ADOPT	dependent lanes	Child PR targets the parent branch; merge the parent's final tip in before the parent squashes; GitHub retargets the child to main when the parent branch is deleted. No tool, no rebase.
+"Require branch up to date" rule	ADOPT	landing in order	Forces "merge main in" before every squash, which is our rule anyway. Stands in for a merge queue.
+Vercel Toolbar comments + Vercel MCP	ADOPT	your review time	You comment on the preview from the iPad; the lane's agent lists unresolved threads for its branch, fixes them and resolves them.
+gh-dash	ADOPT	visibility	One terminal view of every PR, its checks and reviews across lanes.
+Claude Code agent view	TRIAL	visibility	claude agents lists every background session with state, summary and PR link; --json can feed this board. Research preview. Started inside an Orca worktree it stays there.
+clash	TRIAL	lanes colliding	Trial-merges every pair of worktrees and ships a Claude Code hook that asks before editing a file another lane changed. Early-stage (v0.2). Our own /collisions covers the grid and adds the type check.
+git-town, merge strategy	TRIAL	deep stacks	The only stacking tool whose default syncs by merging, not rebasing. Only worth it if stacks go three or more deep.
+Argos on previews	TRIAL	iPad bugs after release	Playwright screenshots of each preview compared with prod; free tier covers private repos. Turns "check every screen" into "check what changed".
+One AI PR reviewer	TRIAL	review time	claude-code-action runs in our own CI on an API key and keeps working once the repo is private. CodeRabbit is free only while the repo is public. Run one, never two.
+Neon schema-diff action	TRIAL	schema surprises	Posts the schema difference between a PR's preview copy and prod as a PR comment.
+Compound engineering (Every)	ADOPT	rework	Plan, work, review, then turn each lesson into a rule or skill. Hashimoto calls the same habit harness engineering. Our memory system half does this; the missing step is doing it on every correction.
+claude-squad, ccmanager, Nimbalyst	SKIP		Same job as Orca.
+worktrunk	SKIP		Its merge squashes and rebases into main locally, bypassing the PR.
+Conductor, Superset	SKIP		Mac first; we're on WSL.
+vibe-kanban, uzi, container-use, Sculptor	SKIP		Sunsetting, stale, or a research preview; Neon copies and Orca ports already isolate lanes.
+Graphite, spr, ghstack, av, Sapling	SKIP		All rebase and force-push.
+GitHub native stacked PRs	WATCH		Public preview since July; keeps stacks in sync by rebasing. Revisit if a merge-based sync appears.
+GitHub merge queue, Mergify, Trunk	LATER		GitHub's isn't available to a user-owned repo. Mergify and Trunk are free for small teams; worth it above about five merges a day.
+Backlog.md, task-master, Beads, Linear	SKIP		A second place for status. This board and GitHub issues are enough.
+Codex cloud, Jules, Cursor agents	SKIP		They don't load our skills, CLAUDE.md or memory.
+What the people running many agents say
+
+Review is the ceiling. Armin Ronacher now starts fewer parallel agents, because "it's only so much my mind can review". Simon Willison parallelises research, maintenance and well-specified tasks, the kinds that don't pile up review.
+
+Fix the harness, not the instance. Mitchell Hashimoto turns every agent mistake into a rule or a script so it never recurs. Every's compound loop ends each piece of work by writing its lesson back.
+
+Land one change at a time. Steve Yegge's 20-agent setup still funnels everything through a single merge step. Our version: one merge button, a merge order, and "up to date" required.
+
+Independent review, told what to ignore. Anthropic's guidance: a reviewer with read-only tools or a fresh session, told to skip style, or it always finds something.
