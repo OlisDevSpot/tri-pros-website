@@ -2587,7 +2587,7 @@ In the dev app, on a meeting the owner prepared:
 - Modify: `src/shared/domains/permissions/abilities.ts:15,35`
 - Modify: `src/shared/domains/permissions/types.ts:25-39`
 - Modify: `src/trpc/routers/meetings.router/procedures.ts`
-- Modify: `CONTEXT.md:27-29` and a new section
+- Modify: `GLOSSARY.md:27-29` and a new section
 
 **Interfaces:**
 - Consumes: `meetingMessages` and its schemas (Task 9), `meetingServerSpec`
@@ -2728,7 +2728,7 @@ export const visitMessagesProcedure = meetingProcedure.use(async ({ ctx, next })
 
 - [ ] **Step 6: Record the vocabulary**
 
-In `CONTEXT.md`, replace the DID entry (`:28`):
+In `GLOSSARY.md`, replace the DID entry (`:28`):
 
 ```md
 - **DID** — A phone number provisioned on Twilio. A DID is assigned to a user (sticky to that person), or is the one **main line** (`voip_dids.is_main_line`).
@@ -2763,7 +2763,7 @@ Expected: all twelve sections `✓`, `✅ verify-visit-messages passed`; `tsc` a
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/shared/modules/meetings/messages/lib/constants.ts src/shared/modules/meetings/messages/server-spec.ts src/shared/modules/meetings/messages/dal/server/crud.ts src/shared/modules/meetings/messages/service.ts src/shared/modules/meetings/service.ts src/shared/domains/permissions/abilities.ts src/shared/domains/permissions/types.ts src/trpc/routers/meetings.router/procedures.ts CONTEXT.md
+git add src/shared/modules/meetings/messages/lib/constants.ts src/shared/modules/meetings/messages/server-spec.ts src/shared/modules/meetings/messages/dal/server/crud.ts src/shared/modules/meetings/messages/service.ts src/shared/modules/meetings/service.ts src/shared/domains/permissions/abilities.ts src/shared/domains/permissions/types.ts src/trpc/routers/meetings.router/procedures.ts GLOSSARY.md
 git commit -m "feat(visit-messages): meeting_messages as a child of meetings, behind a VisitMessages gate only a super-admin passes today"
 ```
 

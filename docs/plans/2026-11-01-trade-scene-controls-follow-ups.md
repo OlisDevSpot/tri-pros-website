@@ -39,7 +39,7 @@ The owner accepted the build on 2026-11-02: "miles better than what we had, and 
 - **`era-code-line.ts` casts the era tables.** The fix lives in `src/shared/modules/construction/core/`, which was off limits: declare `HOME_MATERIALS` with `satisfies` so `windows.eraGuess` keeps `WindowsType`. That needs clearance to touch the construction module.
 - **On short wide stages** (about 560 tall), the Systems rail overlaps the dock's last weather tile (Rain). This predates the build's last fix wave.
 - **After a foundation pick** from the Foundation card's chip, keyboard focus falls to the page.
-- **`CONTEXT.md` "Scopes and addons (the Upgrades tab's list)"** names components the build deleted (`ScopesAndAddons`, `ScopeOrAddonRow`). The term still describes Systems' build rows. Re-word it with the owner.
+- **`GLOSSARY.md` "Scopes and addons (the Upgrades tab's list)"** names components the build deleted (`ScopesAndAddons`, `ScopeOrAddonRow`). The term still describes Systems' build rows. Re-word it with the owner.
 - **TS3b.4b's plan** cites the scene card, panel, build switch and `'under-floor'` focus. It must be re-planned on this head: it now replaces `close-up-card.tsx` and builds on `SYSTEM_CAMERA_VIEWS`.
 
 ## The device check

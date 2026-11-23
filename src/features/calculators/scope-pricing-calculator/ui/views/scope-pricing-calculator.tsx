@@ -45,7 +45,7 @@ export function ScopePricingCalculator() {
             const onDuplicate = () => lines.insert(index + 1, duplicateLine(form.getValues(`lines.${index}`)))
             const onRemove = () => lines.remove(index)
             return field.kind === 'formula'
-              ? <FormulaLineCard index={index} key={field.fieldKey} onDuplicate={onDuplicate} onRemove={onRemove} pricingKey={field.pricingKey} result={result} />
+              ? <FormulaLineCard config={config} index={index} key={field.fieldKey} onDuplicate={onDuplicate} onRemove={onRemove} pricingKey={field.pricingKey} result={result} />
               : <ManualLineCard index={index} key={field.fieldKey} onDuplicate={onDuplicate} onRemove={onRemove} />
           })}
           {lines.fields.length === 0 && (

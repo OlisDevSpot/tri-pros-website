@@ -1,6 +1,6 @@
 # Worktree → PR flow: one idea, one worktree, one PR
 
-Status: design approved by the owner 2026-11-01 (builder-check questions answered); amended 2026-11-02 after `/stress-test-plan` with the owner's rulings (Neon Launch, photos-only prod login, side-effect guards, proxy-secret trade-off). Follow-up project: the daily engineering-partner routine (separate spec).
+Status: design approved by the owner 2026-11-01 (builder-check questions answered); amended 2026-11-02 after `/stress-test-plan` with the owner's rulings (Neon Launch, photos-only prod login, side-effect guards, proxy-secret trade-off); amended 2026-11-22 after the second `/stress-test-plan` with rulings WF3–WF13 (recorded in the plan's Rulings table). Lane creation, previews on lane copies and the ship skill move to a separate lane-linking plan (WF13, not written yet); sections 1, 4 and 6 mark what moved. Follow-up project: the daily engineering-partner routine (separate spec).
 
 ## Why
 
@@ -60,9 +60,11 @@ The owner is also not confident in git and fears merge conflicts and anything to
 
 ### 1. Orca setup and archive (`orca.yaml`)
 
-Current `orca.yaml` already does `pnpm install --frozen-lockfile` and claims the next free `PORT=` in `.env.local`. Add:
+Current `orca.yaml` already does `pnpm install --frozen-lockfile` and claims the next free `PORT=` in `.env.local`.
 
-- **Setup: create the worktree's Neon branch** and write its connection string into the worktree's `.env.local` as `DATABASE_DEV_URL`, then apply migrations to it. Branch name derives from the git branch (e.g. `wt/feat-filters`). Idempotent: a setup re-run reuses the branch if it exists and carries the scrub marker. The Neon branch id is stored in `.env.local` so the archive hook deletes by id even if the git branch was renamed.
+**Changed 2026-11-22 (WF10):** Orca setup stays install + port. A lane's database is an explicit choice ("own copy or shared dev?") made by a `/new-lane` skill + `pnpm lane`, which also pushes the branch, links the Vercel preview and the GitHub issue, and adds the board row; `pnpm wt:db create` adds a copy to any lane later and links it. The bullets below describe what `wt:db` does, whichever entry point calls it.
+
+- **Create the lane's Neon branch** and write its connection string into the worktree's `.env.local` as `DATABASE_DEV_URL`, then apply migrations to it. Branch name derives from the git branch (e.g. `wt/feat-filters`). Idempotent: a setup re-run reuses the branch if it exists and carries the scrub marker. The Neon branch id is stored in `.env.local` so the archive hook deletes by id even if the git branch was renamed.
 - **Archive hook (`scripts.archive`)**: delete that Neon branch. Orca's CLI documents that a failed archive hook blocks removal unless overridden, so the hook must succeed when the branch is already gone.
 - **A prune command** for orphans (Neon `wt/*` branches with no matching worktree), replacing `pnpm dispatch neon-prune`.
 
@@ -97,6 +99,8 @@ Target:
 
 ### 4. Vercel previews with their own database
 
+**Superseded 2026-11-21/22 (WF7, WF8, WF13):** a lane's preview uses that lane's own copy (`wt/<slug>`) through a Preview-only, branch-scoped, Sensitive `DATABASE_DEV_URL` that `wt:db link` sets; the Neon–Vercel integration is rejected (it forks unscrubbed prod and rewrites Production's `DATABASE_URL`). A preview build migrates only a lane copy, never shared dev or prod. Built by the lane-linking plan. The 2026-11-02 text below is kept for its history.
+
 Each preview deployment needs its own Neon branch (forked and scrubbed per section 2) so a PR with a migration can be checked on the iPad. **Chosen (2026-11-02): the Neon–Vercel integration**, because with production protected its preview copies get their own passwords; the preview build scrubs a copy once (scrub marker) and migrates it. The GitHub Action route (`neondatabase/create-branch-action`) is rejected: Vercel starts building on push before an Action could hand it a database. The integration deletes a preview copy when its git branch is deleted, which the ship flow always does after a merge.
 
 The preview half of the build step ships only after the integration is on, so no preview build ever scrubs or migrates a database it does not own. The build refuses outright when it cannot tell the prod endpoint apart (`NEON_PROD_ENDPOINT_ID` unset) or when the preview's address is prod.
@@ -124,7 +128,7 @@ Out of scope: webhooks (Twilio, QStash) still reach local via the single ngrok t
 ### 6. Agent git duties and conflict safety
 
 - **Merge strategy (owner confirmed 2026-11-01 as the standard way to ship for now):** PRs **squash-merge** on GitHub; branches update by **merging `main` into the branch** (no rebase, no force-push). Simplest model for a git-novice owner, linear history on `main`, nothing rewritten.
-- **After the merge:** local `main` catches up with `git pull --ff-only origin main` and nothing else. Nobody commits on local `main` in this flow, so it always fast-forwards; a refusal means it has commits of its own and is a stop-and-look, never a merge. The branch and worktree are deleted; a squash-merged branch is never reused because its commits and the squash commit are different objects.
+- **After the merge:** local `main` catches up with `git pull --ff-only origin main` and nothing else. Nobody commits on local `main` in this flow, so it always fast-forwards; a refusal means it has commits of its own and is a stop-and-look, never a merge. The branch and worktree stay (WF6, 2026-11-21): a lane may ship when good enough and keep going, and merges `origin/main` into the branch right after the squash so the next PR shows only new work. Squash-merge stays a convention, not a repo setting (WF3).
 - **When to sync:** at PR open, and whenever `main` moves while the PR is open.
 - **Overlap warnings:** before opening a PR and on demand, list other open PRs/worktree branches touching the same files, in plain words. Extend the existing `merge-risk` skill for this rather than writing a new tool.
 - **One automated review per PR:** `ponytail-review`, run by the agent before opening the PR, findings fixed or listed in the PR body. (A hosted GitHub review action is a possible later step; not in this project.)
@@ -140,7 +144,7 @@ Out of scope: webhooks (Twilio, QStash) still reach local via the single ngrok t
 
 ### 8. Retiring the old system
 
-- Delete `scripts/dispatch.sh`, `scripts/hotfix.sh`, their `package.json` entries, and the hotfix `.worktrees/prod` / `.worktrees/sync` checkouts. A hotfix is now a small PR.
+- Delete `scripts/dispatch.sh` and its `package.json` entry. `scripts/hotfix.sh` is rewritten, not deleted (WF4): `start` makes a `fix/<slug>` worktree from `origin/main`, `pr` checks, pushes and opens the PR; its workbench commands and the `.worktrees/prod` / `.worktrees/sync` checkouts go.
 - `db:refresh:dev` stays (prod → scrubbed dev copy for the owner's main-checkout dev server); its error message pointing at `pnpm dispatch` changes to the new prune command.
 - Update `CLAUDE.md` (Commands, GitHub workflow, Mobile testing port notes) and the memories that encode the old model (`feedback-work-on-main`, `reference-dispatch-system`, `reference-git-workflow-playbook`, `reference-orca-ade`). Per CLAUDE.md, no new DOCS.md files.
 
@@ -191,6 +195,7 @@ The env audit in the transition also covers `NEXT_PUBLIC_BASE_URL`, `NGROK_URL`,
 
 - **The proxy secret** (section 5): accepted by the owner, rotated on suspicion.
 - **The Neon API key reads prod's password**: Neon's `connection_uri` endpoint returns any branch's password to a key that can manage the project, and Neon has no read-only or branch-scoped key. The local key is therefore a path to prod by API even after the database passwords leave. Mitigations in this project: production is protected (no reset or delete), the scripts refuse to fetch prod's address (`assertNotProdEndpoint`), and the key is rotated with the prod password. A stronger fix (worktree databases created by a server-side job, no key on the laptop) is a follow-up if the owner wants it.
+- **The Vercel token (open, WF12)**: `wt:db link` needs a Vercel token on the laptop, and a team token can likely read any Production variable not marked Sensitive (unverified). Production's `DATABASE_URL` becomes Sensitive when the app moves to `app_prod` (section 9). Where the token lives is undecided; `link` is not built until it is.
 - **The storage key can delete**: Cloudflare R2 tokens cannot allow adding files without allowing deletes. Scoping the laptop's key to the buckets it needs belongs to the R2 storage reform (`docs/plans/` R2 tracker, D10); this project only stops the app from deleting outside prod (section 12).
 
 ## Left to the builder
@@ -206,9 +211,11 @@ The env audit in the transition also covers `NEXT_PUBLIC_BASE_URL`, `NGROK_URL`,
 2. Squash-merge PRs; update branches by merging `main` in, never rebase (section 6).
 3. The one automated review is `ponytail-review` run locally by the agent, not a hosted GitHub action (section 6).
 4. ~~`db:push:dev` survives for local experiments~~ Changed 2026-11-02: `db:push` is retired everywhere, because a push leaves the database out of step with its migration record (section 3).
-5. Hotfix machinery is deleted outright, not kept as a fallback (section 8).
+5. ~~Hotfix machinery is deleted outright~~ Changed 2026-11-21 (WF4): `hotfix.sh` is rewritten as a small `fix/` lane starter (section 8).
 6. **If the baseline proof finds drift, prod wins**: the baseline describes what prod actually has, and the code (schema files) is fixed to match in the same PR. The baseline step never writes to prod's schema; any intended change after that is an ordinary reviewed migration (section 3).
 7. **Branch protection binds the owner too.** Break-glass is the standard one: temporarily switch protection off in GitHub settings, push, switch it back on. Nothing automated commits to `main` today (`/dco` and the roadmap write to artifact databases, not the repo); the daily routine must not either (section 7).
-8. **Neon usage stays bounded**: one preview branch per git branch (not per push), deleted when the git branch is deleted after merge; worktree branches deleted on archive; compute scale-to-zero on every non-prod branch; the prune command also flags branches idle more than 14 days. On Launch (2026-11-02) branches past 10 cost $1.50 per branch-month; the owner's estimate is about $15–25 a month in total at today's usage (section 1, 4).
+8. **Neon usage stays bounded**: previews share their lane's copy (WF8), so no extra preview branches; lane copies deleted on archive, and only for lanes that chose one (WF10); compute scale-to-zero on every non-prod branch; the prune command also flags branches idle more than 14 days. On Launch (2026-11-02) branches past 10 cost $1.50 per branch-month; the owner's estimate is about $15–25 a month in total at today's usage (section 1, 4).
 9. **Rotation without downtime**: the app switches to a new `app_prod` login before the old password is reset (section 9).
-10. **The preview half of the build step ships after the Neon–Vercel integration**, never before (section 4).
+10. ~~The preview half of the build step ships after the Neon–Vercel integration~~ Changed (WF8): it ships with `wt:db link` in the lane-linking plan, and migrates only a lane copy (section 4).
+11. **Baseline before `wt:db`** (WF9, 2026-11-22): prod has no migrations table, so the baseline is proven on a hand-made copy and recorded on prod before any `wt:db create` runs migrations; `migrateDb` refuses a database with no baseline row.
+12. **The four development-forked lane copies are re-forked from prod** (WF11, 2026-11-22), each lane's schema re-applied as a migration; their test data goes.

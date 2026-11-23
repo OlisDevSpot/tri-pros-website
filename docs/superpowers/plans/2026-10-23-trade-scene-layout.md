@@ -28,7 +28,7 @@
 - **Shared files: `git diff <file>` before staging.** If any hunk is not yours, stop and wait; never stage a file holding the other session's uncommitted hunks. The files:
   - `F/constants/home-scene-copy.ts`, `F/types.ts`;
   - every other `F/constants/*.ts` (the epic session's tuning may touch any of them);
-  - `CONTEXT.md`, the tracker, `scripts/verify-trade-scene.ts`.
+  - `GLOSSARY.md`, the tracker, `scripts/verify-trade-scene.ts`.
 
   In `home-scene-copy.ts` and `types.ts`, add new exports in one block at the end, and edit existing objects only where a task names the key.
 - **Until the epic session's yes (before Task 14), never touch:**
@@ -42,7 +42,7 @@
   - No DB writes. Playwright logs in through `/api/dev/playwright-session?secret=…&as=…`, never `role=`. Never print that URL.
   - The dev server is the owner's, on the worktree's `PORT=3002`. Ask before restarting it, clearing `.next` or running `pnpm install` under it.
 - **Copy.** Every string goes in `F/constants/home-scene-copy.ts`; other constants files hold keys and measurements only. Copy never says "your" (except the recorded-basis title) and never mentions solar. Copy functions take string arguments only: the copy gate in `scripts/verify-trade-scene.ts` calls each one with plain-string samples.
-- **Vocabulary (CONTEXT.md, D23, D27):**
+- **Vocabulary (GLOSSARY.md, D23, D27):**
   - use **build switch** (`BuildSwitch`), **Dock** (`SceneDock`), **knob** (`PanelKnob`), **scene visible area** (`SceneVisibleArea`) and **scopes and addons** (`ScopesAndAddons`, `ScopeOrAddonRow`);
   - in code, say **part** (never "layer"), **repairs** (never "upkeep") and **existing** (never "today");
   - never write "story", "story bar", "chapter", "lens strip", "receipt" or "inset" in a name. The one exception is the CSS `clip-path: inset()` function.
@@ -68,7 +68,7 @@
 
 ### Task 0: Merge main, and capture the studies reference (controller, not a subagent)
 
-D24 needs the shared `MoneyField` and `react-number-format` from main. `CONTEXT.md` was committed (2eb52636a), so no file that is dirty in the tree is also changed on main. `git merge-tree --write-tree HEAD main` was clean on 2026-10-23.
+D24 needs the shared `MoneyField` and `react-number-format` from main. `GLOSSARY.md` was committed (2eb52636a), so no file that is dirty in the tree is also changed on main. `git merge-tree --write-tree HEAD main` was clean on 2026-10-23.
 
 - [ ] **Step 1:** Ask the owner to confirm with the epic session that a merge now is fine, and whether to run `pnpm install` under the live dev server or restart it afterwards. Do not merge without that yes.
 - [ ] **Step 2:** Run `git status --short`, then `comm -12 <(git status --short | awk '{print $2}' | sort) <(git diff --name-only HEAD...main | sort)`. Expected: empty. Otherwise stop and ask.
@@ -754,7 +754,7 @@ for (const roofType of roofTypes) {
 **Files:**
 - Modify:
   - `F/constants/home-geometry.ts` (`HOME_FRAMINGS`, `TALL_BELOW_ASPECT`) and `F/constants/home-anchors.ts` (callout offsets), only as the shots demand;
-  - `CONTEXT.md`: rewrite the Scene panel and Dock entries for the card and the strip, and remove the Rail entry (`PanelRail` is gone);
+  - `GLOSSARY.md`: rewrite the Scene panel and Dock entries for the card and the strip, and remove the Rail entry (`PanelRail` is gone);
   - `docs/plans/2026-10-16-trade-scenes-epic.md`.
 
   The last two follow the shared-file rule.
@@ -773,7 +773,7 @@ for (const roofType of roofTypes) {
 - [ ] **Step 4:** `pnpm tsc`, `pnpm lint`, `pnpm tsx scripts/verify-trade-scene.ts`, `pnpm tsx scripts/verify-trade-scene-layout.ts`, `pnpm tsx scripts/verify-construction-model.ts`. Expected: all pass.
 - [ ] **Step 5: Tracker and glossary.**
   - Tracker: add a row for this layout ("built, awaiting the owner's review") with the commit range, and a change-log line naming R79, R81 and R82 as built here and R78 and R80 as left open.
-  - `CONTEXT.md`: the Scene panel and Dock rewrites, and the Rail removal.
+  - `GLOSSARY.md`: the Scene panel and Dock rewrites, and the Rail removal.
 - [ ] **Step 6: Commit**: `fix(trade-scenes): framings and callouts retuned for the open part of the scene, polished against the studies`.
 
 ---
