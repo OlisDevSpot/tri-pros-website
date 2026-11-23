@@ -222,12 +222,17 @@ try {
       const mod = await import(pathToFileURL(opt.script).href);
       Object.assign(checks, (await mod.default({ page, hash, viewport: vp, scheme, opt, skillDir })) || {});
     }
-    const tabs = { now: ["now"], decisions: ["decisions"], reference: ["bottlenecks", "skills", "tools"] };
+    // Each section is read under the tab that shows it; "reference" keeps the baseline's order: bottlenecks, skills, tools.
+    const tabs = { now: [["now", "now"]], decisions: [["decisions", "decisions"]], reference: [["reference", "bottlenecks"], ["skills", "skills"], ["reference", "tools"]] };
     const keep = await page.evaluate(() => location.hash);
-    for (const [tab, ids] of Object.entries(tabs)) {
-      await page.evaluate((t) => { location.hash = "#" + t; }, tab);
-      await page.waitForTimeout(150);
-      checks.text[tab] = await page.evaluate((ids) => ids.map((i) => document.getElementById("v-" + i)?.innerText ?? "").join("\n"), ids);
+    for (const [key, views] of Object.entries(tabs)) {
+      const parts = [];
+      for (const [tab, id] of views) {
+        await page.evaluate((t) => { location.hash = "#" + t; }, tab);
+        await page.waitForTimeout(150);
+        parts.push(await page.evaluate((i) => document.getElementById("v-" + i)?.innerText ?? "", id));
+      }
+      checks.text[key] = parts.join("\n");
     }
     await page.evaluate((h) => { location.hash = h; }, keep);
     const updates = await page.evaluate(() => window.__updates);
