@@ -1,11 +1,11 @@
 # Worktree → PR Flow Implementation Plan
 
 > **Status**
-> - Stage: building · second `/stress-test-plan` 2026-11-22 folded in (rulings WF9–WF13) · T1, T12, T13, T14 partly done
-> - Built on: `origin/main` (no lane branch) · Verified at: `origin/main@75d085907` (2026-11-22) · page: https://claude.ai/artifact/7D8kgccA7iy6f8ATWzLdqS#lane-dev-flow
+> - Stage: building · second `/stress-test-plan` 2026-11-22 folded in (rulings WF9–WF13) · board answers WF14, WF15 · T1, T12, T13, T14 partly done
+> - Built on: `origin/main` (no lane branch) · Verified at: `origin/main@68e0b7168` (2026-11-22) · page: https://claude.ai/artifact/7D8kgccA7iy6f8ATWzLdqS#lane-dev-flow
 > - Done: T0 (#289) · T12 Steps 1–3 (#293, #294; no vercel.app wildcard) · T1 steps 4, 5, 7 + idle sleep · T13 port claim · T14 per-checkout pre-commit gate, pre-ship retired, lane rules in CLAUDE.md (#295, #296)
-> - Next: the execution order under Rulings (WF9): T1 → T7 → T9 → T2–T3 → T3a → T4–T6 → T8 → T10 → T12 rest → T15 → T16. Lane creation, `wt:db link`, previews, Orca hooks and the ship skill go to the lane-linking plan (WF13, not written yet).
-> - Open: dev-flow-next-after-t0 · dev-flow-repo-private · WF12 Vercel token home (blocks the lane-linking plan's `link`) · T10's removal of four non-`db:*` prod scripts not in the spec (owner OK) · Lane / Lane copy / Review slot not in `GLOSSARY.md` (owner to agree the terms) · plan A (merge commits) design not written
+> - Next: finish T1 in one sitting with the owner: Step 1 protect prod, Step 2 prove a new copy's password, Step 3 prod endpoint id, then the WF14 password cut on dev and the four lane copies (Step 6 dropped, WF15). Then WF9's order: T7 → T9 → T2–T3 → T3a → T4–T6 → T8 → T10 → T12 rest → T15 → T16. The lane-linking plan (WF13) is not written yet.
+> - Open: WF12 Vercel token home (blocks the lane-linking plan's `link`) · T10's removal of four non-`db:*` prod scripts not in the spec (owner OK) · Lane / Lane copy / Review slot not in `GLOSSARY.md` (owner to agree the terms) · plan A (merge commits) design not written
 > - Blocked: none
 
 ## Rulings
@@ -25,6 +25,8 @@
 | WF11 | Re-fork now: the four lane copies forked from `development` (`wt/data-views`, `wt/proposal-page`, `wt/home-visit-messages`, `wt/office-tv-mode`) are retired and re-created from prod by `wt:db create`, each lane's schema re-applied as a migration. Their test data goes (accepted). Task 3a. | owner, 2026-11-22 |
 | WF12 | Where the Vercel token lives (it can likely read Production variables not marked Sensitive): decide later. Until decided, nothing builds `wt:db link`. | owner, 2026-11-22 |
 | WF13 | Split a lane-linking plan out of this one: lane creation (WF10), `wt:db link`, previews on lane copies (WF7, WF8), Orca hooks, the ship skill, rewritten for WF3 and WF6. This plan keeps the safety base. Old T11, T13 and T14's skill move there with the requirements listed under "Handed to the lane-linking plan". | owner, 2026-11-22 |
+| WF14 | "Finish T1 and cut the shared password first." Dev and the four lane copies log in as prod's `neondb_owner` with prod's password, so T1 gains a step after Step 2: reset `neondb_owner`'s password on `development` and on each `wt/*` copy (that branch only; prod untouched, no prod redeploy), then the owner puts the new URLs in `.env`, every worktree's copy of `.env`, the four lanes' `.env.local` and Vercel Preview's `DATABASE_URL`. Each reset runs only on the owner's "run". The four copies are re-forked at T3a (WF11) anyway; the reset closes the gap until then. | owner, 2026-11-22 |
+| WF15 | "Stay public." The repo stays public: Task 1 Step 6 (GitHub Pro, flip to private) is dropped. T16's branch protection and T7's approval gate work on a public repo; the code and the board's test fixtures stay readable by anyone (accepted). | owner, 2026-11-22 |
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
