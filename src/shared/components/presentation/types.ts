@@ -1,5 +1,5 @@
 /**
- * The presentation engine's public types. Vocabulary: CONTEXT.md#presentation-terms.
+ * The presentation engine's public types. Vocabulary: GLOSSARY.md#presentation-terms.
  */
 
 /** Where a slide's heading sits: in its run's heading column (the default) or centred over the slide. */

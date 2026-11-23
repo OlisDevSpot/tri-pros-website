@@ -53,7 +53,7 @@
 | 2 Pins at the callsite | `src/shared/dal/client/hooks/use-data-view-query.ts` · `src/shared/dal/server/lib/query/load-data-view-query-input.ts` |
 | 3 Dashboard reads | `src/features/agent-dashboard/constants/dashboard-queries.ts` · `src/features/agent-dashboard/ui/components/{dashboard-meetings-hub,dashboard-snapshot-counts,dashboard-projects,dashboard-project-section,dashboard-project-section-list}.tsx` · `src/app/(frontend)/dashboard/(home)/page.tsx` · `src/trpc/routers/meetings.router/reads.router.ts` · `src/shared/modules/projects/core/DOCS.md` · tracker and spec status lines |
 
-On 2026-10-07 three Task 3 files held another session's uncommitted dashboard rework; it was committed by 2026-10-12 and every file this plan touches was clean, except `CONTEXT.md` (Task 3 Step 8). Check each with `git status --short` anyway.
+On 2026-10-07 three Task 3 files held another session's uncommitted dashboard rework; it was committed by 2026-10-12 and every file this plan touches was clean, except `GLOSSARY.md` (Task 3 Step 8). Check each with `git status --short` anyway.
 
 ---
 
@@ -756,13 +756,13 @@ git show --stat HEAD
 
 - [ ] **Step 0: Other sessions' edits come first (owner ruling 2026-10-07)**
 
-A pathspec commit takes the whole file, so no file this task commits may hold another session's uncommitted work. On 2026-10-12 every one was clean: the dashboard rework that gated this task on 2026-10-07 is committed (the declined-proposals fix as `68c516fb`, `dashboard-see-all-link.tsx` tracked), and the `projects/core/DOCS.md` hunks are committed too. `CONTEXT.md` (Step 8) was dirty with another session's glossary work. Re-check right before starting:
+A pathspec commit takes the whole file, so no file this task commits may hold another session's uncommitted work. On 2026-10-12 every one was clean: the dashboard rework that gated this task on 2026-10-07 is committed (the declined-proposals fix as `68c516fb`, `dashboard-see-all-link.tsx` tracked), and the `projects/core/DOCS.md` hunks are committed too. `GLOSSARY.md` (Step 8) was dirty with another session's glossary work. Re-check right before starting:
 
 ```bash
-git status --short src/features/agent-dashboard/constants/dashboard-queries.ts "src/app/(frontend)/dashboard/(home)/page.tsx" src/features/agent-dashboard/ui/components/{dashboard-meetings-hub,dashboard-snapshot-counts,dashboard-projects,dashboard-project-section,dashboard-project-section-list}.tsx src/trpc/routers/meetings.router/reads.router.ts src/shared/modules/projects/core/DOCS.md CONTEXT.md
+git status --short src/features/agent-dashboard/constants/dashboard-queries.ts "src/app/(frontend)/dashboard/(home)/page.tsx" src/features/agent-dashboard/ui/components/{dashboard-meetings-hub,dashboard-snapshot-counts,dashboard-projects,dashboard-project-section,dashboard-project-section-list}.tsx src/trpc/routers/meetings.router/reads.router.ts src/shared/modules/projects/core/DOCS.md GLOSSARY.md
 ```
 
-Any line except `CONTEXT.md`: stop and ask. `CONTEXT.md` is handled in Step 8.
+Any line except `GLOSSARY.md`: stop and ask. `GLOSSARY.md` is handled in Step 8.
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1059,7 +1059,7 @@ pnpm exec tsx .superpowers/sdd/2026-10-05-customers-entity-table-and-fixed-filte
 
 - [ ] **Step 8: Tracker and spec status**
 
-Re-read the tracker, the spec and `CONTEXT.md` first; if any of them carries uncommitted hunks you didn't make, make your edit, leave that file out of the Step 9 docs commit, and report it for the owner.
+Re-read the tracker, the spec and `GLOSSARY.md` first; if any of them carries uncommitted hunks you didn't make, make your edit, leave that file out of the Step 9 docs commit, and report it for the owner.
 
 In `docs/plans/2026-09-26-records-management-epic.md`:
 - §3, row **R2**, status cell: replace it with `[~] spec approved 2026-10-05. Part 1 (fixed filters, the first-rows window, dashboard reads) built on local main <first-sha>..<last-sha>: docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters.md. Part 2 (customers entity table, the three table views) next: …-part-2.md` with this plan's first and last commit hashes.
@@ -1068,7 +1068,7 @@ In `docs/plans/2026-09-26-records-management-epic.md`:
 
 In the spec, replace the **Status** line with `> **Status:** approved by the owner 2026-10-05; plans stress-tested and the owner's rulings applied 2026-10-07. Part 1 (§3, §4, §6) is built; part 2 (§5, §7) is planned.`
 
-In `CONTEXT.md`, under **Records terms**, after the **Scope coverage** entry, add (terms owner-approved 2026-10-05):
+In `GLOSSARY.md`, under **Records terms**, after the **Scope coverage** entry, add (terms owner-approved 2026-10-05):
 
 ```md
 - **Fixed filter** — a filter value a data view always applies, set by its callsite: in the data-view config (`fixed`) or at the callsite for a value only it knows (the `fixed` argument of `useDataViewQuery` and `loadDataViewQueryInput`). Never read from the URL, never shown in the toolbar. Narrows what a view asks for; it is not access control. _Avoid_: scope, preset filter.
@@ -1085,7 +1085,7 @@ git commit -m "refactor(dashboard): meetings and project reads come from data-vi
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/features/agent-dashboard/constants/dashboard-queries.ts "src/app/(frontend)/dashboard/(home)/page.tsx" src/features/agent-dashboard/ui/components/dashboard-meetings-hub.tsx src/features/agent-dashboard/ui/components/dashboard-snapshot-counts.tsx src/features/agent-dashboard/ui/components/dashboard-projects.tsx src/features/agent-dashboard/ui/components/dashboard-project-section.tsx src/features/agent-dashboard/ui/components/dashboard-project-section-list.tsx src/trpc/routers/meetings.router/reads.router.ts
 git commit -m "docs(records): fixed filters and the dashboard reads are built; tracker and spec follow
 
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-10-05-customers-entity-table-and-fixed-filters-design.md src/shared/modules/projects/core/DOCS.md CONTEXT.md
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-10-05-customers-entity-table-and-fixed-filters-design.md src/shared/modules/projects/core/DOCS.md GLOSSARY.md
 git show --stat HEAD
 ```
 

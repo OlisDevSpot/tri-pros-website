@@ -340,7 +340,7 @@ Postgres catalog tables and admin UI (EPIC #195 / P5); canonical pairing/outcome
 - `CLAUDE.md:40` — per-entity DOCS "proposals/ is the canonical example" at `entities/`; now `src/shared/modules/proposals/core/DOCS.md` (uncommitted move). Plus ~20 `entities/proposals/...` path refs across `dal-conventions.md`, `entity-frontend.md`, `derived-values.md`, `jsonb-columns.md`, `pdf-documents.md`, `add-an-entity.md`, ADR-0004/0005, UL.
 - `dal-conventions.md:11` — `db` allowlist excludes `modules/**/dal` (6 files import `db`).
 - `ubiquitous-language.md:79` — Trade "has location (exterior/interior/lot)"; runtime has `type` + `homeOrLot`. `:69-74,83` — Addon modeled under Scope; code relates add-ons to trades. `:107` — pain points on `customers.customerProfileJSON`; now `customer_profiles` columns. `:33-38` — `shared/pipelines/`, `shared/auth/` → `shared/domains/*`; `domains/` and `modules/` undefined.
-- `shared/domains/funnels/types.ts:253` + `CONTEXT.md:38` — `TradeFacts.name` "canonical Notion trade name, e.g. 'Kitchen Renovation'"; Notion says "Kitchen Remodel".
+- `shared/domains/funnels/types.ts:253` + `GLOSSARY.md:38` — `TradeFacts.name` "canonical Notion trade name, e.g. 'Kitchen Renovation'"; Notion says "Kitchen Remodel".
 - `providers/notion/DOCS.md:3` — lists projects/meetings/contacts DBs; only painPoints/trades/scopes/sows exist. `:53` — 180s TTL for all; pain points use 600s.
 - `environment.md:107`, `trpc-procedures.md:61-64` — Notion contacts DB/router; removed. `trpc-procedures.md:31-37` still teaches `createEntityRouter` (deleted).
 - `enum-standardization.md:7-9` — all option sets in `constants/enums/`; `domains/construction/constants/enums.ts` lives outside.

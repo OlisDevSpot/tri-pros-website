@@ -69,7 +69,7 @@ What cannot be expressed today: OR across fields, IS NOT on any field, two rules
 | O4 | Value pickers | **Plain dropdowns from the existing primitives** (2026-10-21): the field and values controls reuse `Select` / `MultiSelect` (as `filter-controls/` does today). The warm-up's custom floating values menu (its own IS / IS NOT, count and Done) is rejected as over-built. |
 | O6 | Rule fields | **Every field the viewer's role may read** (2026-10-21), enforced on the server; per-view toolbar lists go. "An agent should not be able to filter by setter, or customers by an admin-only lead source." |
 | O7 | Project meetings and sits | **A project visit is a sit of that meeting; the "Sits" quick filter leaves project meetings out** (2026-10-21). |
-| O8 | Names (2026-10-22) | **Keep the original names, prefixed with `filter`:** filter rule, filter group, filter rule tree, filter grouping field (`FilterRule`, `FilterGroup`, `FilterRuleTree`, `filterRules`…), so they never read as CASL rules or analytics group-by. In CONTEXT.md. |
+| O8 | Names (2026-10-22) | **Keep the original names, prefixed with `filter`:** filter rule, filter group, filter rule tree, filter grouping field (`FilterRule`, `FilterGroup`, `FilterRuleTree`, `filterRules`…), so they never read as CASL rules or analytics group-by. In GLOSSARY.md. |
 | O9 | Old filter links (2026-10-22) | **Dropped:** links with today's flat keys open unfiltered; no compatibility layer. Every link the app builds moves. |
 | O10 | View opt-outs (2026-10-22) | **Two config flags:** `filters: false` for the six dashboard lists, `omit: ['pipeline']` on the kanban. |
 | O11 | Sort gate (2026-10-22) | **Gated like filtering:** a field the role may not filter by is not sortable either (agents lose Rep / Setter / Lead source sort). |
@@ -85,4 +85,4 @@ What cannot be expressed today: OR across fields, IS NOT on any field, two rules
 - **In-flight data-view work.** DV3 + DV3a are on local main, unshipped, and ship with DV4; DV5 (calendars) and DV6 (kanban) are unplanned. FR5 edits `query-toolbar/` and the toolbar part, so its plan orders itself against `docs/plans/2026-10-12-data-views-epic.md`.
 - **Two schedule configs share the `s` prefix** (`schedule-queries.ts`): a rule tree in the URL must not carry a meetings rule into the activities view.
 - **Hidden filters still apply** (chip rail keeps a removable chip for a URL value whose control is hidden); the builder must keep that guarantee.
-- **New names** (rule, group, operator labels, the builder's component names) go to the owner before a plan uses them; check `CONTEXT.md` and `docs/ubiquitous-language.md` first.
+- **New names** (rule, group, operator labels, the builder's component names) go to the owner before a plan uses them; check `GLOSSARY.md` and `docs/ubiquitous-language.md` first.

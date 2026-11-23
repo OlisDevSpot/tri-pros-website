@@ -31,7 +31,7 @@ In the living room the rep walks the homeowner through their own home: the windo
 | Shortcut sheet line | "Recenter the camera" | new `SHORTCUT_COPY.lines.recenter` |
 | Shortcut key | `R` | new `'r': 'recenter'` in `SCENE_SHORTCUTS` (`constants/scene-shortcuts.ts`), a row in `SHORTCUT_SHEET_ROWS` |
 
-No other words appear on screen. "Slide" and "tap to look" are this spec's words for the gestures and do not join CONTEXT.md; the code says "pan" and names the double-tap pieces after the gesture (§2).
+No other words appear on screen. "Slide" and "tap to look" are this spec's words for the gestures and do not join GLOSSARY.md; the code says "pan" and names the double-tap pieces after the gesture (§2).
 
 ## 4. Architecture
 

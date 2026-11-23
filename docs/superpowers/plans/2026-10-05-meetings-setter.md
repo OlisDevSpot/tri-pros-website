@@ -58,7 +58,7 @@
 | 2 Candidates, filter, sort, column | `src/trpc/routers/meetings.router/reads.router.ts` · `src/shared/dal/lib/query/constants.ts` · `src/shared/dal/client/constants/option-source-reads.ts` · `src/shared/entities/meetings/dal/meeting-fields.ts` · `src/shared/entities/meetings/dal/server/{meeting-field-sql,queries}.ts` · `src/shared/entities/meetings/lib/columns-registry.tsx` · `src/features/records-management/constants/meetings-records-table-view.ts` |
 | 3 Pickers and the form | `src/shared/entities/users/components/user-command-item.tsx` (new) · `src/shared/entities/meetings/constants/participant-add-labels.ts` (new) · `src/shared/entities/meetings/components/participant-picker/available-participant-row.tsx` · `src/shared/entities/meetings/components/{setter-picker,setter-select}.tsx` (new) · `src/shared/entities/meetings/components/create-meeting-form.tsx` |
 | 4 Set Setter per row | `src/shared/entities/meetings/constants/actions.ts` · `src/shared/entities/meetings/hooks/{use-meeting-actions.ts, use-meeting-action-configs.tsx}` |
-| 5 Hand-off | `CONTEXT.md` · `docs/plans/2026-09-26-records-management-epic.md` · `docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md` |
+| 5 Hand-off | `GLOSSARY.md` · `docs/plans/2026-09-26-records-management-epic.md` · `docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md` |
 
 ---
 
@@ -920,7 +920,7 @@ git show --stat HEAD
 ### Task 5: Hand-off — glossary, tracker, spec
 
 **Files:**
-- Modify: `CONTEXT.md:62`
+- Modify: `GLOSSARY.md:62`
 - Modify: `docs/plans/2026-09-26-records-management-epic.md`
 - Modify: `docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md`
 
@@ -928,7 +928,7 @@ Re-read each file first; edit only what this plan built.
 
 - [ ] **Step 1: Glossary**
 
-In `CONTEXT.md:62` (Setter row), replace the code cell `` `meetings.setBy` (planned, analytics Spec D; not built) `` with `` `meetings.setBy` · picked on the add-meeting form, else the meeting's creator; kept by a duplicate and a reschedule; only super-admins change it ``.
+In `GLOSSARY.md:62` (Setter row), replace the code cell `` `meetings.setBy` (planned, analytics Spec D; not built) `` with `` `meetings.setBy` · picked on the add-meeting form, else the meeting's creator; kept by a duplicate and a reschedule; only super-admins change it ``.
 
 - [ ] **Step 2: Records tracker**
 
@@ -946,7 +946,7 @@ In the spec, mirror the settlements into the text they amend, and add under the 
 ```bash
 git commit -m "docs(records): the setter is built — glossary, tracker and spec follow
 
-Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" -- CONTEXT.md docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>" -- GLOSSARY.md docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md
 git show --stat HEAD
 ```
 

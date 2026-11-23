@@ -18,7 +18,7 @@ The code is the source of truth. Engineering docs survive only where code cannot
 | Why a structural decision was made | `adr/` (0001 entity actions · 0002 entity server system · 0003 service/provider tiers · 0004 proposal/contract independence · 0005 JSONB vs column vs child table) |
 | Cross-cutting rules that pending plans still cite | `codebase-conventions/` (verify against code; delete a file when its citing plan ships) |
 | Business-rule notes that pending work still cites | `src/**/DOCS.md` (same rule; never add one) |
-| Domain terms | `ubiquitous-language.md`, `../CONTEXT.md` |
+| Domain terms | `ubiquitous-language.md`, `../GLOSSARY.md` |
 | Design tokens, anti-slop rules, audiences | `design-system/`, `../DESIGN.md`, `../PRODUCT.md` |
 | UI process (`/ui-exploration`) | `ui-design-playbook.md`, `how-to/ui-exploration.md` |
 | Live epic trackers, contracts, ledgers, cited research, VoIP epics | `plans/` |

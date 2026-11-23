@@ -21,7 +21,7 @@ So this project gives the scene two separate controls *(owner, R72)*:
 
 It also draws the foundation the way it is built (R38, R75), and fixes the rafters that poke through the roof (R34).
 
-The terms *home view* and *lens* are in `CONTEXT.md` (agreed 2026-10-23). "Complete" replaces the owner's first word "Normal", which is already the mild-day weather. "Mode" is avoided because it is taken twice: the proposal pages' customer / agent view mode, and an assembly's heat or water mode.
+The terms *home view* and *lens* are in `GLOSSARY.md` (agreed 2026-10-23). "Complete" replaces the owner's first word "Normal", which is already the mild-day weather. "Mode" is avoided because it is taken twice: the proposal pages' customer / agent view mode, and an assembly's heat or water mode.
 
 ## 2. Goals, non-goals, anti-goals
 
@@ -105,7 +105,7 @@ The owner reported the house rafters clipping through the roof. No rafter, ridge
 - **Home kit:** `HouseShell` gains the front wall, door and its windows; `HouseRoof` / `GableRoof` / `LowSlopeRoof` gain the near slope's open part; `AtticFloor` and the ceiling gain their front; `Foundation` gains the front skirt, the steps and its two heights. The pieces Partly open removes are grouped so they can be faded and lifted together; the existing ghost machinery (`ui/lib/apply-ghost.ts`) already fades a group's materials and may serve.
 - **Readings and callouts:** `READING_CALLOUTS` gains the attic and ceiling, and a reading's dot can be hollow; the ring's shell points join `READING_ANCHORS`.
 - **Copy:** dock labels for Home view, Complete, Partly open and Thermal live in `home-scene-copy.ts`.
-- **Glossary:** `CONTEXT.md` already has *home view* and *lens*; the "View mode" entry is gone. Code names follow the glossary.
+- **Glossary:** `GLOSSARY.md` already has *home view* and *lens*; the "View mode" entry is gone. Code names follow the glossary.
 
 ## 5. Constraints
 
