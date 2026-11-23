@@ -62,7 +62,7 @@ DevTools mobile viewport: Chrome `Cmd-Shift-M` / Safari Develop → Responsive D
 
 ## GitHub workflow
 
-One issue = one lane = one worktree branch = one PR. `main` is prod. GitHub issues are the record of all work; what each stage writes to them is in `docs/agents/issue-tracker.md`. The board's Flow tab draws the same 12 stages. "(you)" = Oliver types the command.
+One issue = one lane = one worktree branch = one PR. `main` is prod. GitHub issues are the record of all work; what each stage writes to them is in `docs/agents/issue-tracker.md`. The 12 stages below are the lifecycle of every issue, in an epic or on its own; the board's Flow tab draws them and its Skills tab lists the skills in the same order. "(you)" = Oliver types the command.
 
 1. **Capture and triage:** an issue form (Bug, Feature, Epic) or `gh issue create`, then `/triage` (you) sets readiness. A small, clear issue skips to 4.
 2. **Shape:** `/grill-with-docs` then `/to-spec` (you): the spec becomes the issue body. Foggy epic: `/wayfinder` (you) first. Screen changes: `/ui-warmup`, `/ui-exploration`. Glossary and ADR edits ship on their own `docs/` branch the same sitting.
