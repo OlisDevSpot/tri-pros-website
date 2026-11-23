@@ -1,16 +1,16 @@
 # Worktree → PR Flow Implementation Plan
 
 > **Status**
-> - Stage: building · second `/stress-test-plan` 2026-11-22 folded in (rulings WF9–WF13) · board answers WF14, WF15 · T1, T12, T13, T14 partly done
-> - Built on: `origin/main` (no lane branch) · Verified at: `origin/main@68e0b7168` (2026-11-22) · page: https://claude.ai/artifact/7D8kgccA7iy6f8ATWzLdqS#lane-dev-flow
-> - Done: T0 (#289) · T12 Steps 1–3 (#293, #294; no vercel.app wildcard) · T1 steps 4, 5, 7 + idle sleep · T13 port claim · T14 per-checkout pre-commit gate, pre-ship retired, lane rules in CLAUDE.md (#295, #296)
-> - Next: finish T1 in one sitting with the owner: Step 1 protect prod, Step 2 prove a new copy's password, Step 3 prod endpoint id, then the WF14 password cut on dev and the four lane copies (Step 6 dropped, WF15). Then WF9's order: T7 → T9 → T2–T3 → T3a → T4–T6 → T8 → T10 → T12 rest → T15 → T16. The lane-linking plan (WF13) is not written yet.
-> - Open: WF12 Vercel token home (blocks the lane-linking plan's `link`) · T10's removal of four non-`db:*` prod scripts not in the spec (owner OK) · Lane / Lane copy / Review slot not in `GLOSSARY.md` (owner to agree the terms) · plan A (merge commits) design not written
+> - Stage: building · T1 done 2026-11-23 (Step 2 moved to T3 and the cut kept to dev by WF14; Step 6 dropped, WF15) · WF8 and WF14 updated in place on #311 · T12, T13, T14 partly done
+> - Built on: `origin/main` (no lane branch) · Verified at: `origin/main@295154357` (2026-11-23) · page: https://claude.ai/artifact/7D8kgccA7iy6f8ATWzLdqS#lane-dev-flow
+> - Done: T0 (#289) · T1 (prod protected; `NEON_PROD_ENDPOINT_ID` in `.env` + Vercel Preview/Production; dev's `neondb_owner` password cut and the new address in `.env`, every worktree `.env`, Vercel Preview `DATABASE_URL`, the Actions secret `DATABASE_URL`) · T12 Steps 1–3 (#293, #294; no vercel.app wildcard) · T13 port claim · T14 per-checkout pre-commit gate, pre-ship retired, lane rules in CLAUDE.md (#295, #296)
+> - Next: T7 (prod-script Action), then T7a (one `.env`, one rotation command, loud CI DB check), then WF9's order: T9 → T2–T3 → T3a → T4–T6 → T8 → T10 → T12 rest → T15 → T16. The WF8 rename (one name per role) needs its own task: endpoint boot guard first, then the rename in one change. The lane-linking plan (WF13) is not written yet.
+> - Open: the four `wt/*` copies still log in with prod's password until T3a (WF14, accepted) · archived prod children `backup/prod-pre-dev-refresh-2026-11-05` and `rehearsal/pre-ship-2026-10-08` hold prod's password: owner said delete after a no-loss check, in progress · `scene-layout-lab` and `trade-scenes` `.env` hold R2 keys that differ from main's (T7a Step 1) · WF12 Vercel token home (blocks the lane-linking plan's `link`) · T10's removal of four non-`db:*` prod scripts not in the spec (owner OK) · Lane / Lane copy / Review slot not in `GLOSSARY.md` (owner to agree the terms) · plan A (merge commits) design not written
 > - Blocked: none
 
 ## Rulings
 
-WF = Worktree Flow: the owner's rulings on this plan. Each one is a `Ruling WF<n>:` comment on [#311](https://github.com/OlisDevSpot/tri-pros-website/issues/311), their one home; a new ruling is a new comment there, and one that changes an earlier ruling names it (`replaces WF3`).
+WF = Worktree Flow: the owner's rulings on this plan. Each one is a `Ruling WF<n>:` comment on [#311](https://github.com/OlisDevSpot/tri-pros-website/issues/311), their one home; a new ruling is a new comment there. A ruling the owner changes is edited in place: the new text takes the ruling's place under the same id, and the old text stays below it, struck through and marked **Deprecated <date>** (owner 2026-11-23).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -62,13 +62,14 @@ WF = Worktree Flow: the owner's rulings on this plan. Each one is a `Ruling WF<n
 
 **Files:** owner's local `.env` (not committed). Record findings in the PR body of Task 2.
 
-- [ ] **Step 1: Neon.** Plan is Launch (verified 2026-11-02). Mark `production` **protected**. Set the project default suspend timeout so non-prod computes scale to zero. Verify via Neon API `GET /branches` → production `"protected": true`.
-- [ ] **Step 2: Prove copies get new passwords.** In the Neon console, create a throwaway child of production, copy its connection string, and try that password against the prod host. **Expected: authentication fails.** Delete the child. If it connects, stop and tell the owner (Tasks 2 and 11 assume new passwords).
-- [ ] **Step 3: Prod endpoint id everywhere it is needed.** Owner adds `NEON_PROD_ENDPOINT_ID=<prod endpoint id>` to local `.env` and to Vercel Preview and Production.
-- [ ] **Step 4: Vercel env audit, per scope (Production, Preview).** List which of these are set, and for DB URLs which Neon endpoint they point at: `DATABASE_URL`, `DATABASE_DEV_URL`, `BETTER_AUTH_URL`, `NEXT_PUBLIC_BASE_URL`, `NGROK_URL`, `EMAIL_DEV_OVERRIDE`, `VOIP_DEV_OVERRIDE_NUMBER`, `META_TEST_EVENT_CODE`, `QSTASH_*`, `ABLY_*`, `R2_*`, `ZOHO_*`. **Report to the owner immediately if any Preview DB URL points at the prod endpoint.** If `EMAIL_DEV_OVERRIDE` or `VOIP_DEV_OVERRIDE_NUMBER` is missing in Preview, add them (owner supplies values).
-- [ ] **Step 5: Canonical prod host.** `curl -sI https://triprosremodeling.com https://www.triprosremodeling.com` → note which one answers 200 without redirecting; compare with the redirect URI registered on the Google OAuth client. Record it; Task 12 uses it as `productionURL`.
-- [ ] **Step 6: Repo private.** Before flipping, list what depends on the repo being public (Vercel Git integration access, public links to the repo, Actions minutes). Then the owner upgrades to GitHub Pro and sets `OlisDevSpot/tri-pros-website` private. Verify `gh repo view --json visibility` → `PRIVATE`, and Vercel still deploys (push an empty commit on a scratch branch, see a preview build start).
-- [ ] **Step 7: Preview protection.** Enable Vercel Deployment Protection → Vercel Authentication for Preview, plus **Protection Bypass for Automation** (QStash/Twilio callbacks). Verify a preview URL in a logged-out browser shows the Vercel login.
+- [x] **Step 1: Neon.** Plan is Launch (verified 2026-11-02). Mark `production` **protected**. Set the project default suspend timeout so non-prod computes scale to zero. Verify via Neon API `GET /branches` → production `"protected": true`. _Done 2026-11-23: `protected: true` read back; the project default suspend is Neon's default and every compute suspends._
+- [ ] ~~**Step 2: Prove copies get new passwords.** In the Neon console, create a throwaway child of production, copy its connection string, and try that password against the prod host. **Expected: authentication fails.** Delete the child. If it connects, stop and tell the owner (Tasks 2 and 11 assume new passwords).~~ **Moved to T3 (WF14):** `wt:db create` checks every new copy.
+- [x] **Step 2a: Cut the shared password (WF14).** Reset `neondb_owner` on `development` only (prod untouched). The new address goes into the `DATABASE_DEV_URL` line of the main `.env` and every `.worktrees/*/.env`, Vercel Preview's `DATABASE_URL` (Sensitive) and the Actions secret `DATABASE_URL` (`pr-checks.yml` build). The four `wt/*` copies keep prod's password until T3a. _Done 2026-11-23 by a local script that printed yes/no only: the new password logs in to dev and prod's host refuses it; 12 of 12 `.env` copies hold it; PR Checks green again on a re-run._
+- [x] **Step 3: Prod endpoint id everywhere it is needed.** Owner adds `NEON_PROD_ENDPOINT_ID=<prod endpoint id>` to local `.env` and to Vercel Preview and Production. _Done 2026-11-23 (`ep-flat-wind-afvc0zla`); worktree `.env` copies lack it until T7a links them._
+- [x] **Step 4: Vercel env audit, per scope (Production, Preview).** List which of these are set, and for DB URLs which Neon endpoint they point at: `DATABASE_URL`, `DATABASE_DEV_URL`, `BETTER_AUTH_URL`, `NEXT_PUBLIC_BASE_URL`, `NGROK_URL`, `EMAIL_DEV_OVERRIDE`, `VOIP_DEV_OVERRIDE_NUMBER`, `META_TEST_EVENT_CODE`, `QSTASH_*`, `ABLY_*`, `R2_*`, `ZOHO_*`. **Report to the owner immediately if any Preview DB URL points at the prod endpoint.** If `EMAIL_DEV_OVERRIDE` or `VOIP_DEV_OVERRIDE_NUMBER` is missing in Preview, add them (owner supplies values).
+- [x] **Step 5: Canonical prod host.** `curl -sI https://triprosremodeling.com https://www.triprosremodeling.com` → note which one answers 200 without redirecting; compare with the redirect URI registered on the Google OAuth client. Record it; Task 12 uses it as `productionURL`.
+- [ ] ~~**Step 6: Repo private.** Before flipping, list what depends on the repo being public (Vercel Git integration access, public links to the repo, Actions minutes). Then the owner upgrades to GitHub Pro and sets `OlisDevSpot/tri-pros-website` private. Verify `gh repo view --json visibility` → `PRIVATE`, and Vercel still deploys (push an empty commit on a scratch branch, see a preview build start).~~ **Dropped (WF15).**
+- [x] **Step 7: Preview protection.** Enable Vercel Deployment Protection → Vercel Authentication for Preview, plus **Protection Bypass for Automation** (QStash/Twilio callbacks). Verify a preview URL in a logged-out browser shows the Vercel login.
 
 ### Task 2: Neon client additions and branch naming
 
@@ -135,10 +136,10 @@ Runs after T9 Step 5 (WF9): prod carries the baseline row, so every fork inherit
   - `isScrubbed(connectionString: string): Promise<boolean>` — true when `drizzle.__scrubbed` exists
   - `createWorktreeDb(deps: WorktreeDbDeps, input: { gitBranch: string, knownBranchId?: string }): Promise<{ branchId: string, url: string, reused: boolean }>`
   - `deleteWorktreeDb(deps: WorktreeDbDeps, target: { branchId?: string, gitBranch?: string }): Promise<void>`
-  - `WorktreeDbDeps = { neon: NeonClient, scrub: (url: string) => Promise<void>, isScrubbed: (url: string) => Promise<boolean>, migrate: (url: string) => Promise<unknown>, prodEndpointId: string }`. The lane-linking plan adds its Vercel dependency here; this plan builds no Vercel call (WF12).
+  - `WorktreeDbDeps = { neon: NeonClient, scrub: (url: string) => Promise<void>, isScrubbed: (url: string) => Promise<boolean>, migrate: (url: string) => Promise<unknown>, prodRefusesPassword: (url: string) => Promise<boolean>, prodEndpointId: string }`. `prodRefusesPassword` (WF14) connects to prod's host with the copy's role and password, runs no SQL, and returns true only on `28P01` / "password authentication failed"; a successful login or any other error returns false (fail-closed). The lane-linking plan adds its Vercel dependency here; this plan builds no Vercel call (WF12).
   - CLI: `pnpm wt:db create` (git branch from `git branch --show-current`; `knownBranchId` from `NEON_BRANCH_ID` in `./.env.local`; writes `DATABASE_DEV_URL=` (pooled) and `NEON_BRANCH_ID=` through `upsertEnvKeys`), `pnpm wt:db delete` (by `NEON_BRANCH_ID` from `.env.local`, falling back to the name; missing `NEON_API_KEY` or nothing to delete → prints why and exits 0, so an archive hook never blocks), `pnpm wt:db prune [--apply]` (lists orphans and copies idle 14+ days; `--apply` deletes orphans only, never an idle copy a live worktree names). Reads `NEON_PROD_ENDPOINT_ID` from env.
 
-Create order: `knownBranchId` names a live Neon branch → reuse it (whatever its name), `migrate`. Else name → if `wt/<slug>` exists: `isScrubbed` (unpooled) → true: reuse, then `migrate` · false: delete it and continue as new. New: fork from the prod branch → wait → `connectionUri` (unpooled; refuses the prod branch before fetching) → `assertNotProdEndpoint` → `scrub` → `migrate` → return pooled URL. Any failure after the fork deletes the branch and rethrows.
+Create order: `knownBranchId` names a live Neon branch → reuse it (whatever its name), `migrate`. Else name → if `wt/<slug>` exists: `isScrubbed` (unpooled) → true: reuse, then `migrate` · false: delete it and continue as new. New: fork from the prod branch → wait → `connectionUri` (unpooled; refuses the prod branch before fetching) → `assertNotProdEndpoint` → `prodRefusesPassword` (false → `Refusing: this copy's password logs in to prod`) → `scrub` → `migrate` → return pooled URL. Any failure after the fork deletes the branch and rethrows.
 
 - [ ] **Step 1: Write the failing test** with a fake `NeonClient` recording calls:
 
@@ -153,6 +154,7 @@ Create order: `knownBranchId` names a live Neon branch → reuse it (whatever it
 // deleteWorktreeDb with neither id nor matching name → resolves, deleteBranch not called
 // connectionUri returning a prod-endpoint URL → rejects /production endpoint/, branch deleted
 // prodEndpointId '' → rejects /not set/ before createBranch
+// prodRefusesPassword → false (the copy shares prod's password) → rejects /logs in to prod/, branch deleted, scrub never called
 ```
 
 - [ ] **Step 2:** Run → FAIL.
@@ -236,6 +238,23 @@ Lanes: `feat/data-views` (`wt/data-views`), `feat/proposal-page` (`wt/proposal-p
 - [ ] **Step 3:** After merge, owner runs it with `scripts/verify-business-time.ts` (no DB) → approval → green. Then with `scripts/prod-db-ping.ts` → prints the prod endpoint id.
 - [ ] **Step 4:** Commit `ci: owner-approved prod-script workflow and a read-only prod probe`.
 
+### Task 7a: One `.env`, one rotation command, a loud CI check (owner 2026-11-23)
+
+The 2026-11-23 dev password cut touched about 15 hand-made copies of one address (12 `.env` files, Vercel Preview, the Actions secret); the copies had already drifted (no worktree `.env` had `NEON_PROD_ENDPOINT_ID`, two had old R2 keys), and CI failed with a prerender stack trace that never named the secret. T8 and T3a rotate again.
+
+**Files:**
+- Modify: `.worktreeinclude` — drop `.env`, so no tool (Orca, `claude --worktree`) makes a copy
+- Modify: `orca.yaml` — setup links `.env` to the main checkout's: `ln -sfn "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")/.env" .env`
+- Modify: `scripts/dev.mjs` and `scripts/lib/load-env.ts` — in a linked worktree: no `.env` → create that link; a regular-file `.env` → refuse with the one-line `ln -sfn …` fix (a lane's own values belong in `.env.local`). Covers `claude --worktree` and hand-made worktrees, which skip Orca's setup.
+- Create: `scripts/db-rotate.ts` + `package.json` `"db:rotate"` — from the 2026-11-23 reset script: reset `neondb_owner` on one named non-prod branch through the Neon API (refuses the prod branch before any request), rewrite the one URL line in the main `.env`, `gh secret set DATABASE_URL` when the branch is `development`, check the new address logs in and prod's host refuses it; prints yes/no only. Vercel Preview stays a printed reminder ("update Preview `DATABASE_URL`, Sensitive, then redeploy") until WF12 names the token's home.
+- Modify: `.github/workflows/pr-checks.yml` — a step before Build that connects with `DATABASE_URL` and, on `28P01`, fails with "the `DATABASE_URL` secret was rejected: update it to the development branch's address".
+- Test: `scripts/verify-env-link.ts` (link created when missing, refusal on a regular file, main checkout untouched)
+
+- [ ] **Step 1 (owner OK per worktree): link the existing worktrees.** For each `.worktrees/*/.env` that is a regular file, print the key names that differ from main's `.env` (no values). Where nothing differs but main's extra keys, replace the copy with the link. Today `scene-layout-lab` and `trade-scenes` hold different `R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY`: the owner says which keys are current first.
+- [ ] **Step 2:** Write the test, watch it fail, implement the link guard, `.worktreeinclude` and `orca.yaml`.
+- [ ] **Step 3:** `db:rotate` and the CI step. `pnpm lint && pnpm tsc`; `pnpm exec eslint` on the new scripts.
+- [ ] **Step 4:** A new Orca worktree and a `claude --worktree` session both end with `.env` → main's `.env` (`test -L .env`). Commit `chore(env): one shared .env per machine, a rotation command and a loud CI database check`.
+
 ### Task 8: Credentials leave the machine (owner-run, agent-guided)
 
 **Files:**
@@ -249,7 +268,7 @@ Lanes: `feat/data-views` (`wt/data-views`), `feat/proposal-page` (`wt/proposal-p
 - [ ] **Step 2 (owner, console + Action):** On production create roles `photos_writer` and `app_prod`; run the prod-script Action with `scripts/grant-photos-writer.ts` and with a one-line `GRANT neondb_owner TO app_prod` script (same file, `--app-prod` flag).
 - [ ] **Step 3 (owner, console): switch the app, then rotate.** Set Vercel Production `DATABASE_URL` (type **Sensitive**, so no token can read it back; check its `type` afterwards) and `PROD_ENV_FILE` to the `app_prod` URL, set the GitHub secret `DATABASE_URL` (used by `pr-checks.yml:39`) to the development branch's URL, redeploy production, verify the site loads and `prod-db-ping` shows `current_user = app_prod`. Only then reset `neondb_owner`'s password on production (kills every old URL in `.worktrees/*/.env`, shell history and this session's transcript). Also rotate `NEON_API_KEY` (spec Residual risks).
 - [ ] **Step 4 (owner): local env reshuffle.** In `.env`: `DATABASE_URL` = the `photos_writer` prod URL; move `EMAIL_DEV_OVERRIDE`, `VOIP_DEV_OVERRIDE_NUMBER`, `DEV_LOGIN_SECRET`, `VERCEL_AUTOMATION_BYPASS_SECRET` (the preview Playwright check needs it in every lane), `VOIP_WEBHOOK_BASE_URL`, `X_BEARER_TOKEN` from `.env.local` into `.env`; move `DATABASE_DEV_URL` (development branch) out of `.env` into the main checkout's `.env.local`; new `NEON_API_KEY`. `VERCEL_TOKEN` stays out until WF12 is decided.
-- [ ] **Step 4a (owner says "run"): re-sync the lanes.** Every existing worktree holds a stale copy of `.env` (old prod URL, old shared-dev password). Copy the new `.env` into each `.worktrees/*/`; a lane on shared dev gets `DATABASE_DEV_URL` (development) in its own `.env.local`.
+- [ ] **Step 4a (owner says "run"): re-sync the lanes.** After T7a every worktree's `.env` links to main's, so the new `.env` reaches them all; check `test -L` in each `.worktrees/*/` and that no `.env.local` still holds an old prod or shared-dev URL. A lane on shared dev gets `DATABASE_DEV_URL` (development) in its own `.env.local`. Rotations use `pnpm db:rotate` (T7a).
 - [ ] **Step 5:** Verify: no prod `neondb_owner` or `app_prod` URL in `.env`, `.env.local`, `.worktrees/*/.env*` (grep the prod endpoint id, then check each hit's user is `photos_writer`); Oliver's `pnpm dev` in main works against dev; `DRIZZLE_TARGET=prod pnpm tsx scripts/prod-db-ping.ts` → `current_user = photos_writer`; `pnpm db:refresh:dev --dry-run` works.
 - [ ] **Step 6:** Commit `feat(scripts): photos_writer grants for the local photo workflows`.
 
@@ -296,7 +315,7 @@ Runs after T1 (production protected, so a copy gets its own password) and T7 (th
 
 - [ ] **Step 1: Failing tests:** `buildPlan` (production → prod; preview → none; unset → none) and `verify-migration-order` fixtures (in order → pass; hand-merged older entry → fail; duplicate idx → fail).
 - [ ] **Step 2:** Run → FAIL. **Step 3:** Implement. Confirm the Vercel project has no Build Command override that would bypass `vercel-build`.
-- [ ] **Step 4: CI.** In `pr-checks.yml` (keep Node 20): add `pnpm tsc`; add `pnpm drizzle-kit check`; add `pnpm tsx scripts/verify-migration-order.ts` (needs `fetch-depth: 0` or a fetch of `origin/main`); add `pnpm drizzle-kit generate --name ci-check` with `timeout-minutes: 3` followed by `test -z "$(git status --porcelain src/shared/db/migrations)"` (a rename prompt hangs and times out, which correctly fails the PR). The build keeps the `DATABASE_URL` secret, now the development branch (Task 8 Step 3).
+- [ ] **Step 4: CI.** In `pr-checks.yml` (keep Node 20): add `pnpm tsc`; add `pnpm drizzle-kit check`; add `pnpm tsx scripts/verify-migration-order.ts` (needs `fetch-depth: 0` or a fetch of `origin/main`); add `pnpm drizzle-kit generate --name ci-check` with `timeout-minutes: 3` followed by `test -z "$(git status --porcelain src/shared/db/migrations)"` (a rename prompt hangs and times out, which correctly fails the PR). The build keeps the `DATABASE_URL` secret, now the development branch (Task 8 Step 3). Backlog (owner 2026-11-23, not in this plan's scope): build CI against a throwaway Postgres service with the migrations applied, so CI holds no database secret and drops off the rotation list.
 - [ ] **Step 5:** Tests pass; `pnpm lint && pnpm tsc`. Commit `feat(deploy): production migrations under a lock in vercel-build; CI checks tsc and migrations`.
 - [ ] **Step 6:** After merge, the production deploy log shows `applied: 0` and the site works.
 
