@@ -1,0 +1,20 @@
+name: Bug
+description: Something is broken
+labels: [bug, needs-triage]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happens
+      description: What you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: where
+    attributes:
+      label: Where
+      description: Page or screen, device (iPad, phone, desktop), prod or a preview.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to see it
