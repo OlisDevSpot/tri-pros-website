@@ -401,6 +401,7 @@ dl.facts .mono{font-size:13px}
   <a href="#now">Now</a>
   <a href="#merge">Merge</a>
   <a href="#flow">Flow</a>
+  <a href="#skills">Skills</a>
   <a href="#setup">Setup</a>
   <a href="#decisions">Decisions<span class="count" id="dec-count" hidden></span></a>
   <a href="#reference">Reference</a>
@@ -548,8 +549,8 @@ dl.facts .mono{font-size:13px}
 
 <section class="view" id="v-skills" hidden>
   <div class="block">
-    <h2>Skills for parallel lanes</h2>
-    <p>Your chain stays: brainstorming → spec → stress-test → plan → build → review. These skills sit around it and handle what changes when many lanes run at once: opening a lane, staying out of each other's way, preparing your review, and catching up after a merge. Approve or park each one; approved ones get built in this order.</p>
+    <h2>Skills along the issue lifecycle</h2>
+    <p>Every issue, in an epic or on its own, runs the 12 stages on the Flow tab, and this list follows them. Matt Pocock's skills triage, shape, slice, build, review and retro; "you run" means you type the command. Ours cover what his don't: lanes, previews, your review sitting and catching up after a merge. Approve or park each proposed one; approved ones get built in the build order on their When line.</p>
   </div>
   <div class="grid2" id="skill-list"><div class="loading">Loading skills.</div></div>
 </section>
@@ -628,8 +629,8 @@ const svgEl=(t,a,txt)=>{const e=document.createElementNS("http://www.w3.org/2000
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("on"),2200)}
 const byOrder=(a,b)=>(a.order??99)-(b.order??99)||String(a.name||a.title||"").localeCompare(String(b.name||b.title||""));
 const today=()=>LaneCore.localDay(new Date());
-const VIEWS={now:["now"],lane:["lane"],merge:["merge"],flow:["flow"],setup:["setup"],decisions:["decisions"],reference:["bottlenecks","skills","tools"]};
-const ALIAS={board:"now",playbook:"flow",bottlenecks:"reference",skills:"reference",tools:"reference"};
+const VIEWS={now:["now"],lane:["lane"],merge:["merge"],flow:["flow"],setup:["setup"],decisions:["decisions"],skills:["skills"],reference:["bottlenecks","tools"]};
+const ALIAS={board:"now",playbook:"flow",bottlenecks:"reference",tools:"reference"};
 function route(){
   const h=(location.hash||"#now").slice(1);let v;const was=S.lane;S.lane=null;
   if(h.startsWith("lane-")){v="lane";S.lane=h.slice(5)}else{v=ALIAS[h]||h;if(!VIEWS[v])v="now"}
