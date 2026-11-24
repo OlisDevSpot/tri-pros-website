@@ -1,10 +1,10 @@
 # Worktree → PR Flow Implementation Plan
 
 > **Status**
-> - Stage: building · T1 done 2026-11-23 (Step 2 moved to T3 and the cut kept to dev by WF14; Step 6 dropped, WF15) · WF8 and WF14 updated in place on #311 · T12, T13, T14 partly done · WF16 (2026-11-24): docs go straight to `main` · CI runs lint + tsc only, no `next build` (#343, PR #344)
+> - Stage: building · T1 done 2026-11-23 (Step 2 moved to T3 and the cut kept to dev by WF14; Step 6 dropped, WF15) · WF8 and WF14 updated in place on #311 · T12, T13, T14 partly done · WF16 (2026-11-24): docs go straight to `main` · CI's `next build` ran out of memory 2026-11-24: Build gets a 6 GB heap (#343, PR #344)
 > - Built on: `origin/main` (no lane branch) · Verified at: `origin/main@295154357` (2026-11-23) · page: https://claude.ai/artifact/7D8kgccA7iy6f8ATWzLdqS#lane-dev-flow
 > - Done: T0 (#289) · T1 (prod protected; `NEON_PROD_ENDPOINT_ID` in `.env` + Vercel Preview/Production; dev's `neondb_owner` password cut and the new address in `.env`, every worktree `.env`, Vercel Preview `DATABASE_URL`, the Actions secret `DATABASE_URL`) · T12 Steps 1–3 (#293, #294; no vercel.app wildcard) · T13 port claim · T14 per-checkout pre-commit gate, pre-ship retired, lane rules in CLAUDE.md (#295, #296)
-> - Next: T7 (prod-script Action), then T7a (one `.env`, one rotation command; its CI DB check is dropped, CI no longer touches a database), then WF9's order: T9 → T2–T3 → T3a → T4–T6 → T8 → T10 → T12 rest → T15 → T16. The WF8 rename (one name per role) needs its own task: endpoint boot guard first, then the rename in one change. The lane-linking plan (WF13) is not written yet.
+> - Next: T7 (prod-script Action), then T7a (one `.env`, one rotation command, loud CI DB check), then WF9's order: T9 → T2–T3 → T3a → T4–T6 → T8 → T10 → T12 rest → T15 → T16. The WF8 rename (one name per role) needs its own task: endpoint boot guard first, then the rename in one change. The lane-linking plan (WF13) is not written yet.
 > - Open: the four `wt/*` copies still log in with prod's password until T3a (WF14, accepted) · T16's ruleset (require a PR, no bypass) would block WF16's docs pushes: owner picks a bypass or changes WF16 · `scene-layout-lab` and `trade-scenes` `.env` hold R2 keys that differ from main's (T7a Step 1) · WF12 Vercel token home (blocks the lane-linking plan's `link`) · T10's removal of four non-`db:*` prod scripts not in the spec (owner OK) · Lane / Lane copy / Review slot not in `GLOSSARY.md` (owner to agree the terms) · plan A (merge commits) design not written
 > - Blocked: none
 
@@ -191,7 +191,7 @@ Lanes: `feat/data-views` (`wt/data-views`), `feat/proposal-page` (`wt/proposal-p
 **Files:**
 - Create: `src/shared/config/local-dev-database.ts` — `localDevDatabaseMissing(env)`, pure, no imports (`data-target.ts:3` imports `server-env`, so the check cannot live there without a cycle)
 - Modify: `src/shared/config/server-env.ts` — one gate in the existing `VERCEL_ENV` gate block (`:196-223`), reading `DRIZZLE_TARGET` from `process.env` (it is not in the Zod schema)
-- ~~Modify: `.github/workflows/pr-checks.yml` — Build step env gains `DATABASE_DEV_URL: ${{ secrets.DATABASE_URL }}` (CI has no `VERCEL_ENV`, and `.env.ci` has no `DATABASE_DEV_URL`, so without it the gate fails every PR; after T8 Step 3 that secret is the development branch)~~ Dropped 2026-11-24: CI no longer runs `next build` (#343), so the gate never loads there.
+- Modify: `.github/workflows/pr-checks.yml` — Build step env gains `DATABASE_DEV_URL: ${{ secrets.DATABASE_URL }}` (CI has no `VERCEL_ENV`, and `.env.ci` has no `DATABASE_DEV_URL`, so without it the gate fails every PR; after T8 Step 3 that secret is the development branch)
 - Modify: `scripts/backfill-lead-source-fk.ts:8`, `scripts/seed-lead-sources.ts:10-11`, `scripts/migrate-notes-to-activities.ts:26`, `scripts/dump-failed-sow.ts:8`, `scripts/match-before-after.ts:37` — drop each script's own `Pool`/`Client` on `DATABASE_URL` and use `db` from `@/shared/db` (it already follows `isProductionData()`), with `./lib/load-env` imported first
 - Test: `scripts/verify-data-target.ts`
 
@@ -238,7 +238,7 @@ Lanes: `feat/data-views` (`wt/data-views`), `feat/proposal-page` (`wt/proposal-p
 - [ ] **Step 3:** After merge, owner runs it with `scripts/verify-business-time.ts` (no DB) → approval → green. Then with `scripts/prod-db-ping.ts` → prints the prod endpoint id.
 - [ ] **Step 4:** Commit `ci: owner-approved prod-script workflow and a read-only prod probe`.
 
-### Task 7a: One `.env`, one rotation command (owner 2026-11-23)
+### Task 7a: One `.env`, one rotation command, a loud CI check (owner 2026-11-23)
 
 The 2026-11-23 dev password cut touched about 15 hand-made copies of one address (12 `.env` files, Vercel Preview, the Actions secret); the copies had already drifted (no worktree `.env` had `NEON_PROD_ENDPOINT_ID`, two had old R2 keys), and CI failed with a prerender stack trace that never named the secret. T8 and T3a rotate again.
 
@@ -246,14 +246,14 @@ The 2026-11-23 dev password cut touched about 15 hand-made copies of one address
 - Modify: `.worktreeinclude` — drop `.env`, so no tool (Orca, `claude --worktree`) makes a copy
 - Modify: `orca.yaml` — setup links `.env` to the main checkout's: `ln -sfn "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")/.env" .env`
 - Modify: `scripts/dev.mjs` and `scripts/lib/load-env.ts` — in a linked worktree: no `.env` → create that link; a regular-file `.env` → refuse with the one-line `ln -sfn …` fix (a lane's own values belong in `.env.local`). Covers `claude --worktree` and hand-made worktrees, which skip Orca's setup.
-- Create: `scripts/db-rotate.ts` + `package.json` `"db:rotate"` — from the 2026-11-23 reset script: reset `neondb_owner` on one named non-prod branch through the Neon API (refuses the prod branch before any request), rewrite the one URL line in the main `.env`, check the new address logs in and prod's host refuses it; prints yes/no only. Vercel Preview stays a printed reminder ("update Preview `DATABASE_URL`, Sensitive, then redeploy") until WF12 names the token's home.
-- ~~Modify: `.github/workflows/pr-checks.yml` — a step before Build that connects with `DATABASE_URL` and, on `28P01`, fails with "the `DATABASE_URL` secret was rejected: update it to the development branch's address".~~ Dropped 2026-11-24: CI runs lint + tsc only and holds no database secret (#343).
+- Create: `scripts/db-rotate.ts` + `package.json` `"db:rotate"` — from the 2026-11-23 reset script: reset `neondb_owner` on one named non-prod branch through the Neon API (refuses the prod branch before any request), rewrite the one URL line in the main `.env`, `gh secret set DATABASE_URL` when the branch is `development`, check the new address logs in and prod's host refuses it; prints yes/no only. Vercel Preview stays a printed reminder ("update Preview `DATABASE_URL`, Sensitive, then redeploy") until WF12 names the token's home.
+- Modify: `.github/workflows/pr-checks.yml` — a step before Build that connects with `DATABASE_URL` and, on `28P01`, fails with "the `DATABASE_URL` secret was rejected: update it to the development branch's address".
 - Test: `scripts/verify-env-link.ts` (link created when missing, refusal on a regular file, main checkout untouched)
 
 - [ ] **Step 1 (owner OK per worktree): link the existing worktrees.** For each `.worktrees/*/.env` that is a regular file, print the key names that differ from main's `.env` (no values). Where nothing differs but main's extra keys, replace the copy with the link. Today `scene-layout-lab` and `trade-scenes` hold different `R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY`: the owner says which keys are current first.
 - [ ] **Step 2:** Write the test, watch it fail, implement the link guard, `.worktreeinclude` and `orca.yaml`.
-- [ ] **Step 3:** `db:rotate`. `pnpm lint && pnpm tsc`; `pnpm exec eslint` on the new scripts.
-- [ ] **Step 4:** A new Orca worktree and a `claude --worktree` session both end with `.env` → main's `.env` (`test -L .env`). Commit `chore(env): one shared .env per machine and a rotation command`.
+- [ ] **Step 3:** `db:rotate` and the CI step. `pnpm lint && pnpm tsc`; `pnpm exec eslint` on the new scripts.
+- [ ] **Step 4:** A new Orca worktree and a `claude --worktree` session both end with `.env` → main's `.env` (`test -L .env`). Commit `chore(env): one shared .env per machine, a rotation command and a loud CI database check`.
 
 ### Task 8: Credentials leave the machine (owner-run, agent-guided)
 
@@ -315,7 +315,7 @@ Runs after T1 (production protected, so a copy gets its own password) and T7 (th
 
 - [ ] **Step 1: Failing tests:** `buildPlan` (production → prod; preview → none; unset → none) and `verify-migration-order` fixtures (in order → pass; hand-merged older entry → fail; duplicate idx → fail).
 - [ ] **Step 2:** Run → FAIL. **Step 3:** Implement. Confirm the Vercel project has no Build Command override that would bypass `vercel-build`.
-- [ ] **Step 4: CI.** (2026-11-24: CI already runs lint + `next typegen` + `pnpm tsc` and no build (#343); it holds no database secret, so the build-secret and throwaway-Postgres notes below are moot.) In `pr-checks.yml` (keep Node 20): add `pnpm tsc`; add `pnpm drizzle-kit check`; add `pnpm tsx scripts/verify-migration-order.ts` (needs `fetch-depth: 0` or a fetch of `origin/main`); add `pnpm drizzle-kit generate --name ci-check` with `timeout-minutes: 3` followed by `test -z "$(git status --porcelain src/shared/db/migrations)"` (a rename prompt hangs and times out, which correctly fails the PR). The build keeps the `DATABASE_URL` secret, now the development branch (Task 8 Step 3). Backlog (owner 2026-11-23, not in this plan's scope): build CI against a throwaway Postgres service with the migrations applied, so CI holds no database secret and drops off the rotation list.
+- [ ] **Step 4: CI.** In `pr-checks.yml` (keep Node 20): add `pnpm tsc`; add `pnpm drizzle-kit check`; add `pnpm tsx scripts/verify-migration-order.ts` (needs `fetch-depth: 0` or a fetch of `origin/main`); add `pnpm drizzle-kit generate --name ci-check` with `timeout-minutes: 3` followed by `test -z "$(git status --porcelain src/shared/db/migrations)"` (a rename prompt hangs and times out, which correctly fails the PR). The build keeps the `DATABASE_URL` secret, now the development branch (Task 8 Step 3). Backlog (owner 2026-11-23, not in this plan's scope): build CI against a throwaway Postgres service with the migrations applied, so CI holds no database secret and drops off the rotation list.
 - [ ] **Step 5:** Tests pass; `pnpm lint && pnpm tsc`. Commit `feat(deploy): production migrations under a lock in vercel-build; CI checks tsc and migrations`.
 - [ ] **Step 6:** After merge, the production deploy log shows `applied: 0` and the site works.
 
