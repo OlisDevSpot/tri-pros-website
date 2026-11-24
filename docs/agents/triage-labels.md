@@ -7,7 +7,7 @@ The skills speak in five canonical triage roles and two category roles. This map
 | Role | Label | Meaning |
 |---|---|---|
 | `needs-triage` | `needs-triage` | Owner needs to evaluate it |
-| `needs-info` | `needs-info` | Waiting on answers; a `## Triage Notes` comment lists them |
+| `needs-info` | `needs-info` | Waiting on answers; a `## Triage Notes` comment lists them (a slice rated under 8/10: `## Open questions` in its body) |
 | `ready-for-agent` | `ready-for-agent` | Fully specified; an agent can take it unattended |
 | `ready-for-human` | `ready-for-human` | Specified, but needs the owner (judgement, external access, manual testing) |
 | `wontfix` | `wontfix` | Will not be actioned; the issue is closed as not planned |

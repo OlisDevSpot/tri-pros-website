@@ -65,8 +65,8 @@ DevTools mobile viewport: Chrome `Cmd-Shift-M` / Safari Develop → Responsive D
 One issue = one lane = one worktree branch = one PR. `main` is prod. GitHub issues are the record of all work; what each stage writes to them is in `docs/agents/issue-tracker.md`. The 12 stages below are the lifecycle of every issue, in an epic or on its own; the board's Flow tab draws them and its Skills tab lists the skills in the same order. "(you)" = Oliver types the command.
 
 1. **Capture and triage:** an issue form (Bug, Feature, Epic) or `gh issue create`, then `/triage` (you) sets readiness. A small, clear issue skips to 4.
-2. **Shape:** `/grill-with-docs` then `/to-spec` (you): the spec becomes the issue body. Foggy epic: `/wayfinder` (you) first. Screen changes: `/ui-warmup`, `/ui-exploration`. Glossary and ADR edits ship on their own `docs/` branch the same sitting.
-3. **Slice:** `/to-tickets` (you): sub-issues with blocking links are the plan; `/stress-test-plan` checks them.
+2. **Shape:** `/grill-with-docs` then `/to-spec` (you): the spec becomes the issue body. An epic is shaped once as a whole: its spec holds the requirements every slice serves. Foggy epic: `/wayfinder` (you) first. Screen changes: `/ui-warmup`, `/ui-exploration`. Glossary and ADR edits ship on their own `docs/` branch the same sitting.
+3. **Slice:** `/to-tickets` (you): sub-issues with blocking links are the plan. Each slice is rated on whether a fresh session can build it from its body: 8/10 or higher is `ready-for-agent`; below is `needs-info` and goes back through stage 2, against the epic's spec, before its lane opens. `/stress-test-plan` checks each spec.
 4. **Open the lane:** one `ready-for-agent` issue: assign it, Project 3 Status `In Progress`, then Start / Base / Branch below and a board row keyed by the issue number.
 5. **Build:** `/implement #N` (you): `tdd` test-first, Matt's `code-review` at the end. Bugs: `diagnosing-bugs`. Draft PR early (below).
 6. **Verify** and 7. **PR:** below. Status moves to `In Review` only when the PR is ready for Oliver.

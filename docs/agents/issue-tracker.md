@@ -59,6 +59,15 @@ gh api repos/OlisDevSpot/tri-pros-website/issues/<n> --jq .issue_dependencies_su
 
 An issue is unblocked when `blocked_by` is 0. Create every issue first, then wire edges in a second pass with real numbers: a placeholder `#<n>` links to an unrelated issue.
 
+## Slice readiness
+
+`/to-tickets` labels every slice `ready-for-agent` by default. Here each slice is rated instead (owner 2026-11-23):
+
+- The slice body ends with `**Confidence: N/10**` and one line on why: how sure a fresh session can build it from the body alone, against the epic's spec.
+- 8/10 or higher: `ready-for-agent`. Below: `needs-info`, with the open questions under `## Open questions` in the body.
+- A `needs-info` slice is shaped before its lane opens: `/grill-with-docs #n` against the epic's spec, `/to-spec #n` (rewrites its body, sets `ready-for-agent`), `/stress-test-plan`.
+- The owner can move any slice either way when approving the breakdown.
+
 ## Project 3 Status (in flight only)
 
 ```bash
@@ -87,8 +96,8 @@ The flow's stages are listed in `CLAUDE.md` (GitHub workflow). Each one keeps th
 | Stage | GitHub write |
 |---|---|
 | Capture and triage | Issue created as `needs-triage` + category. `/triage` sets the readiness label; a small issue gets an agent brief comment |
-| Shape | `/to-spec` rewrites the body as the spec (original under `## Original request`) and sets `ready-for-agent`. `/wayfinder` opens a map issue instead |
-| Slice | `/to-tickets` opens one sub-issue per slice, `ready-for-agent`, with `blocked_by` links |
+| Shape | `/to-spec` rewrites the body as the spec (original under `## Original request`) and sets `ready-for-agent`. An epic is shaped once as a whole; a `needs-info` slice is shaped the same way against its epic's spec. `/wayfinder` opens a map issue instead |
+| Slice | `/to-tickets` opens one sub-issue per slice with `blocked_by` links, each rated and labelled as in **Slice readiness** |
 | Open the lane | Assignee; Status `In Progress`; branch `{type}/{n}-{slug}` |
 | Build | Comments at milestones only. Draft PR with `Closes #n` or `Refs #n` |
 | Verify, PR | Status `In Review`. The "what to check" list goes on the PR |
