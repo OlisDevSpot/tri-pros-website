@@ -4,7 +4,6 @@
       "count": null,
       "progress": "1/6",
       "lanes": [
-        "issue-315 agent",
         "dev-flow blocked",
         "issue-316 blocked"
       ]
@@ -13,23 +12,18 @@
       "count": null,
       "progress": "0/2",
       "lanes": [
-        "proposal-page blocked",
         "pe4 blocked"
       ]
     },
     "epic-302": {
       "count": null,
       "progress": "0/2",
-      "lanes": [
-        "trade-scenes agent"
-      ]
+      "lanes": []
     },
     "epic-313": {
       "count": null,
       "progress": "0/0",
-      "lanes": [
-        "hv parked"
-      ]
+      "lanes": []
     },
     "standalone": {
       "count": "9",

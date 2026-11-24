@@ -275,6 +275,16 @@ dl.facts .mono{font-size:13px}
 a.mb-over{display:inline-flex;align-items:center;min-height:32px;padding:0 10px;border-radius:6px;font:600 13px var(--body);text-decoration:none}
 a.mb-over:hover{background:var(--sunk)}
 .mb-dots{display:inline-flex;gap:4px;align-items:center}
+.mb-name .sdot{margin-right:8px}
+.mb-epic .mb-head{align-items:flex-start}
+.mb-id{display:flex;align-items:flex-start;gap:6px 8px;flex:1 1 300px;min-width:0}
+.mb-idline{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;flex:1 1 0;min-width:0}
+.mb-state{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 6px;min-width:0}
+/* Only where the header fits one line: a divider that wraps to the start of a line reads as a stray mark. */
+@media (min-width:1000px){.mb-state{padding-left:10px;border-left:1px solid var(--line)}}
+.mb-epic .mb-prog{margin-left:0;flex:none;min-height:32px}
+.mb-epic .mb-prog .bar{width:64px}
+.mb-lines{display:grid;gap:2px;min-width:0;padding:0 14px 10px 54px;margin-top:-4px}
 .sdot{display:inline-block;flex:none;width:10px;height:10px;border-radius:50%;background:var(--parked)}
 .sdot.you{background:var(--you)} .sdot.agent{background:var(--agent)} .sdot.working{background:var(--done);box-shadow:0 0 0 3px var(--done-soft)}
 .sdot.blocked{background:var(--blocked)} .sdot.shipped{background:var(--done)}
@@ -304,7 +314,7 @@ a.bl-num{display:inline-flex;align-items:center;justify-content:center;min-heigh
 .bl-cmd p{grid-column:1/-1;margin:0;font-size:12.5px;color:var(--muted)}
 .bl-more{display:flex;align-items:center;min-height:44px;padding:0 14px;border-top:1px solid var(--line)}
 .bl-more a{display:inline-flex;align-items:center;min-height:32px}
-@media (max-width:600px){.mb-name{flex:1 1 0}.mb-area,a.mb-over{display:none}.mb-prog{margin-left:0;width:100%}.bl-row{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:600px){.mb-name{flex:1 1 calc(100% - 40px)}.mb-lines{padding-left:14px;margin-top:0}.mb-id{flex-wrap:wrap;align-items:center}.mb-idline,.mb-state{display:contents}.mb-epic .mb-prog{min-height:0}.mb-area,a.mb-over{display:none}.mb-prog{margin-left:0;width:100%}.bl-row{grid-template-columns:minmax(0,1fr)}}
 
 /* Lane page: pictures in the main column, details in the inspector beside them (a bottom sheet on narrow screens). */
 #lane-view{container-type:inline-size}
@@ -716,39 +726,51 @@ const STATE_TXT={you:"your move",agent:"agent",working:"working",quiet:"gone qui
 // GitHub writes titles as "type(scope): words"; the map shows the words, the full title stays on the issue.
 const plainTitle=t=>{const w=String(t||"").replace(/^(feat|fix|refactor|chore|docs)(\([^)]*\))?!?:\s*/i,"").replace(/^epic:\s*/i,"");return w.charAt(0).toUpperCase()+w.slice(1)};
 function laneTitle(l){const i=l.issue!=null?ghIssue(l.issue):null;return i&&i.title?plainTitle(i.title):(l.name||l.id)}
-function mapRow(l,m,epicLane){
-  const g=stateOf(l,m);const rels=relText(l,m);
-  const top=el("div",{class:"row-top"},el("span",{class:"row-name"},el("i",{class:"sdot "+g,title:STATE_TXT[g]||g}),laneTitle(l)),
-    l.issue!=null?el("span",{class:"chip mono",text:"#"+l.issue}):el("span",{class:"chip noissue","data-noissue":"",text:"no issue yet"}),
-    epicLane?el("span",{class:"chip",text:"epic lane"}):null,
-    el("span",{class:"chip",text:stageLabel(l)}),moveChip(l,g),waitingChip(l),l.pr?el("span",{class:"chip agent",text:"PR #"+l.pr}):null,
+const stateDot=g=>el("i",{class:"sdot "+g,title:STATE_TXT[g]||g});
+// An epic's header shows its own lane with these, so a lane row and an epic header never disagree on a lane's state.
+function laneChips(l,g,waiting){
+  return [el("span",{class:"chip",text:stageLabel(l)}),moveChip(l,g),waiting,l.pr?el("span",{class:"chip agent",text:"PR #"+l.pr}):null,
     previewChip(l),
-    el("span",{class:"chip",title:l.session?.lastSeen?"session last wrote "+l.session.lastSeen:"no session has linked to this lane yet"},el("i",{class:"dot"+(sessionOn(l)?" on":"")}),l.session?.lastSeen?ago(l.session.lastSeen):"no session"));
-  const row=el("a",{class:"row root",href:"#lane-"+l.id,"data-lane":l.id},top);
-  for(const r of rels)row.append(el("div",{class:"row-rel"+(r.stacked?" stack":""),text:r.text}));
-  if(l.next)row.append(el("div",{class:"row-next",text:(g==="you"?"Your move: ":"Next: ")+l.next}));
-  return row;
+    el("span",{class:"chip",title:l.session?.lastSeen?"session last wrote "+l.session.lastSeen:"no session has linked to this lane yet"},el("i",{class:"dot"+(sessionOn(l)?" on":"")}),l.session?.lastSeen?ago(l.session.lastSeen):"no session")];
+}
+function laneLines(l,m,g){
+  const out=relText(l,m).map(r=>el("div",{class:"row-rel"+(r.stacked?" stack":""),text:r.text}));
+  if(l.next)out.push(el("div",{class:"row-next",text:(g==="you"?"Your move: ":"Next: ")+l.next}));
+  return out;
+}
+function mapRow(l,m){
+  const g=stateOf(l,m);
+  const top=el("div",{class:"row-top"},el("span",{class:"row-name"},stateDot(g),laneTitle(l)),
+    l.issue!=null?el("span",{class:"chip mono",text:"#"+l.issue}):el("span",{class:"chip noissue","data-noissue":"",text:"no issue yet"}),
+    ...laneChips(l,g,waitingChip(l)));
+  return el("a",{class:"row root",href:"#lane-"+l.id,"data-lane":l.id},top,...laneLines(l,m,g));
 }
 const CHEV='<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const M={fold:{},backlogOpen:false,start:null};
 const waitingIn=ls=>S.decisions?ls.reduce((n,l)=>n+LaneCore.openCount(S.decisions,l.id),0):0;
 function epicBlock(e,m){
-  const r=e.row,folded=!!M.fold[r.id],name=plainTitle(e.issue?.title)||r.name||r.id;
-  const chev=el("button",{type:"button",class:"chev","aria-expanded":folded?"false":"true","aria-label":(folded?"Expand ":"Collapse ")+name,onclick:()=>{M.fold[r.id]=!folded;renderMap()}});
-  chev.innerHTML=CHEV;
+  const r=e.row,g=stateOf(r,m),folded=!!M.fold[r.id],name=plainTitle(e.issue?.title)||r.name||r.id;
+  const chev=e.lanes.length?el("button",{type:"button",class:"chev","aria-expanded":folded?"false":"true","aria-label":(folded?"Expand ":"Collapse ")+name,onclick:()=>{M.fold[r.id]=!folded;renderMap()}}):el("span",{class:"chev","aria-hidden":"true"});
+  if(e.lanes.length)chev.innerHTML=CHEV;
   const areas=LaneCore.labelNames(e.issue).filter(x=>x.startsWith("area:")).map(x=>el("span",{class:"chip mb-area",text:x.slice(5)}));
-  const w=waitingIn(e.lanes);
+  // One count for the whole epic: its own lane's questions and its plans'.
+  const w=waitingIn([r,...e.lanes]);
   const p=e.plans;
   const prog=el("span",{class:"mb-prog","data-progress":p?p.closed+"/"+p.total:"—"},
     p&&p.total?el("span",{class:"bar"},el("i",{style:"width:"+Math.round(p.closed/p.total*100)+"%"})):null,
     p?(p.total?p.closed+"/"+p.total+" plans":"no plans yet"):"— plans");
-  const head=el("div",{class:"mb-head"},chev,
-    el("a",{class:"mb-name",href:"#lane-"+r.id},el("h2",{text:name})),
-    el("span",{class:"chip mono",text:"#"+r.issue+" epic"}),...areas,
-    w?el("span",{class:"chip you",text:w+" waiting on you"}):null,
-    folded?el("span",{class:"mb-dots","aria-label":e.lanes.length+" lanes"},e.lanes.map(l=>{const g=stateOf(l,m);return el("i",{class:"sdot "+g,title:laneTitle(l)+": "+(STATE_TXT[g]||g)})})):null,
+  // Identity and state wrap inside their own group, so progress and Overview hold the right edge on a wide screen.
+  const head=el("div",{class:"mb-head"},
+    el("div",{class:"mb-id"},chev,el("div",{class:"mb-idline"},
+      el("a",{class:"mb-name",href:"#lane-"+r.id},stateDot(g),el("h2",{text:name})),
+      el("span",{class:"chip mono",text:"#"+r.issue+" epic"}),...areas,
+      el("span",{class:"mb-state"},laneChips(r,g,w?el("span",{class:"chip you",text:w+" waiting on you"}):null)),
+      folded&&e.lanes.length?el("span",{class:"mb-dots","aria-label":e.lanes.length+" plan lanes"},e.lanes.map(l=>{const s=stateOf(l,m);return el("i",{class:"sdot "+s,title:laneTitle(l)+": "+(STATE_TXT[s]||s)})})):null)),
     prog,el("a",{class:"mb-over",href:"#lane-"+r.id},"Overview"));
-  return el("section",{class:"mb mb-epic","data-block":"epic-"+r.issue,"aria-label":name},head,folded?null:el("div",{class:"tree"},e.lanes.map(l=>mapRow(l,m,l===r))));
+  const lines=laneLines(r,m,g);
+  return el("section",{class:"mb mb-epic","data-block":"epic-"+r.issue,"aria-label":name},head,
+    lines.length?el("div",{class:"mb-lines"},lines):null,
+    folded||!e.lanes.length?null:el("div",{class:"tree"},e.lanes.map(l=>mapRow(l,m))));
 }
 function groupBlock(key,title,count,ls,m,note){
   return el("section",{class:"mb mb-group","data-block":key},el("div",{class:"mb-head"},el("h2",{},title+" · ",el("span",{"data-count":"",text:count}),key==="bugs"?" in flight":""),note?el("small",{text:note}):null),

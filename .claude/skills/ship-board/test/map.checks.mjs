@@ -62,12 +62,25 @@ export default async function ({ page, hash, viewport, scheme, opt, skillDir }) 
     expect(/^GitHub: live/.test(notice), "GitHub reads as live: " + notice);
     const heads = await page.evaluate(() => [...document.querySelectorAll("#map .mb-epic .mb-head")].map((h) => ({
       name: h.querySelector("h2").textContent,
-      chips: [...h.querySelectorAll(".chip")].map((c) => c.textContent),
+      href: h.querySelector("a.mb-name")?.getAttribute("href"),
+      dot: h.querySelector("a.mb-name .sdot")?.className.replace("sdot ", ""),
+      chips: [...h.querySelectorAll(".chip")].filter((c) => !c.closest(".mb-state")).map((c) => c.textContent),
+      state: [...h.querySelectorAll(".mb-state .chip")].map((c) => c.textContent),
       progress: h.querySelector(".mb-prog").textContent,
       overview: h.querySelector("a.mb-over")?.getAttribute("href"),
+      under: h.nextElementSibling?.classList.contains("mb-lines") ? [...h.nextElementSibling.children].map((x) => x.textContent) : [],
     })));
-    expect(eq(heads[0], { name: "Dev cycle — Parallel Ship", chips: ["#315 epic", "infrastructure"], progress: "1/6 plans", overview: "#lane-issue-315" }), "the dev cycle header: name from GitHub, #issue epic, area, progress from sub-issues " + JSON.stringify(heads[0]));
+    expect(eq(heads[0], { name: "Dev cycle — Parallel Ship", href: "#lane-issue-315", dot: "agent", chips: ["#315 epic", "infrastructure"], state: ["Build", "agent", "no session"], progress: "1/6 plans", overview: "#lane-issue-315",
+      under: ["Next: Epic lane: plans stack on this branch; the board UI and the sync skill are next."] }), "the dev cycle header carries its own lane's state, stage, move and session, and its Next under it: " + JSON.stringify(heads[0]));
+    expect(heads[1] && heads[1].dot === "blocked" && eq(heads[1].state.slice(0, 2), ["Self-review", "blocked"]) && heads[1].under.length === 2 && /^waits on /.test(heads[1].under[0]) && /^Next: Agent first fixes/.test(heads[1].under[1]),
+      "an epic that waits on a lane says so under its header, then its Next: " + JSON.stringify(heads[1]));
     expect(heads[3] && heads[3].progress === "no plans yet", "an epic with no sub-issues says no plans yet: " + JSON.stringify(heads[3]));
+    const doubled = await page.evaluate(() => [...document.querySelectorAll("#map .mb-epic")].filter((b) => { const id = b.querySelector("a.mb-name").getAttribute("href").slice(6); return b.querySelector(`a.row[data-lane="${id}"]`); }).map((b) => b.dataset.block));
+    expect(!doubled.length, "no epic block holds a row for its own epic: " + JSON.stringify(doubled));
+    if (width >= 1000) {
+      const spread = await page.evaluate(() => [...document.querySelectorAll("#map .mb-epic .mb-head")].map((h) => { const ys = [...h.querySelectorAll(".chev, h2, .chip, .mb-prog, a.mb-over")].map((c) => { const r = c.getBoundingClientRect(); return r.top + r.height / 2; }); return Math.round(Math.max(...ys) - Math.min(...ys)); }));
+      expect(spread.every((d) => d <= 4), "on a wide screen every epic header is one line (centre spread per header " + JSON.stringify(spread) + " px)");
+    }
 
     if (width <= 600) {
       const first = await page.evaluate(() => { scrollTo(0, 0); return document.querySelector("#map .mb-epic .mb-head").getBoundingClientRect().bottom; });
@@ -76,11 +89,11 @@ export default async function ({ page, hash, viewport, scheme, opt, skillDir }) 
       expect(hidden, "area labels and Overview hide on the phone");
     }
 
-    // Fold: the header keeps one state dot per lane.
+    // Fold: the header keeps one state dot per plan lane; the epic's own state is in its header already.
     await page.locator('#map [data-block="epic-315"] button.chev').click();
     await settle(page, 100);
     const folded = await page.evaluate(() => { const b = document.querySelector('#map [data-block="epic-315"]'); return { rows: b.querySelectorAll("a.row").length, dots: [...b.querySelectorAll(".mb-dots .sdot")].map((d) => d.className.replace("sdot ", "")), expanded: b.querySelector("button.chev").getAttribute("aria-expanded") }; });
-    expect(eq(folded, { rows: 0, dots: ["agent", "blocked", "blocked"], expanded: "false" }), "a folded epic shows a dot per lane and no rows: " + JSON.stringify(folded));
+    expect(eq(folded, { rows: 0, dots: ["blocked", "blocked"], expanded: "false" }), "a folded epic shows a dot per plan lane and no rows: " + JSON.stringify(folded));
     await page.locator('#map [data-block="epic-315"] button.chev').click();
     await settle(page, 100);
 

@@ -42,13 +42,13 @@ test("kindOf: while an epic's sub-issues are unknown, a labelled bug still waits
   assert.equal(C.kindOf(row(223), { number: 223, labels: ["bug"] }, () => undefined), null);
 });
 
-test("mapBlocks: lanes sit in their GitHub parent's epic block, epics in row order, the epic's own lane first", () => {
+test("mapBlocks: lanes sit in their GitHub parent's epic block, epics in row order; the epic's own row is the block's, not one of its lanes", () => {
   const m = C.mapBlocks(LANES, fullGh());
   assert.deepEqual(m.epics.map((e) => [e.row.id, ids(e.lanes)]), [
-    ["issue-315", ["issue-315", "dev-flow", "issue-316"]],
-    ["proposal-page", ["proposal-page", "pe4"]],
-    ["trade-scenes", ["trade-scenes"]],
-    ["hv", ["hv"]],
+    ["issue-315", ["dev-flow", "issue-316"]],
+    ["proposal-page", ["pe4"]],
+    ["trade-scenes", []],
+    ["hv", []],
   ]);
   assert.equal(m.epics[0].issue.title, "Epic: Dev cycle — Parallel Ship");
 });
@@ -96,7 +96,7 @@ test("mapBlocks: an epic whose sub-issues have not answered holds back every lan
   const m = C.mapBlocks(LANES, gh);
   assert.deepEqual(m.epics.map((e) => e.row.id), ["issue-315", "proposal-page", "trade-scenes", "hv"]);
   assert.equal(m.epics[2].plans, null);
-  assert.deepEqual(ids(m.epics[0].lanes), ["issue-315", "dev-flow", "issue-316"], "lanes already found under another epic stay there");
+  assert.deepEqual(ids(m.epics[0].lanes), ["dev-flow", "issue-316"], "lanes already found under another epic stay there");
   assert.deepEqual(ids(m.unplaced), ["issue-223", "data-views", "filter-rules", "office-tv", "casl-285"]);
 });
 

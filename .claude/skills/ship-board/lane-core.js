@@ -335,7 +335,7 @@
     };
     const epics = epicRows.map((r) => {
       const s = subs[r.issue];
-      return { row: r, issue: issueOf(r.issue), lanes: [r], plans: s ? { closed: s.filter((x) => String(x.state).toLowerCase() === "closed").length, total: s.length } : null };
+      return { row: r, issue: issueOf(r.issue), lanes: [], plans: s ? { closed: s.filter((x) => String(x.state).toLowerCase() === "closed").length, total: s.length } : null };
     });
     const byIssue = Object.fromEntries(epics.map((e) => [e.row.issue, e]));
     const out = { epics, standalone: [], bugs: [], unplaced: [], backlog: null };
