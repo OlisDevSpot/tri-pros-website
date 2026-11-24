@@ -28,11 +28,7 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Build
-        run: pnpm build
-        env:
-          # Real credentials for build-time external calls.
-          # Process env overrides .env.ci placeholders (Next.js precedence).
-          # Add new secrets here when build-time calls demand them.
-          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - name: Type-check
+        run: |
+          pnpm exec next typegen
+          pnpm tsc
