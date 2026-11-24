@@ -1,6 +1,6 @@
 # Issue tracker: GitHub
 
-GitHub issues on `OlisDevSpot/tri-pros-website` are the record of all work: every epic, spec, slice, bug and decision. Use the `gh` CLI. `gh` here is 2.67: it has no `--parent` or `--add-sub-issue`, so sub-issues and blocking go through `gh api` as shown.
+GitHub issues on `OlisDevSpot/tri-pros-website` are the record of all work: every epic, plan, slice, bug and decision. Use the `gh` CLI. `gh` here is 2.67: it has no `--parent` or `--add-sub-issue`, so sub-issues and blocking go through `gh api` as shown.
 
 ## Where state lives
 
@@ -37,7 +37,7 @@ Skills that say "publish the spec to the issue tracker" follow this.
 
 ## Epics and sub-issues
 
-An epic is an issue labelled `epic` whose slices are native sub-issues.
+An epic is an issue labelled `epic` whose plans are its native sub-issues; a plan's own sub-issues are its slices. Both levels use the same calls.
 
 ```bash
 child_id=$(gh api repos/OlisDevSpot/tri-pros-website/issues/<child> --jq .id)
@@ -88,7 +88,7 @@ The flow's stages are listed in `CLAUDE.md` (GitHub workflow). Each one keeps th
 |---|---|
 | Capture and triage | Issue created as `needs-triage` + category. `/triage` sets the readiness label; a small issue gets an agent brief comment |
 | Shape | `/to-spec` rewrites the body as the spec (original under `## Original request`) and sets `ready-for-agent`. `/wayfinder` opens a map issue instead |
-| Slice | `/to-tickets` opens one sub-issue per slice, `ready-for-agent`, with `blocked_by` links |
+| Slice | `/to-tickets` opens one sub-issue per plan (on an epic) or per slice (on a plan), `ready-for-agent`, with `blocked_by` links |
 | Open the lane | Assignee; Status `In Progress`; branch `{type}/{n}-{slug}` |
 | Build | Comments at milestones only. Draft PR with `Closes #n` or `Refs #n` |
 | Verify, PR | Status `In Review`. The "what to check" list goes on the PR |
