@@ -28,7 +28,18 @@ jobs:
       - name: Lint
         run: pnpm lint
 
-      - name: Type-check
+      - name: Runner memory
         run: |
-          pnpm exec next typegen
-          pnpm tsc
+          free -m
+          node -e "console.log('default heap limit MB', Math.round(require('v8').getHeapStatistics().heap_size_limit / 2 ** 20))"
+
+      - name: Build
+        run: pnpm build
+        env:
+          # The type-check phase outgrew Node's default ~2 GB heap (OOM 2026-11-24, #343).
+          NODE_OPTIONS: --max-old-space-size=6144
+          # Real credentials for build-time external calls.
+          # Process env overrides .env.ci placeholders (Next.js precedence).
+          # Add new secrets here when build-time calls demand them.
+          NOTION_API_KEY: ${{ secrets.NOTION_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
