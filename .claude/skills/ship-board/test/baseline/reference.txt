@@ -70,9 +70,9 @@ Branches still on old main
 Both trade-scene branches and #285 carry old main's history (600+ commits over prod). Each scene release needs the file-copy script, and the layout lab can't merge prod directly (43 add/add conflicts).
 
 Fix: re-cut each onto prod once, as the drain did for the others.
-Skills for parallel lanes
+Skills along the issue lifecycle
 
-Your chain stays: brainstorming → spec → stress-test → plan → build → review. These skills sit around it and handle what changes when many lanes run at once: opening a lane, staying out of each other's way, preparing your review, and catching up after a merge. Approve or park each one; approved ones get built in this order.
+Every issue, in an epic or on its own, runs the 12 stages on the Flow tab, and this list follows them. Matt Pocock's skills triage, shape, slice, build, review and retro; "you run" means you type the command. Ours cover what his don't: lanes, previews, your review sitting and catching up after a merge. Approve or park each proposed one; approved ones get built in the build order on their When line.
 
 No skills proposed yet.
 What other developers use, checked against our rules
