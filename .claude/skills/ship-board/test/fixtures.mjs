@@ -27,7 +27,23 @@ function load(collection, dir = FIX) {
 
 export const loadLanes = (dir) => load("lanes", dir);
 export const loadDecisions = (dir) => load("decisions", dir);
-export const loadVercel = (dir = FIX) => JSON.parse(readFileSync(join(dir, "vercel.json"), "utf8"));
+// One file per connector, named for its --deny / --approval key; `server` is the display name the page calls.
+export function loadConnectors(dir = FIX) {
+  const at = join(dir, "mcp");
+  if (!existsSync(at)) return [];
+  return readdirSync(at).filter((f) => f.endsWith(".json")).sort().map((f) => ({ key: basename(f, ".json"), ...JSON.parse(readFileSync(join(at, f), "utf8")) }));
+}
+
+// The stamps a write leaves on a row or a decision. Dates inside free text are not when the data was written.
+const LANE_STAMPS = ["updated", "briefAt"], DECISION_STAMPS = ["askedOn", "answeredOn", "replyOn", "appliedOn"];
+const dayOf = (v) => (typeof v === "string" && /^\d{4}-\d{2}-\d{2}/.test(v) ? v.slice(0, 10) : null);
+export function fixturesDay(lanes, decisions) {
+  const days = [
+    ...lanes.flatMap((l) => [...LANE_STAMPS.map((k) => l[k]), l.session && l.session.lastSeen]),
+    ...decisions.flatMap((d) => DECISION_STAMPS.map((k) => d[k])),
+  ].map(dayOf).filter(Boolean).sort();
+  return days.length ? days[days.length - 1] : null;
+}
 export function loadSnapshot(dir = FIX) {
   return JSON.parse(readFileSync(join(dir, "snapshots", "collisions.json"), "utf8"));
 }

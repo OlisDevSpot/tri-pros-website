@@ -175,7 +175,7 @@ async function run({ page, hash, viewport, scheme, opt, skillDir }, expect) {
     await casl.locator("textarea[name=own]").fill("ship it");
     const kept = await page.evaluate(async () => {
       const before = document.activeElement;
-      window.__vercelTick();
+      window.__mcpTick("Vercel");
       await new Promise((r) => setTimeout(r, 100));
       return { same: document.activeElement === before, textarea: before.tagName === "TEXTAREA", connected: before.isConnected, value: before.value };
     });
