@@ -1,0 +1,17 @@
+name: Epic
+description: A large piece of work that ships in slices (sub-issues)
+title: "Epic: "
+labels: [epic, enhancement]
+body:
+  - type: textarea
+    id: destination
+    attributes:
+      label: Destination
+      description: What is true when the epic is done.
+    validations:
+      required: true
+  - type: textarea
+    id: known
+    attributes:
+      label: What we know so far
+      description: Decisions, constraints, open questions. Slices arrive as sub-issues from /to-tickets, or a /wayfinder map when it is foggy.

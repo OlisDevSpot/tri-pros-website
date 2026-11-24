@@ -1,0 +1,16 @@
+name: Feature
+description: A new capability or an improvement
+labels: [enhancement, needs-triage]
+body:
+  - type: textarea
+    id: want
+    attributes:
+      label: What you want
+      description: In the business's words. /triage and /to-spec turn it into a spec.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: What it fixes or makes possible, and for whom.

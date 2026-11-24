@@ -17,7 +17,7 @@ Project 3 Status has no Backlog or Ready: an open issue with no Status is not in
 
 ## Conventions
 
-- **Create**: `gh issue create --title "..." --body-file <file>` (heredoc or file for multi-line bodies).
+- **Create**: `gh issue create --title "..." --body-file <file> --label needs-triage --label <bug|enhancement|refactor|chore>` (heredoc or file for multi-line bodies). Every new issue starts as `needs-triage` plus one category; an epic takes `epic` instead of `needs-triage`. On GitHub itself, the Bug, Feature and Epic issue forms apply the same labels.
 - **Read**: `gh issue view <n> --json number,title,body,labels,assignees,comments`.
 - **List**: `gh issue list --state open --json number,title,labels,assignees --limit 200` with `--label` filters.
 - **Comment**: `gh issue comment <n> --body-file <file>`.
@@ -70,14 +70,32 @@ gh project item-edit --id "$item" --project-id PVT_kwHOCqZfGM4BSgDZ --field-id "
 
 Look option ids up by name as above; don't hard-code them. `item-add` returns the existing item when the issue is already on the board.
 
-- Claimed and work starts: `In Progress`.
-- PR ready for the owner: `In Review`.
-- Merged: nothing to do; closing sets `Done`.
+- Claimed and work starts: `In Progress`. The "Pull request linked to issue" automation also sets `In Progress`, so opening a draft PR leaves it there.
+- PR ready for the owner: `In Review`, set by hand (later `/ship-lane`); nothing else moves it there.
+- Merged with `Closes`: nothing to do; closing sets `Done`.
+- Merged with `Refs` (the lane keeps going): set it back to `In Progress`.
 
 ## Branches and PRs
 
 - Branch: `{feat|fix|refactor|chore|docs}/<issue-number>-<slug>`. The number in the branch is how a session finds its issue and its ship-board row.
-- PR body carries `Closes #<n>` for every issue it finishes, so merging closes them.
+- PR body carries `Closes #<n>` for every issue it finishes, so merging closes them. A PR that ships part of a lane that keeps going carries `Refs #<n>` instead, and the issue stays open.
+
+## What each stage writes
+
+The flow's stages are listed in `CLAUDE.md` (GitHub workflow). Each one keeps the issue in step:
+
+| Stage | GitHub write |
+|---|---|
+| Capture and triage | Issue created as `needs-triage` + category. `/triage` sets the readiness label; a small issue gets an agent brief comment |
+| Shape | `/to-spec` rewrites the body as the spec (original under `## Original request`) and sets `ready-for-agent`. `/wayfinder` opens a map issue instead |
+| Slice | `/to-tickets` opens one sub-issue per slice, `ready-for-agent`, with `blocked_by` links |
+| Open the lane | Assignee; Status `In Progress`; branch `{type}/{n}-{slug}` |
+| Build | Comments at milestones only. Draft PR with `Closes #n` or `Refs #n` |
+| Verify, PR | Status `In Review`. The "what to check" list goes on the PR |
+| Review | The owner's notes on the PR or preview; each decision copied to the issue as a comment. Approach rejected: PR back to draft with a comment saying why |
+| Merge | Automatic: `Closes` closes the issue and sets `Done` |
+| Catch up | Confirm the issue closed (after a `Refs` merge, Status back to `In Progress`); check the epic's sub-issue progress; report issues whose `blocked_by` reached 0 |
+| Learn | Each `/retro` finding becomes a guard in the lane's PR or a `chore` issue labelled `needs-triage` |
 
 ## Pull requests as a triage surface
 
