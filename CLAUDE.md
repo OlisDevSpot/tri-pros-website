@@ -65,8 +65,8 @@ DevTools mobile viewport: Chrome `Cmd-Shift-M` / Safari Develop → Responsive D
 One issue = one lane = one worktree branch = one PR. `main` is prod. GitHub issues are the record of all work; what each stage writes to them is in `docs/agents/issue-tracker.md`. The 12 stages below are the lifecycle of every issue, in an epic or on its own; the board's Flow tab draws them and its Skills tab lists the skills in the same order. "(you)" = Oliver types the command.
 
 1. **Capture and triage:** an issue form (Bug, Feature, Epic) or `gh issue create`, then `/triage` (you) sets readiness. A small, clear issue skips to 4.
-2. **Shape:** `/grill-with-docs` then `/to-spec` (you): the spec becomes the issue body. Foggy epic: `/wayfinder` (you) first. Screen changes: `/ui-warmup`, `/ui-exploration`. Glossary and ADR edits go straight to `main` the same sitting (Docs, below).
-3. **Slice:** `/to-tickets` (you): sub-issues with blocking links are the plan; `/stress-test-plan` checks them.
+2. **Shape:** `/grill-with-docs` then `/to-spec` (you): the spec is a file under `docs/superpowers/specs/` and the issue body links to it (ADR-0007). An epic is shaped once as a whole; its tracker holds the requirements and rulings every plan serves. Foggy epic: `/wayfinder` (you) first. Screen changes: `/ui-warmup`, `/ui-exploration`. Glossary and ADR edits go straight to `main` the same sitting (Docs, below).
+3. **Slice:** `/to-tickets` (you). On an epic: its plans as sub-issues with blocking links, each rated on whether a fresh session can build it from what it has: 8/10 or higher is `ready-for-agent`; below is `needs-info` and goes back through stage 2, against the epic, before its lane opens. On a plan: its tasks go in its tracker file, never sub-issues. `/stress-test-plan` checks them.
 4. **Open the lane:** one `ready-for-agent` issue: assign it, Project 3 Status `In Progress`, then Start / Base / Branch below and a board row keyed by the issue number.
 5. **Build:** `/implement #N` (you): `tdd` test-first, Matt's `code-review` at the end. Bugs: `diagnosing-bugs`. Draft PR early (below).
 6. **Verify** and 7. **PR:** below. Status moves to `In Review` only when the PR is ready for Oliver.
@@ -74,7 +74,7 @@ One issue = one lane = one worktree branch = one PR. `main` is prod. GitHub issu
 10. **Release** and 11. **Catch up:** Ship and "Shipping doesn't end the lane" below.
 12. **Learn:** `/retro` (you); each finding becomes a guard or a `chore` issue. `session-capture` at session end; `/handoff` (you) at any stage.
 
-**One skill per job.** Shaping = `/grill-with-docs`; plan = sub-issues; build = `/implement` with `mattpocock-skills:tdd`; debugging = `mattpocock-skills:diagnosing-bugs`; review = `mattpocock-skills:code-review`. In this flow they take the place of superpowers brainstorming, writing-plans, subagent-driven-development, executing-plans, test-driven-development and systematic-debugging, of `/grill-me`, `/ponytail-review`, the convention-auditor and the built-in `/code-review`. `/implement-spec` is unused: epics ship in slices.
+**One skill per job.** Shaping = `/grill-with-docs`; plan = its tracker file (an epic's plans are its sub-issues); build = `/implement` with `mattpocock-skills:tdd`; debugging = `mattpocock-skills:diagnosing-bugs`; review = `mattpocock-skills:code-review`. In this flow they take the place of superpowers brainstorming, writing-plans, subagent-driven-development, executing-plans, test-driven-development and systematic-debugging, of `/grill-me`, `/ponytail-review`, the convention-auditor and the built-in `/code-review`. `/implement-spec` is unused: epics ship in slices.
 
 - **Start:** a new worktree per lane, in Orca (`orca.yaml` installs deps and claims a free `PORT`) or `claude --worktree`. `.worktreeinclude` copies `.env`, `.env.local`, `.claude/settings.local.json`.
 - **Base:** branch from `origin/main`. A branch off local main carries every unshipped commit on it and can't ship until they do.
@@ -96,7 +96,7 @@ One issue = one lane = one worktree branch = one PR. `main` is prod. GitHub issu
 
 ### Issue tracker
 
-GitHub issues are the record of all work; specs live in issue bodies, readiness in labels, flight in Project 3 Status. See `docs/agents/issue-tracker.md`.
+GitHub issues are the record of all work; specs and trackers are committed files the issue body links to (ADR-0007), readiness in labels, flight in Project 3 Status. See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 
