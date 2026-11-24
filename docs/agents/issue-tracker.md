@@ -1,6 +1,6 @@
 # Issue tracker: GitHub
 
-GitHub issues on `OlisDevSpot/tri-pros-website` are the record of all work: every epic, spec, slice, bug and decision. Use the `gh` CLI. `gh` here is 2.67: it has no `--parent` or `--add-sub-issue`, so sub-issues and blocking go through `gh api` as shown.
+GitHub issues on `OlisDevSpot/tri-pros-website` are the record of all work: every epic, plan, bug and lane. An issue's spec and tracker are committed files its body links to (ADR-0007). Use the `gh` CLI. `gh` here is 2.67: it has no `--parent` or `--add-sub-issue`, so sub-issues and blocking go through `gh api` as shown.
 
 ## Where state lives
 
@@ -26,18 +26,27 @@ Project 3 Status has no Backlog or Ready: an open issue with no Status is not in
 - **Claim**: `gh issue edit <n> --add-assignee @me`.
 - **Database id** (needed by sub-issue and blocking calls, not the `#number`): `gh api repos/OlisDevSpot/tri-pros-website/issues/<n> --jq .id`.
 
-## Specs live in the issue body
+## Specs and trackers live in files
 
-A spec is the body of its issue, never a file under `docs/`.
+An epic or a plan is a GitHub issue; its working detail stays in committed files (ADR-0007):
 
-- The work already has an issue: rewrite its body as the spec and keep the original request under a final `## Original request` heading.
-- It has none: create one with the spec as the body.
+| File | Where | Holds |
+|---|---|---|
+| Spec | `docs/superpowers/specs/` | The settled design |
+| Tracker | an epic: `docs/plans/*-epic.md`; a plan: its file under `docs/superpowers/plans/` | Tasks or order, the status block, the rulings table |
 
-Skills that say "publish the spec to the issue tracker" follow this.
+- **Epic body:** what it solves, `## Done when`, and links to its tracker, spec and references.
+- **Plan body:** its steps at a high level (`| Step | Solves | Notes |`, from the tracker's task headings) and a link to its tracker. No status in the body; rulings are linked, not copied.
+- **Links** point at `main` until the lane opens, then at the lane branch's copy (`blob/<lane-branch>/…`), switched once at Open the lane.
+- **Rulings** are rows in the tracker's rulings table, in the owner's words with the date. An override edits its row in place: new text on top, the old struck through as deprecated. No ruling comments; those already posted stay until #336 moves them.
+- **A small, clear issue** needs no files; its body is enough.
+- **Shipped:** trackers and specs are deleted once their leftovers have a home and nothing points at them; git history keeps them.
+
+Skills that say "publish the spec to the issue tracker" write the spec file and the short body above. Skills that say "publish the tickets" on a plan write them as tasks in its tracker.
 
 ## Epics and sub-issues
 
-An epic is an issue labelled `epic` whose slices are native sub-issues.
+An epic is an issue labelled `epic` whose plans are native sub-issues. Sub-issues stay one level: a plan's tasks live in its tracker, never as sub-issues.
 
 ```bash
 child_id=$(gh api repos/OlisDevSpot/tri-pros-website/issues/<child> --jq .id)
@@ -58,6 +67,15 @@ gh api repos/OlisDevSpot/tri-pros-website/issues/<n> --jq .issue_dependencies_su
 ```
 
 An issue is unblocked when `blocked_by` is 0. Create every issue first, then wire edges in a second pass with real numbers: a placeholder `#<n>` links to an unrelated issue.
+
+## Plan readiness
+
+`/to-tickets` labels every ticket `ready-for-agent` by default. Here each plan it opens under an epic is rated instead (owner 2026-11-23):
+
+- The plan issue ends with `**Confidence: N/10**` and one line on why: how sure a fresh session can build it from what it has, against the epic.
+- 8/10 or higher: `ready-for-agent`. Below: `needs-info`, with the open questions under `## Open questions` in the body.
+- A `needs-info` plan is shaped before its lane opens: `/grill-with-docs #n` against the epic, `/to-spec #n`, its tasks into its tracker, `/stress-test-plan`, then `ready-for-agent`.
+- The owner can move any plan either way when approving the breakdown.
 
 ## Project 3 Status (in flight only)
 
@@ -87,12 +105,12 @@ The flow's stages are listed in `CLAUDE.md` (GitHub workflow). Each one keeps th
 | Stage | GitHub write |
 |---|---|
 | Capture and triage | Issue created as `needs-triage` + category. `/triage` sets the readiness label; a small issue gets an agent brief comment |
-| Shape | `/to-spec` rewrites the body as the spec (original under `## Original request`) and sets `ready-for-agent`. `/wayfinder` opens a map issue instead |
-| Slice | `/to-tickets` opens one sub-issue per slice, `ready-for-agent`, with `blocked_by` links |
+| Shape | `/to-spec` writes the spec file and the short body that links to it. `/wayfinder` opens a map issue instead |
+| Slice | On an epic, `/to-tickets` opens one sub-issue per plan with `blocked_by` links, rated as in **Plan readiness**. On a plan, the tasks go in its tracker and the plan becomes `ready-for-agent` |
 | Open the lane | Assignee; Status `In Progress`; branch `{type}/{n}-{slug}` |
 | Build | Comments at milestones only. Draft PR with `Closes #n` or `Refs #n` |
 | Verify, PR | Status `In Review`. The "what to check" list goes on the PR |
-| Review | The owner's notes on the PR or preview; each decision copied to the issue as a comment. Approach rejected: PR back to draft with a comment saying why |
+| Review | The owner's notes on the PR or preview; each decision written as a row in the tracker's rulings table. Approach rejected: PR back to draft with a comment saying why |
 | Merge | Automatic: `Closes` closes the issue and sets `Done` |
 | Catch up | Confirm the issue closed (after a `Refs` merge, Status back to `In Progress`); check the epic's sub-issue progress; report issues whose `blocked_by` reached 0 |
 | Learn | Each `/retro` finding becomes a guard in the lane's PR or a `chore` issue labelled `needs-triage` |
