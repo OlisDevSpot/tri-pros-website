@@ -188,8 +188,9 @@ The proposal's bill-savings projection and the Remodel ROI calculator share thes
 How work moves from an issue to prod, in the words the ship board uses (board UI spec, issue #316 §3; owner 2026-11-21 and 2026-11-23). GitHub issues are the record of all work.
 
 - **Epic** — a GitHub issue labelled `epic`. Its body holds its goal (the first paragraph), spec and `## Requirements`; its comments hold its rulings; its sub-issues are its plans. An epic is also a lane: its own board row, branch and checkpoint PR.
-- **Plan** — a GitHub issue for one piece of work, a sub-issue of an epic or standalone. Its spec is its issue body (`/to-spec`); its slices are its sub-issues (`/to-tickets`). A plan in an epic opens its PR against the epic branch.
-- **Slice** — a sub-issue of a plan. An epic's sub-issues are plans, never slices.
+- **Plan** — a GitHub issue for one piece of work, a sub-issue of an epic or standalone. Its spec is its issue body (`/to-spec`); its slices are the tasks of its **Tracker** (`/to-tickets`), never sub-issues. A plan in an epic opens its PR against the epic branch.
+- **Slice** — one task in a plan's **Tracker**: what `/to-tickets` cuts a plan into. Never a sub-issue (Ruling DC1 on #315); an epic's sub-issues are plans.
+- **Tracker** — a plan's `## Tracker` checklist in its own issue body: each task with its status, what it waits on (`waits on 2, #321`) and its links (PR, commits). Not the retired tracker file.
 - **Lane** — one issue being worked on now: its own worktree, branch `{type}/{issue}-{slug}`, draft PR, preview and board row. One lane carries one issue. _Avoid_: lane for a kanban stage (Pipeline terms).
 - **Orchestrator** — the one Claude Code session that runs a lane and its subagents.
 - **Ruling** — an owner decision recorded as one comment on the issue it rules on (the epic or a plan), starting `Ruling <ID>:` (`Ruling WF7:`). An override edits that comment in place: the new text takes over under the same ID with "updated by the owner <date>", and the old text stays below as `**Deprecated <date>**` with the text struck through. A new ID only for a genuinely new decision. _Avoid_: rulings table (the retired tracker's).
@@ -199,7 +200,7 @@ How work moves from an issue to prod, in the words the ship board uses (board UI
 - **Start on issue** — the action on a Backlog row: a copyable one-line command that starts a worktree session on that issue. It starts no agent and writes no row; the session it starts creates the lane row `issue-<n>`. _Avoid_: pull into flight.
 - **Gone quiet** — a lane on the agent's move with no commit, push, preview build or check-in for 4 days or more.
 - **Status strip** — the five counts atop the board's map: waiting on you · broken · ready to merge · gone quiet · collisions. Each count is a **status filter**, a toggle that dims every row it does not match. _Avoid_: signal.
-- Retired: **tracker** (an epic's file under `docs/plans/`). Its status moved to the epic issue's body and the lane row, its requirements to the body, its rulings to `Ruling` comments, its plans to sub-issues.
+- Retired: the **tracker file** (an epic's file under `docs/plans/`); **Tracker** now means a plan's checklist. Its status moved to the epic issue's body and the lane row, its requirements to the body, its rulings to `Ruling` comments, its plans to sub-issues.
 
 ## Scope Pricing terms
 
