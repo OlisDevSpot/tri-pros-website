@@ -102,7 +102,7 @@ export default async function ({ page, hash, viewport, scheme, opt, skillDir }) 
   }
 
   if (lane === "nope") {
-    const t = await page.evaluate(() => ({ text: document.getElementById("lane-view").innerText, back: !!document.querySelector('#lane-view a.back[href="#now"]') }));
+    const t = await page.evaluate(() => ({ text: document.getElementById("lane-view").innerText, back: !!document.querySelector('#lane-view a.back[href="#map"]') }));
     expect(t.back, "unknown lane keeps the back link");
     expect(t.text.includes("No lane called nope"), "unknown lane says No lane called nope");
     return { failures };
@@ -313,7 +313,7 @@ export default async function ({ page, hash, viewport, scheme, opt, skillDir }) 
       const t = n?.querySelector("text"), r = n?.querySelector("rect");
       const fits = !!t && t.getBoundingClientRect().right <= r.getBoundingClientRect().right;
       const edge = [...document.querySelectorAll("#lane-view .lb-bmap path.lb-wait title")].some((e) => /no lane/.test(e.textContent));
-      const row = [...document.querySelectorAll('#tree a.row[href="#lane-data-views"] .chip')].map((c) => c.textContent);
+      const row = [...document.querySelectorAll('#map a.row[href="#lane-data-views"] .chip')].map((c) => c.textContent);
       const res = { text: t?.textContent, fits, edge, row, col: n?.getAttribute("data-col") };
       S.lanes = keep;
       renderLanes();

@@ -1,0 +1,103 @@
+{
+  "github": {
+    "epic-315": {
+      "count": null,
+      "progress": "1/6",
+      "lanes": [
+        "issue-315 agent",
+        "dev-flow blocked",
+        "issue-316 blocked"
+      ]
+    },
+    "epic-305": {
+      "count": null,
+      "progress": "0/2",
+      "lanes": [
+        "proposal-page blocked",
+        "pe4 blocked"
+      ]
+    },
+    "epic-302": {
+      "count": null,
+      "progress": "0/2",
+      "lanes": [
+        "trade-scenes agent"
+      ]
+    },
+    "epic-313": {
+      "count": null,
+      "progress": "0/0",
+      "lanes": [
+        "hv parked"
+      ]
+    },
+    "standalone": {
+      "count": "9",
+      "progress": null,
+      "lanes": [
+        "drain you · no issue yet",
+        "r19 you · no issue yet",
+        "data-views agent",
+        "filter-rules blocked",
+        "office-tv you",
+        "scene-lab you · no issue yet",
+        "foundation blocked · no issue yet",
+        "casl-285 parked",
+        "long-names blocked · no issue yet"
+      ]
+    },
+    "bugs": {
+      "count": "1",
+      "progress": null,
+      "lanes": [
+        "issue-223 agent"
+      ]
+    },
+    "backlog": {
+      "count": "133",
+      "progress": null,
+      "lanes": []
+    }
+  },
+  "nogithub": {
+    "unplaced": {
+      "count": "12",
+      "progress": null,
+      "lanes": [
+        "issue-315 agent",
+        "issue-223 agent",
+        "data-views agent",
+        "filter-rules blocked",
+        "proposal-page blocked",
+        "pe4 blocked",
+        "office-tv you",
+        "trade-scenes agent",
+        "dev-flow blocked",
+        "issue-316 blocked",
+        "hv parked",
+        "casl-285 parked"
+      ]
+    },
+    "standalone": {
+      "count": "—",
+      "progress": null,
+      "lanes": [
+        "drain you · no issue yet",
+        "r19 you · no issue yet",
+        "scene-lab you · no issue yet",
+        "foundation blocked · no issue yet",
+        "long-names blocked · no issue yet"
+      ]
+    },
+    "bugs": {
+      "count": "—",
+      "progress": null,
+      "lanes": []
+    },
+    "backlog": {
+      "count": "—",
+      "progress": null,
+      "lanes": []
+    }
+  }
+}
