@@ -1,0 +1,21 @@
+{
+  "blockedBy": [],
+  "branch": "feat/trade-scene-release-3",
+  "issue": 303,
+  "kind": "release",
+  "move": "you",
+  "name": "Trade scene release 3 (ship branch)",
+  "next": "PR #291 is open: check the Vercel preview on the iPad (steps in the PR), then Squash and merge and redeploy prod with the build cache off.",
+  "order": 8.5,
+  "port": 3008,
+  "pr": 291,
+  "risk": "Never sweep the scene in a software-rendered browser. Filled by sync-ship.py from merge/lab-into-foundation; the lab route and its check's assertion are held back.",
+  "session": {
+    "cwd": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/trade-scene-ship/src/features/trade-scenes",
+    "id": "0594f97e-89f3-4ee7-b63c-d7a23204ce3e",
+    "lastSeen": "2026-11-19T06:30:00Z",
+    "started": "2026-11-19T04:58:19Z"
+  },
+  "stage": "preview",
+  "updated": "2026-11-18"
+}

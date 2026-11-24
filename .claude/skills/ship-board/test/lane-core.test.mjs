@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import "../lane-core.js"; const C = globalThis.LaneCore;
 import { loadLanes } from "./fixtures.mjs";
 const VALID_DV_BRIEF = JSON.parse(readFileSync(new URL("./fixtures/brief-data-views.json", import.meta.url)));
-test("isEpic", () => { assert.equal(C.isEpic({phases: Array(5).fill({})}), true); assert.equal(C.isEpic({phases: Array(4).fill({})}), false); assert.equal(C.isEpic(undefined), false); });
+test("hasStepMap", () => { assert.equal(C.hasStepMap({phases: Array(5).fill({})}), true); assert.equal(C.hasStepMap({phases: Array(4).fill({})}), false); assert.equal(C.hasStepMap(undefined), false); });
 test("normalizeOptions keeps legacy strings and empty lists", () => {
   assert.deepEqual(C.normalizeOptions(["Yes", {label: "No", consequence: "c"}]), [{label: "Yes", consequence: ""}, {label: "No", consequence: "c"}]);
   assert.deepEqual(C.normalizeOptions([]), []); assert.deepEqual(C.normalizeOptions(undefined), []);
@@ -37,13 +37,13 @@ test("pins, lane decisions and the open count", () => {
   assert.equal(C.openCount(ds, "dv"), 4);
   assert.equal(C.openCount(ds), 5);
 });
-test("deps, activeDeps, groupOf and findCycle", () => {
+test("deps, activeDeps, stateOf and findCycle", () => {
   assert.deepEqual(C.deps({stackedOn: "a", blockedBy: ["a", "b", null]}), ["a", "b"]);
   const m = {a: {id: "a", stage: "build"}, b: {id: "b", stage: "shipped"}, p: {id: "p", stage: "build", move: "parked"}};
   assert.deepEqual(C.activeDeps({stackedOn: "p", blockedBy: ["a", "b", "ghost"]}, m), ["p", "a"]);
-  assert.equal(C.groupOf({id: "c", move: "you", blockedBy: ["a"]}, m), "blocked");
-  assert.equal(C.groupOf({id: "c", move: "you", blockedBy: ["p"]}, m), "blocked");
-  assert.equal(C.groupOf({id: "c", move: "you", blockedBy: ["b"]}, m), "you");
+  assert.equal(C.stateOf({id: "c", move: "you", blockedBy: ["a"]}, m), "blocked");
+  assert.equal(C.stateOf({id: "c", move: "you", blockedBy: ["p"]}, m), "blocked");
+  assert.equal(C.stateOf({id: "c", move: "you", blockedBy: ["b"]}, m), "you");
   const L = [{id: "a", stage: "build", blockedBy: ["b"]}, {id: "b", stage: "build", blockedBy: ["a"]}, {id: "c", stage: "build", blockedBy: ["a"]}, {id: "d", stage: "build"}];
   assert.deepEqual(C.findCycle(L).sort(), ["a", "b"]);
 });
@@ -89,7 +89,8 @@ test("a decision on a parked phase pins to later", () => {
   const ds = [{id: "a", lane: "x", phase: "p1", question: "q"}, {id: "b", lane: "x", phase: "p2", question: "q"}, {id: "c", lane: "x", phase: "ghost", question: "q"}, {id: "d", lane: "x", phase: null, question: "q"}];
   const p = C.pinsByStep(brief, ds, "x");
   assert.deepEqual(p.later.map(x => x.id), ["a"]);
-  assert.deepEqual(p.release.map(x => x.id), ["b", "c", "d"]);
+  assert.deepEqual(p.next.map(x => x.id), ["b"]);
+  assert.deepEqual(p.release.map(x => x.id), ["c", "d"]);
 });
 test("migrateBrief takes the ids already on the board as taken", () => {
   const lane = {id: "casl-285", brief: {goal: "g", tracker: "t", phases: [], open: [{id: "DB1", owner: "you", text: "Rules in the database?"}]}};
@@ -108,7 +109,6 @@ test("validateBrief checks types, not only presence", () => {
   bad({agent: [{text: "x"}]}, /agent row 0 must be a string/);
   bad({evidence: [1]}, /evidence row 0 must be a string/);
   bad({timeline: [{date: "Nov 3", label: "x"}]}, /timeline row 0 date must be YYYY-MM-DD/);
-  bad({decided: [{date: "2026-11-3", text: "x"}]}, /decided row 0 needs a YYYY-MM-DD date/);
   bad({builtOn: "2026-11-03T10:00"}, /builtOn must be YYYY-MM-DD/);
   bad({steps: ["Ship it"]}, /steps must be an object/);
   bad({steps: {release: 1}}, /steps.release must be a string/);

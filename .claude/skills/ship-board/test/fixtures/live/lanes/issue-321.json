@@ -1,0 +1,12 @@
+{
+  "blockedBy": [],
+  "branch": "none yet",
+  "issue": 321,
+  "kind": "platform",
+  "move": "you",
+  "name": "Parallel-ship sync skill",
+  "next": "Shape it with you in a fresh session: /grill-with-docs, then /to-spec into #321. Blocks the board UI (#316). Includes moving /orient off the rulings table onto Ruling comments.",
+  "order": 10.8,
+  "stage": "idea",
+  "updated": "2026-11-23"
+}

@@ -4,14 +4,30 @@
   const OLD_KEYS = ["open", "notes", "orientPage", "statusBlock", "pr"];
 
   const deps = (l) => [...new Set([l.stackedOn, ...(l.blockedBy || [])].filter(Boolean))];
-  const activeDeps = (l, m) => deps(l).filter((d) => m[d] && m[d].stage !== "shipped");
+  // The sync skill writes a blocker issue nobody has opened a lane for as issue-<n>; it still blocks.
+  const ISSUE_ID = /^issue-([1-9]\d*)$/;
+  const noLane = (id, m) => { const x = !m[id] && ISSUE_ID.exec(id); return x ? Number(x[1]) : null; };
+  const activeDeps = (l, m) => deps(l).filter((d) => (m[d] ? m[d].stage !== "shipped" : noLane(d, m) !== null));
+  function resolveDeps(lanes) {
+    const m = Object.fromEntries(lanes.map((l) => [l.id, l]));
+    return Object.fromEntries(lanes.map((l) => [l.id, activeDeps(l, m).map((id) => {
+      const n = noLane(id, m);
+      return n !== null ? { id, issue: n, noLane: true } : { id, issue: m[id].issue ?? null, noLane: false };
+    })]));
+  }
   const isLive = (l) => l.stage !== "shipped" && l.move !== "parked";
-  function groupOf(l, m) {
+  // Owner ruling: a lane on the agent's move has gone quiet after 4 days with no commit, push, preview build or check-in.
+  const QUIET_DAYS = 4;
+  // One reading of a lane for its row, its blocker-map node and its Decisions group. Without activity the agent's
+  // lanes stay "agent": "working" would claim activity nobody has measured.
+  function stateOf(l, m, activity) {
     if (l.stage === "shipped") return "shipped";
     if (l.move === "parked") return "parked";
     if (activeDeps(l, m).length) return "blocked";
     if (l.move === "you") return "you";
-    return "agent";
+    const q = activity && activity.quietDays;
+    if (typeof q !== "number") return "agent";
+    return q >= QUIET_DAYS ? "quiet" : "working";
   }
 
   // Tarjan: a lane that only waits on a loop is not in it.
@@ -43,7 +59,7 @@
     const m = Object.fromEntries(lanes.map((l) => [l.id, l]));
     const me = m[laneId];
     const placed = new Set([laneId]);
-    const mk = (id, col) => ({ id, col, ...(m[id] && m[id].move === "parked" && m[id].stage !== "shipped" ? { parked: true } : {}) });
+    const mk = (id, col) => ({ id, col, ...(m[id] && m[id].move === "parked" && m[id].stage !== "shipped" ? { parked: true } : {}), ...(noLane(id, m) !== null ? { noLane: noLane(id, m) } : {}) });
     const cols = [[], [mk(laneId, 1)], [], []];
     activeDeps(me, m).forEach((id) => { placed.add(id); cols[0].push(mk(id, 0)); });
     const dependents = (ids) => lanes.filter((l) => isLive(l) && !placed.has(l.id) && deps(l).some((d) => ids.includes(d))).map((l) => l.id);
@@ -113,7 +129,7 @@
 
   const pad = (n) => String(n).padStart(2, "0");
   const localDay = (d) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
-  const isEpic = (brief) => Array.isArray(brief && brief.phases) && brief.phases.length >= 5;
+  const hasStepMap = (brief) => Array.isArray(brief && brief.phases) && brief.phases.length >= 5;
   const normalizeOptions = (options) => (options || []).map((o) => typeof o === "string" ? { label: o, consequence: "" } : { label: o.label, consequence: o.consequence || "" });
 
   const isCheck = (d) => d.kind === "check";
@@ -146,14 +162,19 @@
     return { answer, answeredOn: today, own: own ? true : null, note: n || null, reply: null, replyOn: null, appliedOn: null };
   }
 
+  // Until the sync skill writes a step on every phase, the phase's status places it.
+  const STEP_BY_STATUS = { shipped: "prod", built: "release", building: "release", decided: "next", plan: "next", spec: "next", idea: "later", parked: "later" };
+  function stepFor(phase) {
+    if (!phase) return "release";
+    if (phase.step === "parked") return "later"; // parked work must not read as this-release work
+    if (STEPS.includes(phase.step)) return phase.step;
+    return STEP_BY_STATUS[phase.status] || "release";
+  }
+
   function pinsByStep(brief, decisions, laneId) {
     const out = { prod: [], release: [], next: [], later: [] };
     const phases = (brief && brief.phases) || [];
-    const stepOf = (d) => {
-      const s = (phases.find((p) => p.id === d.phase) || {}).step;
-      if (s === "parked") return "later"; // a decision on parked work must not read as this-release work
-      return STEPS.includes(s) ? s : "release";
-    };
+    const stepOf = (d) => stepFor(phases.find((p) => p.id === d.phase));
     const { open, checks } = laneDecisions(decisions, laneId);
     const ordered = [...open].sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
     ordered.forEach((d, i) => out[stepOf(d)].push({ kind: "decision", id: d.id, n: i + 1 }));
@@ -181,7 +202,9 @@
   const isObj = (x) => !!x && typeof x === "object" && !Array.isArray(x);
   const isStr = (x) => typeof x === "string";
   // Optional fields: absent and null read the same, since the page clears a field by writing null.
-  function validateBrief(b) {
+  const isIssueNo = (x) => Number.isInteger(x) && x > 0;
+  // The row's issue anchors a brief written for that row, so the number need not be copied into the brief.
+  function validateBrief(b, lane) {
     const p = [];
     if (!isObj(b)) return ["brief is missing"];
     const rows = (k) => {
@@ -195,7 +218,8 @@
     if (b.stand != null && !isStr(b.stand)) p.push("stand must be a string");
     if (b.phases === undefined) p.push("missing phases");
     else if (!Array.isArray(b.phases)) p.push("phases must be a list");
-    if (!b.tracker && !b.plan && !b.spec) p.push("needs one of tracker, plan or spec");
+    if (b.issue != null && !isIssueNo(b.issue)) p.push("issue must be a positive integer");
+    if (b.issue == null && !(lane && lane.issue != null) && !b.tracker && !b.plan && !b.spec) p.push("needs one of issue, tracker, plan or spec");
     rows("phases").forEach((ph, i) => {
       if (!isObj(ph)) { p.push("phase " + i + " must be an object"); return; }
       if (!ph.id || !ph.name) p.push("phase " + i + " needs id and name");
@@ -223,10 +247,20 @@
     if (ab != null && !(isObj(ab) && typeof ab.ahead === "number" && typeof ab.behind === "number" && typeof ab.onCurrentProd === "boolean")) p.push("aheadBehind must be {ahead, behind, onCurrentProd}");
     for (const k of ["watch", "agent", "evidence"]) rows(k).forEach((x, i) => { if (!isStr(x)) p.push(k + " row " + i + " must be a string"); });
     if (rows("watch").length > 3) p.push("watch has more than 3 items");
-    const decided = rows("decided");
-    if (decided.length > 6) p.push("decided has more than 6 rows");
-    decided.forEach((d, i) => { if (!isObj(d) || !isStr(d.date) || !DAY.test(d.date) || !isStr(d.text)) p.push("decided row " + i + " needs a YYYY-MM-DD date and text"); });
     for (const k of OLD_KEYS) if (k in b) p.push("old-shape key " + k);
+    return p;
+  }
+
+  const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/;
+  // Only the fields the board's rules read from a row; the brief has validateBrief.
+  function validateLane(l) {
+    if (!isObj(l)) return ["lane is missing"];
+    const p = [];
+    if (l.issue != null && !isIssueNo(l.issue)) p.push("issue must be a positive integer");
+    if (typeof l.order !== "number" || !Number.isFinite(l.order)) p.push("order must be a number");
+    if (l.blockedBy != null && !(Array.isArray(l.blockedBy) && l.blockedBy.every((x) => isStr(x) && x))) p.push("blockedBy must be a list of row ids");
+    const at = l.blockedBySyncedAt;
+    if (at != null && !(isStr(at) && (DAY.test(at) || (ISO_TIME.test(at) && !Number.isNaN(Date.parse(at)))))) p.push("blockedBySyncedAt must be YYYY-MM-DD or an ISO time");
     return p;
   }
 
@@ -268,5 +302,5 @@
     return { brief, notes, decisions };
   }
 
-  globalThis.LaneCore = { deps, activeDeps, isLive, groupOf, findCycle, layoutBlockerMap, localDay, isEpic, normalizeOptions, laneDecisions, openCount, answerPatch, pinsByStep, waitGap, collisionAsOf, collisionStale, validateBrief, validateDecision, docId, migrateBrief };
+  globalThis.LaneCore = { deps, noLane, activeDeps, resolveDeps, isLive, stateOf, findCycle, layoutBlockerMap, localDay, hasStepMap, normalizeOptions, laneDecisions, openCount, answerPatch, stepFor, pinsByStep, waitGap, collisionAsOf, collisionStale, validateBrief, validateLane, validateDecision, docId, migrateBrief };
 })();

@@ -1,0 +1,21 @@
+{
+  "blockedBy": [],
+  "branch": "chore/orient-lane-briefing",
+  "kind": "platform",
+  "move": "agent",
+  "name": "Ship board UI",
+  "neon": "none (no schema change)",
+  "next": "Merged as #295 (0d904fb15); local main pulled it in. The board UI redesign gets its own lane when it starts.",
+  "order": 10.6,
+  "port": 3007,
+  "pr": 295,
+  "session": {
+    "cwd": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/orient-lane-briefing",
+    "id": "275b8440-90e6-4cb8-bbdb-7bd17aff347b",
+    "lastSeen": "2026-11-22T03:25:00Z",
+    "started": "2026-11-22T02:17:22Z"
+  },
+  "stackedOn": null,
+  "stage": "shipped",
+  "updated": "2026-11-21"
+}

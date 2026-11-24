@@ -642,12 +642,12 @@ function route(){
 addEventListener("hashchange",route);
 
 const laneMap=()=>Object.fromEntries((S.lanes||[]).map(l=>[l.id,l]));
-const {deps,activeDeps,groupOf}=LaneCore,live=LaneCore.isLive;
-const laneName=(m,id)=>m[id]?.name||id;
+const {deps,activeDeps,stateOf}=LaneCore,live=LaneCore.isLive;
+const laneName=(m,id)=>m[id]?.name||(LaneCore.noLane(id,m)!==null?"#"+LaneCore.noLane(id,m)+" · no lane":id);
 const stageLabel=l=>STAGES[STAGE_I[l.stage]??0][1];
 function ago(iso){if(!iso)return"";const s=(Date.now()-Date.parse(iso))/1000;if(!isFinite(s))return"";if(s<3600)return Math.max(1,Math.round(s/60))+" min ago";if(s<86400)return Math.round(s/3600)+" h ago";return Math.round(s/86400)+" d ago"}
 const sessionOn=l=>l.session?.lastSeen&&(Date.now()-Date.parse(l.session.lastSeen))<6*3600e3;
-function moveChip(l,g){return g==="blocked"?el("span",{class:"chip blocked",text:"blocked"}):l.move==="you"?el("span",{class:"chip you",text:"your move"}):l.move==="parked"?el("span",{class:"chip",text:"parked"}):el("span",{class:"chip agent",text:"agent"})}
+function moveChip(l,g){return g==="blocked"?el("span",{class:"chip blocked",text:"blocked"}):g==="you"?el("span",{class:"chip you",text:"your move"}):g==="parked"?el("span",{class:"chip",text:"parked"}):g==="shipped"?el("span",{class:"chip done",text:"shipped"}):el("span",{class:"chip agent",text:"agent"})}
 function relText(l,m,parent){
   const out=[];const ds=activeDeps(l,m);
   for(const d of ds){const stacked=l.stackedOn===d;const why=(l.blockReason&&l.blockReason[d])||"";out.push({stacked,text:(stacked?"built on ":"waits on ")+laneName(m,d)+(why?": "+why:""),d})}
@@ -655,19 +655,19 @@ function relText(l,m,parent){
 }
 
 function renderStrip(){const L=(S.lanes||[]).filter(live),m=laneMap();const b=document.querySelectorAll("#strip b");if(!S.lanes)return;
-  const blocked=L.filter(l=>groupOf(l,m)==="blocked").length,yours=L.filter(l=>l.move==="you").length,prs=L.filter(l=>l.pr).length;
+  const blocked=L.filter(l=>stateOf(l,m)==="blocked").length,yours=L.filter(l=>l.move==="you").length,prs=L.filter(l=>l.pr).length;
   [L.length,blocked,yours,prs].forEach((n,i)=>b[i].textContent=n)}
 
 function waitingChip(l){const n=S.decisions?LaneCore.openCount(S.decisions,l.id):0;return n?el("span",{class:"chip you",text:n+" waiting on you"}):null}
 function treeRow(l,d,m,parent){
-  const g=groupOf(l,m);const rels=relText(l,m,parent);
+  const g=stateOf(l,m);const rels=relText(l,m,parent);
   const top=el("div",{class:"row-top"},el("span",{class:"row-name",text:l.name||l.id}),
     el("span",{class:"chip",text:stageLabel(l)}),moveChip(l,g),waitingChip(l),l.pr?el("span",{class:"chip agent",text:"PR #"+l.pr}):null,
     previewChip(l),
     el("span",{class:"chip",title:l.session?.lastSeen?"session last wrote "+l.session.lastSeen:"no session has linked to this lane yet"},el("i",{class:"dot"+(sessionOn(l)?" on":"")}),l.session?.lastSeen?ago(l.session.lastSeen):"no session"));
   const row=el("a",{class:"row "+(d?"child":"root"),href:"#lane-"+l.id,"data-d":d,style:"--d:"+d},top);
   for(const r of rels)row.append(el("div",{class:"row-rel"+(r.stacked?" stack":""),text:r.text}));
-  if(l.next)row.append(el("div",{class:"row-next",text:(l.move==="you"&&g!=="blocked"?"Your move: ":"Next: ")+l.next}));
+  if(l.next)row.append(el("div",{class:"row-next",text:(g==="you"?"Your move: ":"Next: ")+l.next}));
   return row;
 }
 function renderTree(){
