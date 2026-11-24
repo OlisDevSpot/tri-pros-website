@@ -1,11 +1,11 @@
 # Worktree → PR Flow Implementation Plan
 
 > **Status**
-> - Stage: building · T1 done 2026-11-23 (Step 2 moved to T3 and the cut kept to dev by WF14; Step 6 dropped, WF15) · WF8 and WF14 updated in place on #311 · T12, T13, T14 partly done
+> - Stage: building · T1 done 2026-11-23 (Step 2 moved to T3 and the cut kept to dev by WF14; Step 6 dropped, WF15) · WF8 and WF14 updated in place on #311 · T12, T13, T14 partly done · WF16 (2026-11-24): docs go straight to `main` · CI runs lint + tsc only, no `next build` (#343, PR #344)
 > - Built on: `origin/main` (no lane branch) · Verified at: `origin/main@295154357` (2026-11-23) · page: https://claude.ai/artifact/7D8kgccA7iy6f8ATWzLdqS#lane-dev-flow
 > - Done: T0 (#289) · T1 (prod protected; `NEON_PROD_ENDPOINT_ID` in `.env` + Vercel Preview/Production; dev's `neondb_owner` password cut and the new address in `.env`, every worktree `.env`, Vercel Preview `DATABASE_URL`, the Actions secret `DATABASE_URL`) · T12 Steps 1–3 (#293, #294; no vercel.app wildcard) · T13 port claim · T14 per-checkout pre-commit gate, pre-ship retired, lane rules in CLAUDE.md (#295, #296)
-> - Next: T7 (prod-script Action), then T7a (one `.env`, one rotation command, loud CI DB check), then WF9's order: T9 → T2–T3 → T3a → T4–T6 → T8 → T10 → T12 rest → T15 → T16. The WF8 rename (one name per role) needs its own task: endpoint boot guard first, then the rename in one change. The lane-linking plan (WF13) is not written yet.
-> - Open: the four `wt/*` copies still log in with prod's password until T3a (WF14, accepted) · archived prod children `backup/prod-pre-dev-refresh-2026-11-05` and `rehearsal/pre-ship-2026-10-08` hold prod's password: owner said delete after a no-loss check, in progress · `scene-layout-lab` and `trade-scenes` `.env` hold R2 keys that differ from main's (T7a Step 1) · WF12 Vercel token home (blocks the lane-linking plan's `link`) · T10's removal of four non-`db:*` prod scripts not in the spec (owner OK) · Lane / Lane copy / Review slot not in `GLOSSARY.md` (owner to agree the terms) · plan A (merge commits) design not written
+> - Next: T7 (prod-script Action), then T7a (one `.env`, one rotation command; its CI DB check is dropped, CI no longer touches a database), then WF9's order: T9 → T2–T3 → T3a → T4–T6 → T8 → T10 → T12 rest → T15 → T16. The WF8 rename (one name per role) needs its own task: endpoint boot guard first, then the rename in one change. The lane-linking plan (WF13) is not written yet.
+> - Open: the four `wt/*` copies still log in with prod's password until T3a (WF14, accepted) · T16's ruleset (require a PR, no bypass) would block WF16's docs pushes: owner picks a bypass or changes WF16 · `scene-layout-lab` and `trade-scenes` `.env` hold R2 keys that differ from main's (T7a Step 1) · WF12 Vercel token home (blocks the lane-linking plan's `link`) · T10's removal of four non-`db:*` prod scripts not in the spec (owner OK) · Lane / Lane copy / Review slot not in `GLOSSARY.md` (owner to agree the terms) · plan A (merge commits) design not written
 > - Blocked: none
 
 ## Rulings
@@ -31,7 +31,7 @@ WF = Worktree Flow: the owner's rulings on this plan. Each one is a `Ruling WF<n
 - Stage and commit by explicit path only (`git add -- <paths>`; `git commit -- <paths>`); never `git add -A`, `stash`, `reset --hard`, `checkout .`, `--amend`. `drizzle.config.ts` is CRLF: edit it with the Edit tool and check `git diff --shortstat` stays small. The Claude pre-commit hook takes ~110 s of a 120 s budget: batch commits.
 - Every outward action (GitHub settings, repo visibility, Vercel settings, Google Cloud, Neon console, running the prod-script Action) is confirmed with the owner first, each time. Every step that creates, resets or deletes a Neon branch, or runs SQL against any database, runs only after the owner says "run" for that step ("go ahead" on the plan is not that). Resetting the owner's dev data (`db:refresh:dev`) needs its own explicit OK: their hand-edited dev fixtures go with it.
 - Each phase ships as its own branch + PR off `origin/main`. Scripts, CI and docs tasks (T2–T4, T7, T9, T10, T15) branch in the main checkout with `git switch -c <type>/<slug>`, no worktree (memory `feedback-no-worktree-for-non-app-work`); app tasks (T5, T6) take a worktree via Orca. Merge `origin/main` into the branch, never rebase or force-push.
-- Agents never merge a PR and never push to `main`; the owner squash-merges. Only Oliver starts a dev server: any step that needs one names him as the actor. No DB writes for visual testing.
+- Agents never merge a PR and never push code to `main`; the owner squash-merges. Docs-only changes go straight to `main` and are merged into every worktree (WF16). Only Oliver starts a dev server: any step that needs one names him as the actor. No DB writes for visual testing.
 - App tasks pass the preview Playwright check from CLAUDE.md ("Verify on the preview") before they reach the owner.
 - Full prod writes only from: Vercel production deploys (migrations) and the prod-script Action. Locally `DRIZZLE_TARGET=prod` reaches prod only as `photos_writer`. Unset never means prod.
 - Neon branch names: lane copies `wt/<slug>`. Migrations, scrubs and the advisory lock use the unpooled URL (`unpooledUrl`, Task 2); the pooled URL is only for the running app.
@@ -191,7 +191,7 @@ Lanes: `feat/data-views` (`wt/data-views`), `feat/proposal-page` (`wt/proposal-p
 **Files:**
 - Create: `src/shared/config/local-dev-database.ts` — `localDevDatabaseMissing(env)`, pure, no imports (`data-target.ts:3` imports `server-env`, so the check cannot live there without a cycle)
 - Modify: `src/shared/config/server-env.ts` — one gate in the existing `VERCEL_ENV` gate block (`:196-223`), reading `DRIZZLE_TARGET` from `process.env` (it is not in the Zod schema)
-- Modify: `.github/workflows/pr-checks.yml` — Build step env gains `DATABASE_DEV_URL: ${{ secrets.DATABASE_URL }}` (CI has no `VERCEL_ENV`, and `.env.ci` has no `DATABASE_DEV_URL`, so without it the gate fails every PR; after T8 Step 3 that secret is the development branch)
+- ~~Modify: `.github/workflows/pr-checks.yml` — Build step env gains `DATABASE_DEV_URL: ${{ secrets.DATABASE_URL }}` (CI has no `VERCEL_ENV`, and `.env.ci` has no `DATABASE_DEV_URL`, so without it the gate fails every PR; after T8 Step 3 that secret is the development branch)~~ Dropped 2026-11-24: CI no longer runs `next build` (#343), so the gate never loads there.
 - Modify: `scripts/backfill-lead-source-fk.ts:8`, `scripts/seed-lead-sources.ts:10-11`, `scripts/migrate-notes-to-activities.ts:26`, `scripts/dump-failed-sow.ts:8`, `scripts/match-before-after.ts:37` — drop each script's own `Pool`/`Client` on `DATABASE_URL` and use `db` from `@/shared/db` (it already follows `isProductionData()`), with `./lib/load-env` imported first
 - Test: `scripts/verify-data-target.ts`
 
@@ -238,7 +238,7 @@ Lanes: `feat/data-views` (`wt/data-views`), `feat/proposal-page` (`wt/proposal-p
 - [ ] **Step 3:** After merge, owner runs it with `scripts/verify-business-time.ts` (no DB) → approval → green. Then with `scripts/prod-db-ping.ts` → prints the prod endpoint id.
 - [ ] **Step 4:** Commit `ci: owner-approved prod-script workflow and a read-only prod probe`.
 
-### Task 7a: One `.env`, one rotation command, a loud CI check (owner 2026-11-23)
+### Task 7a: One `.env`, one rotation command (owner 2026-11-23)
 
 The 2026-11-23 dev password cut touched about 15 hand-made copies of one address (12 `.env` files, Vercel Preview, the Actions secret); the copies had already drifted (no worktree `.env` had `NEON_PROD_ENDPOINT_ID`, two had old R2 keys), and CI failed with a prerender stack trace that never named the secret. T8 and T3a rotate again.
 
@@ -246,14 +246,14 @@ The 2026-11-23 dev password cut touched about 15 hand-made copies of one address
 - Modify: `.worktreeinclude` — drop `.env`, so no tool (Orca, `claude --worktree`) makes a copy
 - Modify: `orca.yaml` — setup links `.env` to the main checkout's: `ln -sfn "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")/.env" .env`
 - Modify: `scripts/dev.mjs` and `scripts/lib/load-env.ts` — in a linked worktree: no `.env` → create that link; a regular-file `.env` → refuse with the one-line `ln -sfn …` fix (a lane's own values belong in `.env.local`). Covers `claude --worktree` and hand-made worktrees, which skip Orca's setup.
-- Create: `scripts/db-rotate.ts` + `package.json` `"db:rotate"` — from the 2026-11-23 reset script: reset `neondb_owner` on one named non-prod branch through the Neon API (refuses the prod branch before any request), rewrite the one URL line in the main `.env`, `gh secret set DATABASE_URL` when the branch is `development`, check the new address logs in and prod's host refuses it; prints yes/no only. Vercel Preview stays a printed reminder ("update Preview `DATABASE_URL`, Sensitive, then redeploy") until WF12 names the token's home.
-- Modify: `.github/workflows/pr-checks.yml` — a step before Build that connects with `DATABASE_URL` and, on `28P01`, fails with "the `DATABASE_URL` secret was rejected: update it to the development branch's address".
+- Create: `scripts/db-rotate.ts` + `package.json` `"db:rotate"` — from the 2026-11-23 reset script: reset `neondb_owner` on one named non-prod branch through the Neon API (refuses the prod branch before any request), rewrite the one URL line in the main `.env`, check the new address logs in and prod's host refuses it; prints yes/no only. Vercel Preview stays a printed reminder ("update Preview `DATABASE_URL`, Sensitive, then redeploy") until WF12 names the token's home.
+- ~~Modify: `.github/workflows/pr-checks.yml` — a step before Build that connects with `DATABASE_URL` and, on `28P01`, fails with "the `DATABASE_URL` secret was rejected: update it to the development branch's address".~~ Dropped 2026-11-24: CI runs lint + tsc only and holds no database secret (#343).
 - Test: `scripts/verify-env-link.ts` (link created when missing, refusal on a regular file, main checkout untouched)
 
 - [ ] **Step 1 (owner OK per worktree): link the existing worktrees.** For each `.worktrees/*/.env` that is a regular file, print the key names that differ from main's `.env` (no values). Where nothing differs but main's extra keys, replace the copy with the link. Today `scene-layout-lab` and `trade-scenes` hold different `R2_ACCESS_KEY_ID`/`R2_SECRET_ACCESS_KEY`: the owner says which keys are current first.
 - [ ] **Step 2:** Write the test, watch it fail, implement the link guard, `.worktreeinclude` and `orca.yaml`.
-- [ ] **Step 3:** `db:rotate` and the CI step. `pnpm lint && pnpm tsc`; `pnpm exec eslint` on the new scripts.
-- [ ] **Step 4:** A new Orca worktree and a `claude --worktree` session both end with `.env` → main's `.env` (`test -L .env`). Commit `chore(env): one shared .env per machine, a rotation command and a loud CI database check`.
+- [ ] **Step 3:** `db:rotate`. `pnpm lint && pnpm tsc`; `pnpm exec eslint` on the new scripts.
+- [ ] **Step 4:** A new Orca worktree and a `claude --worktree` session both end with `.env` → main's `.env` (`test -L .env`). Commit `chore(env): one shared .env per machine and a rotation command`.
 
 ### Task 8: Credentials leave the machine (owner-run, agent-guided)
 
@@ -315,7 +315,7 @@ Runs after T1 (production protected, so a copy gets its own password) and T7 (th
 
 - [ ] **Step 1: Failing tests:** `buildPlan` (production → prod; preview → none; unset → none) and `verify-migration-order` fixtures (in order → pass; hand-merged older entry → fail; duplicate idx → fail).
 - [ ] **Step 2:** Run → FAIL. **Step 3:** Implement. Confirm the Vercel project has no Build Command override that would bypass `vercel-build`.
-- [ ] **Step 4: CI.** In `pr-checks.yml` (keep Node 20): add `pnpm tsc`; add `pnpm drizzle-kit check`; add `pnpm tsx scripts/verify-migration-order.ts` (needs `fetch-depth: 0` or a fetch of `origin/main`); add `pnpm drizzle-kit generate --name ci-check` with `timeout-minutes: 3` followed by `test -z "$(git status --porcelain src/shared/db/migrations)"` (a rename prompt hangs and times out, which correctly fails the PR). The build keeps the `DATABASE_URL` secret, now the development branch (Task 8 Step 3). Backlog (owner 2026-11-23, not in this plan's scope): build CI against a throwaway Postgres service with the migrations applied, so CI holds no database secret and drops off the rotation list.
+- [ ] **Step 4: CI.** (2026-11-24: CI already runs lint + `next typegen` + `pnpm tsc` and no build (#343); it holds no database secret, so the build-secret and throwaway-Postgres notes below are moot.) In `pr-checks.yml` (keep Node 20): add `pnpm tsc`; add `pnpm drizzle-kit check`; add `pnpm tsx scripts/verify-migration-order.ts` (needs `fetch-depth: 0` or a fetch of `origin/main`); add `pnpm drizzle-kit generate --name ci-check` with `timeout-minutes: 3` followed by `test -z "$(git status --porcelain src/shared/db/migrations)"` (a rename prompt hangs and times out, which correctly fails the PR). The build keeps the `DATABASE_URL` secret, now the development branch (Task 8 Step 3). Backlog (owner 2026-11-23, not in this plan's scope): build CI against a throwaway Postgres service with the migrations applied, so CI holds no database secret and drops off the rotation list.
 - [ ] **Step 5:** Tests pass; `pnpm lint && pnpm tsc`. Commit `feat(deploy): production migrations under a lock in vercel-build; CI checks tsc and migrations`.
 - [ ] **Step 6:** After merge, the production deploy log shows `applied: 0` and the site works.
 
@@ -356,7 +356,7 @@ Done here: the per-checkout pre-commit gate (`.claude/hooks/pre-commit-gate.sh`)
 
 ### Task 16: Branch protection on
 
-- [ ] **Step 1 (owner-confirmed):** Ruleset on `main`: require PR, require the `check` job (PR Checks) to pass, block force-push and deletion, apply to admins. Merge buttons stay as they are (WF3: squash is a convention). PR Checks runs only on PRs into `main` (`pr-checks.yml:5`), so stacked slice PRs are checked when they reach `main`; widen the trigger only if the owner asks.
+- [ ] **Step 1 (owner-confirmed):** Ruleset on `main`: require PR, require the `check` job (PR Checks) to pass, block force-push and deletion, apply to admins. Merge buttons stay as they are (WF3: squash is a convention). WF16 pushes docs straight to `main`: the ruleset needs a bypass for that push, or WF16 changes (owner decides). PR Checks runs only on PRs into `main` (`pr-checks.yml:5`), so stacked slice PRs are checked when they reach `main`; widen the trigger only if the owner asks.
 - [ ] **Step 2:** Verify with `gh api repos/OlisDevSpot/tri-pros-website/rulesets` (rules present, enforcement active, no bypass actors) and a PR that merges after checks pass. No test push to `main`.
 - [ ] **Step 3:** Owner notes the break-glass: Settings → Rules → disable, push, re-enable.
 
