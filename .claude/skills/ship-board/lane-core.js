@@ -302,5 +302,88 @@
     return { brief, notes, decisions };
   }
 
-  globalThis.LaneCore = { deps, noLane, activeDeps, resolveDeps, isLive, stateOf, findCycle, layoutBlockerMap, localDay, hasStepMap, normalizeOptions, laneDecisions, openCount, answerPatch, stepFor, pinsByStep, waitGap, collisionAsOf, collisionStale, validateBrief, validateLane, validateDecision, docId, migrateBrief };
+  // GitHub returns labels as names from list_issues and get_sub_issues, as {name} objects from some other tools.
+  const labelNames = (issue) => ((issue && issue.labels) || []).map((x) => (typeof x === "string" ? x : x && x.name)).filter(Boolean);
+  const hasLabel = (issue, name) => labelNames(issue).includes(name);
+
+  // parentOf(n) answers an epic's number, null for no parent, undefined while some epic's sub-issues are unknown.
+  function kindOf(row, issue, parentOf) {
+    if (!row || row.issue == null) return "standalone";
+    if (!issue) return null;
+    if (hasLabel(issue, "epic")) return "epic";
+    const p = parentOf(row.issue);
+    if (p === undefined) return null;
+    if (p !== null) return "epic";
+    return hasLabel(issue, "bug") ? "bug" : "standalone";
+  }
+
+  // gh: {open: list_issues payload | null, epics: issues | null, bugs: issues | null, subs: {epicNumber: sub_issues}}.
+  // A missing list or epic means "not answered yet": the rows it would place wait in `unplaced`, never guessed.
+  function mapBlocks(rows, gh) {
+    const g = gh || {};
+    const known = new Map();
+    for (const list of [g.open && g.open.issues, g.epics, g.bugs]) for (const i of list || []) if (!known.has(i.number)) known.set(i.number, i);
+    // Both label lists are complete, so an open issue missing from them (a later page, or closed) carries neither label.
+    const issueOf = (n) => known.get(n) || (g.epics && g.bugs ? { number: n, labels: [] } : undefined);
+    const live = rows.filter((r) => r.stage !== "shipped").sort((a, b) => (a.order ?? 99) - (b.order ?? 99) || String(a.id).localeCompare(String(b.id)));
+    const epicRows = live.filter((r) => r.issue != null && hasLabel(issueOf(r.issue), "epic"));
+    const subs = g.subs || {};
+    const parentOf = (n) => {
+      const e = epicRows.find((r) => (subs[r.issue] || []).some((s) => s.number === n));
+      if (e) return e.issue;
+      return epicRows.every((r) => subs[r.issue]) ? null : undefined;
+    };
+    const epics = epicRows.map((r) => {
+      const s = subs[r.issue];
+      return { row: r, issue: issueOf(r.issue), lanes: [r], plans: s ? { closed: s.filter((x) => String(x.state).toLowerCase() === "closed").length, total: s.length } : null };
+    });
+    const byIssue = Object.fromEntries(epics.map((e) => [e.row.issue, e]));
+    const out = { epics, standalone: [], bugs: [], unplaced: [], backlog: null };
+    for (const r of live) {
+      if (epicRows.includes(r)) continue;
+      const k = kindOf(r, r.issue == null ? null : issueOf(r.issue), parentOf);
+      if (k === "epic") byIssue[parentOf(r.issue)].lanes.push(r);
+      else if (k === "bug") out.bugs.push(r);
+      else if (k === "standalone") out.standalone.push(r);
+      else out.unplaced.push(r);
+    }
+    if (g.open) {
+      const withRow = new Set(rows.map((r) => r.issue).filter((n) => n != null));
+      const free = [...known.values()].filter((i) => !withRow.has(i.number));
+      const issues = [...free.filter((i) => hasLabel(i, "epic")), ...free.filter((i) => !hasLabel(i, "epic"))];
+      const total = g.open.totalCount, nextPage = g.open.pageInfo && g.open.pageInfo.hasNextPage;
+      // Issues past the first page are counted from GitHub's total; the known ones are already in `issues`.
+      const unseen = nextPage && typeof total === "number" ? Math.max(0, total - known.size) : 0;
+      out.backlog = { issues, more: unseen };
+    }
+    return out;
+  }
+
+  // The lane hook reads the issue number from {type}/{issue}-{slug} (CLAUDE.md, Branch).
+  const BRANCH_TYPES = ["feat", "fix", "refactor", "chore", "docs"];
+  const TYPE_BY_LABEL = [["bug", "fix"], ["refactor", "refactor"], ["chore", "chore"], ["documentation", "docs"], ["docs", "docs"]];
+  const SLUG_MAX = 40;
+  function startCommand(issue) {
+    const title = String(issue.title || "");
+    const pre = /^(feat|fix|refactor|chore|docs)(\([^)]*\))?!?:\s*/i.exec(title);
+    const type = pre ? pre[1].toLowerCase() : (TYPE_BY_LABEL.find(([l]) => hasLabel(issue, l)) || [null, "feat"])[1];
+    const words = title.slice(pre ? pre[0].length : 0).replace(/^epic:\s*/i, "")
+      .normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+    let slug = "";
+    for (const w of words) { const next = slug ? slug + "-" + w : w; if (next.length > SLUG_MAX) break; slug = next; }
+    const branch = (BRANCH_TYPES.includes(type) ? type : "feat") + "/" + issue.number + "-" + (slug || "issue");
+    const dir = ".claude/worktrees/" + issue.number;
+    return { branch, command: "git fetch -q origin && git worktree add -b " + branch + " " + dir + " origin/main && cd " + dir + " && claude" };
+  }
+
+  function safeLink(url) {
+    if (typeof url !== "string" || !url) return null;
+    let u;
+    try { u = new URL(url); } catch { return null; }
+    if (u.protocol !== "https:") return null;
+    const h = u.hostname;
+    return h === "github.com" || h === "vercel.app" || h.endsWith(".vercel.app") ? u.href : null;
+  }
+
+  globalThis.LaneCore = { deps, noLane, activeDeps, resolveDeps, isLive, stateOf, findCycle, layoutBlockerMap, localDay, hasStepMap, normalizeOptions, laneDecisions, openCount, answerPatch, stepFor, pinsByStep, waitGap, collisionAsOf, collisionStale, validateBrief, validateLane, validateDecision, docId, migrateBrief, labelNames, kindOf, mapBlocks, startCommand, safeLink };
 })();

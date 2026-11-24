@@ -130,6 +130,7 @@
     "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/issue-285"
   },
   "briefAt": "2026-11-14",
+  "issue": 285,
   "kind": "refactor",
   "move": "parked",
   "name": "Permissions scope compiler (#285)",
