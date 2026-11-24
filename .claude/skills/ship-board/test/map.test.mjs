@@ -121,7 +121,7 @@ test("startCommand: the branch follows {type}/{issue}-{slug} so the lane hook fi
 
 test("startCommand: one line that branches from origin/main into its own worktree and starts a session there", () => {
   assert.equal(C.startCommand({ number: 336, title: "Epic: Move live work onto GitHub issues", labels: ["chore", "epic"] }).command,
-    "git fetch -q origin && git worktree add -b chore/336-move-live-work-onto-github-issues .claude/worktrees/336 origin/main && cd .claude/worktrees/336 && claude");
+    "git fetch -q origin && git worktree add -b chore/336-move-live-work-onto-github-issues .worktrees/336-move-live-work-onto-github-issues origin/main && (xargs -a .worktreeinclude -I{} cp --parents {} .worktrees/336-move-live-work-onto-github-issues/ || true) && cd .worktrees/336-move-live-work-onto-github-issues && pnpm install --frozen-lockfile && claude");
 });
 
 test("safeLink: only https links on github.com or vercel.app pass", () => {

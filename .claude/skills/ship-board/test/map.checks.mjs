@@ -99,7 +99,7 @@ export default async function ({ page, hash, viewport, scheme, opt, skillDir }) 
     await page.locator('#map .bl-row[data-issue="336"] > button').click();
     await settle(page, 100);
     const cmd = await page.evaluate(() => document.querySelector('#map .bl-row[data-issue="336"] .bl-cmd code')?.textContent);
-    expect(cmd === "git fetch -q origin && git worktree add -b chore/336-move-live-work-onto-github-issues .claude/worktrees/336 origin/main && cd .claude/worktrees/336 && claude", "Start on issue shows the one-line command: " + cmd);
+    expect(cmd === "git fetch -q origin && git worktree add -b chore/336-move-live-work-onto-github-issues .worktrees/336-move-live-work-onto-github-issues origin/main && (xargs -a .worktreeinclude -I{} cp --parents {} .worktrees/336-move-live-work-onto-github-issues/ || true) && cd .worktrees/336-move-live-work-onto-github-issues && pnpm install --frozen-lockfile && claude", "Start on issue shows the one-line command: " + cmd);
     expect((await page.evaluate(() => window.__updates.length)) === n0, "Start on issue writes no row");
     if (width === 1280 || width === 390) await page.locator('#map details[data-block="backlog"]').screenshot({ path: join(skillDir, "test", "shots", `map-backlog-${viewport}-${scheme}.png`) });
 

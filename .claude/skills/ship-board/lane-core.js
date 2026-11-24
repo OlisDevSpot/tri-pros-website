@@ -372,8 +372,10 @@
     let slug = "";
     for (const w of words) { const next = slug ? slug + "-" + w : w; if (next.length > SLUG_MAX) break; slug = next; }
     const branch = (BRANCH_TYPES.includes(type) ? type : "feat") + "/" + issue.number + "-" + (slug || "issue");
-    const dir = ".claude/worktrees/" + issue.number;
-    return { branch, command: "git fetch -q origin && git worktree add -b " + branch + " " + dir + " origin/main && cd " + dir + " && claude" };
+    // .worktrees/ is gitignored and outside tsconfig, so a lane's copy never shows up in the main checkout.
+    // The env files come from .worktreeinclude, and a checkout without node_modules cannot pass the pre-commit gate.
+    const dir = ".worktrees/" + issue.number + "-" + (slug || "issue");
+    return { branch, command: "git fetch -q origin && git worktree add -b " + branch + " " + dir + " origin/main && (xargs -a .worktreeinclude -I{} cp --parents {} " + dir + "/ || true) && cd " + dir + " && pnpm install --frozen-lockfile && claude" };
   }
 
   function safeLink(url) {
