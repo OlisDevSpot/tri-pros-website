@@ -48,7 +48,7 @@ What the app does at a time it chose, not when a person acts. Owner ruling 2026-
 - **Automation** — a send or action the app performs on a schedule or at a chosen time: a **sequence** or a **broadcast**. _Avoid_: job, cron, workflow, zap (mechanisms, not the thing).
 - **Sequence** — the ordered automatic steps one record can get, re-planned as the record changes. Visit messages is one sequence (`VISIT_MESSAGE_SEQUENCE`); post-signing and pre-signing follow-up would be others. _Avoid_: drip, cadence (the Phase 1 word, `sms_cadence`), workflow, flow.
 - **Step** — one automatic send in a sequence, with a planned time and a state (`VisitMessageStep`). _Avoid_: task, touch.
-- **Plan** — one record's steps and their states at a moment, computed by a pure function from the record, its message rows, the settings and the clock (`planVisitMessages`). Every screen and every run read the same plan. _Avoid_: schedule (that is the settings), timeline.
+- **Plan** — one record's steps and their states at a moment, computed by a pure function from the record, its message rows, the settings and the clock (`planVisitMessages`). Every screen and every run read the same plan. Not the dev-flow **Plan** (an issue, Dev flow terms). _Avoid_: schedule (that is the settings), timeline.
 - **Run** — one scheduled execution that acts on every step the plan marks due (`runAutomaticKind`). _Avoid_: tick, job, cron.
 - **Broadcast** — one message to a chosen audience at a chosen time, sent once and never re-planned. The audience can be five hand-picked customers; the word means "once, to a set", not "to everyone". _Avoid_: blast, bulk message, campaign, scheduled send.
 
@@ -134,7 +134,7 @@ How a list of one entity's records is read and shown, on any surface. The `DataV
 
 - **Data view** — one surface showing a list of one entity's records through the data layer: a `useDataViewQuery` read set up by a `DataViewQueryConfig`, inside a `DataViewBoundary` (the proposals table and campaign leads still read through `fromPaginatedQuery`). It is the same whether it is a page or sits in a tab, a card or a modal. Implements an **Entity View Context** (`docs/ubiquitous-language.md`). _Avoid_: list view, data page.
 - **Body** — the view-specific presentation inside a data view: `DataTable`, `ScheduleCalendar`, `KanbanBoard`, a card list. The heading, count, toolbar, empty and stale states around it are the same for every data view. _Avoid_: renderer, widget.
-- **Orchestrator** — the page or component that mounts a data view and writes the wrapper around it; it may drop the bar, swap the heading or pick toolbar pieces. No per-callsite layout component does this for it. _Avoid_: container (a records-management term).
+- **Orchestrator** — the page or component that mounts a data view and writes the wrapper around it; it may drop the bar, swap the heading or pick toolbar pieces. No per-callsite layout component does this for it. Not the dev-flow **Orchestrator** (a Claude Code session, Dev flow terms). _Avoid_: container (a records-management term).
 - **Loading screen** — a route's `loading.tsx`: the page's own component under `DataViewPending`, its data views showing their cached rows or none (`useLoadingScreenRead`). It starts no fetch; the page that replaces it refreshes the rows. _Avoid_: skeleton page.
 - **Pending view** — any render where `DataViewPendingContext` is not `false`. `'loading'`: a loading screen, a `DataViewBoundary`'s suspense fallback, the layout's document-load skeleton, the PWA launch shell. `'error'`: a boundary's error fallback. Reads never suspend inside one, and only `'loading'` shows cached rows (`useIsDataViewPending`).
 - **Filter rule** — one condition a viewer sets on a data view: a field, **is** or **is not**, and values (`FilterRule`). Planned (filter rules epic FR4). _Avoid_: rule alone in code (CASL rules live in the same server layer), condition, criterion.
@@ -152,7 +152,7 @@ How a list of one entity's records is read and shown, on any surface. The `DataV
 
 ## Pipeline terms
 
-- **Stage** — one step of a pipeline; a customer sits in exactly one stage per pipeline. On the kanban board each stage shows as a lane, but the domain word is always stage (`PipelineStageConfig`, `KanbanStageFilter`). _Avoid_: column, lane, status.
+- **Stage** — one step of a pipeline; a customer sits in exactly one stage per pipeline. On the kanban board each stage shows as a lane, but the domain word is always stage (`PipelineStageConfig`, `KanbanStageFilter`). _Avoid_: column, lane (a dev-flow word, Dev flow terms), status.
 - **Confirmed** — a meeting whose homeowner, reached on the day of the meeting, said they will be home (`meetings.confirmedAt`). A soft confirmation: a confirmed meeting can still be rescheduled or cancelled before the rep arrives. It holds for one appointment time — moving `scheduledFor` clears it, and a reschedule books a new, unconfirmed meeting. Fresh pipeline: every booked meeting starts in **Needs Confirmation** and moves to **Confirmed** once confirmed.
 
 ## Energy impact terms
@@ -172,15 +172,35 @@ The proposal's bill-savings projection and the Remodel ROI calculator share thes
 - "qualify" means program eligibility (Energy Saver+ through `qualifyEnergySaver`, decided by a trade's category); whether a scope lowers a bill is a **Bill-cutting scope**, decided per scope. The two can differ: an A/C replacement qualifies for Energy Saver+ but cuts only the electric bill.
 - "sits" means two counts: the **Sit** filter grouping field and the "Sits" quick filter count meetings (every sat non-project meeting), while analytics "Sits" counts booked leads (first sit per lead, `pickBookedLead`). Both stay; the two numbers differ by design.
 - "campaign" means a lead-conversion provider campaign (`voip_campaigns`) and a Meta ad campaign; never a scheduled send to customers.
+- "plan" means three things: an automation **Plan** (Automation terms), a dev-flow **Plan** (an issue, Dev flow terms) and the planning **Stage** word `plan`. Each stays in its section; in dev-flow copy a plan is always the issue, and its file is its **Tracker**.
+- "orchestrator" means the data-view **Orchestrator** (a page or component) and the dev-flow **Orchestrator** (a Claude Code session). In data-view code and docs it is always the former.
+- "lane" is a dev-flow word only; on the kanban board the word is **Stage** (Pipeline terms).
+
 ## Planning terms
 
-- **Stage** — where a plan or epic stands, one of six words: **brainstorm** (grilled, no design doc) · **spec** (design written or approved, no plan) · **plan** (plan written, nothing built) · **building** (tasks in progress on a ref) · **built** (every task done on its ref, not on `origin/main`) · **shipped** (reachable from `origin/main`). A qualifier may follow (`stress-tested`, `awaiting iPad check`, `unmerged`). Owner agreed 2026-11-03.
+- **Stage** — where a plan or epic stands, one of six words: **brainstorm** (grilled, no design doc) · **spec** (design written or approved, no plan) · **plan** (plan or tracker written, nothing built; the stage word, not the **Plan** issue) · **building** (tasks in progress on a ref) · **built** (every task done on its ref, not on `origin/main`) · **shipped** (reachable from `origin/main`). A qualifier may follow (`stress-tested`, `awaiting iPad check`, `unmerged`). Owner agreed 2026-11-03.
 - **Orientation** — the verified delta between what a plan intended, what the tree and git show was done, and what moved underneath it since; produced by `/orient`. Not a recap of the plan file.
 - **Tracker** — the file that holds a piece of work's working detail: its order or tasks, its status block and its rulings table. An epic's tracker is `docs/plans/*-epic.md`; a plan's tracker is its file under `docs/superpowers/plans/`, which SDD builds from. The epic or plan itself is its GitHub issue, which links to the tracker (ADR-0007). _Avoid_: "plan" for the file.
 - **Ruling** — an owner decision, one row in its tracker's rulings table (ID, question, ruling, date). An override edits the row in place: the new text on top, the old struck through as deprecated. _Avoid_: ruling comments on issues.
 - **Status block** — the structured header every tracker carries (Stage · Built on · Verified at · page · Done · Next · Open · Blocked). `/orient` reads it as its checkpoint and rewrites it; `session-capture` writes it at session end as the hand-off. Replaces the old `> **Status:**` paragraph on first touch.
-- **Child** (of an epic) — a plan file under the epic, or a phase row in the tracker that has no plan yet; the latter is always `brainstorm` or `spec` and unverified.
+- **Child** (of an epic) — one of its plans: a sub-issue of the epic issue, linking its tracker. An epic not yet moved to an issue lists its children as plan files or tracker phase rows; a row with no plan is always `brainstorm` or `spec` and unverified.
 - _Avoid_: "handoff mode" (there is none; the hand-off is `session-capture` writing the status block), "resume block" (it is the status block).
+
+## Dev flow terms
+
+How work moves from an issue to prod, in the words the ship board uses (board UI spec, #316; owner 2026-11-21, 2026-11-23 and ADR-0007). GitHub issues are the record of all work; an issue's spec and **Tracker** are committed files its body links to.
+
+- **Epic** — a GitHub issue labelled `epic`. Its short body says what it solves, when it is done, and links to its tracker, spec and references; its sub-issues are its plans. An epic is also a lane: its own board row, branch and checkpoint PR.
+- **Plan** — a GitHub issue for one piece of work, a sub-issue of an epic or standalone. Its short body gives its steps at a high level and links to its **Tracker**, where its tasks live, never as sub-issues. A plan in an epic opens its PR against the epic branch.
+- **Slice** — what `/to-tickets` cuts work into: on an epic, its plans (sub-issues, each rated for readiness); on a plan, its tasks (rows in its tracker). Never a task sub-issue.
+- **Lane** — one issue being worked on now: its own worktree, branch `{type}/{issue}-{slug}`, draft PR, preview and board row. One lane carries one issue. _Avoid_: lane for a kanban stage (Pipeline terms).
+- **Orchestrator** — the one Claude Code session that runs a lane and its subagents.
+- **Journey** — an epic's plans in its sub-issue order, in four steps: **On prod** (the sub-issue is closed) · **This release** (open, and its PR merged into the epic branch, or its lane in flight) · **Next** (open, no lane, P0 or P1) · **Later** (open, no lane, P2, P3 or no priority). A lane page shows only its own plan's steps; the four step names are the same everywhere.
+- **Checkpoint PR** — an epic branch's PR into `main`: how an epic's merged plans reach prod.
+- **Backlog** — open issues with no lane row, folded under the board's map. Not a Project 3 Status (Project 3 has none).
+- **Start on issue** — the action on a Backlog row: a copyable one-line command that starts a worktree session on that issue. It starts no agent and writes no row; the session it starts creates the lane row `issue-<n>`. _Avoid_: pull into flight.
+- **Gone quiet** — a lane on the agent's move with no commit, push, preview build or check-in for 4 days or more.
+- **Status strip** — the five counts atop the board's map: waiting on you · broken · ready to merge · gone quiet · collisions. Each count is a **status filter**, a toggle that dims every row it does not match. _Avoid_: signal.
 
 ## Scope Pricing terms
 

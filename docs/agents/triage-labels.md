@@ -27,6 +27,6 @@ Every triaged issue carries exactly one category label.
 
 ## Other labels (outside triage)
 
-- `epic`: parent issue whose slices are sub-issues. Carries a category, no state label.
+- `epic`: parent issue whose sub-issues are its plans (a plan has no sub-issues; its tasks are in its tracker file, ADR-0007). Carries a category, no state label.
 - `wayfinder:map`, `wayfinder:research|prototype|grilling|task`: `/wayfinder` only; no other labels.
 - `area:*` and `P0`–`P3`: area and priority, set at triage.
