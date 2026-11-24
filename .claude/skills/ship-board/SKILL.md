@@ -18,7 +18,7 @@ Clearing a field: the page writes `null` (its db's `update` merges and has no de
 
 ## Vocabulary
 
-- **Lane**: one issue being worked on, on its own branch and worktree, doc id = lane id (`lanes/<id>`).
+- **Lane**: one issue being worked on, on its own branch and worktree, doc id = lane id (`lanes/<id>`): `issue-<n>` for a lane started on an issue (the lane hook creates it); older lanes keep their slug id and carry `issue`.
 - **Brief**: the lane's `brief` object, written by the sync skill (#321) and, until it ships, by `/orient`; the lane page reads it.
 - **Decision**: a question only the owner can answer (`kind: "decision"`), with options or free text.
 - **Owner check**: something only the owner can verify (`kind: "check"`); open until `done`.
