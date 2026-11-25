@@ -1,7 +1,7 @@
 (function () {
   const STEPS = [["prod", "On prod"], ["release", "This release"], ["next", "Next"], ["later", "Later"]];
   const STEP_WHEN = Object.fromEntries(STEPS);
-  const GROUP_WORD = { you: "your move", agent: "agent", blocked: "blocked", parked: "parked", shipped: "shipped" };
+  const STATE_WORD = { you: "your move", agent: "agent", working: "working", quiet: "gone quiet", blocked: "blocked", parked: "parked", shipped: "shipped" };
   const BUCKET = { shipped: "shipped", built: "built", building: "built", decided: "decided", plan: "next", spec: "next", idea: "later", parked: "parked" };
   const BUCKET_KEY = [["shipped", "on prod"], ["built", "built"], ["decided", "decided"], ["next", "planned"], ["later", "ideas"], ["parked", "parked"]];
   const PHASE_CHIP = { shipped: "done", built: "agent", building: "agent", parked: "lb-parked" };
@@ -16,7 +16,6 @@
   const shortDate = (s) => /^\d{4}-\d{2}-\d{2}/.test(s || "") ? new Date(dayNum(s) * 864e5).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" }) : String(s || "");
   const byOrder = (a, b) => (a.order ?? 99) - (b.order ?? 99);
   const watchOf = (l) => (l.brief && Array.isArray(l.brief.watch) ? l.brief.watch : l.risk ? [l.risk] : []);
-  const stepOf = (p) => (p.step === "parked" ? "later" : STEP_WHEN[p.step] ? p.step : "release");
   const pairWith = (a, b) => ((S.coll && S.coll.pairs) || []).find((p) => (p.a === a && p.b === b) || (p.a === b && p.b === a));
   const pending = (ds) => ({ open: [...ds.open].sort(byOrder), checks: ds.checks.filter((d) => !d.done).sort(byOrder) });
   const decisionNo = (ds, id) => pending(ds).open.findIndex((d) => d.id === id) + 1;
@@ -51,7 +50,7 @@
       risks ? el("button", { type: "button", class: "chip blocked lb-chip", "data-sel": "watch:0" }, plural(risks, "risk", "risks")) : null,
       holds.length ? el("button", { type: "button", class: "chip lb-chip", "data-sel": "lane:" + holds[0] }, "holds up " + plural(holds.length, "lane", "lanes")) : null);
     const box = el("div", { class: "lb-head", "data-section": "header" },
-      el("a", { class: "back", href: "#now", text: "← Now" }),
+      el("a", { class: "back", href: "#map", text: "← Map" }),
       el("div", { class: "eyebrow", text: [l.kind, l.branch, l.briefAt ? "checked " + shortDate(l.briefAt) : null].filter(Boolean).join(" · ") }),
       el("h2", {}, title, ids ? el("span", { class: "lb-ids", text: " " + ids }) : null),
       b.goal ? el("p", { class: "lb-goal", text: b.goal }) : null,
@@ -73,7 +72,7 @@
     const b = l.brief;
     const pins = LaneCore.pinsByStep(b, S.decisions || [], l.id);
     const by = { prod: [], release: [], next: [], later: [] };
-    for (const p of b.phases) by[stepOf(p)].push(p);
+    for (const p of b.phases) by[LaneCore.stepFor(p)].push(p);
     return el("div", { class: "lb-map", role: "group", "aria-label": "Phases from prod to later" }, STEPS.map(([id, when]) => {
       const ps = [...pins[id].filter((p) => p.kind !== "watch"), ...pins[id].filter((p) => p.kind === "watch").slice(0, 1)];
       return el("div", { class: "lb-st" + (id === "release" ? " lb-now" : ""), "data-step": id },
@@ -100,15 +99,15 @@
     const sec = el("section", { class: "lb-viz", "data-section": "stands" });
     if (!b) { sec.append(head("Where it stands"), emptyBrief(l)); return sec; }
     const phases = b.phases || [];
-    const epic = LaneCore.isEpic(b);
-    sec.append(head("Where it stands", epic ? "tap a step · pins are what waits on you" : phases.length ? "tap a phase" : null));
-    sec.append(epic ? releaseMap(l, ds) : phases.length ? phaseStrip(l) : el("p", { class: "note", text: "No phases recorded." }));
+    const stepMap = LaneCore.hasStepMap(b);
+    sec.append(head("Where it stands", stepMap ? "tap a step · pins are what waits on you" : phases.length ? "tap a phase" : null));
+    sec.append(stepMap ? releaseMap(l, ds) : phases.length ? phaseStrip(l) : el("p", { class: "note", text: "No phases recorded." }));
     if (b.stand) sec.append(standP(b.stand));
     return sec;
   }
 
   function nodeSub(o, w) {
-    const word = GROUP_WORD[groupOf(o, laneMap())];
+    const word = STATE_WORD[LaneCore.stateOf(o, laneMap())];
     const both = o.stage + " · " + word;
     return w >= 150 && both.length <= 17 ? both : word;
   }
@@ -185,6 +184,11 @@
         g.classList.add("lb-none");
         g.setAttribute("data-node", n.id);
         g.append(svgEl("rect", { width: n.w, height: n.h, rx: 8 }), svgEl("text", { x: n.w / 2, y: 31, "text-anchor": "middle" }, "no other lane"));
+      } else if (n.noLane) {
+        g.classList.add("lb-nolane");
+        g.setAttribute("data-node", n.id);
+        g.append(svgEl("title", {}, "#" + n.noLane + " has no lane yet; it still blocks this one"), svgEl("rect", { width: n.w, height: n.h, rx: 8 }),
+          svgEl("text", { class: "lb-name", x: 12, y: 31 }, "#" + n.noLane + " · no lane"));
       } else if (n.more) {
         const names = n.more.map((id) => (m[id] ? m[id].name : id));
         g.classList.add("lb-more");
@@ -201,7 +205,7 @@
         const short = nameParts(o)[0] || name;
         const lines = wrapWords(short, n.w >= 150 ? 20 : 14);
         const first = lines.length > 1 || lines[0].length < short.length ? lines[0].replace(/[\s·,;:–-]+$/, "") + "…" : lines[0];
-        for (const [k, v] of Object.entries({ "data-sel": isMe ? "status:" : "lane:" + n.id, tabindex: "0", role: "button", "aria-label": name + (o ? ": " + stageLabel(o) + ", " + GROUP_WORD[groupOf(o, m)] : "") + (isMe ? " (this lane)" : "") })) g.setAttribute(k, v);
+        for (const [k, v] of Object.entries({ "data-sel": isMe ? "status:" : "lane:" + n.id, tabindex: "0", role: "button", "aria-label": name + (o ? ": " + stageLabel(o) + ", " + STATE_WORD[LaneCore.stateOf(o, m)] : "") + (isMe ? " (this lane)" : "") })) g.setAttribute(k, v);
         g.append(svgEl("title", {}, name), svgEl("rect", { width: n.w, height: n.h, rx: 8 }),
           svgEl("text", { class: "lb-name", x: 12, y: 22, "data-avail": n.w - 22, "data-full": short }, first),
           o ? svgEl("text", { class: "lb-s", x: 12, y: 40, "data-avail": n.w - 22, "data-full": nodeSub(o, n.w) }, nodeSub(o, n.w)) : null);
@@ -460,12 +464,12 @@
   function selButton(sel, ...kids) { return el("button", { type: "button", class: "lb-link", "data-sel": sel }, ...kids); }
 
   function statusPanel(l) {
-    const m = laneMap(), b = l.brief || {}, g = groupOf(l, m), s = l.session;
+    const m = laneMap(), b = l.brief || {}, g = LaneCore.stateOf(l, m), s = l.session;
     const lc = b.lastCommit, ab = b.aheadBehind;
     const out = [
       el("div", { class: "lb-row" }, el("span", { class: "chip", text: stageLabel(l) }), moveChip(l, g), l.pr ? el("a", { class: "chip agent", href: "https://github.com/OlisDevSpot/tri-pros-website/pull/" + l.pr, target: "_blank", rel: "noopener", text: "PR #" + l.pr }) : el("span", { class: "chip", text: "no PR yet" }),
         el("span", { class: "chip" }, el("i", { class: "dot" + (sessionOn(l) ? " on" : "") }), s && s.lastSeen ? "session " + ago(s.lastSeen) : "no session linked")),
-      l.next ? el("p", {}, el("b", { text: l.move === "you" && g !== "blocked" ? "Your move: " : "Next: " }), l.next) : null,
+      l.next ? el("p", {}, el("b", { text: g === "you" ? "Your move: " : "Next: " }), l.next) : null,
       !l.branch ? el("p", { class: "note", text: "No branch yet, so there are no change bars and no wait gap." }) : null,
       V && V.layout.cycle.length ? selButton("more:cycle", "These lanes wait on each other →") : null,
       facts([
@@ -485,7 +489,7 @@
   function lanePanel(l, id) {
     const m = laneMap(), o = m[id];
     if (!o) return null;
-    const g = groupOf(o, m);
+    const g = LaneCore.stateOf(o, m);
     const rels = [
       ...relText(l, m).filter((r) => r.d === id).map((r) => (l.name || l.id) + " " + r.text),
       ...relText(o, m).map((r) => (o.name || o.id) + " " + r.text)];
@@ -522,8 +526,8 @@
         p.note ? el("p", { class: "muted", text: p.note }) : null,
         ...decisionItems(ds, (ph) => ph === p.id, false, l)] };
     }
-    if (!STEP_WHEN[id] || !LaneCore.isEpic(b)) return null;
-    const ps = phases.filter((p) => stepOf(p) === id);
+    if (!STEP_WHEN[id] || !LaneCore.hasStepMap(b)) return null;
+    const ps = phases.filter((p) => LaneCore.stepFor(p) === id);
     const ids = new Set(ps.map((p) => p.id));
     const here = (ph) => ids.has(ph) || (id === "release" && (!ph || !known.has(ph)));
     return { label: STEP_WHEN[id], body: [
@@ -620,7 +624,7 @@
   function drawLane(box) {
     if (!S.lanes) { box.replaceChildren(el("div", { class: "loading", text: "Loading lane." })); return; }
     const m = laneMap(), l = m[S.lane];
-    if (!l) { V = null; box.replaceChildren(el("a", { class: "back", href: "#now", text: "← Now" }), el("div", { class: "loading", text: "No lane called " + S.lane + "." })); return; }
+    if (!l) { V = null; box.replaceChildren(el("a", { class: "back", href: "#map", text: "← Map" }), el("div", { class: "loading", text: "No lane called " + S.lane + "." })); return; }
     const ds = LaneCore.laneDecisions(S.decisions || [], l.id);
     const layout = LaneCore.layoutBlockerMap(l.id, S.lanes, S.coll);
     const b = l.brief;

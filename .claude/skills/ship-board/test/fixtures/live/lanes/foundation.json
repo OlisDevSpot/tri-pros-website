@@ -1,0 +1,130 @@
+{
+  "blockReason": {
+    "drain": "builds on the dev router, /orient and the worktree plan that ship in #289"
+  },
+  "blockedBy": [],
+  "branch": "chore/dev-flow-foundation",
+  "brief": {
+    "aheadBehind": null,
+    "decided": [
+      {
+        "date": "2026-11-18",
+        "text": "Review slot takes port 3001"
+      },
+      {
+        "date": "2026-11-18",
+        "text": "One PR for F1 + F2 + CLAUDE.md lines (stacked on #289); Task 12 its own PR off origin/main"
+      },
+      {
+        "date": "2026-11-18",
+        "text": "Lean cut; visibility tooling waits for felt need"
+      },
+      {
+        "date": "2026-11-18",
+        "text": "Registry = a git setting on each branch, after a grill on how it works (deferred with F4)"
+      },
+      {
+        "date": "2026-11-18",
+        "text": "One local dev server by default, the rest on previews; several servers still allowed; preview addresses must work with every vendor"
+      },
+      {
+        "date": "2026-11-18",
+        "text": "Keep the epic branch after a slice ships, pending a brainstorm on disposable worktrees"
+      }
+    ],
+    "files": 0,
+    "goal": "Lean cut: agents verify on previews, habits for draft PRs and stacked slices, pnpm review <branch> for hands-on looks, dev server sleeps after 5 minutes, lane rows kept current, Google sign-in on previews.",
+    "lastCommit": null,
+    "phases": [
+      {
+        "id": "K1",
+        "name": "Agents verify on previews: parent Task 1 Steps 4+7, DEV_LOGIN_SECRET",
+        "status": "spec"
+      },
+      {
+        "id": "K2",
+        "name": "Habits: draft PRs, squash-merge, stacked slices (CLAUDE.md)",
+        "status": "spec"
+      },
+      {
+        "id": "F1",
+        "name": "Review slot: pnpm review <branch>",
+        "status": "spec"
+      },
+      {
+        "id": "F2",
+        "name": "Dev server sleeps after 5 idle minutes + dev.mjs lint",
+        "status": "spec"
+      },
+      {
+        "id": "K3",
+        "name": "Lane hook, minimal: find row by branch, update stage/next/move",
+        "status": "spec"
+      },
+      {
+        "id": "K4",
+        "name": "Google sign-in on previews: parent Task 12",
+        "status": "spec"
+      },
+      {
+        "id": "F3",
+        "name": "preview/today",
+        "note": "needs parent Task 11",
+        "status": "parked"
+      },
+      {
+        "id": "F4",
+        "name": "Git-setting registry",
+        "note": "needs the B1 grill; branch lookup works today",
+        "status": "parked"
+      },
+      {
+        "id": "F5",
+        "name": "Status block copied to the lane row",
+        "note": "waits for felt need",
+        "status": "parked"
+      },
+      {
+        "id": "F6",
+        "name": "Board redesign + live GitHub/Vercel data",
+        "note": "waits for felt need",
+        "status": "parked"
+      },
+      {
+        "id": "F7",
+        "name": "Doppler + Vercel env",
+        "note": "its own design (B4)",
+        "status": "parked"
+      },
+      {
+        "id": "F8",
+        "name": "Dev flow terms in CONTEXT.md",
+        "note": "you see each term first",
+        "status": "parked"
+      }
+    ],
+    "plan": "docs/superpowers/plans/2026-11-18-parallel-lanes-lean-cut.md",
+    "spec": "docs/superpowers/specs/2026-11-14-parallel-lanes-foundation-design.md",
+    "tracker": null,
+    "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/dev-flow-foundation"
+  },
+  "briefAt": "2026-11-21",
+  "kind": "platform",
+  "move": "you",
+  "name": "Parallel lanes foundation",
+  "neon": "none (no schema change)",
+  "next": "Board visualization moved to its own lane, ship-board-ui. What's left here goes to the dev-cycle untangle.",
+  "notes": "Re-scoped 2026-11-18 to a lean cut (owner agreed with an outside critique: overbuilt for one owner). Kept: K1 parent Task 1 Steps 4+7 + DEV_LOGIN_SECRET, K2 habits, F1 review slot, F2 idle 5 min, K3 minimal lane hook, K4 parent Task 12. Everything else waits 1–2 weeks of real lanes.",
+  "order": 10.5,
+  "port": null,
+  "pr": 292,
+  "session": {
+    "cwd": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website",
+    "id": "36ac7940-f9b9-4018-8719-fd4cf700be6a",
+    "lastSeen": "2026-11-21T18:00:00Z",
+    "started": "2026-11-21T18:00:00Z"
+  },
+  "stackedOn": "drain",
+  "stage": "idea",
+  "updated": "2026-11-21"
+}

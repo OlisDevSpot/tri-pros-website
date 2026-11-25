@@ -152,6 +152,7 @@
     "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/data-views"
   },
   "briefAt": "2026-11-14",
+  "issue": 308,
   "kind": "feature",
   "move": "agent",
   "name": "Data views DV3 · DV3a · DV4",

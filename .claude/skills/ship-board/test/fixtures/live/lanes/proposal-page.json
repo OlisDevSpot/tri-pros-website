@@ -1,0 +1,105 @@
+{
+  "blockReason": {
+    "data-views": "its imports point at paths DV3a moves (92 files)"
+  },
+  "blockedBy": [
+    "data-views"
+  ],
+  "branch": "feat/proposal-page",
+  "brief": {
+    "agent": [
+      "Explain the cash-down backfill, then owner runs it on prod"
+    ],
+    "aheadBehind": {
+      "ahead": 77,
+      "behind": 0,
+      "onCurrentProd": true
+    },
+    "decided": [
+      {
+        "date": "2026-10-23",
+        "text": "Every scope phase opens on load, with collapse-all and sticky chapter/part/phase headers"
+      },
+      {
+        "date": "2026-10-16",
+        "text": "Phone gate sits only in the business.getFullView router, never in getFullView (T1)"
+      },
+      {
+        "date": "2026-10-15",
+        "text": "No agent/homeowner view toggle; permissions alone decide who sees the cockpit"
+      },
+      {
+        "date": "2026-10-15",
+        "text": "Funding: cash-down slider in $200 steps plus an All cash toggle"
+      },
+      {
+        "date": "2026-10-15",
+        "text": "Deposit = min($1,000, 10% of price); payments 20/35/35, completion is the remainder"
+      },
+      {
+        "date": "2026-10-15",
+        "text": "Age is not secret: concealAge goes"
+      }
+    ],
+    "files": 275,
+    "goal": "The homeowner's proposal page is rebuilt as a story: per-part pricing, cash-down slider, a sticky Scope chapter, an agent cockpit, and formatted money and phone inputs everywhere.",
+    "lastCommit": {
+      "date": "2026-11-13",
+      "sha": "14abb3b82",
+      "subject": "docs(audit): the stress audit ledger matches the drain release, plus this branch's line closing the proposal phone leak"
+    },
+    "phases": [
+      {
+        "id": "v1",
+        "name": "First proposal page build",
+        "note": "2026-10-15, reworked in place",
+        "status": "built"
+      },
+      {
+        "id": "Rework",
+        "name": "Proposal page rework P1-P40",
+        "note": "2026-10-17",
+        "status": "built"
+      },
+      {
+        "id": "Scope",
+        "name": "Scope chapter: all phases open, sticky stack, well",
+        "note": "awaits iPad check",
+        "status": "built"
+      },
+      {
+        "id": "Inputs",
+        "name": "MoneyField and PhoneField everywhere",
+        "status": "built"
+      },
+      {
+        "id": "Backfill",
+        "name": "Cash-down backfill on prod",
+        "note": "owner wants explanation, then runs it",
+        "status": "plan"
+      },
+      {
+        "id": "F1-F2",
+        "name": "Scope chapter follow-ups (wrapper hole, well)",
+        "status": "idea"
+      }
+    ],
+    "plan": "docs/superpowers/plans/2026-10-23-proposal-scope-chapter.md",
+    "spec": "docs/superpowers/specs/2026-10-16-proposal-page-rework-design.md",
+    "tracker": null,
+    "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/proposal-page"
+  },
+  "briefAt": "2026-11-21",
+  "issue": 305,
+  "kind": "epic",
+  "move": "you",
+  "name": "Proposal page + Scope chapter",
+  "neon": "wt/proposal-page",
+  "next": "Draft PR #298 is open for the preview (merged origin/main 75d085907; lint and tsc pass). Before it is marked ready: the lane closes or confirms the token-path cost-line gate. Then you: Scope iPad check, Zoho Z1–Z3, the cash-down backfill explanation. Ships after data views (#297).",
+  "notes": "v1 + rework + Scope chapter + Money/PhoneField. Unshipped for 29 days. Imports paths that DV3a moves. · No epic tracker; the rework spec and memory are the record (spec header still says 'built on local main'). pe4 stacks on this. Own Neon copy wt/proposal-page.",
+  "order": 5,
+  "port": 3011,
+  "pr": 298,
+  "stage": "review",
+  "updated": "2026-11-22"
+}

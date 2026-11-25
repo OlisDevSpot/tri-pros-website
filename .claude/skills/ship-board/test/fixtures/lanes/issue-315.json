@@ -1,0 +1,11 @@
+{
+  "blockedBy": [],
+  "branch": "chore/315-dev-cycle",
+  "issue": 315,
+  "kind": "platform",
+  "move": "agent",
+  "name": "Dev cycle — Parallel Ship",
+  "next": "Epic lane: plans stack on this branch; the board UI and the sync skill are next.",
+  "order": 0.5,
+  "stage": "build"
+}
