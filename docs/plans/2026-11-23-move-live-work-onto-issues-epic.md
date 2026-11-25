@@ -42,8 +42,8 @@ Sizes are filename matches on `origin/main`'s 311 files (2026-11-24), not a veri
 | # | Bucket | Size | Rating | Status |
 |---|---|---|---|---|
 | 0 | **The rules**: the reversal (below). A #315 sub-issue that blocks bucket 1 | ~8 files, ~15 issue writes | 9/10 | docs half done (`7a040c11d`); rest open; no issue yet |
-| 1 | **Filter rules (#309)**: the test run | 3 files + branch copies | 9/10 | issues done 2026-11-25: epic #355, #364 FR0, #309 FR4 · FR5 (7/10, `needs-info`); tracker and memory moves open |
-| 2 | **Data views (#308)**; one branch, one PR (#297), 24 docs files changed on the branch | ~28 | 8/10 | issues done 2026-11-25: epic #354, #308 DV3, #356–#363 (DV3a–DV11); tracker and memory moves open |
+| 1 | **Filter rules (#309)**: the test run | 3 files + branch copies | 9/10 | issues done 2026-11-25: epic #355, #364 FR0, #309 FR4 · FR5 (7/10, `needs-info`); tracker status blocks on the lane branches (`feat/filter-rules` 07c848913, `feat/data-views` 69260cbad) and memory done 2026-11-25 |
+| 2 | **Data views (#308)**; one branch, one PR (#297), 24 docs files changed on the branch | ~28 | 8/10 | issues done 2026-11-25: epic #354, #308 DV3, #356–#363 (DV3a–DV11); tracker status blocks on the lane branches (`feat/filter-rules` 07c848913, `feat/data-views` 69260cbad) and memory done 2026-11-25 |
 | 3 | **Meta ads, funnels, CAPI (#3)** | ~27 | 7/10 | waits on #335 |
 | 4 | **UI and site**: theme, public site, media, PWA, analytics, R2, GoGreen, TV | ~46 | 6/10 | waits on #335 |
 | 5 | **Proposal**: #305/#306, #307, calculators, energy impact, editor (#347) | ~49 | 6/10 | waits on #335 |
