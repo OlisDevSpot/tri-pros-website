@@ -41,6 +41,7 @@ The terms *home view* and *lens* are in `GLOSSARY.md` (agreed 2026-10-23). "Comp
 - **The storm weather and home stress** (R70, R71, proposed TS3b.7).
 - **The upgrades that follow the home** (TS3b.4): windows, cool paint, worn parts, the era template. **Crawl space insulation** is a future upgrade; this project only makes the joists it would sit between visible.
 - **Tap a part, jump into any section** (TS3b.5). Up close stays the roof's one zoom.
+- **Recapturing the no-3D fallback stills** (`constants/home-scene-stills.ts`), which still show the cutaway; logged as an open item, recaptured later *(owner, 2026-10-23)*.
 - Thermal in Rain painting the home with no readings (the open issue from TS3b.1) is not this project's to fix, unless the builder finds it falls out of the lens change for free.
 
 **Anti-goals** (would make this a failure even if it works)
@@ -73,7 +74,7 @@ The rep drives every switch from the dock's **View** pop-out, which today holds 
 ### 3.3 The Thermal lens on the Complete home (R74, proposed by Claude, approved by the owner)
 
 - **The shell shows what a camera in the yard sees** *(owner, 2026-10-23: keep it honest)*. The closed shell takes the thermal colours from today's figures, unchanged: the roof from its reading, sunlit walls from the exterior-wall reading, shaded walls from outside air (`lib/home-paint-temperatures.ts`). So the sun shows on the roof and the sunny walls, and on a winter night the windows glow; the roof does not, since it reads colder than the air. Attic insulation does not change the closed shell's colours: on the closed house its story is told by the attic and ceiling numbers, and in colour on Partly open. No heat figure changes in this project. The new front wall, door and foundation walls take thermal paint like the existing walls (sunlit or shaded, `thermalTag`).
-- **All five readings stay on screen.** Roof, exterior wall and window glass keep their callout with a solid dot on the surface they measure (as built in `b5166b749`). Attic and ceiling become callouts too, with a **hollow ring** instead of a dot. The ring sits on the shell in front of the spot inside where each is read, as seen from the opening camera, meaning "inside, behind this" *(Claude's call: the ring's shell points are working numbers tuned by screenshot, like the other callout values)*.
+- **All five readings stay on screen.** Roof, exterior wall and window glass keep their callout with a solid dot on the surface they measure (as built in `b5166b749`). Attic and ceiling become callouts too, with a **hollow ring** instead of a dot, meaning "inside, behind this". The ring stays on the spot inside where each is read *(owner, 2026-10-23)*: the pins draw over the canvas and are never hidden by the house, so from outside the ring already lands on the house over that spot, at the same pixel a point on the shell would take from the opening camera. No second anchor is needed.
 - **Arrows show only outside.** The sun's arrows onto the roof and the arrows striking the walls and windows show, right up to the surface they strike. Their path inside is hidden by the closed shell. Today the arrows draw with `depthTest: false` (`heat-arrows.tsx`), so they show through everything; the builder chooses how to hide the inside path (for example, dropping each lane's inside legs while the home is closed, or depth-testing against the shell), as long as no arrow draws through a closed wall or roof and the outside arrows still read as clearly as they do now.
 - **The sun's roof arrows land on the near slope** *(Claude's call)*. Today's roof lanes (`home-heat-lanes.ts`) strike the back slope at z −0.8, which the cut lets the camera see; from both opening framings that spot sits just below the ridge line, out of sight on a closed roof. So the Complete home gets its own roof lanes striking the near slope, with their covering and barrier bounces leaving from there, and the opening and closing transition fades one set out as the other comes in. Partly open keeps today's lanes. The §6 lane checks cover both sets.
 - **On Partly open** the arrows keep today's material, drawing through everything *(owner, 2026-10-23)*; hiding arrows behind surfaces is for the Complete home only. The back windows' arrows drawing over the roof on Partly open stay an open item in the tracker. Otherwise the lens works as it does today, with one change *(Claude's call)*: the attic and ceiling readings also become callouts, with solid dots, carrying the callout standard (owner ruling, tracker §6 2026-10-22) to every reading. Their offsets are tuned by screenshot so nothing crowds; the "Inside the roof" pin is not a reading and keeps its own look.
@@ -101,9 +102,10 @@ The owner reported the house rafters clipping through the roof. No rafter, ridge
 
 ## 4. What changes in the code (orientation, not a plan)
 
-- **Inputs:** `TradeSceneInputs` gains the home view (`'complete' | 'partly-open'`, default `'complete'`); the `thermalCamera` boolean stays as the Thermal lens. `VIEW_MODES`, `ViewMode`, `viewModeOf`, `VIEW_MODE_ICONS` and `DOCK_COPY.viewModes` give way to the home view's own constant, copy and icons. The home view changes no resolved target, so like the thermal camera it stays out of `SceneResolveInputs`.
+- **Inputs:** `TradeSceneInputs` gains the home view (`'complete' | 'partly-open'`, default `'complete'`); the `thermalCamera` boolean stays as the Thermal lens. `VIEW_MODES`, `ViewMode`, `viewModeOf`, `VIEW_MODE_ICONS` and `DOCK_COPY.viewModes` give way to the home view's own constant, copy and icons. The home view changes no resolved target, so like the thermal camera it stays out of `SceneResolveInputs`. Unlike the thermal camera it wakes the home (it joins `sceneBurstKey`), so residents that went still move again as the house opens *(owner, 2026-10-23)*.
+- **Fades:** the parts each home view or foundation draws on its own sit under fade-tagged groups named for the state they show in: `complete`, `partly-open`, `raised`, `slab`. Code says `complete`, never "closed" or "closing" *(owner, 2026-10-23)*. The fade runs whenever the ghost or any level is below 1, so a part that mounts after the house settled takes it at once.
 - **Home kit:** `HouseShell` gains the front wall, door and its windows; `HouseRoof` / `GableRoof` / `LowSlopeRoof` gain the near slope's open part; `AtticFloor` and the ceiling gain their front; `Foundation` gains the front skirt, the steps and its two heights. The pieces Partly open removes are grouped so they can be faded and lifted together; the existing ghost machinery (`ui/lib/apply-ghost.ts`) already fades a group's materials and may serve.
-- **Readings and callouts:** `READING_CALLOUTS` gains the attic and ceiling, and a reading's dot can be hollow; the ring's shell points join `READING_ANCHORS`.
+- **Readings and callouts:** `READING_CALLOUTS` gains the attic and ceiling and becomes a full record, and a reading's dot can be hollow. `READING_ANCHORS` is unchanged.
 - **Copy:** dock labels for Home view, Complete, Partly open and Thermal live in `home-scene-copy.ts`.
 - **Glossary:** `GLOSSARY.md` already has *home view* and *lens*; the "View mode" entry is gone. Code names follow the glossary.
 
@@ -120,7 +122,15 @@ The owner reported the house rafters clipping through the roof. No rafter, ridge
 
 ## 6. How we know it works
 
-- **Pure checks** in `verify-trade-scene.ts`: the default home view is Complete; every reading has a callout; on both foundations every reading anchor, the roof anchor and the arrow lanes sit at the same height above the house's floor; the raised floor is higher than the slab floor; the home view is not among the resolve inputs.
+- **Pure checks** in `verify-trade-scene.ts`:
+  - the default home view is Complete, and a home view change wakes the home;
+  - every reading has a callout;
+  - the raised floor is higher than the slab floor; the piers meet the girders and the downspouts reach the ground on either foundation;
+  - a part mounted after the house opened stays faded;
+  - every outside arrow lane on the Complete house is long enough to read;
+  - the home view is not among the resolve inputs, checked at type level.
+
+  The anchors and lanes keep their height above the floor on both foundations by construction: they ride the house's lift group, and that group's floor math is what is checked.
 - **Screenshots** at 1280×800 and 1024×768 (panel open) and one at 1440×900 (panel hidden), light scheme, plus one dark:
   - Complete, Normal, no lens, gable and low-slope, slab and raised: a whole house, a front door, steps only on raised, no exposed framing, no rafter through the roof.
   - Complete with Thermal, inland summer Today and Tri Pros build, and coastal winter: the shell's colours, five readings with the attic and ceiling rings, the roof arrows landing on the near slope, no arrow through a closed surface.
@@ -133,7 +143,7 @@ The owner reported the house rafters clipping through the roof. No rafter, ridge
 
 1. The dock's View pop-out holds a Home view field and a Thermal switch (§3.1).
 2. The front wall's windows and the door's exact place (§3.2).
-3. The hollow-ring callouts for attic and ceiling on the Complete home, and solid-dot callouts for them on Partly open (§3.3).
+3. The hollow-ring callouts for attic and ceiling on the Complete home, and solid-dot callouts for them on Partly open (§3.3). Ruled 2026-10-23: the ring stays on the spot inside, with no shell point.
 4. Up close always draws the house open, leaving the rep's home view unchanged (§3.4).
 5. Floor heights of about 0.15 m on slab and 0.75 m raised, and the house moving as one with everything anchored to it (§3.5).
 6. The Complete home's own roof arrows striking the near slope, cross-fading with today's lanes as the house opens (§3.3).
@@ -145,4 +155,4 @@ The owner reported the house rafters clipping through the roof. No rafter, ridge
 - How the house and its anchors move with the foundation (§3.5).
 - The rafter fix (§3.6).
 - Whether the inside of a fully closed house is drawn at all.
-- All working numbers (callout offsets, ring points, heights, step counts), tuned by screenshot.
+- All working numbers (callout offsets, heights, step counts, lane reach and standoffs), tuned by screenshot.

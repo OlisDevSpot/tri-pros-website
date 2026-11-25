@@ -1,5 +1,7 @@
 # Proposal Energy Impact: Foundation Implementation Plan (EI0–EI2)
 
+> **Shared with the trade scene Benefits build (owner, 2026-11-03, R227 in `docs/plans/2026-10-16-trade-scenes-epic.md`).** That build creates `core/constants/bill-growth-rates.ts`, `core/lib/project-bill-years.ts` and `BillYear` to this plan's exact interface, and moves `config-defaults.ts` and `project-remodel-roi.ts` onto them. When this plan runs, check whether they exist: if they do, those steps are done; verify them and keep their tests.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Land everything the energy impact chapter stands on: the construction bill-cut slice on main (EI0), the pure energy model with goldens (EI1), and the customer's utility bills with a share-link write (EI2).
