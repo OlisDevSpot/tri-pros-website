@@ -3,10 +3,10 @@
 > **Status**
 > - Stage: brainstorm · grilled 2026-11-24; `/to-spec #336` not run yet
 > - Built on: `main` · Verified at: — · page: —
-> - Done: bucket 0 docs half (`7a040c11d`); epic body contract EB1–EB7 (docs on `main`)
-> - Next: bucket 0 rest → `/to-spec #336` (from **Shaping outcome**) → `/to-tickets` (buckets as plans) → bucket 1 (#309)
+> - Done: bucket 0 docs half (`7a040c11d`); epic body contract EB1–EB8 (`160700426`); buckets 1 and 2 issues on GitHub (epics #354, #355)
+> - Next: bucket 0 rest → `/to-spec #336` (from **Shaping outcome**) → buckets 1 and 2 tracker and memory moves → buckets 3–8
 > - Open: bucket 0 has no issue yet (a #315 sub-issue that blocks bucket 1) · bucket owners for #345 and #222 (EB table)
-> - Blocked: bucket 1 on bucket 0; buckets 3–8 in parallel on #335
+> - Blocked: buckets 3–8 in parallel on #335
 
 Issue: [#336](https://github.com/OlisDevSpot/tri-pros-website/issues/336). Its body is the contract (`docs/agents/issue-tracker.md`, Epic body); everything that changes lives here.
 
@@ -42,8 +42,8 @@ Sizes are filename matches on `origin/main`'s 311 files (2026-11-24), not a veri
 | # | Bucket | Size | Rating | Status |
 |---|---|---|---|---|
 | 0 | **The rules**: the reversal (below). A #315 sub-issue that blocks bucket 1 | ~8 files, ~15 issue writes | 9/10 | docs half done (`7a040c11d`); rest open; no issue yet |
-| 1 | **Filter rules (#309)**: the test run | 3 files + branch copies | 9/10 | waits on 0 |
-| 2 | **Data views (#308)**; one branch, one PR (#297), 24 docs files changed on the branch | ~28 | 8/10 | waits on 1 |
+| 1 | **Filter rules (#309)**: the test run | 3 files + branch copies | 9/10 | issues done 2026-11-25: epic #355, #364 FR0, #309 FR4 · FR5 (7/10, `needs-info`); tracker and memory moves open |
+| 2 | **Data views (#308)**; one branch, one PR (#297), 24 docs files changed on the branch | ~28 | 8/10 | issues done 2026-11-25: epic #354, #308 DV3, #356–#363 (DV3a–DV11); tracker and memory moves open |
 | 3 | **Meta ads, funnels, CAPI (#3)** | ~27 | 7/10 | waits on #335 |
 | 4 | **UI and site**: theme, public site, media, PWA, analytics, R2, GoGreen, TV | ~46 | 6/10 | waits on #335 |
 | 5 | **Proposal**: #305/#306, #307, calculators, energy impact, editor (#347) | ~49 | 6/10 | waits on #335 |
@@ -85,7 +85,7 @@ Each is brought to the contract by the bucket that migrates it (EB7). Sizes in c
 | #302 3D trade scenes | 418 | short, but no Done when | 7 |
 | #313 Home visit messages | 460 | short, but no Done when | 6 |
 
-Already on the contract: #305, #347.
+Already on the contract: #305, #347, #354, #355.
 
 ## Gaps in the dev cycle
 
@@ -126,7 +126,8 @@ This epic is the first run of the 12-stage flow. Each gap it hits goes here when
 - **2026-11-24 06:07Z** From the board UI plan (#316 tracker tasks 2 and 3), owner's go: board row `issue-315` created; #305 blocked by #308 on GitHub; #307 (PE4) a sub-issue of #305 (#303 was already under #302). Handed to this epic: issues for the two live rows that have none, `foundation` (PR #292) and `scene-lab` ([comment](https://github.com/OlisDevSpot/tri-pros-website/issues/336#issuecomment-7123608671)). The #308/#309 split it also handed over was retired by shaping Q3, and Ruling DC1's in-body checklist by ADR-0007.
 - **2026-11-24 17:38Z** Shaping finished (see **Shaping outcome**); ADR-0007 and the glossary terms landed on `main` (`25c09f814`).
 - **2026-11-24 18:34Z** Bucket 0 docs half done, `7a040c11d` ([comment](https://github.com/OlisDevSpot/tri-pros-website/issues/336#issuecomment-7140826441)). `origin/main` merged into 7 lane worktrees; `issue-285` conflicted (aborted, clean); `scene-layout-lab` and `trade-scenes` refused (uncommitted local edits).
-- **2026-11-24** Epic body contract (EB1–EB8): rule in `docs/agents/issue-tracker.md`, pointer in `CLAUDE.md` stage 1, Epic form rewritten, this tracker created, #336's body brought to the contract.
+- **2026-11-24** Epic body contract (EB1–EB8, `160700426`): rule in `docs/agents/issue-tracker.md`, pointer in `CLAUDE.md` stage 1, Epic form rewritten, this tracker created, #336's body brought to the contract (14,286 → 1,732 characters).
+- **2026-11-25** Buckets 1 and 2 on GitHub, owner's go, from the data-view orchestrator session ([comment](https://github.com/OlisDevSpot/tri-pros-website/issues/336#issuecomment-7175755410)). Epic #354 Data views: #308 rewritten to DV3; #356 DV3a and #357 DV4 (closed by PR #297 with #308); #358 DV5, #359 DV6, #360 DV8, #361 DV9, #362 DV10, #363 DV11 as `needs-info` with ratings (owner: every DVx is a sub-issue). Epic #355 Data-view filter rules: #364 FR0; #309 rewritten to FR4 · FR5, 7/10 → `needs-info` (its plan is a month older than main). Blocked by: #309, #358, #359, #360 ← #308; #361 ← #360; #362 ← #359; #305 ← #308 unchanged. Bodies follow the epic body contract and the plan body shape; links point at the lane branches. #43, #153 and #110 overlap DV9 / #354: commented, left for `/triage`. Still open for both buckets: the tracker and memory moves.
 
 ## Original request: the 2026-11-22 handoff (live parts)
 
