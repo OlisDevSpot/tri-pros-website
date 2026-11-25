@@ -1,24 +1,13 @@
-import type { ChangeEvent, Ref } from 'react'
+import type { Ref } from 'react'
 import { Phone } from 'lucide-react'
-import { Input } from '@/shared/components/ui/input'
-import { formatPhoneAsYouType, toDigits } from '@/shared/lib/phone'
+import { useRef } from 'react'
+import { PhoneField } from '@/shared/components/ui/phone-field'
 import { cn } from '@/shared/lib/utils'
 
 /**
- * Masked US phone field for the funnel PII step. Drop-in for a react-hook-form
- * `field` ({ value, onChange, onBlur, name, ref }) inside `<FormControl>`.
- *
- * Behaviour:
- *  - Masks live to `(xxx) xxx-xxxx` via `formatPhoneAsYouType` (canonical home),
- *    which hard-caps at 10 national digits — extra characters are impossible.
- *  - Stores the FORMATTED string in the form; libphonenumber parses it fine, and
- *    the canonical 10-digit normalization still happens at the DB boundary.
- *  - Auto-blurs the moment the 10th digit lands, which both dismisses the mobile
- *    keyboard and fires the field's `onBlur` → the step's async phone validation
- *    (`mode: 'onBlur'`). Deferred a frame so React commits the value first.
- *
- * Visual: a leading phone glyph + `+1` affix, tabular figures and wide tracking
- * so the digits sit on an even rhythm and read as a "real" phone number.
+ * The funnel PII step's phone field: the shared PhoneField mask plus a leading phone glyph and `+1`
+ * affix. Auto-blurs the moment the 10th digit lands, which both dismisses the mobile keyboard and
+ * fires the field's `onBlur` → the step's async phone validation (`mode: 'onBlur'`).
  */
 export function PhoneInput({ value, onChange, onBlur, name, ref, className }: {
   value: string
@@ -28,14 +17,14 @@ export function PhoneInput({ value, onChange, onBlur, name, ref, className }: {
   ref?: Ref<HTMLInputElement>
   className?: string
 }) {
-  function handleChange(event: ChangeEvent<HTMLInputElement>) {
-    const el = event.currentTarget
-    const formatted = formatPhoneAsYouType(el.value)
-    onChange(formatted)
-    if (toDigits(formatted).length === 10) {
+  const inputRef = useRef<HTMLInputElement | null>(null)
+
+  function handleChange(digits: string) {
+    onChange(digits)
+    if (digits.length === 10) {
       // Defer so the controlled value is committed before focus leaves (RHF reads
       // the field value on blur to run the async validator).
-      requestAnimationFrame(() => el.blur())
+      requestAnimationFrame(() => inputRef.current?.blur())
     }
   }
 
@@ -48,18 +37,21 @@ export function PhoneInput({ value, onChange, onBlur, name, ref, className }: {
         <Phone className="size-4" />
         +1
       </span>
-      <Input
-        ref={ref}
+      <PhoneField
+        ref={(el) => {
+          inputRef.current = el
+          if (typeof ref === 'function') {
+            ref(el)
+          }
+          else if (ref) {
+            ref.current = el
+          }
+        }}
         name={name}
-        type="tel"
-        inputMode="tel"
-        autoComplete="tel-national"
-        placeholder="(555) 123-4567"
-        maxLength={14}
         value={value}
         onChange={handleChange}
         onBlur={onBlur}
-        className={cn('pl-16 tracking-wide tabular-nums', className)}
+        className={cn('pl-16 tracking-wide', className)}
       />
     </div>
   )

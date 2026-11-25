@@ -4,9 +4,12 @@ import { createCrudDal } from '@/shared/dal/server/lib/create-crud-dal'
 import { dalVerifySuccess } from '@/shared/dal/server/lib/helpers'
 import { ThrowableDalError } from '@/shared/dal/server/types'
 import { meetingCrud } from '@/shared/entities/meetings/dal/server/crud'
-import { recomputeProposalFinancials } from '@/shared/modules/proposals/core/dal/server/mutations'
+import { PROPOSAL_REFUSALS } from '@/shared/modules/proposals/core/constants/proposal-refusals'
+import { recomputeProposalFinancials, withRollup } from '@/shared/modules/proposals/core/dal/server/mutations'
 import { getProposalLockSignals } from '@/shared/modules/proposals/core/dal/server/queries'
 import { deriveProposalKind } from '@/shared/modules/proposals/core/lib/derive-proposal-kind'
+import { cashDownRefusal, computeFinalTcp, depositRefusal, depositWithinCapOrNull, fundingValuesToCheck, writeMovesPrice } from '@/shared/modules/proposals/core/lib/financials'
+import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 import { generateShareToken } from '@/shared/modules/proposals/core/lib/generate-share-token'
 import { isProposalFrozen, touchesFrozenLockedFields } from '@/shared/modules/proposals/core/lib/proposal-lock'
 import { snapSowFromMeeting } from '@/shared/modules/proposals/core/lib/snap-sow-from-meeting'
@@ -25,6 +28,23 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
       // (fundingJSONDeprecated/formMetaJSONDeprecated) since the W3
       // write-seam flip, so nothing can arrive here to scrub.
       async before(input, ctx) {
+        // Incentive rows are written after the row, so this price can only be higher than the final one: the cap it
+        // gives is never a false refusal, and the resolver clamps the rest on every read.
+        if (input.depositAmountCents != null) {
+          const funding = toFundingInputs({
+            startingTcpCents: input.startingTcpCents ?? null,
+            depositAmountCents: input.depositAmountCents,
+            cashInDealCents: input.cashInDealCents ?? null,
+            miscPriceCents: input.miscPriceCents ?? null,
+            incentives: [],
+          })
+          const finalTcp = computeFinalTcp({ funding, sow: input.projectJSON?.data.sow ?? [] })
+          const reason = depositRefusal(input.depositAmountCents, Math.round(finalTcp * 100))
+          if (reason) {
+            throw new ThrowableDalError({ type: 'precondition-failed', reason })
+          }
+        }
+
         if (!input.meetingId) {
           return { ...input, kind: deriveProposalKind(null), token: generateShareToken() }
         }
@@ -53,13 +73,26 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
       // edit path kills the envelope first (discard/recall). Field-scoped so
       // lifecycle writes (status, signing ids, contract timestamps — webhooks,
       // auto-approve, send flows) keep flowing on a locked proposal.
-      async before(input, _ctx, meta) {
+      async before(input, ctx, meta) {
         if (!touchesFrozenLockedFields(input)) {
           return input
         }
         const signals = dalVerifySuccess(await getProposalLockSignals(String(meta.id)))
         if (isProposalFrozen(signals)) {
-          throw new ThrowableDalError({ type: 'precondition-failed', reason: 'proposal_frozen' })
+          throw new ThrowableDalError({ type: 'precondition-failed', reason: PROPOSAL_REFUSALS.frozen })
+        }
+        const toCheck = fundingValuesToCheck(input)
+        if (toCheck.depositAmountCents != null) {
+          const reason = depositRefusal(toCheck.depositAmountCents, signals.finalTcpCents)
+          if (reason) {
+            throw new ThrowableDalError({ type: 'precondition-failed', reason })
+          }
+        }
+        if (toCheck.cashInDealCents != null) {
+          const reason = cashDownRefusal(toCheck.cashInDealCents, await withRollup(ctx, String(meta.id), signals))
+          if (reason) {
+            throw new ThrowableDalError({ type: 'precondition-failed', reason })
+          }
         }
         return input
       },
@@ -67,7 +100,7 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
       // the startingTcp column, or projectJSON (section incentives, until W4).
       // Cheap + idempotent; skipped when neither was touched.
       async after(row: Proposal, _ctx, meta) {
-        if ('startingTcpCents' in meta.input || 'projectJSON' in meta.input) {
+        if (writeMovesPrice(meta.input)) {
           dalVerifySuccess(await recomputeProposalFinancials(row.id))
         }
       },
@@ -102,6 +135,9 @@ export const proposalCrud = createCrudDal(proposalServerSpec, () => ({
       label: `Copy of ${source.label}`,
       ownerId: ctx.actor.userId ?? source.ownerId,
       status: 'draft' as const,
+      // The copy has the source's price (every price input is cloned), and its incentive rows land after the insert,
+      // so a deposit within the cap of that price also clears the create check.
+      depositAmountCents: depositWithinCapOrNull(source.depositAmountCents, source.finalTcpCents),
     }),
     // Proposal-COMPLETE duplicate for EVERY caller (router, meeting flow,
     // scripts): the engine copies `spec.table` only, so the source's GLOBAL

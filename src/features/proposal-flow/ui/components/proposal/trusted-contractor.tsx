@@ -1,81 +1,19 @@
-import Image from 'next/image'
-import { ProcessOverview } from '@/features/landing/ui/components'
-import { CompanySocialButtons } from '@/shared/components/company-social-buttons'
-import { LogoLink } from '@/shared/components/logo'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import { Separator } from '@/shared/components/ui/separator'
-import { R2_BUCKETS, R2_PUBLIC_DOMAINS } from '@/shared/services/providers/r2/types'
-
-const DOCS_BASE = R2_PUBLIC_DOMAINS[R2_BUCKETS.companyDocs] ?? ''
-
-const DOCS = {
-  license: {
-    title: 'License',
-    subtitle: 'Verified and current',
-    src: `${DOCS_BASE}/tpr-license.jpg`,
-    alt: 'Tri Pros Remodeling contractor license',
-  },
-  insurance: {
-    title: 'Insurance',
-    subtitle: 'Liability coverage on file',
-    src: `${DOCS_BASE}/tpr-coi-2026.jpg`,
-    alt: 'Tri Pros Remodeling certificate of insurance',
-  },
-} as const
+import { companyInfo } from '@/shared/constants/company'
+import { ChapterHeader } from './chapter-header'
+import { ChapterInner } from './chapter-inner'
+import { CompanyDocumentsRow } from './company-documents-row'
+import { ContractorQuestions } from './contractor-questions'
+import { ReviewStanding } from './review-standing'
 
 export function TrustedContractor() {
   return (
-    <div className="w-full space-y-20">
-      <Card>
-        <CardHeader className="space-y-2 text-center md:text-start">
-          <CardTitle><h2>Trusted Contractor</h2></CardTitle>
-          <CardDescription>
-            Licensed and insured. Clear scope, clean work, and professional communication from start to finish.
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent className="space-y-10">
-          <div className="flex flex-col items-center justify-between gap-6 md:flex-row md:items-center">
-            <div className="h-12.5 w-45 shrink-0">
-              <LogoLink />
-            </div>
-            <CompanySocialButtons className="lg:flex-row" />
-          </div>
-
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium text-muted-foreground">Credentials</h3>
-              <Separator className="mt-2" />
-            </div>
-
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-              {(Object.values(DOCS) as Array<(typeof DOCS)[keyof typeof DOCS]>).map(doc => (
-                <section key={doc.title} className="min-w-0 space-y-3">
-                  <header>
-                    <div className="flex items-baseline justify-between gap-3">
-                      <h4 className="text-base font-semibold">{doc.title}</h4>
-                      <span className="text-xs text-muted-foreground">{doc.subtitle}</span>
-                    </div>
-                  </header>
-
-                  <div className="overflow-hidden rounded-xl bg-muted ring-1 ring-border">
-                    <Image
-                      src={doc.src}
-                      alt={doc.alt}
-                      width={1200}
-                      height={1600}
-                      className="h-auto w-full"
-                      priority={doc.title === 'License'}
-                    />
-                  </div>
-                </section>
-              ))}
-            </div>
-          </div>
-
-          <ProcessOverview className="w-full px-0! pb-0! pt-12! lg:px-0! lg:pb-0! lg:pt-12!" />
-        </CardContent>
-      </Card>
+    <div className="bg-background">
+      <ChapterInner>
+        <ChapterHeader chapter="contractor" title={`What you get with ${companyInfo.nickname}`} lede="Four questions every homeowner asks a contractor, and how we answer each one." />
+        <ReviewStanding />
+        <ContractorQuestions />
+        <CompanyDocumentsRow />
+      </ChapterInner>
     </div>
   )
 }

@@ -1,311 +1,104 @@
+import type { SowSectionTab } from '@/features/proposal-flow/constants/sow-section-tabs'
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { TiptapHandle } from '@/shared/components/tiptap/tiptap'
 import type { PriceDisplayMode } from '@/shared/constants/enums'
 import type { Scope } from '@/shared/modules/construction/core/schemas'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronDownIcon } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
+import { useSowCatalog } from '@/features/proposal-flow/hooks/use-sow-catalog'
 import { TemplatesModal } from '@/shared/components/dialogs/modals/templates-modal'
 import { Tiptap } from '@/shared/components/tiptap/tiptap'
 import { Button } from '@/shared/components/ui/button'
-import { AnimatedCollapsibleContent, Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { FormControl, FormField, FormItem, FormMessage } from '@/shared/components/ui/form'
-import { MultiSelect, MultiSelectContent, MultiSelectGroup, MultiSelectItem, MultiSelectTrigger, MultiSelectValue } from '@/shared/components/ui/multi-select'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
-import { useConfirm } from '@/shared/hooks/use-confirm'
+import { TabsContent } from '@/shared/components/ui/tabs'
 import { openModal } from '@/shared/lib/open-modal'
-import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 import { SOWFinancialsFields } from './sow-financials-fields'
-
-const INTERACTIVE_SELECTOR = 'input, button, select, textarea, a, [role="button"], [role="option"], [contenteditable="true"], [data-interactive]'
-
-function isInteractive(target: EventTarget) {
-  return !!(target as HTMLElement).closest(INTERACTIVE_SELECTOR)
-}
+import { SowSectionTabList } from './sow-section-tab-list'
 
 interface Props {
   index: number
   priceDisplayMode: PriceDisplayMode
-  sowSnapshot: ProposalFormSchema['project']['data']['sow'][0]
+  tab: SowSectionTab
 }
 
 export function SOWSection({
   index,
   priceDisplayMode,
-  sowSnapshot,
+  tab,
 }: Props) {
   const trpc = useTRPC()
   const queryClient = useQueryClient()
   const form = useFormContext<ProposalFormSchema>()
-  const [tradeId, setTradeId] = useState<string | undefined>(sowSnapshot.trade.id || undefined)
+  const { tradeId, allTrades, scopesOfTrade } = useSowCatalog(index)
   const [isLoadingTemplate, setIsLoadingTemplate] = useState(false)
-  const [scopeOpen, setScopeOpen] = useState(true)
-  const [financialsOpen, setFinancialsOpen] = useState(true)
-  const [scopeDeadHover, setScopeDeadHover] = useState(false)
-  const [finDeadHover, setFinDeadHover] = useState(false)
   const tiptapRef = useRef<TiptapHandle | null>(null)
 
-  const allTrades = useQuery(trpc.constructionRouter.trades.getAll.queryOptions())
-  const scopesOfTrade = useQuery(trpc.constructionRouter.scopes.byTrade.queryOptions(
-    { tradeId: tradeId ?? '' },
-    { enabled: !!tradeId },
-  ))
-
-  const [ScopeRemovalDialog, confirmScopeRemoval] = useConfirm({
-    title: 'Remove cost lines?',
-    message: 'Removing this scope will also remove cost lines tied to it. Continue?',
-  })
-
-  function getScopesOfTrade(id: string) {
-    if (!id) {
-      return
-    }
-    setTradeId(id)
-  }
-
-  async function handleScopesChange(values: string[]): Promise<boolean> {
-    const oldScopes = form.getValues(`project.data.sow.${index}.scopes`)
-    const oldIds = new Set(oldScopes.map(s => s.id))
-    const newIds = new Set(values)
-
-    const removedIds: string[] = []
-    for (const id of oldIds) {
-      if (!newIds.has(id)) {
-        removedIds.push(id)
-      }
-    }
-
-    if (removedIds.length > 0) {
-      const costLines = form.getValues(`project.data.sow.${index}.financials.costLines`)
-      const orphans = costLines.filter(line => removedIds.includes(line.relatedScopeId))
-      if (orphans.length > 0) {
-        const confirmed = await confirmScopeRemoval()
-        if (!confirmed) {
-          return false
-        }
-        const remaining = costLines.filter(line => !removedIds.includes(line.relatedScopeId))
-        form.setValue(`project.data.sow.${index}.financials.costLines`, remaining)
-      }
-    }
-
-    const newScopesArray = values
-      .map((scopeId) => {
-        const scopeOfTrade = scopesOfTrade.data?.find(scope => scope.id === scopeId)
-        if (!scopeOfTrade) {
-          return null
-        }
-        return { id: scopeOfTrade.id, label: scopeOfTrade.name }
-      })
-      .filter((scope): scope is { id: string, label: string } => scope !== null)
-    form.setValue(`project.data.sow.${index}.scopes`, newScopesArray)
-    return true
-  }
-
-  async function handleTradeChange(val: string) {
-    if (!val) {
-      return
-    }
-    const proceeded = await handleScopesChange([])
-    if (!proceeded) {
-      return
-    }
-    form.setValue(`project.data.sow.${index}.trade.id`, val)
-    form.setValue(
-      `project.data.sow.${index}.trade.label`,
-      allTrades.data?.find(trade => trade.id === val)?.name || '',
-    )
-    getScopesOfTrade(val)
-  }
-
   return (
-    <>
-      <ScopeRemovalDialog />
-      <div className="flex flex-col gap-3 items-center w-full overflow-auto lg:gap-4">
-        {/* Trade + Scope pickers */}
-        <div className="flex flex-col gap-2 rounded-lg w-full px-3 pt-2 lg:flex-row lg:items-end lg:px-0 lg:pt-0">
-          <FormField
-            control={form.control}
-            name={`project.data.sow.${index}.trade.id`}
-            render={({ field }) => (
-              <FormItem className="w-full lg:max-w-62.5">
-                <FormControl className="w-full">
-                  <Select
-                    value={field.value}
-                    onValueChange={handleTradeChange}
-                  >
-                    <SelectTrigger {...field} className="w-full bg-transparent border-0">
-                      <SelectValue placeholder="Select a trade" />
-                    </SelectTrigger>
-                    <SelectContent {...field}>
-                      {allTrades.data?.map(trade => (
-                        <SelectItem key={trade.id} value={trade.id}>
-                          {trade.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name={`project.data.sow.${index}.scopes`}
-            render={({ field }) => (
-              <FormItem className="w-full">
-                <MultiSelect
-                  onValuesChange={handleScopesChange}
-                  values={field.value.map(scope => scope.id)}
-                >
-                  <FormControl>
-                    <MultiSelectTrigger className="w-full" disabled={scopesOfTrade.isLoading}>
-                      <MultiSelectValue placeholder={scopesOfTrade.isLoading ? 'Loading...' : 'Select scopes'} />
-                    </MultiSelectTrigger>
-                  </FormControl>
-                  <MultiSelectContent
-                    search={{
-                      emptyMessage: 'No scopes found',
-                      placeholder: 'Search scopes...',
-                    }}
-                  >
-                    <MultiSelectGroup>
-                      {scopesOfTrade.data?.map(scope => (
-                        <MultiSelectItem key={scope.id} value={scope.id}>
-                          {scope.name}
-                        </MultiSelectItem>
-                      ))}
-                    </MultiSelectGroup>
-                  </MultiSelectContent>
-                </MultiSelect>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
-
-        {/* Scope of Work collapsible */}
-        <div className="w-full">
-          <Collapsible open={scopeOpen} onOpenChange={setScopeOpen}>
-            <CollapsibleTrigger asChild>
-              <button
-                type="button"
-                className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-hover pressed:bg-press lg:px-4"
-              >
-                <span>Scope of Work</span>
-                <ChevronDownIcon className={cn('size-4 transition-transform', !scopeOpen && '-rotate-90')} />
-              </button>
-            </CollapsibleTrigger>
-            <AnimatedCollapsibleContent
-              open={scopeOpen}
-              className={cn(
-                'rounded-b-lg transition-colors cursor-pointer',
-                scopeDeadHover && 'bg-hover',
-              )}
-              onMouseOver={(e) => {
-                e.stopPropagation()
-                setScopeDeadHover(!isInteractive(e.target))
-              }}
-              onMouseOut={() => setScopeDeadHover(false)}
-              onClick={(e) => {
-                if (!isInteractive(e.target)) {
-                  setScopeOpen(false)
-                }
-              }}
-            >
-              <div className="px-3 pb-3 lg:px-4 lg:pb-4">
-                <FormField
-                  name={`project.data.sow.${index}.contentJSON`}
-                  control={form.control}
-                  render={({ field }) => (
-                    <FormItem>
-                      <div className="flex gap-2 items-center">
-                        <Button
-                          variant="outline"
-                          type="button"
-                          className="text-xs text-muted-foreground hover:underline"
-                          size="sm"
-                          onClick={() => {
-                            openModal({
-                              accessor: 'Templates',
-                              Component: TemplatesModal,
-                              props: {
-                                trade: allTrades.data?.find(trade => trade.id === tradeId),
-                                scopes: form.getValues(`project.data.sow.${index}.scopes`).map(scope => scopesOfTrade.data?.find(scopeOfTrade => scopeOfTrade.id === scope.id)).filter(Boolean) as Scope[],
-                                onSelect: async (sowId) => {
-                                  setIsLoadingTemplate(true)
-                                  try {
-                                    const json = await queryClient.fetchQuery(trpc.constructionRouter.sow.content.queryOptions({ sowId }))
-                                    tiptapRef.current?.insertContent(JSON.parse(json) || '')
-                                  }
-                                  finally {
-                                    setIsLoadingTemplate(false)
-                                  }
-                                },
+    <div className="flex w-full flex-col gap-3 p-3 md:pt-0 lg:gap-4 lg:p-4 lg:pt-0">
+      {/* Phone: the tab list scrolls with the body. md and up shows the one in the header's sticky block. */}
+      <SowSectionTabList index={index} priceDisplayMode={priceDisplayMode} className="md:hidden max-md:w-full" copy />
+      {/* Mounted while hidden: the editor keeps its undo history and caret across tab switches. */}
+      <TabsContent value="description" forceMount hidden={tab !== 'description'}>
+        <FormField
+          name={`project.data.sow.${index}.contentJSON`}
+          control={form.control}
+          render={({ field }) => (
+            <FormItem>
+              {/* A field, so it sinks: the card's own fill and the field edge, the toolbar row split off by a hairline. */}
+              <div className="overflow-hidden rounded-lg border border-input bg-input-background **:data-[slot=tiptap-toolbar]:border-b">
+                <FormControl>
+                  <Tiptap
+                    ref={tiptapRef}
+                    isLoading={isLoadingTemplate}
+                    loadingMessage="Loading template from Notion..."
+                    toolbarStart={(
+                      <Button
+                        variant="outline"
+                        type="button"
+                        className="h-9 rounded-none text-xs text-muted-foreground"
+                        disabled={field.disabled}
+                        onClick={() => {
+                          openModal({
+                            accessor: 'Templates',
+                            Component: TemplatesModal,
+                            props: {
+                              trade: allTrades.data?.find(trade => trade.id === tradeId),
+                              scopes: form.getValues(`project.data.sow.${index}.scopes`).map(scope => scopesOfTrade.data?.find(scopeOfTrade => scopeOfTrade.id === scope.id)).filter(Boolean) as Scope[],
+                              onSelect: async (sowId) => {
+                                setIsLoadingTemplate(true)
+                                try {
+                                  const json = await queryClient.fetchQuery(trpc.constructionRouter.sow.content.queryOptions({ sowId }))
+                                  tiptapRef.current?.insertContent(JSON.parse(json) || '')
+                                }
+                                finally {
+                                  setIsLoadingTemplate(false)
+                                }
                               },
-                            })
-                          }}
-                        >
-                          Templates
-                        </Button>
-                      </div>
-                      <FormControl>
-                        <Tiptap
-                          ref={tiptapRef}
-                          isLoading={isLoadingTemplate}
-                          loadingMessage="Loading template from Notion..."
-                          onChange={({ html, json }) => {
-                            field.onChange(JSON.stringify(json))
-                            form.setValue(`project.data.sow.${index}.html`, html)
-                          }}
-                          initialValues={field.value ? JSON.parse(field.value) : undefined}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                            },
+                          })
+                        }}
+                      >
+                        Templates
+                      </Button>
+                    )}
+                    onChange={({ html, json }) => {
+                      field.onChange(JSON.stringify(json))
+                      form.setValue(`project.data.sow.${index}.html`, html)
+                    }}
+                    initialValues={field.value ? JSON.parse(field.value) : undefined}
+                  />
+                </FormControl>
               </div>
-            </AnimatedCollapsibleContent>
-          </Collapsible>
-        </div>
-
-        {/* Financials collapsible */}
-        <div className="w-full border-t border-border">
-          <Collapsible open={financialsOpen} onOpenChange={setFinancialsOpen}>
-            <CollapsibleTrigger asChild>
-              <button
-                type="button"
-                className="flex w-full items-center justify-between px-3 py-2 text-sm font-medium hover:bg-hover pressed:bg-press lg:px-4"
-              >
-                <span>Financials</span>
-                <ChevronDownIcon className={cn('size-4 transition-transform', !financialsOpen && '-rotate-90')} />
-              </button>
-            </CollapsibleTrigger>
-            <AnimatedCollapsibleContent
-              open={financialsOpen}
-              className={cn(
-                'rounded-b-lg transition-colors cursor-pointer',
-                finDeadHover && 'bg-hover',
-              )}
-              onMouseOver={(e) => {
-                e.stopPropagation()
-                setFinDeadHover(!isInteractive(e.target))
-              }}
-              onMouseOut={() => setFinDeadHover(false)}
-              onClick={(e) => {
-                if (!isInteractive(e.target)) {
-                  setFinancialsOpen(false)
-                }
-              }}
-            >
-              <SOWFinancialsFields index={index} pricingMode={priceDisplayMode} />
-            </AnimatedCollapsibleContent>
-          </Collapsible>
-        </div>
-      </div>
-    </>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      </TabsContent>
+      <TabsContent value="pricing">
+        <SOWFinancialsFields index={index} pricingMode={priceDisplayMode} />
+      </TabsContent>
+    </div>
   )
 }

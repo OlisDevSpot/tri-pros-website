@@ -14,6 +14,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Checkbox } from '@/shared/components/ui/checkbox'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { PhoneField } from '@/shared/components/ui/phone-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { ROOTS } from '@/shared/config/roots'
@@ -136,8 +137,9 @@ export function ScheduleConsultationForm() {
                 <FormItem>
                   <FormLabel>Phone Number *</FormLabel>
                   <FormControl>
-                    <Input placeholder="818-555-4444" {...field} />
+                    <PhoneField {...field} />
                   </FormControl>
+                  <FormMessage />
                 </FormItem>
               )}
             />

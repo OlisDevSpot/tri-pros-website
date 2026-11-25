@@ -1,4 +1,4 @@
-import type { PortfolioMatchKind } from '@/features/meeting-flow/types'
+import type { PortfolioMatchKind } from '@/shared/modules/projects/core/types'
 
 export const PORTFOLIO_SECTION_LABELS: Record<PortfolioMatchKind, string> = {
   scope: 'For your project',
@@ -19,11 +19,5 @@ export const PORTFOLIO_COPY = {
   allProjects: (count: number) => `All ${count}`,
   listTitle: 'Projects',
 } as const
-
-/** When nothing matches the meeting's scopes or trades, this many projects lead instead. */
-export const FALLBACK_MATCH_COUNT = 3
-
-/** Project details fetched ahead of the one on screen, so ↓ lands on loaded photos. */
-export const PREFETCH_AHEAD = 2
 
 export const PROJECT_LIST_ROW_COUNT = 3

@@ -22,6 +22,7 @@ import { Form } from '@/shared/components/ui/form'
 import { ROOTS } from '@/shared/config/roots'
 
 import { useSession } from '@/shared/domains/auth/client'
+import { deriveCreateCashDown, resolveDeposit } from '@/shared/modules/proposals/core/lib/financials'
 import { fundingDomainToColumns } from '@/shared/modules/proposals/core/lib/funding-columns'
 import { useTRPC } from '@/trpc/helpers'
 import { getProposalAggregates } from '../../lib/get-proposal-aggregates'
@@ -67,6 +68,8 @@ export function CreateNewProposalView() {
   function buildMutationData(data: ProposalFormSchema) {
     const sow = data.project.data.sow.filter(s => !!s.trade.id) as SOW[]
     const { finalTcp } = getProposalAggregates(data)
+    const deposit = resolveDeposit(data.funding.depositAmount, finalTcp)
+    const cashInDeal = deriveCreateCashDown({ finalTcp, deposit, meetingDealIsCash: meeting?.flowStateJSON?.dealStructure?.mode === 'cash' })
 
     return {
       label: data.project.data.label,
@@ -79,7 +82,7 @@ export function CreateNewProposalView() {
       },
       // finalTcp is derived — never written. See `computeFinalTcp`. Incentives
       // are rows, written by proposalService.incentives.replace after the insert lands.
-      ...fundingDomainToColumns({ ...data.funding, cashInDeal: finalTcp }),
+      ...fundingDomainToColumns({ ...data.funding, cashInDeal }),
     }
   }
 

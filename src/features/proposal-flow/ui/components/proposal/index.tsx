@@ -1,22 +1,25 @@
 'use client'
 
 import { useMutation } from '@tanstack/react-query'
-import { motion } from 'motion/react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { useEffect, useRef } from 'react'
 
-import { customizableSections, generateProposalSteps } from '@/features/proposal-flow/constants/proposal-steps'
+import { proposalSteps } from '@/features/proposal-flow/constants/proposal-steps'
+import { ActiveChapterProvider } from '@/features/proposal-flow/contexts/active-chapter-context'
+import { PortfolioMatchProvider } from '@/features/proposal-flow/contexts/portfolio-match-context'
+import { ProposalDocumentProvider } from '@/features/proposal-flow/contexts/proposal-document-context'
 import { useScrollRoot } from '@/features/proposal-flow/contexts/scroll-context'
 import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
-import { useViewMode } from '@/features/proposal-flow/hooks/use-view-mode'
-import { getProposalPdfUrl } from '@/features/proposal-flow/lib/get-proposal-pdf-url'
+import { Cockpit } from '@/features/proposal-flow/ui/components/cockpit/cockpit'
+import { CockpitOpenProvider } from '@/features/proposal-flow/ui/components/cockpit/cockpit-open-context'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { LoadingState } from '@/shared/components/states/loading-state'
 import { useAbility } from '@/shared/domains/permissions/client'
 import { useTRPC } from '@/trpc/helpers'
 
-import { Heading } from './heading'
-import { PdfFallbackCard } from './pdf-fallback-card'
+import { ChapterNav } from './chapter-nav'
+import { ProposalTopBar } from './top-bar'
+import { ProposalTopBarFrame } from './top-bar-frame'
 
 export function Proposal() {
   const params = useParams() as { proposalId: string }
@@ -26,7 +29,7 @@ export function Proposal() {
   const trpc = useTRPC()
   const recordView = useMutation(trpc.proposalsRouter.views.recordView.mutationOptions())
   const ability = useAbility()
-  const viewMode = useViewMode()
+  const canAct = ability.can('update', 'Proposal')
   const hasRecorded = useRef(false)
 
   useEffect(() => {
@@ -35,7 +38,12 @@ export function Proposal() {
     }
     hasRecorded.current = true
 
-    const token = searchParams.get('token') ?? ''
+    const token = searchParams.get('token')
+    // The server already skips sessions, and rejects a missing token.
+    if (!token) {
+      return
+    }
+
     const utmSource = searchParams.get('utm_source')
     const source = utmSource === 'email' ? 'email' : utmSource === 'sms' ? 'sms' : 'direct'
 
@@ -51,76 +59,54 @@ export function Proposal() {
 
   if (proposal.isLoading) {
     return (
-      <LoadingState
-        title="Loading Proposal"
-        description="This may take a few seconds"
-      />
+      <div className="flex h-full min-h-0 flex-col">
+        <ProposalTopBarFrame />
+        <LoadingState title="Loading Proposal" description="This may take a few seconds" />
+      </div>
     )
   }
 
-  if (proposal.isError || !proposal.data) {
+  if (!proposal.data) {
     return (
-      <ErrorState
-        title="Error: Could not load proposal"
-        description={proposal.error?.message ?? 'Please try again'}
-      />
+      <div className="flex h-full min-h-0 flex-col">
+        <ProposalTopBarFrame />
+        <ErrorState title="Error: Could not load proposal" description={proposal.error?.message ?? 'Please try again'} />
+      </div>
     )
   }
 
-  const proposalData = proposal.data
-  const { token, customer } = proposalData
-  const customerEmail = customer?.email ?? null
+  const urlToken = searchParams.get('token') ?? undefined
 
-  const viewerRole = ability.can('update', 'Proposal') ? 'agent' : 'homeowner'
-  const proposalSteps = generateProposalSteps(viewerRole)
-
-  return (
-    <div className="h-full overflow-auto">
-      <div ref={setRootEl} id="proposal-container" className="h-full overflow-auto scroll-smooth">
-        <div className="space-y-20 lg:pr-8">
-          <Heading />
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-20"
-          >
-            {proposalSteps.map(step => (
-              <div
-                id={step.accessor}
-                key={step.accessor}
-              >
-                {customizableSections.includes(step.accessor) && step.accessor === 'funding' && (
-                  <step.Component onPickFinancingOption={(option) => {
-                  // eslint-disable-next-line no-console
-                    console.log(option)
-                  }}
-                  />
-                )}
-                {customizableSections.includes(step.accessor) && step.accessor === 'agreement' && (
-                  <step.Component
-                    proposalId={params.proposalId}
-                    token={token ?? undefined}
-                    isAgent={viewMode === 'agent'}
-                    customerAge={customer?.customerAge ?? null}
-                    envelopeDocumentIds={proposalData.envelopeDocumentIds ?? null}
-                    proposalKind={proposalData.kind}
-                    customerName={customer?.name ?? null}
-                    customerEmail={customerEmail}
-                    proposalStatus={proposalData.status}
-                    proposalSentAt={proposalData.sentAt}
-                  />
-                )}
-                {!customizableSections.includes(step.accessor) && (
+  const page = (
+    <div className="@container/proposal flex h-full min-h-0 flex-col">
+      <ProposalTopBar />
+      <div ref={setRootEl} id="proposal-container" className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-gutter-stable">
+        {/* The rail sits on the canvas and the chapters on the document plane, as the mock's `.doc` and `.paper`. */}
+        <div className="min-h-full bg-background">
+          <div className="grid @min-[1100px]/proposal:grid-cols-[220px_minmax(0,1fr)]">
+            <div className="hidden @min-[1100px]/proposal:block"><ChapterNav variant="rail" /></div>
+            <main className="surface min-w-0">
+              {proposalSteps.map(step => (
+                <section key={step.accessor} id={step.accessor} aria-labelledby={`${step.accessor}-title`} className="relative scroll-mt-0">
                   <step.Component />
-                )}
-              </div>
-            ))}
-            {token && (
-              <PdfFallbackCard pdfUrl={getProposalPdfUrl(params.proposalId, token)} />
-            )}
-          </motion.div>
+                </section>
+              ))}
+            </main>
+          </div>
         </div>
       </div>
+      {canAct && <Cockpit />}
     </div>
+  )
+
+  return (
+    <ProposalDocumentProvider proposal={proposal.data} token={urlToken} canAct={canAct}>
+      <PortfolioMatchProvider>
+        <ActiveChapterProvider>
+          {/* `page` is built here, so the provider's toggle passes it through unchanged and the chapters never re-render. */}
+          {canAct ? <CockpitOpenProvider>{page}</CockpitOpenProvider> : page}
+        </ActiveChapterProvider>
+      </PortfolioMatchProvider>
+    </ProposalDocumentProvider>
   )
 }

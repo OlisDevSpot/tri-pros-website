@@ -10,11 +10,13 @@ import { createContext, use, useMemo } from 'react'
 import { AddressAction } from '@/shared/components/contact-actions/ui/address-action'
 import { EmailAction } from '@/shared/components/contact-actions/ui/email-action'
 import { PhoneAction } from '@/shared/components/contact-actions/ui/phone-action'
-import { CustomerProfileKeyInsights } from '@/shared/entities/customers/components/profile/customer-profile-key-insights'
+import { withToolbarRoles } from '@/shared/components/entities/entity-actions/lib/with-toolbar-roles'
+import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { ProfileCard } from '@/shared/entities/customers/components/profile/profile-card'
 import { CUSTOMER_OVERVIEW_PROFILE_FIELDS } from '@/shared/entities/customers/constants/customer-overview-profile-fields'
 import { LeadSourceOverviewCard } from '@/shared/entities/lead-sources/components/overview-card'
 import { cn } from '@/shared/lib/utils'
+import { useCustomerActionsHost } from '@/shared/modules/customers/core/components/customer-actions-host'
 
 export type CustomerOverviewCardData = CustomerProfileData['customer']
 
@@ -82,19 +84,31 @@ function LeadSource({ className }: { className?: string }) {
   )
 }
 
-function Insights() {
-  const { customer } = useCard()
-  return <CustomerProfileKeyInsights customer={customer} />
-}
-
 function ProfileFields() {
   const { customer } = useCard()
   return <ProfileCard variant="inline" title="Profile" fields={CUSTOMER_OVERVIEW_PROFILE_FIELDS} data={customer} />
 }
 
+function Actions({ mode = 'compact', roles, hide, className }: {
+  mode?: 'compact' | 'bar' | 'toolbar'
+  /** This surface's toolbar buttons; the shared action constants keep driving every other surface. */
+  roles?: Parameters<typeof withToolbarRoles>[1]
+  /** Action ids this surface leaves out. */
+  hide?: readonly string[]
+  className?: string
+}) {
+  const { customer } = useCard()
+  const { actions } = useCustomerActionsHost('CustomerOverviewCard')
+  const shown = useMemo(() => {
+    const kept = hide ? actions.filter(config => !hide.includes(config.action.id)) : actions
+    return roles ? withToolbarRoles(kept, roles) : kept
+  }, [actions, hide, roles])
+  return <EntityActionMenu entity={customer} actions={shown} mode={mode} className={className} />
+}
+
 export const CustomerOverviewCard = Object.assign(Root, {
   ContactActions,
   LeadSource,
-  Insights,
   ProfileFields,
+  Actions,
 })

@@ -6,7 +6,9 @@ import { CheckIcon, MoreHorizontalIcon, MoreVerticalIcon } from 'lucide-react'
 import { useCallback, useState } from 'react'
 
 import { getVisibleActions } from '@/shared/components/entities/entity-actions/lib/visible-actions'
-import { isCustomAction, isSelectAction } from '@/shared/components/entities/entity-actions/types'
+import { isCustomAction, isGroupAction, isSelectAction } from '@/shared/components/entities/entity-actions/types'
+import { EntityActionClickItem } from '@/shared/components/entities/entity-actions/ui/entity-action-click-item'
+import { EntityActionGroupItem } from '@/shared/components/entities/entity-actions/ui/entity-action-group-item'
 
 import { Button } from '@/shared/components/ui/button'
 import {
@@ -19,7 +21,6 @@ import {
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
 } from '@/shared/components/ui/dropdown-menu'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/components/ui/tooltip'
 import { useAbility } from '@/shared/domains/permissions/client'
 import { cn } from '@/shared/lib/utils'
 
@@ -101,6 +102,11 @@ export function EntityActionDropdown<TEntity>({
               />
             )
           }
+          if (isGroupAction(config)) {
+            return (
+              <EntityActionGroupItem key={config.action.id} config={config} entity={entity} />
+            )
+          }
           return (
             <EntityActionClickItem
               key={config.action.id}
@@ -115,58 +121,6 @@ export function EntityActionDropdown<TEntity>({
         })}
       </DropdownMenuContent>
     </DropdownMenu>
-  )
-}
-
-// ── Click action item ────────────────────────────────────────────────────────
-
-interface ClickItemProps<TEntity> {
-  action: EntityActionConfig<TEntity>['action']
-  entity: TEntity
-  onAction: (entity: TEntity) => void
-  isLoading?: boolean
-  isDisabled?: boolean
-  disabledReason?: string | null
-}
-
-function EntityActionClickItem<TEntity>({
-  action,
-  entity,
-  onAction,
-  isLoading,
-  isDisabled,
-  disabledReason,
-}: ClickItemProps<TEntity>) {
-  const Icon = action.icon
-  const disabled = isLoading || isDisabled || disabledReason != null
-
-  const item = (
-    <DropdownMenuItem
-      disabled={disabled}
-      className={cn(action.destructive && 'text-destructive focus:text-destructive')}
-      onClick={() => onAction(entity)}
-    >
-      <Icon className="h-3.5 w-3.5" />
-      {action.label}
-    </DropdownMenuItem>
-  )
-
-  return (
-    <>
-      {action.separatorBefore && <DropdownMenuSeparator />}
-      {disabledReason
-        ? (
-            // Radix disables pointer events on a disabled item, so wrap the row
-            // in a focusable span the tooltip can anchor to.
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span tabIndex={0} className="block">{item}</span>
-              </TooltipTrigger>
-              <TooltipContent>{disabledReason}</TooltipContent>
-            </Tooltip>
-          )
-        : item}
-    </>
   )
 }
 

@@ -134,7 +134,7 @@ The predicate is meeting-existence, NOT a null-stage check — meeting existence
 
 ### before-after-pairs-jsonb-shape
 
-`beforeAfterPairsJSON` is an array of `{ beforeId: string, afterId: string }` referencing media-file IDs. Used by the portfolio carousel to render aligned before/after image pairs.
+`beforeAfterPairsJSON` is `{ pairs: { beforeMediaId: number, afterMediaId: number, label: string, confidence: number }[] }`, ids referencing `media_files` rows (the `projectMediaFiles` table). Used to render aligned before/after image pairs (the proposal page's Results reads them through `lib/resolve-before-after-pairs.ts`, highest confidence first).
 
 **Why**: photographic comparisons are how customers evaluate construction work. The JSONB structure (rather than a separate table) keeps the order explicit and trivially mutable from the portfolio editor.
 **Reference impl**: schema column; `BeforeAfterPairs` type in `schemas/`

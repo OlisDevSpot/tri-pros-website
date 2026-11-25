@@ -1,12 +1,10 @@
 import { TRPCError } from '@trpc/server'
 import z from 'zod'
 
-import { systemContext } from '@/shared/dal/server/lib/contexts'
-import { deriveOutcomeOnProposalSent } from '@/shared/entities/meetings/dal/server/mutations'
-import { proposalCrud } from '@/shared/modules/proposals/core/dal/server/crud'
+import { PROPOSAL_NOTE_MAX_LENGTH } from '@/shared/modules/proposals/core/constants/send'
 import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
 import { SHARE_LINK_LIMITS } from '@/shared/modules/proposals/core/lib/share-link-rate-limit'
-import { emailService } from '@/shared/services/email.service'
+import { proposalService } from '@/shared/modules/proposals/service'
 import { notificationService } from '@/shared/services/notification.service'
 
 import { agentProcedure, createTRPCRouter } from '../../init'
@@ -15,9 +13,7 @@ import { proposalShareableProcedure } from './procedures'
 
 const sendEmailSchema = z.object({
   proposalId: z.string().uuid(),
-  customerName: z.string(),
-  email: z.email(),
-  message: z.string().optional(),
+  message: z.string().max(PROPOSAL_NOTE_MAX_LENGTH).optional(),
 })
 
 export const deliveryRouter = createTRPCRouter({
@@ -29,37 +25,10 @@ export const deliveryRouter = createTRPCRouter({
    */
   sendProposalEmail: agentProcedure
     .input(sendEmailSchema)
-    .mutation(async ({ ctx, input }) => {
-      // The link carries the proposal's own token, never one the caller supplies.
-      const current = dalToTrpc(await proposalCrud.getById(ctx, { id: input.proposalId }))
-      if (!current) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' })
-      }
-
-      // 1. Send email — pure service, no DB
-      const { data } = await emailService.sendProposalEmail({
-        proposalId: input.proposalId,
-        token: current.token,
-        customerName: input.customerName,
-        email: input.email,
-        message: input.message,
-        replyTo: ctx.session.user.email,
-        repName: ctx.session.user.name,
-      })
-
-      // 2. Update proposal status via generic CRUD
-      const proposal = dalToTrpc(await proposalCrud.update(ctx, {
-        id: input.proposalId,
-        data: { status: 'sent', sentAt: new Date().toISOString() },
-      }))
-
-      // 3. The meeting's outcome follows from the send; the sender's meeting reach does not decide it.
-      if (proposal.meetingId) {
-        dalToTrpc(await deriveOutcomeOnProposalSent(systemContext('derived:proposal-sent'), { meetingId: proposal.meetingId }))
-      }
-
-      return { data, proposal }
-    }),
+    .mutation(async ({ ctx, input }) => dalToTrpc(await proposalService.business.send(ctx, {
+      ...input,
+      sender: { name: ctx.session.user.name, email: ctx.session.user.email },
+    }))),
 
   /**
    * Homeowner "Request Agreement" (share-token path). A pure SIGNAL: the

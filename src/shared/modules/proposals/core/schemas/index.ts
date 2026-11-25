@@ -1,6 +1,8 @@
 import z from 'zod'
 import { envelopeDocumentIds, priceDisplayModes, projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
+import { formatAsDollars } from '@/shared/lib/formatters'
 import { homeAreas } from '@/shared/modules/construction/core/constants/enums'
+import { computeFinalTcp, describeDepositCap, getDepositCap } from '@/shared/modules/proposals/core/lib/financials'
 import { createEmptySowSection } from '../lib/create-empty-sow-section'
 
 // SUB-SCHEMAS
@@ -98,7 +100,7 @@ const projectDataSchema = z.object({
  */
 export const fundingDataSchema = z.object({
   cashInDeal: z.number(),
-  depositAmount: z.number(),
+  depositAmount: z.number().nullable(),
   incentives: z.array(incentiveSchema),
   miscPrice: z.number().optional(),
   startingTcp: z.number(),
@@ -212,6 +214,19 @@ export const proposalFormSchema = proposalFormShape.superRefine((proposal, ctx) 
       }
     })
   })
+
+  // 3. A deposit override can't exceed the legal cap for this price.
+  const { depositAmount } = proposal.funding
+  if (depositAmount != null) {
+    const cap = getDepositCap(computeFinalTcp({ funding: proposal.funding, sow: proposal.project.data.sow }))
+    if (depositAmount > cap) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['funding', 'depositAmount'],
+        message: `The deposit can’t be more than ${formatAsDollars(cap)}: by law, ${describeDepositCap()}.`,
+      })
+    }
+  }
 })
 
 export type ProposalFormSchema = z.infer<typeof proposalFormSchema>
@@ -236,7 +251,7 @@ export const proposalFormBaseDefaultValues: ProposalFormSchema = {
   },
   funding: {
     cashInDeal: 0,
-    depositAmount: 1000,
+    depositAmount: null,
     incentives: [],
     miscPrice: 0,
     startingTcp: 0,

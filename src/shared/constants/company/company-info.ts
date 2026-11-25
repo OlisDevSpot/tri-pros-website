@@ -28,3 +28,5 @@ export const companyInfo = {
   testimonials,
   socials,
 }
+
+export const companyPhone: string | undefined = companyInfo.contactInfo.find(info => info.accessor === 'phone')?.value

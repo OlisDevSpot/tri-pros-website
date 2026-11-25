@@ -4,11 +4,11 @@ import type { MediaPhase } from '@/shared/constants/enums/media'
 import type { ProjectMediaGroups } from '@/shared/modules/projects/core/types'
 import { motion, useInView } from 'motion/react'
 import { useCallback, useMemo, useRef, useState } from 'react'
-import { PhotoLightbox } from '@/features/project-management/ui/components/photo-lightbox'
 import { Badge } from '@/shared/components/ui/badge'
 import { mediaPhases } from '@/shared/constants/enums/media'
 import { cn } from '@/shared/lib/utils'
 import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
+import { PhotoLightbox } from '@/shared/modules/media/core/components/display/photo-lightbox'
 import { PHASE_LABELS } from '@/shared/modules/projects/media/constants/phase-labels'
 
 interface Props {

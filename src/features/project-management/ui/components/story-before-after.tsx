@@ -1,7 +1,6 @@
 'use client'
 
-import type { Project, ProjectMediaFile } from '@/shared/db/schema'
-import type { BeforeAfterPairs } from '@/shared/modules/projects/core/schemas'
+import type { Project } from '@/shared/db/schema'
 import type { ProjectMediaGroups } from '@/shared/modules/projects/core/types'
 import { motion, useInView } from 'motion/react'
 import dynamic from 'next/dynamic'
@@ -10,6 +9,7 @@ import { Badge } from '@/shared/components/ui/badge'
 import { cn } from '@/shared/lib/utils'
 import { CrossfadeImage } from '@/shared/modules/media/core/components/display/crossfade-image'
 import { OptimizedImage } from '@/shared/modules/media/core/components/display/optimized-image'
+import { resolveBeforeAfterPairs } from '@/shared/modules/projects/core/lib/resolve-before-after-pairs'
 
 const ReactCompareSlider = dynamic(
   () => import('react-compare-slider').then(mod => mod.ReactCompareSlider),
@@ -18,13 +18,6 @@ const ReactCompareSlider = dynamic(
     loading: () => <div className="h-full w-full bg-muted/30" />,
   },
 )
-
-interface ResolvedPair {
-  before: ProjectMediaFile
-  after: ProjectMediaFile
-  label: string
-  confidence: number
-}
 
 interface Props {
   project: Project
@@ -36,27 +29,7 @@ export function StoryBeforeAfter({ project, media }: Props) {
   const isInView = useInView(ref, { once: true, margin: '-80px' })
   const [activePairIndex, setActivePairIndex] = useState(0)
 
-  const pairs = useMemo<ResolvedPair[]>(() => {
-    const pairsData = project.beforeAfterPairsJSON as BeforeAfterPairs | null
-    if (!pairsData?.pairs?.length) {
-      return []
-    }
-
-    const allMedia = [...media.before, ...media.during, ...media.after, ...media.uncategorized, ...media.hero]
-    const mediaById = new Map(allMedia.map(m => [m.id, m]))
-
-    return pairsData.pairs
-      .map((p) => {
-        const before = mediaById.get(p.beforeMediaId)
-        const after = mediaById.get(p.afterMediaId)
-        if (!before || !after) {
-          return null
-        }
-        return { before, after, label: p.label, confidence: p.confidence }
-      })
-      .filter((p): p is ResolvedPair => p !== null)
-      .sort((a, b) => b.confidence - a.confidence)
-  }, [project.beforeAfterPairsJSON, media])
+  const pairs = useMemo(() => resolveBeforeAfterPairs({ project, media }), [project, media])
 
   const handlePairSelect = useCallback((index: number) => {
     setActivePairIndex(index)

@@ -1,63 +1,56 @@
 import type { ProposalStep } from '@/features/proposal-flow/types'
-import type { UserRole } from '@/shared/constants/enums'
 import { Funding } from '@/features/proposal-flow/ui/components/proposal/funding'
+import { NextSteps } from '@/features/proposal-flow/ui/components/proposal/next-steps'
 import { ProjectOverview } from '@/features/proposal-flow/ui/components/proposal/project-overview'
-import { RelatedProjects } from '@/features/proposal-flow/ui/components/proposal/related-projects'
+import { Results } from '@/features/proposal-flow/ui/components/proposal/results'
 import { ScopeOfWork } from '@/features/proposal-flow/ui/components/proposal/scope-of-work'
 import { TrustedContractor } from '@/features/proposal-flow/ui/components/proposal/trusted-contractor'
-import { ContractStatusPanel } from '@/shared/components/contract-status-panel/ui/contract-status-panel'
 
 export const proposalSteps = [
   {
-    title: 'Project Overview',
-    accessor: 'project-overview',
+    title: 'Overview',
+    shortLabel: 'Overview',
+    accessor: 'overview',
     description: 'Project overview',
     Component: ProjectOverview,
-    roles: ['homeowner', 'agent'],
   },
   {
-    title: 'Trusted Contractor',
-    accessor: 'about-tri-pros',
+    title: 'Trusted contractor',
+    shortLabel: 'Contractor',
+    accessor: 'contractor',
     description: 'About Tri Pros Remodeling',
     Component: TrustedContractor,
-    roles: ['homeowner', 'agent'],
   },
   {
-    title: 'Past Results',
-    accessor: 'related-projects',
+    title: 'Past results',
+    shortLabel: 'Results',
+    accessor: 'results',
     description: 'View similar completed projects from our portfolio',
-    Component: RelatedProjects,
-    roles: ['homeowner', 'agent'],
+    Component: Results,
   },
   {
-    title: 'Scope of Work',
-    accessor: 'scope-of-work',
+    title: 'Scope of work',
+    shortLabel: 'Scope',
+    accessor: 'scope',
     description: 'Scope of Work',
     Component: ScopeOfWork,
-    roles: ['homeowner', 'agent'],
   },
   {
     title: 'Funding',
+    shortLabel: 'Funding',
     accessor: 'funding',
     description: 'Funding',
     Component: Funding,
-    roles: ['homeowner', 'agent'],
   },
   {
-    title: 'Agreement',
-    accessor: 'agreement',
+    title: 'Next steps',
+    shortLabel: 'Next steps',
+    accessor: 'next-steps',
     description: 'Proposal delivery and contract signing',
-    Component: ContractStatusPanel as unknown as (props: Record<string, any>) => React.ReactNode,
-    roles: ['homeowner', 'agent'],
+    Component: NextSteps,
   },
 ] as const satisfies ProposalStep<Record<string, any>>[]
 
-export function generateProposalSteps(userRole: UserRole) {
-  return proposalSteps.filter((step) => {
-    const roles = step.roles as UserRole[]
-    return roles.includes(userRole)
-  })
-}
+export const proposalChapterIds = proposalSteps.map(step => step.accessor)
 
 export type ProposalAccessor = typeof proposalSteps[number]['accessor']
-export const customizableSections: ProposalAccessor[] = ['funding', 'agreement']

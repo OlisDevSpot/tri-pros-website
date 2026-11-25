@@ -15,6 +15,7 @@ import { Button } from '@/shared/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { PhoneField } from '@/shared/components/ui/phone-field'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -73,7 +74,7 @@ export function IdentityContactSection({ profile }: IdentityContactSectionProps)
                 <FormItem>
                   <FormLabel>Phone Number</FormLabel>
                   <FormControl>
-                    <Input type="tel" placeholder="(555) 123-4567" {...field} />
+                    <PhoneField {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

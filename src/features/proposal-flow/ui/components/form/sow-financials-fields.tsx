@@ -1,16 +1,25 @@
 'use client'
 
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
-import { PlusIcon, TrashIcon } from 'lucide-react'
+import { PlusIcon } from 'lucide-react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useState } from 'react'
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
+import { useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form'
+import { SOW_PRICING_FIGURE, SOW_PRICING_ROW } from '@/features/proposal-flow/constants/sow-pricing-grid'
+import { formatLedgerAmount } from '@/features/proposal-flow/lib/format-ledger-amount'
+import { pricingRowsWithErrors } from '@/features/proposal-flow/lib/pricing-rows-with-errors'
+import { SowCostLineRow } from '@/features/proposal-flow/ui/components/form/sow-cost-line-row'
+import { SowIncentiveRow } from '@/features/proposal-flow/ui/components/form/sow-incentive-row'
+import { SowPricingSummaryRow } from '@/features/proposal-flow/ui/components/form/sow-pricing-summary-row'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { Button } from '@/shared/components/ui/button'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
-import { Input } from '@/shared/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
-import { Textarea } from '@/shared/components/ui/textarea'
-import { SectionFinancialsSummary } from '@/shared/modules/proposals/core/components/section-financials-summary'
+import { MoneyField } from '@/shared/components/ui/money-field'
+import { COLLAPSE_HEIGHT_VARIANTS, COLLAPSE_TRANSITION } from '@/shared/constants/motion'
+import { formatAsDollars } from '@/shared/lib/formatters'
+import { cn } from '@/shared/lib/utils'
+import { MULTIPLIER_STYLES } from '@/shared/modules/proposals/core/constants/multiplier-styles'
+import { computeSectionFinancials, formatMultiplier } from '@/shared/modules/proposals/core/lib/financials'
 
 interface Props {
   index: number
@@ -30,13 +39,31 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
     name: `project.data.sow.${index}.financials.incentives`,
   })
 
+  const { disabled, errors } = useFormState({ control: form.control })
+  const reduceMotion = useReducedMotion()
+  const rowTransition = reduceMotion ? { duration: 0 } : COLLAPSE_TRANSITION
+
+  const errorRows = pricingRowsWithErrors(errors.project?.data?.sow?.[index]?.financials)
+  const [incentivesOpen, setIncentivesOpen] = useState(errorRows.incentives)
+  const [costLinesOpen, setCostLinesOpen] = useState(errorRows.costLines)
   const [openNotes, setOpenNotes] = useState<Set<string>>(() => new Set())
+
+  // A new error reveals its row; adjusting during render avoids a frame with the error hidden.
+  const [seenErrors, setSeenErrors] = useState(errorRows)
+  if (seenErrors.incentives !== errorRows.incentives || seenErrors.costLines !== errorRows.costLines) {
+    setSeenErrors(errorRows)
+    if (errorRows.incentives) {
+      setIncentivesOpen(true)
+    }
+    if (errorRows.costLines) {
+      setCostLinesOpen(true)
+    }
+  }
 
   const selectedScopes = useWatch({
     control: form.control,
     name: `project.data.sow.${index}.scopes`,
   })
-
   const sectionPrice = useWatch({
     control: form.control,
     name: `project.data.sow.${index}.financials.sectionPrice`,
@@ -50,19 +77,20 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
     name: `project.data.sow.${index}.financials.incentives`,
   })
 
-  const watchedFinancials = { sectionPrice, costLines, incentives }
+  const section = computeSectionFinancials({ title: '', financials: { sectionPrice, costLines, incentives } })
 
   const canAddCostLine = selectedScopes.length > 0
   const isBreakdown = pricingMode === 'breakdown'
+  const showOutputs = isBreakdown && section.price != null && section.hasCostLines
 
-  function toggleNotes(fieldId: string) {
+  function setNotesOpen(fieldId: string, open: boolean) {
     setOpenNotes((prev) => {
       const next = new Set(prev)
-      if (next.has(fieldId)) {
-        next.delete(fieldId)
+      if (open) {
+        next.add(fieldId)
       }
       else {
-        next.add(fieldId)
+        next.delete(fieldId)
       }
       return next
     })
@@ -70,80 +98,170 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
 
   function removeCostLine(lineIndex: number, fieldId: string) {
     removeCost(lineIndex)
-    setOpenNotes((prev) => {
-      if (!prev.has(fieldId)) {
-        return prev
-      }
-      const next = new Set(prev)
-      next.delete(fieldId)
-      return next
-    })
+    setNotesOpen(fieldId, false)
   }
 
   return (
-    <div className="space-y-4 px-3 pb-4 pt-2 lg:px-4 lg:pb-5">
-      {/* Section Price — inline on desktop */}
+    <div className="space-y-1">
       <FormField
         name={`project.data.sow.${index}.financials.sectionPrice`}
         control={form.control}
         render={({ field }) => (
-          <FormItem className="flex flex-col gap-1 lg:flex-row lg:items-center lg:gap-3">
-            <FormLabel className="whitespace-nowrap shrink-0">Section Price</FormLabel>
-            <FormControl>
-              {!isBreakdown
-                ? (
-                    <HybridPopoverTooltip
-                      content={(
-                        <div>
-                          <p>Disabled in total pricing mode</p>
-                          <p className="text-xs text-muted-foreground">Change in proposal settings</p>
-                        </div>
-                      )}
-                      side="right"
-                    >
-                      <span className="w-full lg:w-48">
-                        <Input
-                          type="text"
-                          placeholder="$10,000"
-                          disabled
-                          className="pointer-events-none"
-                          value={field.value == null ? '' : String(field.value)}
-                        />
-                      </span>
-                    </HybridPopoverTooltip>
-                  )
-                : (
-                    <Input
-                      type="text"
-                      placeholder="$10,000"
-                      className="w-full lg:w-48"
-                      value={field.value == null ? '' : String(field.value)}
-                      onChange={(e) => {
-                        const raw = e.target.value
-                        field.onChange(raw.trim() === '' ? null : Number(raw.replace(/\D/g, '')))
-                      }}
-                    />
-                  )}
-            </FormControl>
-            <FormMessage />
+          <FormItem className={cn(SOW_PRICING_ROW, 'px-2')}>
+            <FormLabel className="md:whitespace-nowrap">Section starting price</FormLabel>
+            <div>
+              <FormControl>
+                {!isBreakdown
+                  ? (
+                      <HybridPopoverTooltip
+                        content={(
+                          <div>
+                            <p>Disabled in total pricing mode</p>
+                            <p className="text-xs text-muted-foreground">Change in proposal settings</p>
+                          </div>
+                        )}
+                        side="right"
+                      >
+                        <span className="block w-full">
+                          <MoneyField
+                            placeholder="$10,000"
+                            disabled
+                            className="pointer-events-none w-full pr-[11px] text-right"
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        </span>
+                      </HybridPopoverTooltip>
+                    )
+                  : (
+                      <MoneyField
+                        placeholder="$10,000"
+                        className="w-full pr-[11px] text-right"
+                        disabled={field.disabled}
+                        value={field.value}
+                        onChange={field.onChange}
+                      />
+                    )}
+              </FormControl>
+              <FormMessage />
+            </div>
           </FormItem>
         )}
       />
 
-      {/* Cost Lines */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between border-t border-border pt-3">
-          <h5 className="text-sm font-semibold">Cost Lines</h5>
-          <div className="flex items-center gap-2">
-            {!canAddCostLine && (
-              <span className="text-xs text-muted-foreground">Pick scopes for this section first</span>
+      <SowPricingSummaryRow
+        label="Section Incentives"
+        count={incentiveFields.length}
+        total={section.incentives === 0 ? '$0' : `−${formatAsDollars(section.incentives)}`}
+        open={incentivesOpen}
+        onOpenChange={setIncentivesOpen}
+      >
+        <AnimatePresence initial={false}>
+          {incentiveFields.map((field, incentiveIndex) => (
+            <motion.div
+              key={field.id}
+              initial={COLLAPSE_HEIGHT_VARIANTS.initial}
+              animate={COLLAPSE_HEIGHT_VARIANTS.animate}
+              exit={COLLAPSE_HEIGHT_VARIANTS.exit}
+              transition={rowTransition}
+              className="overflow-hidden"
+            >
+              <SowIncentiveRow
+                index={index}
+                incentiveIndex={incentiveIndex}
+                disabled={disabled}
+                onRemove={() => removeIncentive(incentiveIndex)}
+              />
+            </motion.div>
+          ))}
+          {incentiveFields.length === 0 && (
+            <motion.div
+              key="empty"
+              initial={COLLAPSE_HEIGHT_VARIANTS.initial}
+              animate={COLLAPSE_HEIGHT_VARIANTS.animate}
+              exit={COLLAPSE_HEIGHT_VARIANTS.exit}
+              transition={rowTransition}
+              className="overflow-hidden"
+            >
+              <p className="py-3 text-center text-xs text-muted-foreground">No section incentives</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+        <div className="px-2 py-2">
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="gap-1.5"
+            disabled={disabled}
+            onClick={() => {
+              appendIncentive({ id: crypto.randomUUID(), label: '', amount: 0, notes: '' })
+            }}
+          >
+            <PlusIcon className="size-4" />
+            Add incentive
+          </Button>
+        </div>
+      </SowPricingSummaryRow>
+
+      {isBreakdown && (
+        <div className={cn(SOW_PRICING_ROW, 'border-t border-border-strong px-2')}>
+          <span className="font-semibold">Section final price</span>
+          <span className={cn(SOW_PRICING_FIGURE, 'font-sans text-lg font-bold')}>
+            {formatLedgerAmount(section.netPrice ?? 0)}
+          </span>
+        </div>
+      )}
+
+      <div className="mt-2 space-y-1 border-t border-border pt-2">
+        <SowPricingSummaryRow
+          label="Cost Lines"
+          count={costFields.length}
+          total={formatAsDollars(section.jobCost)}
+          open={costLinesOpen}
+          onOpenChange={setCostLinesOpen}
+        >
+          <AnimatePresence initial={false}>
+            {costFields.map((field, lineIndex) => (
+              <motion.div
+                key={field.id}
+                initial={COLLAPSE_HEIGHT_VARIANTS.initial}
+                animate={COLLAPSE_HEIGHT_VARIANTS.animate}
+                exit={COLLAPSE_HEIGHT_VARIANTS.exit}
+                transition={rowTransition}
+                className="overflow-hidden"
+              >
+                <SowCostLineRow
+                  index={index}
+                  lineIndex={lineIndex}
+                  scopes={selectedScopes}
+                  notesOpen={openNotes.has(field.id)}
+                  onNotesOpenChange={open => setNotesOpen(field.id, open)}
+                  disabled={disabled}
+                  onRemove={() => removeCostLine(lineIndex, field.id)}
+                />
+              </motion.div>
+            ))}
+            {costFields.length === 0 && (
+              <motion.div
+                key="empty"
+                initial={COLLAPSE_HEIGHT_VARIANTS.initial}
+                animate={COLLAPSE_HEIGHT_VARIANTS.animate}
+                exit={COLLAPSE_HEIGHT_VARIANTS.exit}
+                transition={rowTransition}
+                className="overflow-hidden"
+              >
+                <p className="py-3 text-center text-xs text-muted-foreground">No cost lines yet</p>
+              </motion.div>
             )}
+          </AnimatePresence>
+          <div className="flex items-center gap-2 px-2 py-2">
             <Button
               type="button"
               size="sm"
               variant="outline"
               className="gap-1.5"
-              disabled={!canAddCostLine}
+              disabled={disabled || !canAddCostLine}
               onClick={() => {
                 appendCost({
                   id: crypto.randomUUID(),
@@ -157,220 +275,29 @@ export function SOWFinancialsFields({ index, pricingMode }: Props) {
               <PlusIcon className="size-4" />
               Add cost line
             </Button>
+            {!canAddCostLine && (
+              <span className="text-xs text-muted-foreground">Pick scopes for this section first</span>
+            )}
           </div>
-        </div>
+        </SowPricingSummaryRow>
 
-        {costFields.length === 0
-          ? (
-              <p className="py-3 text-center text-xs text-muted-foreground">
-                No cost lines yet
-              </p>
-            )
-          : (
-              <div className="space-y-3">
-                {costFields.map((field, lineIndex) => (
-                  <div
-                    key={field.id}
-                    className="rounded-lg border border-border bg-card p-3 space-y-3"
-                  >
-                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[2fr_1fr_1.5fr_auto]">
-                      <FormField
-                        name={`project.data.sow.${index}.financials.costLines.${lineIndex}.label`}
-                        control={form.control}
-                        render={({ field: lineField }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Label</FormLabel>
-                            <FormControl>
-                              <Input {...lineField} placeholder="Labor" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        name={`project.data.sow.${index}.financials.costLines.${lineIndex}.amount`}
-                        control={form.control}
-                        render={({ field: lineField }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Amount</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="text"
-                                placeholder="$1,000"
-                                value={lineField.value === 0 ? '' : String(lineField.value)}
-                                onChange={(e) => {
-                                  const numeric = Number(e.target.value.replace(/\D/g, ''))
-                                  lineField.onChange(numeric)
-                                }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        name={`project.data.sow.${index}.financials.costLines.${lineIndex}.relatedScopeId`}
-                        control={form.control}
-                        render={({ field: lineField }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Related Scope</FormLabel>
-                            <FormControl>
-                              <Select value={lineField.value} onValueChange={lineField.onChange}>
-                                <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Select scope" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {selectedScopes.map(scope => (
-                                    <SelectItem key={scope.id} value={scope.id}>
-                                      {scope.label}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <div className="flex items-end gap-1">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          className="text-xs"
-                          onClick={() => toggleNotes(field.id)}
-                        >
-                          {openNotes.has(field.id) ? 'Hide notes' : 'Add notes'}
-                        </Button>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => removeCostLine(lineIndex, field.id)}
-                          aria-label="Remove cost line"
-                        >
-                          <TrashIcon className="size-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    {openNotes.has(field.id) && (
-                      <FormField
-                        name={`project.data.sow.${index}.financials.costLines.${lineIndex}.notes`}
-                        control={form.control}
-                        render={({ field: lineField }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Notes</FormLabel>
-                            <FormControl>
-                              <Textarea
-                                {...lineField}
-                                value={lineField.value ?? ''}
-                                placeholder="Additional context for this cost line"
-                                rows={2}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+        {showOutputs && (
+          <>
+            <div className={cn(SOW_PRICING_ROW, 'px-2 text-sm')}>
+              <span className="font-medium">Margin</span>
+              <span className={cn(SOW_PRICING_FIGURE, 'font-medium')}>
+                {section.margin == null ? '—' : formatAsDollars(section.margin)}
+              </span>
+            </div>
+            <div className={cn(SOW_PRICING_ROW, 'px-2 text-sm')}>
+              <span className="font-medium">Multiplier</span>
+              <span className={cn(SOW_PRICING_FIGURE, 'font-bold', MULTIPLIER_STYLES[section.tier])}>
+                {formatMultiplier(section.multiplier)}
+              </span>
+            </div>
+          </>
+        )}
       </div>
-
-      {/* Section Incentives */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between border-t border-border pt-3">
-          <h5 className="text-sm font-semibold">Section Incentives</h5>
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="gap-1.5"
-            onClick={() => {
-              appendIncentive({
-                id: crypto.randomUUID(),
-                label: '',
-                amount: 0,
-                notes: '',
-              })
-            }}
-          >
-            <PlusIcon className="size-4" />
-            Add incentive
-          </Button>
-        </div>
-
-        {incentiveFields.length === 0
-          ? (
-              <p className="py-3 text-center text-xs text-muted-foreground">
-                No section incentives
-              </p>
-            )
-          : (
-              <div className="space-y-3">
-                {incentiveFields.map((field, incIndex) => (
-                  <div
-                    key={field.id}
-                    className="rounded-lg border border-status-success-dot/40 bg-status-success-bg p-3"
-                  >
-                    <div className="grid grid-cols-1 gap-3 lg:grid-cols-[2fr_1fr_auto]">
-                      <FormField
-                        name={`project.data.sow.${index}.financials.incentives.${incIndex}.label`}
-                        control={form.control}
-                        render={({ field: incField }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Label</FormLabel>
-                            <FormControl>
-                              <Input {...incField} placeholder="Scope discount" />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        name={`project.data.sow.${index}.financials.incentives.${incIndex}.amount`}
-                        control={form.control}
-                        render={({ field: incField }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Amount</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="text"
-                                placeholder="$500"
-                                value={incField.value === 0 ? '' : String(incField.value)}
-                                onChange={(e) => {
-                                  const numeric = Number(e.target.value.replace(/\D/g, ''))
-                                  incField.onChange(numeric)
-                                }}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <div className="flex items-end">
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => removeIncentive(incIndex)}
-                          aria-label="Remove incentive"
-                        >
-                          <TrashIcon className="size-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-      </div>
-
-      <SectionFinancialsSummary financials={watchedFinancials} priceDisplayMode={pricingMode} />
     </div>
   )
 }

@@ -23,6 +23,8 @@ interface EnvelopeCardProps {
   contractStatus: (ZohoContractStatus & { contractSentAt: string | null }) | null
   customerName: string | null
   proposalKind?: ProposalKind
+  className?: string
+  configurationLayout?: 'stacked' | 'inline'
 }
 
 type ConfirmAction = 'createDraft' | 'send' | 'discard' | 'recall' | 'resend' | 'recreate'
@@ -49,6 +51,8 @@ export function EnvelopeCard({
   contractStatus,
   customerName,
   proposalKind,
+  className,
+  configurationLayout,
 }: EnvelopeCardProps) {
   const trpc = useTRPC()
   const { invalidateProposal } = useInvalidation()
@@ -151,35 +155,13 @@ export function EnvelopeCard({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4 sm:p-5">
-      {/* Header */}
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <h4 className="text-sm font-semibold tracking-tight sm:text-base">
-            Signing Envelope
-          </h4>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Legally binding Zoho Sign package
-          </p>
-        </div>
-        {statusBadge && (
-          <span
-            className={cn(
-              'shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium',
-              statusBadge.className,
-            )}
-          >
-            {statusBadge.label}
-          </span>
-        )}
-      </div>
-
-      {/* Body */}
+    <div className={cn('space-y-4', className)}>
       <div className="space-y-4">
         <EnvelopeConfigurationSection
           proposalId={proposalId}
           locked={isActive || requestStatus === 'completed'}
           lockReason={ageLockReason}
+          layout={configurationLayout}
         />
 
         {/* State-specific body */}
@@ -187,8 +169,7 @@ export function EnvelopeCard({
           <div className="rounded-lg border border-border bg-muted p-4">
             <p className="text-sm text-muted-foreground">
               Configuration ready. Create a draft to prepare the envelope
-              for signing — or sending the proposal will prepare one
-              automatically as its first step.
+              for signing. Sending the proposal doesn’t create one.
             </p>
           </div>
         )}
@@ -214,7 +195,7 @@ export function EnvelopeCard({
         )}
 
         {/* Actions */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           {!contractStatus && (
             <ActionButtonWithImpact
               variant="default"
@@ -289,6 +270,17 @@ export function EnvelopeCard({
               isPending={resendContract.isPending}
               disabled={isPending || isCoolingDown}
             />
+          )}
+
+          {statusBadge && (
+            <span
+              className={cn(
+                'shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium',
+                statusBadge.className,
+              )}
+            >
+              {statusBadge.label}
+            </span>
           )}
         </div>
       </div>

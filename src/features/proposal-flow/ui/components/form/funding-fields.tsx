@@ -1,18 +1,26 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { IncentiveType } from '@/shared/modules/proposals/core/schemas'
-import { PlusIcon } from 'lucide-react'
+import { ChevronDownIcon, PlusIcon, TrashIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
+import { useFieldArray, useFormContext, useFormState, useWatch } from 'react-hook-form'
+import { FUNDING_EYEBROW } from '@/features/proposal-flow/constants/funding-ledger'
+import { useEditLoading } from '@/features/proposal-flow/contexts/edit-loading-context'
+import { formatProjectType } from '@/features/proposal-flow/lib/format-project-type'
 import { getProposalAggregates } from '@/features/proposal-flow/lib/get-proposal-aggregates'
+import { LoadingValue } from '@/features/proposal-flow/ui/components/edit-page/loading-value'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { Button } from '@/shared/components/ui/button'
 import { AnimatedCollapsibleContent, Collapsible, CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { MoneyField } from '@/shared/components/ui/money-field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { useConfirm } from '@/shared/hooks/use-confirm'
+import { computeFinalTcp, computeTotalDiscounts, computeTotalSectionIncentives } from '@/shared/modules/proposals/core/lib/financials'
 import { incentiveTypes } from '@/shared/modules/proposals/core/schemas'
+import { FundingHero } from './funding-hero'
+import { FundingLedger } from './funding-ledger'
 import { IncentiveCollapsibleHeader } from './incentive-collapsible-header'
 
 interface Props {
@@ -21,6 +29,7 @@ interface Props {
 
 export function FundingFields({ pricingMode }: Props) {
   const form = useFormContext<ProposalFormSchema>()
+  const loading = useEditLoading()
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
@@ -28,12 +37,14 @@ export function FundingFields({ pricingMode }: Props) {
   })
 
   const [openIncentives, setOpenIncentives] = useState<Set<number>>(() => new Set())
+  const { disabled } = useFormState({ control: form.control })
 
   const [DeleteConfirmDialog, confirmDelete] = useConfirm({
     title: 'Delete Incentive',
     message: 'Are you sure you want to delete this incentive? This action cannot be undone.',
   })
 
+  const funding = useWatch({ control: form.control, name: 'funding' })
   const incentives = useWatch({ control: form.control, name: 'funding.incentives' })
   const sow = useWatch({ control: form.control, name: 'project.data.sow' })
   const miscPrice = useWatch({ control: form.control, name: 'funding.miscPrice' })
@@ -86,259 +97,229 @@ export function FundingFields({ pricingMode }: Props) {
   return (
     <>
       <DeleteConfirmDialog />
-      <div className="flex flex-col gap-4 lg:gap-6">
-        {/* Base Pricing */}
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4">
-            {pricingMode === 'breakdown' && (
-              <FormField
-                name="funding.miscPrice"
-                control={form.control}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Misc Pricing</FormLabel>
-                    <FormControl>
-                      <Input
-                        {...field}
-                        placeholder="$0"
-                        onChange={(value) => {
-                          const numericValue = Number(value.target.value.replace(/\D/g, ''))
-                          field.onChange(numericValue)
-                        }}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
-            <FormField
-              name="funding.startingTcp"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Total Contract Price</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      disabled={pricingMode === 'breakdown'}
-                      placeholder="$50,000"
-                      onChange={(value) => {
-                        const numericValue = Number(value.target.value.replace(/\D/g, ''))
-                        field.onChange(numericValue)
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              name="funding.depositAmount"
-              control={form.control}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Deposit</FormLabel>
-                  <FormControl>
-                    <Input
-                      {...field}
-                      placeholder="$1,000"
-                      onChange={(value) => {
-                        const numericValue = Number(value.target.value.replace(/\D/g, ''))
-                        field.onChange(numericValue)
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </div>
+      <div className="flex flex-col gap-6">
+        <FundingHero
+          finalPrice={computeFinalTcp({ funding, sow })}
+          totalIncentives={computeTotalSectionIncentives(sow) + computeTotalDiscounts(funding)}
+        />
 
-        {/* Incentives */}
-        <div className="space-y-3 lg:space-y-4">
-          <div className="flex items-center justify-between border-t border-border pt-3 lg:pt-4">
-            <h4 className="text-base font-semibold lg:text-lg">Incentives</h4>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              className="gap-1.5"
-              onClick={() => {
-                append({
-                  type: 'discount',
-                  amount: 0,
-                  notes: '',
-                })
-                setOpenIncentives(prev => new Set(prev).add(fields.length))
-              }}
-            >
-              <PlusIcon className="size-4" />
-              Add
-            </Button>
-          </div>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-start">
+          <section className="flex flex-col gap-2">
+            {/* The Incentives heading shares a row with its Add button; this row matches its height so the two eyebrows line up. */}
+            <div className="flex h-8 items-center">
+              <h4 className={FUNDING_EYEBROW}>Breakdown</h4>
+            </div>
+            <FundingLedger pricingMode={pricingMode} />
+          </section>
 
-          {fields.length === 0
-            ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">
-                  No incentives added
-                </p>
-              )
-            : (
-                <div className="flex flex-col gap-3 lg:gap-4">
-                  {fields.map((field, index) => {
-                    const isOpen = openIncentives.has(index)
-                    return (
-                      <Collapsible
-                        key={field.id}
-                        open={isOpen}
-                        onOpenChange={() => toggleIncentive(index)}
-                      >
-                        <div className="overflow-hidden rounded-xl border border-border bg-card">
-                          <CollapsibleTrigger asChild>
-                            <div>
-                              <IncentiveCollapsibleHeader
-                                incentive={incentives[index] ?? field}
-                                isOpen={isOpen}
-                                onDelete={(e) => {
-                                  e.stopPropagation()
-                                  handleRemoveIncentive(index)
-                                }}
-                              />
-                            </div>
-                          </CollapsibleTrigger>
-                          <AnimatedCollapsibleContent open={isOpen}>
-                            <div className="space-y-3 px-3 pb-3 lg:space-y-4 lg:px-4 lg:pb-4">
-                              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
-                                <FormField
-                                  name={`funding.incentives.${index}.type`}
-                                  control={form.control}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Incentive Type</FormLabel>
-                                      <FormControl>
-                                        <Select
-                                          defaultValue="discount"
-                                          onValueChange={(val: IncentiveType) => {
-                                            field.onChange(val)
-                                          }}
-                                        >
-                                          <SelectTrigger {...field} className="w-full">
-                                            <SelectValue placeholder="Select an incentive type" />
-                                          </SelectTrigger>
-                                          <SelectContent {...field}>
-                                            {incentiveTypes.map(t => (
-                                              <SelectItem key={t} value={t}>
-                                                {t.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-                                              </SelectItem>
-                                            ))}
-                                          </SelectContent>
-                                        </Select>
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                {incentives[index]?.type === 'discount' && (
-                                  <FormField
-                                    name={`funding.incentives.${index}.amount`}
-                                    control={form.control}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Amount</FormLabel>
-                                        <FormControl>
-                                          <Input
-                                            {...field}
-                                            placeholder="$1,000"
-                                            onChange={(value) => {
-                                              const numericValue = Number(value.target.value.replace(/\D/g, ''))
-                                              field.onChange(numericValue)
-                                            }}
-                                          />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
+          <section className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <h4 className={FUNDING_EYEBROW}>Incentives</h4>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="gap-1.5"
+                disabled={disabled}
+                onClick={() => {
+                  append({
+                    type: 'discount',
+                    amount: 0,
+                    notes: '',
+                  })
+                  setOpenIncentives(prev => new Set(prev).add(fields.length))
+                }}
+              >
+                <PlusIcon className="size-4" />
+                Add
+              </Button>
+            </div>
+
+            {/* The incentive count is unknown until the proposal arrives: one closed row stands in. */}
+            {loading
+              ? (
+                  <div aria-hidden className="overflow-hidden rounded-xl border border-border bg-card">
+                    <div className="flex items-center justify-between gap-3 px-3 py-2.5 lg:px-4 lg:py-3">
+                      <span className="text-sm font-medium lg:text-base">
+                        <LoadingValue width={110}>{null}</LoadingValue>
+                      </span>
+                      <ChevronDownIcon className="size-5 shrink-0 -rotate-90 text-muted-foreground" />
+                    </div>
+                  </div>
+                )
+              : fields.length === 0
+                ? (
+                    <p className="py-4 text-center text-sm text-muted-foreground">
+                      No incentives added
+                    </p>
+                  )
+                : (
+                    <div className="flex flex-col gap-3 lg:gap-4">
+                      {fields.map((field, index) => {
+                        const isOpen = openIncentives.has(index)
+                        return (
+                          <Collapsible
+                            key={field.id}
+                            open={isOpen}
+                            onOpenChange={() => toggleIncentive(index)}
+                          >
+                            <div className="overflow-hidden rounded-xl border border-border bg-card">
+                              <CollapsibleTrigger asChild>
+                                <div>
+                                  <IncentiveCollapsibleHeader
+                                    incentive={incentives[index] ?? field}
+                                    isOpen={isOpen}
                                   />
-                                )}
-                                {incentives[index]?.type === 'exclusive-offer' && (
-                                  <FormField
-                                    name={`funding.incentives.${index}.offer`}
-                                    control={form.control}
-                                    render={({ field }) => (
-                                      <FormItem>
-                                        <FormLabel>Offer</FormLabel>
-                                        <FormControl>
-                                          <Input {...field} />
-                                        </FormControl>
-                                        <FormMessage />
-                                      </FormItem>
-                                    )}
-                                  />
-                                )}
-                              </div>
-                              <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
-                                <FormField
-                                  name={`funding.incentives.${index}.notes`}
-                                  control={form.control}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Notes</FormLabel>
-                                      <FormControl>
-                                        {incentives[index]?.type === 'discount'
-                                          ? (
-                                              <Input
+                                </div>
+                              </CollapsibleTrigger>
+                              <AnimatedCollapsibleContent open={isOpen}>
+                                <div className="space-y-3 px-3 pb-3 lg:space-y-4 lg:px-4 lg:pb-4">
+                                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
+                                    <FormField
+                                      name={`funding.incentives.${index}.type`}
+                                      control={form.control}
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Incentive Type</FormLabel>
+                                          <FormControl>
+                                            <Select
+                                              value={field.value}
+                                              disabled={field.disabled}
+                                              onValueChange={(val: IncentiveType) => {
+                                                field.onChange(val)
+                                              }}
+                                            >
+                                              <SelectTrigger {...field} className="w-full">
+                                                <SelectValue placeholder="Select an incentive type" />
+                                              </SelectTrigger>
+                                              <SelectContent {...field}>
+                                                {incentiveTypes.map(t => (
+                                                  <SelectItem key={t} value={t}>
+                                                    {formatProjectType(t)}
+                                                  </SelectItem>
+                                                ))}
+                                              </SelectContent>
+                                            </Select>
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                    {incentives[index]?.type === 'discount' && (
+                                      <FormField
+                                        name={`funding.incentives.${index}.amount`}
+                                        control={form.control}
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel>Amount</FormLabel>
+                                            <FormControl>
+                                              <MoneyField
                                                 {...field}
-                                                placeholder="Friends & Family Discount"
-                                                onChange={(e) => {
-                                                  field.onChange(e.target.value || '')
+                                                inputMode="numeric"
+                                                placeholder="$1,000"
+                                                value={field.value || null}
+                                                onChange={value => field.onChange(value ?? 0)}
+                                              />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                    )}
+                                    {incentives[index]?.type === 'exclusive-offer' && (
+                                      <FormField
+                                        name={`funding.incentives.${index}.offer`}
+                                        control={form.control}
+                                        render={({ field }) => (
+                                          <FormItem>
+                                            <FormLabel>Offer</FormLabel>
+                                            <FormControl>
+                                              <Input {...field} />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                    )}
+                                  </div>
+                                  <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:gap-4">
+                                    <FormField
+                                      name={`funding.incentives.${index}.notes`}
+                                      control={form.control}
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Notes</FormLabel>
+                                          <FormControl>
+                                            {incentives[index]?.type === 'discount'
+                                              ? (
+                                                  <Input
+                                                    {...field}
+                                                    placeholder="Friends & Family Discount"
+                                                    onChange={(e) => {
+                                                      field.onChange(e.target.value || '')
+                                                    }}
+                                                  />
+                                                )
+                                              : (
+                                                  <Textarea
+                                                    {...field}
+                                                    placeholder="Complementary 10 ft gutters"
+                                                    onChange={(e) => {
+                                                      field.onChange(e.target.value || '')
+                                                    }}
+                                                  />
+                                                )}
+                                          </FormControl>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                    <FormField
+                                      name={`funding.incentives.${index}.expiresAt`}
+                                      control={form.control}
+                                      render={({ field }) => (
+                                        <FormItem>
+                                          <FormLabel>Expiration</FormLabel>
+                                          {/* The shared picker takes no disabled prop; a disabled fieldset disables its trigger button. */}
+                                          <fieldset disabled={field.disabled} className="contents">
+                                            <FormControl>
+                                              <DateTimePicker
+                                                className="h-9 w-full justify-start rounded-md border border-input bg-input-background px-3 py-1 text-sm shadow-xs hover:border-input-hover hover:bg-input-background"
+                                                placeholder="Set expiration"
+                                                value={field.value ? new Date(field.value) : undefined}
+                                                onChange={(date) => {
+                                                  field.onChange(date ? date.toISOString() : undefined)
                                                 }}
                                               />
-                                            )
-                                          : (
-                                              <Textarea
-                                                {...field}
-                                                placeholder="Complementary 10 ft gutters"
-                                                onChange={(e) => {
-                                                  field.onChange(e.target.value || '')
-                                                }}
-                                              />
-                                            )}
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                                <FormField
-                                  name={`funding.incentives.${index}.expiresAt`}
-                                  control={form.control}
-                                  render={({ field }) => (
-                                    <FormItem>
-                                      <FormLabel>Expiration</FormLabel>
-                                      <FormControl>
-                                        <DateTimePicker
-                                          className="h-9 w-full justify-start rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs"
-                                          placeholder="Set expiration"
-                                          value={field.value ? new Date(field.value) : undefined}
-                                          onChange={(date) => {
-                                            field.onChange(date ? date.toISOString() : undefined)
-                                          }}
-                                        />
-                                      </FormControl>
-                                      <FormMessage />
-                                    </FormItem>
-                                  )}
-                                />
-                              </div>
+                                            </FormControl>
+                                          </fieldset>
+                                          <FormMessage />
+                                        </FormItem>
+                                      )}
+                                    />
+                                  </div>
+                                  <div className="flex justify-end">
+                                    <Button
+                                      type="button"
+                                      size="sm"
+                                      variant="ghost"
+                                      className="gap-1.5 text-destructive-text"
+                                      disabled={disabled}
+                                      onClick={() => handleRemoveIncentive(index)}
+                                    >
+                                      <TrashIcon className="size-4" />
+                                      Remove incentive
+                                    </Button>
+                                  </div>
+                                </div>
+                              </AnimatedCollapsibleContent>
                             </div>
-                          </AnimatedCollapsibleContent>
-                        </div>
-                      </Collapsible>
-                    )
-                  })}
-                </div>
-              )}
+                          </Collapsible>
+                        )
+                      })}
+                    </div>
+                  )}
+          </section>
         </div>
       </div>
     </>

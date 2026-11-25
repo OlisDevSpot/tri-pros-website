@@ -13,7 +13,7 @@ interface FundingSourceRow {
 
 export interface FundingColumns {
   startingTcpCents: number
-  depositAmountCents: number
+  depositAmountCents: number | null
   cashInDealCents: number
   miscPriceCents: number | null
 }
@@ -29,7 +29,7 @@ export interface FundingColumns {
 export function toFundingInputs(row: FundingSourceRow): FundingData {
   return {
     startingTcp: (row.startingTcpCents ?? 0) / 100,
-    depositAmount: (row.depositAmountCents ?? 0) / 100,
+    depositAmount: row.depositAmountCents == null ? null : row.depositAmountCents / 100,
     cashInDeal: (row.cashInDealCents ?? 0) / 100,
     ...(row.miscPriceCents == null ? {} : { miscPrice: row.miscPriceCents / 100 }),
     incentives: incentiveRowsToDomain(row.incentives),
@@ -45,7 +45,7 @@ export function fundingDomainToColumns(
 ): FundingColumns {
   return {
     startingTcpCents: Math.round(data.startingTcp * 100),
-    depositAmountCents: Math.round(data.depositAmount * 100),
+    depositAmountCents: data.depositAmount == null ? null : Math.round(data.depositAmount * 100),
     cashInDealCents: Math.round(data.cashInDeal * 100),
     miscPriceCents: data.miscPrice == null ? null : Math.round(data.miscPrice * 100),
   }

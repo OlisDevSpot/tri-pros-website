@@ -84,7 +84,7 @@ Each business rule behind an analytics number is one named export; change the ru
 | **Unknown city / zip** | Website-intake placeholders count as unknown | `UNKNOWN_PLACE_VALUES` · `src/features/analytics/lib/analytics-rules.ts` |
 | **Bankable** | A project's money is net, at risk (on hold) or cancelled | `projectBankability` · `src/shared/modules/projects/core/lib/bankability.ts` |
 | **Setter** | The appointment setter: the user, often a dispatcher, who booked the meeting. One per meeting; a super-admin can change it. The one term in code, schema, docs and UI; never "closed by", "closer" or "created by" | `meetings.setBy` · picked on the add-meeting form, else the meeting's creator; a meeting the system books gets the office account; never empty for new rows (nullable only for rows that predate it); kept by a duplicate and a reschedule; only super-admins change it |
-| **Closer** | Any participant of the meeting (the reps who sit it, never the setter); per-closer totals overlap by design; a meeting (and its sale) with no closer groups under an unassigned row | `MeetingFact.closerIds` · `src/shared/entities/meetings/dal/server/analytics-facts.ts` |
+| **Closer** | The **meeting reps** of a meeting with an approved proposal: they sold, or closed, it (owner ruling 2026-10-16); never the setter; per-closer totals overlap by design; a sale with no closer groups under an unassigned row. ⚠️ The code still counts every participant of every meeting, helpers included, until the proposal page rework's follow-up F9 | `MeetingFact.closerIds` · `src/shared/entities/meetings/dal/server/analytics-facts.ts` |
 | **Business month** | Calendar month in Pacific time, never UTC | `businessMonthKey`, `businessMonthWindow` · `src/shared/lib/business-time.ts` |
 | **Spend** | Dollars a lead source cost in one business month, typed in on the Analytics Spend tab; a blank month is "not entered", never $0 | `leadSourceMonthlySpendTable` · `src/shared/db/schema/lead-source-monthly-spend.ts` |
 | **Spend mode** | `manual` (spend is typed in) or `none` (a free source, never "missing") | `leadSourceSpendModes` · `src/shared/constants/enums/lead-sources.ts` |
@@ -164,6 +164,30 @@ The proposal's bill-savings projection and the Remodel ROI calculator share thes
 - **Electric utility** — the customer's power company, LADWP or SCE, priced at its average $/kWh; gas is always SoCalGas. Code: `electricProvider` (the `electricProviders` enum). _Avoid_: "provider" alone (service providers, finance providers and the lead-conversion provider already use it).
 - **Utility bills** — the customer's monthly electric, gas and water bills plus their electric utility, one row per customer, shared by all their proposals and settable by the homeowner through the share link (`customer_utility_bills`, stored in cents). _Avoid_: energy bills.
 
+## People terms
+
+- **Agent** — a user with the `agent` role (`userRoles`): our salespeople, and only them. "Agent" in copy and docs means these users. _Avoid_: rep for a user who is not on a meeting (rep always means a meeting rep).
+- **Meeting reps** — the owner and co-owner of a meeting, owner first; never helpers, never the system user (`SYSTEM_OWNER_EMAIL`). No entity of their own: they are `meeting_participants` rows with role `owner` or `co_owner`, normally agents. A meeting's proposals belong to them, not to `proposals.ownerId` (the proposal's author). Code: `meetingReps`, `getMeetingReps`. UI copy says "Your team" (two) or "Your consultant" (one). _Avoid_: proposal owner, specialist (the VoIP code's word for the owner rep), closer (a meeting rep only once the meeting has an approved proposal, see Closer).
+
+## Proposal page terms
+
+The customer-facing proposal page (`/proposal-flow/proposal/[proposalId]`).
+
+- **Cockpit** — the agent's sheet on the proposal page: numbered steps (Share, the homeowner's choice, Agreement), then reference rows for the customer and the meeting; opened from the top bar when the viewer can act on the proposal (`Cockpit`). _Avoid_: agent panel, sidebar, agent view.
+- **Contract fields** — the values the app fills into a contract's Zoho fields, owned by the codebase rather than by Zoho formulas or defaults: per proposal, grouped by field group (the payment schedule first), each group's defaults and Zoho mapping declared in the Zoho registry (`contractFields`, `proposals.contract_fields`; neither is built yet, PE1 of the proposal editor epic). _Avoid_: contract terms (the printed clauses), contract config.
+- **Payment schedule** — the deposit followed by progress payments that split (contract price − deposit). For now the fixed standard template (`STANDARD_PAYMENT_SCHEDULE`, computed by `computePaymentSchedule`): Measurements/Site inspection 20%, Material order/Delivery 35%, Installation commencement 35%, Completion the remainder; per-proposal edits (2–5 payments) arrive with contract fields, as their first group. The same for every deal structure. _Avoid_: scheduled payments (the retired payment mode), payment plan.
+- **All cash** — a proposal whose cash down equals the contract price; derived from `cashInDeal`, never stored. _Avoid_: all-cash mode, payment mode.
+- **Proposal chapter** — one of the six sections of the proposal page, Overview → Trusted contractor → Past results → Scope of work → Funding → Next steps (`proposalSteps`). Scoped to the proposal page: in a presentation the grouping is a **Run** and in a project story a **Story phase**, and their _Avoid_ lists still bar "chapter" there. _Avoid_: step (the code's `proposalSteps` predates the term), section.
+
+## Proposal editor pricing terms
+
+The edit proposal page's labels for numbers that `docs/ubiquitous-language.md` already defines. Money math lives in `src/shared/modules/proposals/core/lib/financials/`.
+
+- **Section starting price** — a SOW section's price before its section incentives: `financials.sectionPrice`. The glossary's "Section Price". _Avoid_: list price, base price.
+- **Section final price** — the section's price after its section incentives: `computeSectionFinancials(...).netPrice`. Shown with the starting price struck beside it when they differ. Only inside a section. In Funding the final TCP is labelled **Final price** (owner, 2026-10-23). _Avoid_: net price (in editor copy), section total.
+- **Cost Lines** — what Tri Pros pays for a section's work (job costs). They feed margin and multiplier, never the homeowner's price. _Avoid_: expenses, costs (alone).
+- **Subtotal** — the Funding ledger line in breakdown mode: Σ section starting prices − Σ section incentives + Misc Pricing. Not the Total Contract Price: **TCP** stays `startingTcp` (the starting TCP); the final TCP is the ledger's **Final price**. _Avoid_: Total Contract Price for this line.
+
 ## Flagged ambiguities
 
 - "run" means two things: a presentation **Run** (consecutive column slides, Presentation terms) and a scheduled execution of an automation (`runAutomaticKind`, `VisitMessageRunReport`, `resolveRunInstant`). Both stay, each scoped to its section; in automation copy "run" is always the scheduled execution.
@@ -171,6 +195,7 @@ The proposal's bill-savings projection and the Remodel ROI calculator share thes
 - "body" is a data view's **Body** (Data view terms); on a presentation slide the word is **Content**, never body.
 - "qualify" means program eligibility (Energy Saver+ through `qualifyEnergySaver`, decided by a trade's category); whether a scope lowers a bill is a **Bill-cutting scope**, decided per scope. The two can differ: an A/C replacement qualifies for Energy Saver+ but cuts only the electric bill.
 - "sits" means two counts: the **Sit** filter grouping field and the "Sits" quick filter count meetings (every sat non-project meeting), while analytics "Sits" counts booked leads (first sit per lead, `pickBookedLead`). Both stay; the two numbers differ by design.
+- "rep" alone means a **meeting rep** (People terms). Older docs and code say "the reps who sit it" for every participant, helpers included (the analytics closer), and "specialist" for the owner rep (VoIP); both are being moved to the People terms (2026-10-16).
 - "campaign" means a lead-conversion provider campaign (`voip_campaigns`) and a Meta ad campaign; never a scheduled send to customers.
 - "plan" means three things: an automation **Plan** (Automation terms), a dev-flow **Plan** (an issue, Dev flow terms) and the planning **Stage** word `plan`. Each stays in its section; in dev-flow copy a plan is always the issue, and its file is its **Tracker**.
 - "orchestrator" means the data-view **Orchestrator** (a page or component) and the dev-flow **Orchestrator** (a Claude Code session). In data-view code and docs it is always the former.

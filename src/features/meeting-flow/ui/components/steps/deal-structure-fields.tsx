@@ -14,6 +14,7 @@ import {
   FormMessage,
 } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { MoneyField } from '@/shared/components/ui/money-field'
 import { Separator } from '@/shared/components/ui/separator'
 import { computeDealDepositPercent } from '@/shared/entities/meetings/lib/compute-deal-derived'
 import { cn } from '@/shared/lib/utils'
@@ -88,16 +89,11 @@ export function DealStructureFields({
           <FormItem>
             <FormLabel className="text-sm font-semibold">Total Contract Price</FormLabel>
             <FormControl>
-              <Input
+              <MoneyField
                 className="text-base font-medium"
-                inputMode="decimal"
                 placeholder="$0"
-                type="text"
-                value={field.value === 0 ? '' : String(field.value)}
-                onChange={(e) => {
-                  const numericValue = Number(e.target.value.replace(/\D/g, ''))
-                  field.onChange(Number.isNaN(numericValue) ? 0 : numericValue)
-                }}
+                value={field.value || null}
+                onChange={value => field.onChange(value ?? 0)}
               />
             </FormControl>
             <p className="text-xs text-muted-foreground">Starting price before incentive deductions</p>
@@ -234,16 +230,11 @@ export function DealStructureFields({
               <FormItem>
                 <FormLabel className="text-sm font-semibold">Deposit Amount</FormLabel>
                 <FormControl>
-                  <Input
+                  <MoneyField
                     className="text-base font-medium"
-                    inputMode="decimal"
                     placeholder="$0"
-                    type="text"
-                    value={field.value === 0 ? '' : String(field.value)}
-                    onChange={(e) => {
-                      const numericValue = Number(e.target.value.replace(/\D/g, ''))
-                      field.onChange(Number.isNaN(numericValue) ? 0 : numericValue)
-                    }}
+                    value={field.value || null}
+                    onChange={value => field.onChange(value ?? 0)}
                   />
                 </FormControl>
                 <FormMessage />

@@ -1,6 +1,6 @@
 'use client'
 
-import type { PortfolioMatch } from '@/features/meeting-flow/types'
+import type { PortfolioMatch } from '@/shared/modules/projects/core/types'
 import { useRef, useState } from 'react'
 import { PORTFOLIO_COPY } from '@/features/meeting-flow/constants/portfolio-step'
 import { ProjectList } from '@/features/meeting-flow/ui/components/steps/portfolio/project-list'

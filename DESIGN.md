@@ -175,6 +175,11 @@ exactly one accent, and its rarity is the point.
   step above their surface. A table head paints its surface (`bg-(--card)`), not a band.
   Hovered and selected rows mix primary into the surface
   (`--row-hover`, `--row-selected`); selected always sits further from it than hover.
+- **Well** (`surface-well`): a region recessed one rung below the surface it is cut into (the Scope
+  chapter's "How we'll do it"); its edges, text and controls derive from that rung. Use it only inside
+  rung-2+ surfaces, never in an overlay (a well there resolves below the page): inside a rung-1
+  surface it lands at canvas lightness, where control edges and muted-on-hover text fall below the
+  contrast floor.
 - **Quiet Steel** (`oklch(0.47 0.03 256)`): muted-foreground for secondary text
   and captions.
 - **Hairline** (`--border`, one `--edge` off its surface: darker in light, lighter in

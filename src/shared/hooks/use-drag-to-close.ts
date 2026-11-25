@@ -93,16 +93,19 @@ export function useDragToClose({ backdropRef, ignoreSelector, onOpenChange, shee
       }
     }
 
+    // The release is heard on the document: a press that opens a Radix menu turns pointer events off on <body>, and a
+    // press that leaves the sheet lets go outside it, so a listener on the sheet would leave the gesture armed.
+    const doc = sheet.ownerDocument
     sheet.addEventListener('pointerdown', onPointerDown)
     sheet.addEventListener('pointermove', onPointerMove)
-    sheet.addEventListener('pointerup', onPointerEnd)
-    sheet.addEventListener('pointercancel', onPointerEnd)
+    doc.addEventListener('pointerup', onPointerEnd)
+    doc.addEventListener('pointercancel', onPointerEnd)
     sheet.addEventListener('click', onClickCapture, true)
     return () => {
       sheet.removeEventListener('pointerdown', onPointerDown)
       sheet.removeEventListener('pointermove', onPointerMove)
-      sheet.removeEventListener('pointerup', onPointerEnd)
-      sheet.removeEventListener('pointercancel', onPointerEnd)
+      doc.removeEventListener('pointerup', onPointerEnd)
+      doc.removeEventListener('pointercancel', onPointerEnd)
       sheet.removeEventListener('click', onClickCapture, true)
     }
   }, [backdropRef, ignoreSelector, onOpenChange, sheetRef])

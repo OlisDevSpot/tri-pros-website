@@ -1,9 +1,8 @@
 import type { ProposalFormSchema } from '../schemas/form-schema'
-import type { UserRole } from '@/shared/constants/enums'
 
 export interface ProposalStep<P> {
   title: string
-  roles: UserRole[]
+  shortLabel: string
   accessor: string
   description: string
   Component: (props: P) => React.ReactNode
@@ -18,3 +17,5 @@ export interface OverrideProposalValues {
   project?: Partial<ProposalFormSchema['project']>
   funding?: Partial<ProposalFormSchema['funding']>
 }
+
+export type ProposalContextTab = 'customer' | 'visit'

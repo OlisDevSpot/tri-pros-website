@@ -4,7 +4,7 @@ import type { Ref } from 'react'
 import type { MeetingStepHandle } from '@/features/meeting-flow/types'
 import { useImperativeHandle } from 'react'
 import { PORTFOLIO_COPY } from '@/features/meeting-flow/constants/portfolio-step'
-import { usePortfolioMatches } from '@/features/meeting-flow/hooks/use-portfolio-matches'
+import { useTradeSelections } from '@/features/meeting-flow/contexts/trade-selections-context'
 import { usePortfolioNavigation } from '@/features/meeting-flow/hooks/use-portfolio-navigation'
 import { PortfolioStepLayout } from '@/features/meeting-flow/ui/components/steps/portfolio/portfolio-step-layout'
 import { ProjectHeading } from '@/features/meeting-flow/ui/components/steps/portfolio/project-heading'
@@ -19,6 +19,7 @@ import { EmptyState } from '@/shared/components/states/empty-state'
 import { ErrorState } from '@/shared/components/states/error-state'
 import { Button } from '@/shared/components/ui/button'
 import { Skeleton } from '@/shared/components/ui/skeleton'
+import { usePortfolioMatches } from '@/shared/modules/projects/core/hooks/use-portfolio-matches'
 
 interface PortfolioStepProps {
   /** id of the step's visually hidden h1. */
@@ -33,7 +34,8 @@ interface PortfolioStepProps {
  * never opens empty while any project has a photo.
  */
 export function PortfolioStep({ labelledBy, ref }: PortfolioStepProps) {
-  const { matches, showNoMatchNote, isPending, isError, refetch } = usePortfolioMatches()
+  const selections = useTradeSelections()
+  const { matches, showNoMatchNote, isPending, isError, refetch } = usePortfolioMatches(selections)
   const nav = usePortfolioNavigation(matches)
   const { advance, next, prev } = nav
 

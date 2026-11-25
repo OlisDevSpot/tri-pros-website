@@ -4,7 +4,7 @@ import type { ChapterId } from '@/features/calculators/remodel-roi-calculator/co
 import type { LookAheadYears } from '@/features/calculators/remodel-roi-calculator/constants/look-ahead'
 import type { RemodelRoiProjection, StoryContent } from '@/features/calculators/remodel-roi-calculator/types'
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { CHAPTER_IDS, chapterElementId, CHAPTERS_WITH_INFO, INTRO_ONLY, isDetailChapter } from '@/features/calculators/remodel-roi-calculator/constants/chapters'
 import { STORY_COPY } from '@/features/calculators/remodel-roi-calculator/constants/story-copy'
@@ -33,19 +33,31 @@ export function StoryCanvas({ projection, story, lookAhead, onLookAheadChange, s
   const { scroller, registerScroller, openAssumptions } = useStoryUi()
   const chapters = projection.ready ? CHAPTER_IDS : INTRO_ONLY
   const ids = useMemo(() => chapters.map(chapterElementId), [chapters])
-  const activeId = useActiveSection(ids, { rootEl: scroller })
+  // The top bar is 56px until a narrow story wraps it to two rows, so the line and the landing follow its height.
+  const [barHeight, setBarHeight] = useState(56)
+  useEffect(() => {
+    const bar = scroller?.querySelector<HTMLElement>('[data-slot="story-top-bar"]')
+    if (!bar) {
+      return
+    }
+    const observer = new ResizeObserver(() => setBarHeight(bar.offsetHeight))
+    observer.observe(bar)
+    return () => observer.disconnect()
+  }, [scroller])
+  const { activeId, select } = useActiveSection(ids, { rootEl: scroller, offset: barHeight })
+  const selectChapter = (chapter: ChapterId) => select(chapterElementId(chapter))
   const active = chapters.find(chapter => chapterElementId(chapter) === activeId) ?? 'intro'
   const question = (chapter: ChapterId) => (chapter === 'intro' ? story.intro.question : chapter === 'answer' ? story.answer.question : chapter === 'basis' ? story.basis.question : story[chapter].question)
 
   return (
     <div className="@container/story relative min-h-0">
-      <div className="relative h-full overflow-y-auto scroll-pt-14 [scroll-behavior:auto]" ref={registerScroller}>
+      <div className="relative h-full overflow-y-auto [scroll-behavior:auto]" ref={registerScroller} style={{ scrollPaddingTop: barHeight }}>
         <TopBar lookAhead={lookAhead} onLookAheadChange={onLookAheadChange} projection={projection} showInputsButton={showInputsButton} />
         <div className="mx-auto max-w-[760px] px-8 pb-20">
           {chapters.map((chapter, index) => (
             <StoryChapter hasInfo={(CHAPTERS_WITH_INFO as readonly ChapterId[]).includes(chapter)} id={chapter} key={chapter} number={index + 1} question={question(chapter)}>
               {chapter === 'intro' && <PathsIntro intro={story.intro} />}
-              {chapter === 'answer' && <HeadlineStats answer={story.answer} />}
+              {chapter === 'answer' && <HeadlineStats answer={story.answer} onSelectChapter={selectChapter} />}
               {isDetailChapter(chapter) && <ChapterBody chapter={chapter} content={story[chapter]} lookAhead={lookAhead} projection={projection} />}
               {chapter === 'basis' && (
                 <>
@@ -61,7 +73,7 @@ export function StoryCanvas({ projection, story, lookAhead, onLookAheadChange, s
           {!projection.ready && <MissingInputs hasBills={BILL_CATEGORIES.some(category => projection.cuts[category].bill > 0)} hasPrice={projection.project.price > 0} hasTrades={projection.trades.length > 0} />}
         </div>
       </div>
-      {projection.ready && <ChapterRail active={active} />}
+      {projection.ready && <ChapterRail active={active} onSelect={selectChapter} />}
     </div>
   )
 }

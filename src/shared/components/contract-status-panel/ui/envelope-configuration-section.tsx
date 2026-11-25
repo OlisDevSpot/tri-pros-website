@@ -2,7 +2,7 @@
 
 import type { EnvelopeDocumentId } from '@/shared/constants/enums'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { Loader2 } from 'lucide-react'
+import { Loader2, UserRoundCheckIcon } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 
@@ -11,6 +11,7 @@ import { Label } from '@/shared/components/ui/label'
 import { Switch } from '@/shared/components/ui/switch'
 import { useInvalidation } from '@/shared/dal/client/hooks/use-invalidation'
 import { CUSTOMER_AGE_MAX, CUSTOMER_AGE_MIN } from '@/shared/entities/customers/lib/constants'
+import { isSeniorByAge } from '@/shared/entities/customers/lib/customer-predicates'
 import { useDebounce } from '@/shared/hooks/use-debounce'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
@@ -22,6 +23,8 @@ interface EnvelopeConfigurationSectionProps {
   token?: string
   locked: boolean
   lockReason?: string
+  /** `inline` sits the age as a key-value row for a host that already lists its fields. */
+  layout?: 'stacked' | 'inline'
 }
 
 function parseAge(input: string): number | null {
@@ -49,6 +52,7 @@ export function EnvelopeConfigurationSection({
   token,
   locked,
   lockReason,
+  layout = 'stacked',
 }: EnvelopeConfigurationSectionProps) {
   const trpc = useTRPC()
   const { invalidateProposal } = useInvalidation()
@@ -114,45 +118,76 @@ export function EnvelopeConfigurationSection({
   const isAgeSaving = applyContext.isPending && applyContext.variables?.age != null
   const hasAge = serverAge != null
 
+  const ageInputId = `envelope-age-${proposalId}`
+  const isInline = layout === 'inline'
+
+  const savingIndicator = isAgeSaving && (
+    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+      <Loader2 className="size-3 animate-spin" aria-hidden />
+      Saving…
+    </span>
+  )
+
+  const ageField = (
+    <div className="flex flex-wrap items-center gap-2">
+      <Input
+        id={ageInputId}
+        type="number"
+        min={CUSTOMER_AGE_MIN}
+        max={CUSTOMER_AGE_MAX}
+        value={ageInput}
+        onChange={e => setAgeInput(e.target.value)}
+        disabled={locked || contextQuery.isLoading}
+        aria-describedby={locked ? `envelope-age-${proposalId}-lock` : undefined}
+        // Inline, the senior marker shares the row with the input, so on a phone the input (and its placeholder) keeps to an age's width.
+        className={cn('h-9', isInline ? 'w-20' : 'max-w-35')}
+        placeholder={isInline ? 'Age' : 'Enter age'}
+      />
+      {isSeniorByAge(parseAge(ageInput)) && (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-status-pending-bg px-2 py-1 text-xs font-bold text-status-pending-fg">
+          <UserRoundCheckIcon className="size-3.5" aria-hidden />
+          Senior: senior documents
+        </span>
+      )}
+      {savingIndicator}
+    </div>
+  )
+
+  const lockNote = locked && lockReason && (
+    <p id={`envelope-age-${proposalId}-lock`} className="text-xs text-muted-foreground">
+      {lockReason}
+    </p>
+  )
+
   return (
-    <div className="space-y-3 rounded-lg border border-border bg-muted p-3.5">
-      {/* Age */}
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-center justify-between gap-2">
-          <Label htmlFor={`envelope-age-${proposalId}`} className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-            Customer Age
-          </Label>
-          {isAgeSaving && (
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Loader2 className="size-3 animate-spin" aria-hidden />
-              Saving…
-            </span>
+    <div className="space-y-3">
+      {isInline
+        ? (
+            <div className="flex flex-col gap-1.5">
+              <div className="grid grid-cols-[auto_1fr] items-center gap-x-4">
+                <Label htmlFor={ageInputId} className="text-sm text-muted-foreground">Age</Label>
+                {ageField}
+              </div>
+              {lockNote}
+            </div>
+          )
+        : (
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor={ageInputId} className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Customer Age
+              </Label>
+              {ageField}
+              {lockNote}
+            </div>
           )}
-        </div>
-        <Input
-          id={`envelope-age-${proposalId}`}
-          type="number"
-          min={CUSTOMER_AGE_MIN}
-          max={CUSTOMER_AGE_MAX}
-          value={ageInput}
-          onChange={e => setAgeInput(e.target.value)}
-          disabled={locked || contextQuery.isLoading}
-          aria-describedby={locked ? `envelope-age-${proposalId}-lock` : undefined}
-          className="h-9 max-w-35"
-          placeholder="Enter age"
-        />
-        {locked && lockReason && (
-          <p id={`envelope-age-${proposalId}-lock`} className="text-xs text-muted-foreground">
-            {lockReason}
-          </p>
-        )}
-      </div>
 
       {/* Documents */}
       <div className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Documents
-        </span>
+        {!isInline && (
+          <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Documents
+          </span>
+        )}
         {!hasAge && (
           <p className="text-sm text-muted-foreground">
             Enter the customer's age above to see available documents.
@@ -162,25 +197,25 @@ export function EnvelopeConfigurationSection({
           <p className="text-sm text-muted-foreground">No documents available for this configuration.</p>
         )}
         {hasAge && docs.length > 0 && (
-          <ul className="flex flex-col gap-2">
+          <ul className="divide-y divide-border rounded-md border border-border">
             {docs.map((doc) => {
               const isRequired = doc.status === 'required'
               const checked = isRequired || savedSet.has(doc.id)
               const inputId = `envelope-doc-${proposalId}-${doc.id}`
               return (
-                <li key={doc.id} className="flex items-center justify-between gap-3">
+                <li key={doc.id} className="flex min-h-9 items-center justify-between gap-3 px-3 pointer-coarse:min-h-11">
                   <Label
                     htmlFor={inputId}
                     className={cn(
-                      'flex-1 text-sm leading-tight cursor-pointer',
+                      'flex-1 self-stretch text-sm leading-tight cursor-pointer',
                       (locked || isRequired) && 'cursor-default',
                     )}
                   >
                     {doc.label}
-                    {isRequired && (
-                      <span className="ml-1.5 text-xs font-normal text-muted-foreground">(required)</span>
-                    )}
                   </Label>
+                  {isRequired && (
+                    <span className="text-xs font-bold text-muted-foreground">required</span>
+                  )}
                   <Switch
                     id={inputId}
                     checked={checked}

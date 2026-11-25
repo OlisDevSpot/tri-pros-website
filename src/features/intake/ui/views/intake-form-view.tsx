@@ -17,8 +17,9 @@ import { MeetingDateField } from '@/features/intake/ui/components/meeting-date-f
 import { Mp3UploadField } from '@/features/intake/ui/components/mp3-upload-field'
 import { AddressAutocomplete } from '@/shared/components/inputs/address-autocomplete'
 import { Button } from '@/shared/components/ui/button'
-import { Form, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { PhoneField } from '@/shared/components/ui/phone-field'
 import { Textarea } from '@/shared/components/ui/textarea'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -152,7 +153,7 @@ export function IntakeFormView({ mode, formConfig, leadSourceSlug }: IntakeFormV
                       {'Phone '}
                       <span className="text-destructive">*</span>
                     </FormLabel>
-                    <Input type="tel" {...field} />
+                    <FormControl><PhoneField {...field} /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

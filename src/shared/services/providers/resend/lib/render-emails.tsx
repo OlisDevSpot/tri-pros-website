@@ -13,12 +13,14 @@ export function renderProposalEmail(params: {
   proposalUrl: string
   customerName: string
   message?: string
+  reps: { name: string, phone: string | null }[]
 }) {
   return (
     <ProposalEmail
       proposalUrl={params.proposalUrl}
       customerName={params.customerName}
       repMessage={params.message}
+      reps={params.reps}
     />
   )
 }

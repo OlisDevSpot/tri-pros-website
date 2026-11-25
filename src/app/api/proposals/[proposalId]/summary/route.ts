@@ -1,6 +1,6 @@
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { getFullView } from '@/shared/modules/proposals/core/dal/server/queries'
-import { buildPricingBreakdown } from '@/shared/modules/proposals/core/lib/financials'
+import { buildPricingBreakdown, computePaymentSchedule, isAllCash } from '@/shared/modules/proposals/core/lib/financials'
 import { toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 import { SHARE_LINK_LIMITS } from '@/shared/modules/proposals/core/lib/share-link-rate-limit'
 import { shareRouteContext } from '@/shared/modules/proposals/core/lib/share-route-context'
@@ -114,8 +114,12 @@ export async function GET(
   }
 
   lines.push(`\n**Final Contract Price:** ${formatAsDollars(breakdown.finalTcp)}`)
-  lines.push(`**Deposit:** ${formatAsDollars(breakdown.deposit)}`)
-  lines.push(`**Cash in Deal:** ${formatAsDollars(breakdown.cashInDeal)}`)
+  lines.push(isAllCash(breakdown.cashInDeal, breakdown.finalTcp)
+    ? '**Payment:** All cash'
+    : `**Payment:** Financed, ${formatAsDollars(breakdown.cashInDeal)} down`)
+  for (const row of computePaymentSchedule(breakdown.finalTcp, breakdown.deposit)) {
+    lines.push(`- ${row.label}${row.percent != null ? ` (${row.percent}%)` : ''}: ${formatAsDollars(row.amount)}`)
+  }
 
   return new Response(lines.join('\n'), {
     headers: { 'Content-Type': 'text/plain; charset=utf-8' },

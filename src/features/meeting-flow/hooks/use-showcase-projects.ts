@@ -3,8 +3,8 @@
 import type { ShowcaseProjectIndex } from '@/features/meeting-flow/types'
 import type { Scope } from '@/shared/modules/construction/core/schemas'
 import { useMemo } from 'react'
-import { SHOWCASE_PROJECTS_STALE_MS } from '@/features/meeting-flow/constants/showcase'
 import { indexShowcaseProjects } from '@/features/meeting-flow/lib/index-showcase-projects'
+import { SHOWCASE_PROJECTS_STALE_MS } from '@/shared/modules/projects/core/constants/portfolio-match'
 import { usePortfolioProjects } from '@/shared/modules/projects/core/hooks/use-portfolio-projects'
 
 /**

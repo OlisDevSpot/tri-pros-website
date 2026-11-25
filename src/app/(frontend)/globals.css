@@ -565,7 +565,7 @@
    wherever it is read. */
 :root,
 .dark,
-:is(.bg-card, .surface, .surface-beneath, .bg-popover, .surface-overlay) {
+:is(.bg-card, .surface, .surface-beneath, .surface-well, .bg-popover, .surface-overlay) {
   --here-l: calc(var(--canvas-l) + var(--lift) + max(var(--depth), 1) * var(--step));
   --card: oklch(var(--here-l) var(--surface-c) var(--surface-h));
   /* Beneath the page, one rung up is the page itself, which takes no lift. */
@@ -687,8 +687,25 @@
   --here-l: calc(var(--canvas-l) - var(--step));
 }
 
+/* A well is cut into a surface and sits one rung below it, so it counts the surfaces it sits in, minus one. Each
+   deeper rule out-specifies the one before. Comes after the relative block so its lightness wins. */
+.surface-well {
+  --depth: -1;
+  --here-l: calc(var(--canvas-l) + min(max(var(--depth), 0), 1) * var(--lift) + var(--depth) * var(--step));
+}
+:is(.bg-card, .surface) .surface-well {
+  --depth: 0;
+}
+:is(.bg-card, .surface) :is(.bg-card, .surface) .surface-well {
+  --depth: 1;
+}
+:is(.bg-card, .surface) :is(.bg-card, .surface) :is(.bg-card, .surface) .surface-well {
+  --depth: 2;
+}
+
 /* The marketing world keeps its literal palette: its surfaces take the scope's values, not the ladder's. */
-:is(.theme-marketing, .funnel-light) :is(.bg-card, .surface, .surface-beneath, .bg-popover, .surface-overlay) {
+:is(.theme-marketing, .funnel-light)
+  :is(.bg-card, .surface, .surface-beneath, .surface-well, .bg-popover, .surface-overlay) {
   --card: inherit;
   --muted: inherit;
   --secondary: inherit;
@@ -742,6 +759,10 @@
 }
 
 @utility surface-beneath {
+  background-color: var(--card);
+}
+
+@utility surface-well {
   background-color: var(--card);
 }
 
@@ -1317,7 +1338,7 @@
 
 /* A surface draws its own edges, so nothing inside it bleeds to the page edge. `--bled-*` stays:
    a card riding inside a scroller still needs that scroller's edges. */
-:is(.bg-card, .surface, .surface-beneath, .bg-popover, .surface-overlay) {
+:is(.bg-card, .surface, .surface-beneath, .surface-well, .bg-popover, .surface-overlay) {
   --bleed-l: 0px;
   --bleed-r: 0px;
   --bleed-b: 0px;

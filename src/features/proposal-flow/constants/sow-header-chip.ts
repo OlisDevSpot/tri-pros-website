@@ -1,0 +1,1 @@
+export const SOW_HEADER_CHIP = 'min-w-0 shrink gap-1 border-transparent py-0 text-xs font-medium shadow-none hover:border-transparent pressed:bg-press disabled:cursor-default disabled:opacity-100 [&>svg]:size-3 disabled:[&>svg]:hidden max-md:[&>svg]:hidden'

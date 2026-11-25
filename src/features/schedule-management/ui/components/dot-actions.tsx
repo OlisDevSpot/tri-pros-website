@@ -3,7 +3,7 @@
 import type { ScheduleCalendarEvent } from '@/features/schedule-management/types'
 import type { EntityActionClickConfig, EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 
-import { isSelectAction } from '@/shared/components/entities/entity-actions/types'
+import { isClickAction } from '@/shared/components/entities/entity-actions/types'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
 
@@ -20,7 +20,7 @@ export function DotActions({ actions, event }: DotActionsProps) {
   return (
     <div className="flex flex-col gap-1 border-t pt-2">
       {actions
-        .filter((c): c is EntityActionClickConfig<ScheduleCalendarEvent> => !isSelectAction(c))
+        .filter((c): c is EntityActionClickConfig<ScheduleCalendarEvent> => isClickAction(c))
         .map((config) => {
           const ActionIcon = config.action.icon
           return (

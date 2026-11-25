@@ -1,4 +1,5 @@
-import type { PortfolioMatch, PortfolioMatchSection } from '@/features/meeting-flow/types'
+import type { PortfolioMatchSection } from '@/features/meeting-flow/types'
+import type { PortfolioMatch } from '@/shared/modules/projects/core/types'
 import { PORTFOLIO_SECTION_LABELS } from '@/features/meeting-flow/constants/portfolio-step'
 
 /** Consecutive kinds with the same label share a section; `index` stays the list position so numbers and jumps agree. */

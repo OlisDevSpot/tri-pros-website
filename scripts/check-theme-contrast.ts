@@ -7,7 +7,7 @@ type Mode = 'light' | 'dark'
 type Rgba = [number, number, number, number]
 
 /** Where a token is read: the page, a surface on a rung of the elevation ladder, an overlay, beneath the page, or the ⌘K palette. */
-type Place = 'beneath' | 'page' | 'rung 1' | 'rung 2' | 'rung 3' | 'overlay' | 'palette'
+type Place = 'beneath' | 'page' | 'rung 1' | 'rung 2' | 'rung 3' | 'well 0' | 'well 1' | 'overlay' | 'palette'
 
 interface Pair {
   label: string
@@ -68,6 +68,7 @@ const pageBlock = readBlock(/^:root,\s*\.dark\s*\{/m)
 const relativeBlock = readBlock(/^:root,\s*\.dark,\s*:is\(\.bg-card/m)
 const overlayBlock = readBlock(/^:is\(\.bg-popover,\s*\.surface-overlay\)\s*\{/m)
 const beneathBlock = readBlock(/^\.surface-beneath\s*\{/m)
+const wellBlock = readBlock(/^\.surface-well\s*\{/m)
 const paletteBlock = readBlock(/^\.surface-palette\s*\{/m)
 const mediaBlock = readBlock(/^:root\s*\{(?=[^{}]*--on-media)/m)
 const blueprintBlock = readBlock(/^:root\s*\{(?=[^{}]*--blueprint-paper)/m)
@@ -78,6 +79,9 @@ const PLACES: Record<Place, Tokens> = {
   'rung 1': new Map([['--depth', '1']]),
   'rung 2': new Map([['--depth', '2']]),
   'rung 3': new Map([['--depth', '3']]),
+  // A well is a region cut one rung below the surface it sits in: 'well 0' in a rung-1 card, 'well 1' in a rung-2 card.
+  'well 0': new Map([...wellBlock, ['--depth', '0']]),
+  'well 1': new Map([...wellBlock, ['--depth', '1']]),
   'overlay': overlayBlock,
   // The ⌘K palette is a dialog (rung 1) whose highlight and hairlines take the palette's own knobs.
   'palette': new Map([['--depth', '1'], ...paletteBlock]),
@@ -287,8 +291,10 @@ function contrast(pair: Pair, mode: Mode, place: Place): number {
   return (high + 0.05) / (low + 0.05)
 }
 
-const EVERYWHERE: Place[] = ['beneath', 'page', ...CARDS, 'overlay']
-const ON_SURFACES: Place[] = ['page', ...CARDS, 'overlay']
+const EVERYWHERE: Place[] = ['beneath', 'page', ...CARDS, 'well 1', 'overlay']
+// A well cut into a rung-1 surface sits at canvas lightness, where control edges and muted-on-hover fall below floor,
+// so only rung-2+ wells are checked and documented as usable. 'well 0' stays defined for the climb.
+const ON_SURFACES: Place[] = ['page', ...CARDS, 'well 1', 'overlay']
 
 const pairs: Pair[] = [
   { label: 'body text on page', fg: '--foreground', bg: '--background', min: 4.5 },
@@ -303,8 +309,8 @@ const pairs: Pair[] = [
   { label: 'field edge vs its surface', fg: '--input', bg: '--card', min: 1.9, on: ON_SURFACES },
   // A hovered field firms its edge but never reaches the indicator's 3:1; the owner finds a field boxed at 3:1 harsh.
   { label: 'hovered field edge vs its surface', fg: '--input-hover', bg: '--card', min: 2.2, max: 2.95, on: ON_SURFACES },
-  { label: 'body text on band', fg: '--foreground', bg: '--band', min: 4.5, on: ['page', ...CARDS] },
-  { label: 'muted text on band', fg: '--muted-foreground', bg: '--band', min: 4.5, on: ['page', ...CARDS] },
+  { label: 'body text on band', fg: '--foreground', bg: '--band', min: 4.5, on: ['page', ...CARDS, 'well 1'] },
+  { label: 'muted text on band', fg: '--muted-foreground', bg: '--band', min: 4.5, on: ['page', ...CARDS, 'well 1'] },
   { label: 'body text on hovered row', fg: '--foreground', bg: '--row-hover', min: 4.5, on: ON_SURFACES },
   { label: 'body text on selected row', fg: '--foreground', bg: '--row-selected', min: 4.5, on: ON_SURFACES },
   { label: 'body text on active tab', fg: '--foreground', bg: '--tab-active', min: 4.5, on: ON_SURFACES },
@@ -322,23 +328,23 @@ const pairs: Pair[] = [
   { label: 'label on hovered secondary', fg: '--secondary-foreground', bg: '--secondary-hover', min: 4.5, on: ON_SURFACES },
   // Edges are the owner's pick (`--edge`, tuned by eye with the elevation-ladder skill). These floors only catch a
   // retune that makes them vanish; the picks of 2026-10-05 measure 1.14–1.16 light and 1.21–1.34 dark on cards.
-  { label: 'edge vs its surface', fg: '--border', bg: '--card', min: 1.1, on: [...CARDS, 'overlay'] },
-  { label: 'grid line vs its surface', fg: '--grid-line', bg: '--card', min: 1.18, on: [...CARDS, 'overlay'] },
-  { label: 'axis vs its surface', fg: '--axis', bg: '--card', min: 1.28, on: [...CARDS, 'overlay'] },
+  { label: 'edge vs its surface', fg: '--border', bg: '--card', min: 1.1, on: [...CARDS, 'well 1', 'overlay'] },
+  { label: 'grid line vs its surface', fg: '--grid-line', bg: '--card', min: 1.18, on: [...CARDS, 'well 1', 'overlay'] },
+  { label: 'axis vs its surface', fg: '--axis', bg: '--card', min: 1.28, on: [...CARDS, 'well 1', 'overlay'] },
   // An outline button is filled a rung above what it sits on. On the page that is the canvas, not a card. An overlay
   // is the top rung, so a button in a menu has no rung left to climb and is not checked there.
   { label: 'outline button fill vs the page', fg: '--control', bg: '--background', min: 1.06 },
-  { label: 'outline button fill vs its surface', fg: '--control', bg: '--card', min: 1.06, on: CARDS },
+  { label: 'outline button fill vs its surface', fg: '--control', bg: '--card', min: 1.06, on: [...CARDS, 'well 1'] },
   // A button's edge is a quiet outline, not a field's 2:1 box: its fill and shadow already lift it. The caps catch a
   // retune that brings back the bold toolbar of boxes the owner rejected on 2026-10-07.
-  { label: 'outline button edge vs its fill', fg: '--control-border', bg: '--control', min: 1.25, max: 1.5, on: ['page', ...CARDS] },
+  { label: 'outline button edge vs its fill', fg: '--control-border', bg: '--control', min: 1.25, max: 1.5, on: ['page', ...CARDS, 'well 1'] },
   // Stronger than a card's own edge (1.14–1.34), so a button reads as standing on the card, not drawn on it.
-  { label: 'outline button edge vs its surface', fg: '--control-border', bg: '--card', min: 1.2, on: CARDS },
+  { label: 'outline button edge vs its surface', fg: '--control-border', bg: '--card', min: 1.2, on: [...CARDS, 'well 1'] },
   // Segmented tracks and button capsules take the button's edge. The edge is taken off the rung above the surface and
   // the track sinks below it, so light's deepest rungs bring the two closest and dark's sunken track sits furthest off.
-  { label: 'segmented track edge vs its track', fg: '--control-border', bg: '--tab-track', min: 1.12, max: 2, on: ['page', ...CARDS] },
-  { label: 'selected control vs its rest fill', fg: '--control-selected', bg: '--control', min: 1.15, on: ['page', ...CARDS] },
-  { label: 'label on a selected control', fg: '--foreground', bg: '--control-selected', min: 4.5, on: ['page', ...CARDS] },
+  { label: 'segmented track edge vs its track', fg: '--control-border', bg: '--tab-track', min: 1.12, max: 2, on: ['page', ...CARDS, 'well 1'] },
+  { label: 'selected control vs its rest fill', fg: '--control-selected', bg: '--control', min: 1.15, on: ['page', ...CARDS, 'well 1'] },
+  { label: 'label on a selected control', fg: '--foreground', bg: '--control-selected', min: 4.5, on: ['page', ...CARDS, 'well 1'] },
   // Proposal surfaces put ordinary ink on tone fills (the agent's internal numbers, a section's incentive card) and on
   // selected rows (an open scope section, the active agreement step's disc).
   { label: 'body text on the danger fill', fg: '--foreground', bg: '--status-danger-bg', base: '--card', min: 4.5, on: CARDS },
@@ -348,11 +354,11 @@ const pairs: Pair[] = [
   { label: 'body text on a selected row', fg: '--foreground', bg: '--row-selected', min: 4.5, on: CARDS },
   { label: 'muted text on a selected row', fg: '--muted-foreground', bg: '--row-selected', min: 4.5, on: CARDS },
   { label: 'primary icon on a selected row', fg: '--primary', bg: '--row-selected', min: 3, on: CARDS },
-  { label: 'hovered outline button vs its fill', fg: '--control-hover', bg: '--control', min: 1.1, on: ['page', ...CARDS] },
+  { label: 'hovered outline button vs its fill', fg: '--control-hover', bg: '--control', min: 1.1, on: ['page', ...CARDS, 'well 1'] },
   // Near black the first step reads weakest, so dark mode's lift has to keep a card off the page.
   { label: 'card vs the page', fg: '--card', bg: '--background', min: 1.1, on: ['rung 1'], modes: ['dark'] },
-  { label: 'skeleton bar vs its surface', fg: '--skeleton', bg: '--card', min: 1.1, on: [...CARDS, 'overlay'] },
-  { label: 'skeleton block vs its surface', fg: '--skeleton-soft', bg: '--card', min: 1.07, on: [...CARDS, 'overlay'] },
+  { label: 'skeleton bar vs its surface', fg: '--skeleton', bg: '--card', min: 1.1, on: [...CARDS, 'well 1', 'overlay'] },
+  { label: 'skeleton block vs its surface', fg: '--skeleton-soft', bg: '--card', min: 1.07, on: [...CARDS, 'well 1', 'overlay'] },
   // A hover has to show: the wash on its surface, and a filled button against its own rest colour.
   { label: 'hover wash vs its surface', fg: '--hover', bg: '--card', min: 1.1, on: ON_SURFACES },
   { label: 'hovered secondary vs secondary', fg: '--secondary-hover', bg: '--secondary', min: 1.1, on: ON_SURFACES },
@@ -376,8 +382,8 @@ const pairs: Pair[] = [
   { label: 'body text on an upcoming row', fg: '--foreground', bg: '--status-pending-bg', min: 4.5, on: CARDS },
   { label: 'muted text on an upcoming row', fg: '--muted-foreground', bg: '--status-pending-bg', min: 4.5, on: CARDS },
   // A filter chip is filled like an outline button, and its label is part muted.
-  { label: 'muted text on an outline button', fg: '--muted-foreground', bg: '--control', min: 4.5, on: ['page', ...CARDS] },
-  { label: 'muted text on a hovered outline button', fg: '--muted-foreground', bg: '--control-hover', min: 4.5, on: ['page', ...CARDS] },
+  { label: 'muted text on an outline button', fg: '--muted-foreground', bg: '--control', min: 4.5, on: ['page', ...CARDS, 'well 1'] },
+  { label: 'muted text on a hovered outline button', fg: '--muted-foreground', bg: '--control-hover', min: 4.5, on: ['page', ...CARDS, 'well 1'] },
   { label: 'primary vs page', fg: '--primary', bg: '--background', min: 3 },
   { label: 'focus ring vs page', fg: '--ring', bg: '--background', min: 3 },
   { label: 'label on destructive', fg: '--destructive-foreground', bg: '--destructive', min: 4.5 },
@@ -415,6 +421,8 @@ const climb: [[string, Place], [string, Place]][] = [
   [['--background', 'page'], ['--card', 'rung 1']],
   [['--card', 'rung 1'], ['--card', 'rung 2']],
   [['--card', 'rung 2'], ['--card', 'rung 3']],
+  [['--card', 'well 0'], ['--card', 'rung 1']],
+  [['--card', 'well 1'], ['--card', 'rung 2']],
   [['--card', 'rung 3'], ['--card', 'overlay']],
   [['--card', 'rung 3'], ['--popover', 'page']],
   ...CARDS.flatMap((place): [[string, Place], [string, Place]][] => [
@@ -494,7 +502,7 @@ for (const mode of ['light', 'dark'] as const) {
           : undefined)
     }
   }
-  for (const place of CARDS) {
+  for (const place of [...CARDS, 'well 1'] as Place[]) {
     guard(`${mode}: edge on ${place}`, () => {
       const edgeIsLighter = luminanceOf('--border', mode, place) > luminanceOf('--card', mode, place)
       return edgeIsLighter === (edgeLeans[mode] === 'lighter') ? undefined : `${mode}: the edge on ${place} must be ${edgeLeans[mode]} than its surface`

@@ -3,6 +3,7 @@
 import * as React from 'react'
 import { createPortal } from 'react-dom'
 
+import { useIdleReady } from '@/shared/hooks/use-idle-ready'
 import { cn } from '@/shared/lib/utils'
 
 export const SIDEBAR_MOBILE_SHEET_ID = 'sidebar-mobile-sheet'
@@ -108,20 +109,6 @@ export function SidebarMobileSheet({ open, onOpenChange, className, children }: 
     </>,
     document.body,
   )
-}
-
-function useIdleReady() {
-  const [isReady, setIsReady] = React.useState(false)
-  React.useEffect(() => {
-    // Safari has no requestIdleCallback.
-    if (typeof window.requestIdleCallback === 'function') {
-      const handle = window.requestIdleCallback(() => setIsReady(true), { timeout: 3000 })
-      return () => window.cancelIdleCallback(handle)
-    }
-    const handle = window.setTimeout(() => setIsReady(true), 1500)
-    return () => window.clearTimeout(handle)
-  }, [])
-  return isReady
 }
 
 // A downward drag that starts outside the scrolling list moves the sheet with the finger and

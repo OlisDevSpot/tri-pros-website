@@ -1,131 +1,46 @@
-/* eslint-disable react-dom/no-dangerously-set-innerhtml */
-import { motion } from 'motion/react'
+'use client'
 
-import { useCurrentProposal } from '@/features/proposal-flow/hooks/use-current-proposal'
-import { CopySowButton } from '@/features/proposal-flow/ui/components/proposal/copy-sow-button'
+import type { CSSProperties } from 'react'
+
+import { useState } from 'react'
+import { SCOPE_EYEBROW_H_PX } from '@/features/proposal-flow/constants/scope-sticky'
+import { useProposalDocument } from '@/features/proposal-flow/contexts/proposal-document-context'
+import { useIsStuck } from '@/features/proposal-flow/hooks/use-is-stuck'
+import { ChapterEyebrow } from '@/features/proposal-flow/ui/components/proposal/chapter-eyebrow'
+import { ChapterHeader } from '@/features/proposal-flow/ui/components/proposal/chapter-header'
+import { ChapterInner } from '@/features/proposal-flow/ui/components/proposal/chapter-inner'
 import { ProposalMediaGallery } from '@/features/proposal-flow/ui/components/proposal/proposal-media-gallery'
-import { ErrorState } from '@/shared/components/states/error-state'
-import { LoadingState } from '@/shared/components/states/loading-state'
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/shared/components/ui/accordion'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card'
-import { sanitizeUserHtml } from '@/shared/lib/sanitize-html'
-
-function fmt(n: number) {
-  return n.toLocaleString('en-US', { currency: 'USD', maximumFractionDigits: 0, style: 'currency' })
-}
+import { ScopeSpecCard } from '@/features/proposal-flow/ui/components/proposal/scope-spec-card'
+import { cn } from '@/shared/lib/utils'
 
 export function ScopeOfWork() {
-  const proposal = useCurrentProposal()
-
-  if (proposal.isLoading) {
-    return <LoadingState title="Loading Proposal" description="This might take a few seconds" />
-  }
-
-  if (!proposal.data) {
-    return <ErrorState title="Error: Could not load proposal" description="Please try again" />
-  }
-
-  const { sow } = proposal.data.projectJSON.data
-  const pricingMode = proposal.data.priceDisplayMode
+  const { proposal } = useProposalDocument()
+  const { sow } = proposal.projectJSON.data
+  const showPrice = proposal.priceDisplayMode === 'breakdown'
+  const [eyebrowRow, setEyebrowRow] = useState<HTMLDivElement | null>(null)
+  const stuck = useIsStuck(eyebrowRow, 0)
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="space-y-4"
-    >
-      <ProposalMediaGallery media={proposal.data.media ?? []} />
-      <Card>
-        <CardHeader className="text-center md:text-start">
-          <CardTitle>
-            <h2>Proposed Scope of Work</h2>
-          </CardTitle>
-          <CardDescription>
-            A successful remodeling project always starts with a solid scope of work description.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Accordion
-            type="multiple"
-            defaultValue={sow.map((_, i) => `sow-${i}`)}
-            className="space-y-3"
-          >
-            {sow.map((section, index) => (
-              <AccordionItem
-                key={`sow-${index}`}
-                value={`sow-${index}`}
-                className="border border-border rounded-xl overflow-hidden bg-card shadow-sm last:border-b"
-              >
-                <AccordionTrigger className="px-6 py-5 hover:no-underline hover:bg-row-hover pressed:bg-row-press data-[state=open]:bg-row-selected transition-colors">
-                  <div className="flex items-center justify-between w-full mr-3">
-                    <div className="flex items-start gap-4">
-                      <span className="text-xl font-light text-muted-foreground tabular-nums leading-tight shrink-0 w-6 pt-0.5">
-                        {String(index + 1).padStart(2, '0')}
-                      </span>
-                      <div className="space-y-1 text-left">
-                        <p className="text-base font-semibold leading-snug tracking-tight">
-                          {section.title || 'Untitled Section'}
-                        </p>
-                        {(section.trade.label || section.scopes.length > 0) && (
-                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-normal">
-                            {section.trade.label && (
-                              <span>{section.trade.label}</span>
-                            )}
-                            {section.trade.label && section.scopes.length > 0 && (
-                              <span className="text-muted-foreground">·</span>
-                            )}
-                            {section.scopes.length > 0 && (
-                              <span>
-                                {section.scopes.length}
-                                {' '}
-                                {section.scopes.length === 1 ? 'scope' : 'scopes'}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    {pricingMode === 'breakdown' && (section.financials.sectionPrice ?? 0) > 0 && (
-                      <span className="text-sm font-semibold tabular-nums text-foreground shrink-0">
-                        {fmt(section.financials.sectionPrice!)}
-                      </span>
-                    )}
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="px-6 pb-6 pt-4">
-                  <div className="flex items-start justify-between gap-3 mb-5">
-                    {section.scopes.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {section.scopes.map(scope => (
-                          <span
-                            key={scope.id}
-                            className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-muted text-foreground border border-border"
-                          >
-                            {scope.label}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    <CopySowButton section={section} />
-                  </div>
-                  <div
-                    className="proposal-sow"
-                    dangerouslySetInnerHTML={{ __html: sanitizeUserHtml(section.html) }}
-                  />
-                </AccordionContent>
-              </AccordionItem>
+    <div className="bg-background" style={{ '--scope-eyebrow-h': `${SCOPE_EYEBROW_H_PX}px` } as CSSProperties}>
+      {/* The eyebrow row's own height replaces ChapterInner's top padding, so this spacer is that padding minus the row's centring offset. */}
+      <div className="h-11.5 @min-[700px]/proposal:h-17.5" />
+      {/* Same fill as the chapter wrapper's canvas so content never shows under the stuck label; change both together. */}
+      <div ref={setEyebrowRow} className={cn('sticky top-0 z-3 h-(--scope-eyebrow-h) border-b bg-background', stuck ? 'border-border' : 'border-transparent')}>
+        <div className="mx-auto flex h-full max-w-230 items-center px-4.5 @min-[700px]/proposal:px-10">
+          <ChapterEyebrow chapter="scope" />
+        </div>
+      </div>
+      <ChapterInner className="pt-0 @min-[700px]/proposal:pt-0">
+        <ChapterHeader chapter="scope" eyebrow={false} title="Exactly what we’ll do" lede={`${sow.length} ${sow.length === 1 ? 'part' : 'parts'}, written step by step before any work starts.`} />
+        {sow.length === 0
+          ? <p className="text-muted-foreground">Scope being finalized.</p>
+          : sow.map((section, i) => (
+              // SOW parts have no id; the list is read-only and never reordered.
+              // eslint-disable-next-line react/no-array-index-key
+              <ScopeSpecCard key={i} section={section} index={i} showPrice={showPrice} />
             ))}
-          </Accordion>
-          {proposal.data.projectJSON.data.agreementNotes && (
-            <div className="mt-6 border-t border-border pt-6">
-              <h3 className="mb-2 text-sm font-semibold text-muted-foreground">Agreement Notes</h3>
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                {proposal.data.projectJSON.data.agreementNotes}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </motion.div>
+        <ProposalMediaGallery media={proposal.media ?? []} />
+      </ChapterInner>
+    </div>
   )
 }

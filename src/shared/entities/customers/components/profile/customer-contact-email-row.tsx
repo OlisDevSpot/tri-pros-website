@@ -19,7 +19,7 @@ export function CustomerContactEmailRow({ customer, editForm, surface }: Props) 
   const canEdit = editForm.canEditContact
 
   if (editForm.isEditing && canEdit) {
-    return <CustomerContactInputRow icon={MailIcon} inputProps={editForm.form.register('email')} label="Email" surface={surface} type="email" />
+    return <CustomerContactInputRow control={editForm.form.control} icon={MailIcon} label="Email" name="email" surface={surface} />
   }
 
   if (customer.email) {

@@ -1,7 +1,8 @@
 import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 
 interface ToolbarRoles {
-  primaryId: string
+  /** Omitted when the surface's one filled button lives outside the toolbar. */
+  primaryId?: string
   promotedIds?: readonly string[]
 }
 

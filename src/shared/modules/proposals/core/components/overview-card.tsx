@@ -10,6 +10,7 @@ import { formatDistanceToNow } from 'date-fns'
 import { DollarSignIcon, EyeIcon } from 'lucide-react'
 import React, { createContext, useCallback, useMemo } from 'react'
 
+import { withToolbarRoles } from '@/shared/components/entities/entity-actions/lib/with-toolbar-roles'
 import { isClickAction } from '@/shared/components/entities/entity-actions/types'
 import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { Badge } from '@/shared/components/ui/badge'
@@ -44,6 +45,7 @@ export type ProposalFieldConfig
     | { field: 'value', showIcon?: boolean }
     | { field: 'viewCount' }
     | { field: 'createdAt', format?: 'full' | 'date-only' | 'relative' }
+    | { field: 'sentAt' }
 
 export interface ScopeRef {
   id: string
@@ -98,6 +100,11 @@ function ProposalOverviewCardRoot({ proposal, children, meta, ...props }: Propos
   // The click is the View action, so a view that overrides View changes the click with it.
   const handleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation()
+    // React bubbles clicks through portals, so a press in a menu, dialog or sheet rendered from inside the card is not a click on it.
+    const target = e.target as Node | null
+    if (target && !e.currentTarget.contains(target)) {
+      return
+    }
     const view = actions.find(config => config.action.id === PROPOSAL_ACTIONS.view.id)
     if (view && isClickAction(view)) {
       view.onAction(proposal)
@@ -297,6 +304,18 @@ function CreatedAt({
   )
 }
 
+function SentAt({ className }: { className?: string }) {
+  const { proposal } = useProposalOverviewCard()
+  if (!proposal.sentAt) {
+    return null
+  }
+  return (
+    <span className={cn('text-xs text-muted-foreground shrink-0', className)}>
+      {`Sent ${formatBusinessTime(proposal.sentAt, { month: 'short', day: 'numeric' })}`}
+    </span>
+  )
+}
+
 // ── Fields sub-component ───────────────────────────────────────────────────────
 
 function StatusFieldRenderer({ variant = 'badge' }: { variant?: 'badge' | 'icon' | 'dot' }) {
@@ -327,6 +346,8 @@ function Fields({ fields, className }: { fields: ProposalFieldConfig[], classNam
             return <ViewCount key={config.field} />
           case 'createdAt':
             return <CreatedAt key={config.field} format={config.format} />
+          case 'sentAt':
+            return <SentAt key={config.field} />
           default:
             return null
         }
@@ -409,16 +430,29 @@ function ScopeCoverage({ className }: { className?: string }) {
 
 function Actions({
   mode = 'compact',
+  roles,
+  show,
+  hide,
   className,
 }: {
-  mode?: 'compact' | 'bar'
+  mode?: 'compact' | 'bar' | 'toolbar'
+  /** This surface's toolbar buttons; the shared action constants keep driving every other surface. */
+  roles?: Parameters<typeof withToolbarRoles>[1]
+  /** The only action ids this surface offers. */
+  show?: readonly string[]
+  /** Action ids this surface leaves out. */
+  hide?: readonly string[]
   className?: string
 }) {
   const { proposal, actions } = useProposalOverviewCard()
+  const shown = useMemo(() => {
+    const kept = actions.filter(config => (!show || show.includes(config.action.id)) && !hide?.includes(config.action.id))
+    return roles ? withToolbarRoles(kept, roles) : kept
+  }, [actions, show, hide, roles])
   return (
     <EntityActionMenu
       entity={proposal}
-      actions={actions}
+      actions={shown}
       mode={mode}
       className={className}
     />
@@ -439,6 +473,7 @@ export const ProposalOverviewCard = Object.assign(ProposalOverviewCardRoot, {
   Value,
   ViewCount,
   CreatedAt,
+  SentAt,
   Fields,
   Trades,
   ScopeCoverage,

@@ -1,4 +1,3 @@
-import type { ProposalStatus } from '@/shared/constants/enums'
 import type { ZohoRequestStatus } from '@/shared/services/providers/zoho-sign/types'
 import { toneClasses } from '@/shared/constants/status-tones'
 
@@ -21,21 +20,6 @@ export function getEnvelopeStatusBadge(requestStatus: ZohoRequestStatus | undefi
       return { label: 'Recalled', className: 'border-border bg-muted text-muted-foreground' }
     case 'expired':
       return { label: 'Expired', className: toneClasses('danger').fill }
-    default:
-      return null
-  }
-}
-
-export function getProposalStatusBadge(proposalStatus: ProposalStatus | undefined): StatusBadge | null {
-  switch (proposalStatus) {
-    case 'draft':
-      return { label: 'Draft', className: 'border-border bg-muted text-muted-foreground' }
-    case 'sent':
-      return { label: 'Sent', className: toneClasses('attention').fill }
-    case 'approved':
-      return { label: 'Approved', className: toneClasses('success').fill }
-    case 'declined':
-      return { label: 'Declined', className: toneClasses('danger').fill }
     default:
       return null
   }

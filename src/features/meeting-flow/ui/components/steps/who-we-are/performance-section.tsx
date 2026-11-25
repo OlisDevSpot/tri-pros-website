@@ -5,9 +5,9 @@ import type { SlideProps } from '@/shared/components/presentation/types'
 import { BeforeAfterCompare } from '@/features/meeting-flow/ui/components/steps/who-we-are/before-after-compare'
 import { PointLayout } from '@/features/meeting-flow/ui/components/steps/who-we-are/point-layout'
 import { ProofRail } from '@/features/meeting-flow/ui/components/steps/who-we-are/proof-rail'
-import { ReputationMark } from '@/features/meeting-flow/ui/components/steps/who-we-are/reputation-mark'
 import { Reveal } from '@/shared/components/presentation/reveal'
 import { Slide } from '@/shared/components/presentation/slide'
+import { ReputationMark } from '@/shared/components/reputation-mark'
 
 type PerformanceSectionProps = SlideProps<WhoWeAreContentOf<'performance'>>
 

@@ -6,7 +6,7 @@ import {
   ShieldCheckIcon,
   UsersIcon,
 } from 'lucide-react'
-import { companyInfo } from '@/shared/constants/company'
+import { companyInfo, teamInfo } from '@/shared/constants/company'
 
 const primaryLicense = companyInfo.licenses[0]
 const numProjects = companyInfo.numProjects
@@ -36,7 +36,7 @@ export const DUE_DILIGENCE_ITEMS = [
     short: 'Two sets of eyes. Measure twice, cut once.',
     description:
       'Make sure you have proper supervision on your project. We recommend at least 2 sets of eyes — they will ensure they measure twice and cut once.',
-    stat: '2+',
+    stat: `${teamInfo.minSupervisorsPerJob}+`,
     statLabel: 'Supervisors per job',
   },
   {
