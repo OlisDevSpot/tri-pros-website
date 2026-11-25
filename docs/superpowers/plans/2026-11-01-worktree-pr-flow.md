@@ -1,11 +1,11 @@
 # Worktree → PR Flow Implementation Plan
 
 > **Status**
-> - Stage: building · T1 done 2026-11-23 (Step 2 moved to T3 and the cut kept to dev by WF14; Step 6 dropped, WF15) · WF8 and WF14 updated in place on #311 · T12, T13, T14 partly done
+> - Stage: building · T1 done 2026-11-23 (Step 2 moved to T3 and the cut kept to dev by WF14; Step 6 dropped, WF15) · WF8 and WF14 updated in place on #311 · T12, T13, T14 partly done · WF16 (2026-11-24): docs go straight to `main` · CI's `next build` ran out of memory 2026-11-24: Build gets a 6 GB heap (#343, PR #344)
 > - Built on: `origin/main` (no lane branch) · Verified at: `origin/main@295154357` (2026-11-23) · page: https://claude.ai/artifact/7D8kgccA7iy6f8ATWzLdqS#lane-dev-flow
 > - Done: T0 (#289) · T1 (prod protected; `NEON_PROD_ENDPOINT_ID` in `.env` + Vercel Preview/Production; dev's `neondb_owner` password cut and the new address in `.env`, every worktree `.env`, Vercel Preview `DATABASE_URL`, the Actions secret `DATABASE_URL`) · T12 Steps 1–3 (#293, #294; no vercel.app wildcard) · T13 port claim · T14 per-checkout pre-commit gate, pre-ship retired, lane rules in CLAUDE.md (#295, #296)
 > - Next: T7 (prod-script Action), then T7a (one `.env`, one rotation command, loud CI DB check), then WF9's order: T9 → T2–T3 → T3a → T4–T6 → T8 → T10 → T12 rest → T15 → T16. The WF8 rename (one name per role) needs its own task: endpoint boot guard first, then the rename in one change. The lane-linking plan (WF13) is not written yet.
-> - Open: the four `wt/*` copies still log in with prod's password until T3a (WF14, accepted) · archived prod children `backup/prod-pre-dev-refresh-2026-11-05` and `rehearsal/pre-ship-2026-10-08` hold prod's password: owner said delete after a no-loss check, in progress · `scene-layout-lab` and `trade-scenes` `.env` hold R2 keys that differ from main's (T7a Step 1) · WF12 Vercel token home (blocks the lane-linking plan's `link`) · T10's removal of four non-`db:*` prod scripts not in the spec (owner OK) · Lane / Lane copy / Review slot not in `GLOSSARY.md` (owner to agree the terms) · plan A (merge commits) design not written
+> - Open: the four `wt/*` copies still log in with prod's password until T3a (WF14, accepted) · T16's ruleset (require a PR, no bypass) would block WF16's docs pushes: owner picks a bypass or changes WF16 · `scene-layout-lab` and `trade-scenes` `.env` hold R2 keys that differ from main's (T7a Step 1) · WF12 Vercel token home (blocks the lane-linking plan's `link`) · T10's removal of four non-`db:*` prod scripts not in the spec (owner OK) · Lane / Lane copy / Review slot not in `GLOSSARY.md` (owner to agree the terms) · plan A (merge commits) design not written
 > - Blocked: none
 
 ## Rulings
@@ -31,7 +31,7 @@ WF = Worktree Flow: the owner's rulings on this plan. Each one is a `Ruling WF<n
 - Stage and commit by explicit path only (`git add -- <paths>`; `git commit -- <paths>`); never `git add -A`, `stash`, `reset --hard`, `checkout .`, `--amend`. `drizzle.config.ts` is CRLF: edit it with the Edit tool and check `git diff --shortstat` stays small. The Claude pre-commit hook takes ~110 s of a 120 s budget: batch commits.
 - Every outward action (GitHub settings, repo visibility, Vercel settings, Google Cloud, Neon console, running the prod-script Action) is confirmed with the owner first, each time. Every step that creates, resets or deletes a Neon branch, or runs SQL against any database, runs only after the owner says "run" for that step ("go ahead" on the plan is not that). Resetting the owner's dev data (`db:refresh:dev`) needs its own explicit OK: their hand-edited dev fixtures go with it.
 - Each phase ships as its own branch + PR off `origin/main`. Scripts, CI and docs tasks (T2–T4, T7, T9, T10, T15) branch in the main checkout with `git switch -c <type>/<slug>`, no worktree (memory `feedback-no-worktree-for-non-app-work`); app tasks (T5, T6) take a worktree via Orca. Merge `origin/main` into the branch, never rebase or force-push.
-- Agents never merge a PR and never push to `main`; the owner squash-merges. Only Oliver starts a dev server: any step that needs one names him as the actor. No DB writes for visual testing.
+- Agents never merge a PR and never push code to `main`; the owner squash-merges. Docs-only changes go straight to `main` and are merged into every worktree (WF16). Only Oliver starts a dev server: any step that needs one names him as the actor. No DB writes for visual testing.
 - App tasks pass the preview Playwright check from CLAUDE.md ("Verify on the preview") before they reach the owner.
 - Full prod writes only from: Vercel production deploys (migrations) and the prod-script Action. Locally `DRIZZLE_TARGET=prod` reaches prod only as `photos_writer`. Unset never means prod.
 - Neon branch names: lane copies `wt/<slug>`. Migrations, scrubs and the advisory lock use the unpooled URL (`unpooledUrl`, Task 2); the pooled URL is only for the running app.
@@ -356,7 +356,7 @@ Done here: the per-checkout pre-commit gate (`.claude/hooks/pre-commit-gate.sh`)
 
 ### Task 16: Branch protection on
 
-- [ ] **Step 1 (owner-confirmed):** Ruleset on `main`: require PR, require the `check` job (PR Checks) to pass, block force-push and deletion, apply to admins. Merge buttons stay as they are (WF3: squash is a convention). PR Checks runs only on PRs into `main` (`pr-checks.yml:5`), so stacked slice PRs are checked when they reach `main`; widen the trigger only if the owner asks.
+- [ ] **Step 1 (owner-confirmed):** Ruleset on `main`: require PR, require the `check` job (PR Checks) to pass, block force-push and deletion, apply to admins. Merge buttons stay as they are (WF3: squash is a convention). WF16 pushes docs straight to `main`: the ruleset needs a bypass for that push, or WF16 changes (owner decides). PR Checks runs only on PRs into `main` (`pr-checks.yml:5`), so stacked slice PRs are checked when they reach `main`; widen the trigger only if the owner asks.
 - [ ] **Step 2:** Verify with `gh api repos/OlisDevSpot/tri-pros-website/rulesets` (rules present, enforcement active, no bypass actors) and a PR that merges after checks pass. No test push to `main`.
 - [ ] **Step 3:** Owner notes the break-glass: Settings → Rules → disable, push, re-enable.
 

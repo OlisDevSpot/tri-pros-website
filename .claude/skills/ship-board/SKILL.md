@@ -18,8 +18,8 @@ Clearing a field: the page writes `null` (its db's `update` merges and has no de
 
 ## Vocabulary
 
-- **Lane**: one feature on its own branch and worktree, doc id = lane id (`lanes/<id>`).
-- **Brief**: the lane's `brief` object, written by `/orient`; the lane page reads it.
+- **Lane**: one issue being worked on, on its own branch and worktree, doc id = lane id (`lanes/<id>`): `issue-<n>` for a lane started on an issue (the lane hook creates it); older lanes keep their slug id and carry `issue`.
+- **Brief**: the lane's `brief` object, written by the sync skill (#321) and, until it ships, by `/orient`; the lane page reads it.
 - **Decision**: a question only the owner can answer (`kind: "decision"`), with options or free text.
 - **Owner check**: something only the owner can verify (`kind: "check"`); open until `done`.
 - **Watch out**: a risk to the lane, shown on its page.
@@ -30,18 +30,18 @@ Clearing a field: the page writes `null` (its db's `update` merges and has no de
 This is the one home of these rules; `/orient`, the lane hook and `session-capture` point here.
 
 1. **Which docs.** `decisions` docs whose `lane` matches the lane in hand, that have an `answer` or a `note`, and no `appliedOn` (absent or null). A doc with no `lane` is applied only when the owner asks, never by a lane run.
-2. **Ruling target.** A comment on the lane's issue (the row's `issue`), starting `Ruling <ID>:`, in the owner's words, with the date. A ruling that changes an earlier one edits that earlier comment in place: the new text takes over under the same id, the old text stays below, struck through and marked `**Deprecated <date>**`; no new id stacked on top (owner 2026-11-23). A lane with no issue: the tracker's rulings table, the plan's `## Rulings` table, else the doc alone. Never edit the spec.
+2. **Ruling target.** A row in the rulings table of the lane's tracker, the file its issue (the row's `issue`) links to (ADR-0007), in the owner's words, with the date. A ruling that changes an earlier one edits that row in place: the new text takes over under the same id, the old text stays, struck through and marked `Deprecated <date>`; no new id stacked on top (owner 2026-11-23). Rulings already posted as `Ruling <ID>:` issue comments stay until #336 moves them. No tracker: the doc alone. Never edit the spec.
 3. **Which copy.** The file in the lane's worktree (`brief.worktree`); the main checkout when `brief.worktree` is missing or the folder is gone.
 4. **Guard.** Write into another session's worktree only when `git -C <worktree> diff --quiet -- <file>` is clean, and only the rulings table and status block. Otherwise leave the file to the lane session and say so in `reply`.
 5. **Close the loop.** Set `reply` (one or two plain sentences: what the agent will do, or the question it still has), `replyOn`, and `appliedOn`.
 
 ## Republish
 
-`Artifact` publish with `file_path: page.html`, `url` the board URL, and `files: {"lane-core.js": "<abs path>", "lane-view.js": "<abs path>"}`. Omit `capabilities` so `{db, user, mcp}` carry forward; passing a partial set revokes the rest. Read the live artifact first when this session has not published it.
+`Artifact` publish with `file_path: page.html`, `url` the board URL, and `files: {"lane-core.js": "<abs path>", "lane-view.js": "<abs path>"}`. Omit `capabilities` by default so `{db, user, mcp}` carry forward; passing a partial set revokes the rest. The publish that adds a connector (GitHub beside Vercel) is the exception and passes the whole object: `db` with v7's current rules read back first and restated, `user`, and `mcp` with every server, Vercel included, each under the display name the publish result states. Read the live artifact first when this session has not published it.
 
 ## Rollback
 
-Delete the docs the change created, `set` each lane and decision back from the pinned JSON backup in `~/claude-archive/<run date>-board-backfill/`, then republish the archived v6 page, `~/claude-archive/2026-11-15-ship-board-source/parallel-ship-flow.published-v6.html`.
+Delete the docs the change created, `set` each lane and decision back from the pinned backup in `~/claude-archive/2026-11-23-board-ui/` (`db/<collection>/<id>.json`, made by #323), then republish its `published-page.html` with `published-files/` and the whole `capabilities.json` object.
 
 ## Tests
 

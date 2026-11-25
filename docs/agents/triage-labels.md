@@ -7,7 +7,7 @@ The skills speak in five canonical triage roles and two category roles. This map
 | Role | Label | Meaning |
 |---|---|---|
 | `needs-triage` | `needs-triage` | Owner needs to evaluate it |
-| `needs-info` | `needs-info` | Waiting on answers; a `## Triage Notes` comment lists them |
+| `needs-info` | `needs-info` | Waiting on answers; a `## Triage Notes` comment lists them (a plan rated under 8/10: `## Open questions` in its body) |
 | `ready-for-agent` | `ready-for-agent` | Fully specified; an agent can take it unattended |
 | `ready-for-human` | `ready-for-human` | Specified, but needs the owner (judgement, external access, manual testing) |
 | `wontfix` | `wontfix` | Will not be actioned; the issue is closed as not planned |
@@ -27,6 +27,6 @@ Every triaged issue carries exactly one category label.
 
 ## Other labels (outside triage)
 
-- `epic`: parent issue whose slices are sub-issues. Carries a category, no state label.
+- `epic`: parent issue whose sub-issues are its plans (a plan has no sub-issues; its tasks are in its tracker file, ADR-0007). Carries a category, no state label.
 - `wayfinder:map`, `wayfinder:research|prototype|grilling|task`: `/wayfinder` only; no other labels.
 - `area:*` and `P0`–`P3`: area and priority, set at triage.
