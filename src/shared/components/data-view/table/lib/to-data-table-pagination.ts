@@ -12,7 +12,8 @@ export function toDataTablePagination<F extends FieldList, T extends ToolbarFilt
     onPageChange: nextIndex => pageWindow.setPage(nextIndex + 1),
     onPageSizeChange: pageWindow.setPageSize,
     pageSizeOptions: pageWindow.pageSizeOptions.length > 1 ? pageWindow.pageSizeOptions : undefined,
-    isFetching: query.isPending || query.isFetching,
+    isPending: query.isPending,
+    isFetching: query.isFetching,
     isStale: query.isStale,
     onRefresh: query.refresh,
   }

@@ -78,7 +78,7 @@ function DataTableBodyImpl<TData extends { id: string }>({
           return null
         }
         // A stale empty result is the previous key's; saying "no match" for the key still loading would be false.
-        if (serverPagination?.isFetching || serverPagination?.isStale) {
+        if (serverPagination?.isPending || serverPagination?.isFetching || serverPagination?.isStale) {
           const visibleCols = table.getVisibleFlatColumns()
           return Array.from({ length: 5 }).map((_, rowIdx) => (
             // eslint-disable-next-line react/no-array-index-key -- static skeleton list, no reordering

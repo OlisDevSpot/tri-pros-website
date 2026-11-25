@@ -29,7 +29,9 @@ export interface DataTableServerPagination {
   onPageSizeChange?: (pageSize: number) => void
   /** When provided, the pagination footer renders a page-size selector. */
   pageSizeOptions?: readonly number[]
-  /** When true, render a muted "Loading…" hint in the pagination bar. */
+  /** No rows to show: a first load with nothing cached, or an error fallback. With no rows, the table draws skeleton rows. */
+  isPending?: boolean
+  /** Refreshing rows already on screen: the footer says "Updating…". */
   isFetching?: boolean
   /** The rows belong to an older query while the next one loads; with no rows to show, the table draws skeleton rows (the dim is `DataView.Body`'s). */
   isStale?: boolean
