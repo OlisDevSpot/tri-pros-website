@@ -3610,7 +3610,8 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
     }
   }
   for (const hvacType of ['wall-mounted', 'portable'] as const) {
-    assert.deepEqual([...offeredAnywhere({ form: 'pitched', picks: [], hvacType, hvacComponents: null })].sort(), LOOK_INSIDE_SYSTEM_IDS.filter(id => id !== 'heating-cooling').sort(), `${hvacType}: every other system still opens from some spot`)
+    const offered = offeredAnywhere({ form: 'pitched', picks: [], hvacType, hvacComponents: null })
+    assert.deepEqual(LOOK_INSIDE_SYSTEM_IDS.filter(id => offered.has(id)).sort(), LOOK_INSIDE_SYSTEM_IDS.filter(id => id !== 'heating-cooling').sort(), `${hvacType}: every other system still opens from some spot`)
   }
 
   // A part two systems share shows in each only for the story it tells there.
@@ -3660,7 +3661,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
   assert.ok(roofLit().shown.has('deck') && !roofLit().shown.has('ceiling'), 'the fixture: a dry roof shows its deck, not the ceiling')
   assert.equal(systemPartOpacity(systemPartTag('covering'), false, roofLit(), ghost), 1, 'a shown roof system part stays solid')
   assert.equal(systemPartOpacity(systemPartTag('attic-insulation'), false, roofLit(), ghost), ghost, 'an attic part under a lit roof takes the ghost')
-  const windowsLit = { system: 'windows', shown: new Set(['frame', 'glazing']), emphasized: null } as SystemLit
+  const windowsLit = { system: 'windows', shown: new Set(['frame', 'glazing']), emphasized: null, emphasizedParts: new Set() } as SystemLit
   assert.equal(systemPartOpacity(systemPartTag('frame', FRONT_WALL_WINDOW_TAG), true, windowsLit, ghost), 1, 'the left front window\'s frame stays solid while the windows look inside')
   assert.equal(systemPartOpacity(systemPartTag('glazing', FRONT_WALL_WINDOW_TAG), true, windowsLit, ghost), 1, 'and its glass')
   assert.equal(systemPartOpacity(systemPartTag('frame'), true, windowsLit, ghost), ghost, 'an untagged Complete-only frame still ghosts')
@@ -3792,7 +3793,7 @@ assert.deepEqual(upgradeRowBlockedLine(shakeDeck, shakeFacts, [TEAR_OFF]), { inc
 
 // Releasing focus holds the pose; only Recenter goes home.
 {
-  const F = SYSTEM_CAMERA_VIEWS.roof('pitched', 'landscape', 0, { type: null, scale: 1 })
+  const F = SYSTEM_CAMERA_VIEWS.roof('pitched', 'landscape', 0, hvacOf('pitched', null))
   const H = homeFramingFor(1.4)
   assert.deepEqual(restingFraming({ focus: F, held: null, home: H, recentered: false }), { framing: F, held: F, away: false }, 'Focus frames the system and remembers it')
   assert.deepEqual(restingFraming({ focus: null, held: F, home: H, recentered: false }), { framing: F, held: F, away: true }, 'releasing Focus keeps the framing, so nothing glides, and Recenter stays')
@@ -6304,7 +6305,7 @@ assert.match(readFileSync('src/shared/components/scene/ui/camera-rig.tsx', 'utf8
   const slotOf = (id: string) => slots.find(candidate => candidate.id === id)!
   const facts = { property: { ...HOME_SCENE_DEFAULTS.property, roofType: 'shingle' as const }, materials: HOME_SCENE_DEFAULTS.homeMaterials, year: YEAR }
   const roofRows = upgradeRows(facts, [], []).find(entry => entry.id === 'roof')!.rows
-  assert.deepEqual(materialInputGroupIds(slotOf('heating-cooling'), slots, home['heating-cooling']!), ['hvac-components', 'ac-tons', 'condition'], 'heating & cooling: equipment, AC size, condition')
+  assert.deepEqual(materialInputGroupIds(slotOf('heating-cooling'), slots, home['heating-cooling']!), ['hvac-location', 'hvac-components', 'ac-tons', 'condition'], 'heating & cooling: where its indoor unit stands, equipment, AC size, condition')
   assert.deepEqual(materialInputGroupIds(slotOf('exterior-paint'), slots, home['exterior-paint']!), ['paint-colors', 'condition', 'wear'], 'paint: colours, condition, then its paint wear')
   assert.deepEqual(materialInputGroupIds(slotOf('roof'), slots, home.roof!), ['condition', 'wear'], 'the roof: condition, then its roof wear')
   assert.deepEqual(materialInputGroupIds(slotOf('gutters'), slots, null), [], 'gutters the home does not have: no colours or condition to set')

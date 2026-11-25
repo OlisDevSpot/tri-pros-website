@@ -1,5 +1,4 @@
 import type { ReadingId } from '@/features/trade-scenes/constants/home-anchors'
-import type { LOOK_INSIDE_SYSTEM_IDS } from '@/features/trade-scenes/constants/home-systems'
 import type { AreaGroupId, BuildRowPartId, FactsTab, HomeSystemId, HomeView, HvacSystemChoice, LotSide, SavingsCategory, SlotGroup, SystemPieceId, TradeSceneInputs, YardId, YardSystemId } from '@/features/trade-scenes/types'
 import type { CustomerAgeGroup, HouseholdType, YearBuiltRange } from '@/shared/constants/enums/customers'
 import type { Climate } from '@/shared/modules/construction/core/constants/climate-presets'
