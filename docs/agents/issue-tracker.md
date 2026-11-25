@@ -17,7 +17,7 @@ Project 3 Status has no Backlog or Ready: an open issue with no Status is not in
 
 ## Conventions
 
-- **Create**: `gh issue create --title "..." --body-file <file> --label needs-triage --label <bug|enhancement|refactor|chore>` (heredoc or file for multi-line bodies). Every new issue starts as `needs-triage` plus one category; an epic takes `epic` instead of `needs-triage`. On GitHub itself, the Bug, Feature and Epic issue forms apply the same labels.
+- **Create**: `gh issue create --title "..." --body-file <file> --label needs-triage --label <bug|enhancement|refactor|chore>` (heredoc or file for multi-line bodies). Every new issue starts as `needs-triage` plus one category; an epic takes `epic` instead of `needs-triage`. On GitHub itself, the Bug and Feature issue forms apply the same labels; the Epic form applies `epic` only, so add the epic's category by hand.
 - **Read**: `gh issue view <n> --json number,title,body,labels,assignees,comments`.
 - **List**: `gh issue list --state open --json number,title,labels,assignees --limit 200` with `--label` filters.
 - **Comment**: `gh issue comment <n> --body-file <file>`.
@@ -35,7 +35,7 @@ An epic or a plan is a GitHub issue; its working detail stays in committed files
 | Spec | `docs/superpowers/specs/` | The settled design |
 | Tracker | an epic: `docs/plans/*-epic.md`; a plan: its file under `docs/superpowers/plans/` | Tasks or order, the status block, the rulings table |
 
-- **Epic body:** what it solves, `## Done when`, and links to its tracker, spec and references.
+- **Epic body:** the contract in **Epic body** below.
 - **Plan body:** its steps at a high level (`| Step | Solves | Notes |`, from the tracker's task headings) and a link to its tracker. No status in the body; rulings are linked, not copied.
 - **Links** point at `main` until the lane opens, then at the lane branch's copy (`blob/<lane-branch>/…`), switched once at Open the lane.
 - **Rulings** are rows in the tracker's rulings table, in the owner's words with the date. An override edits its row in place: new text on top, the old struck through as deprecated. No ruling comments; those already posted stay until #336 moves them.
@@ -43,6 +43,19 @@ An epic or a plan is a GitHub issue; its working detail stays in committed files
 - **Shipped:** trackers and specs are deleted once their leftovers have a home and nothing points at them; git history keeps them.
 
 Skills that say "publish the spec to the issue tracker" write the spec file and the short body above. Skills that say "publish the tickets" on a plan write them as tasks in its tracker.
+
+### Epic body
+
+Every session and the board read an epic's body first, so it is a contract (owner 2026-11-24). It holds only what will still be true and needed when the epic is done, in this order:
+
+1. A lead paragraph: what the epic solves or improves.
+2. `## Done when`: a checkable list.
+3. `## Out of scope` (optional): what this epic will not do.
+4. `## Links`: tracker, spec, lane and branch, references.
+
+Nothing else goes in the body, and it changes only when the scope does. Keep it under about 2,000 characters. Bodies opened from the Epic form carry these as `###` headings, which is fine.
+
+Everything that changes as the work goes on goes in the tracker: context and realizations, gaps found, requirements, rulings, open questions, the status block, and a dated log. Never fold an old body or a handoff into the body; the tracker keeps what is still live, and the issue's edit history keeps the rest. A comment on an epic is a short dated milestone note that links the commit or tracker section; what it reports is written in the tracker. A `/wayfinder` map is not an epic; its body follows `/wayfinder`.
 
 ## Epics and sub-issues
 
