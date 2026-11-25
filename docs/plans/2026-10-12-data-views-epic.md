@@ -140,6 +140,6 @@ Every step that touches a data view re-runs these, read-only, on the dev server:
 
 **From DV3's final review (2026-10-15):**
 - [x] Three comments said the table dims stale rows; the `Body` part does: `src/shared/dal/client/lib/types.ts` and the table types. Fixed in DV4 (`3feec026f`).
-- Under a data view's error fallback, the table footer still says "Updating…" over skeleton rows (from `90b7beefc`, `to-data-table-pagination.ts:15`). Same contradiction spec §11 #16 fixed for `Count`. Owner call: fix in DV4 or its own step.
-- While a view draws its first-load skeleton, nothing carries `aria-busy` (the spec is silent). Owner call.
+- [x] Under a data view's error fallback, the table footer still says "Updating…" over skeleton rows (from `90b7beefc`, `to-data-table-pagination.ts:15`). Same contradiction spec §11 #16 fixed for `Count`. Owner call: fix in DV4 or its own step. Fixed (records-management D70, `ebeac5f66`).
+- [x] While a view draws its first-load skeleton, nothing carries `aria-busy` (the spec is silent). Owner call. Fixed (records-management D71, `4e0218cd5`): one `aria-busy` on the shared table body.
 - The records-page header row (`Title` + `Count` + actions) is written out in `entity-records-table.tsx` and `proposal-flow/ui/components/table/index.tsx`, as spec §11 #3 wants (fine parts, free wrapper). It becomes one copy when proposals moves onto `EntityRecordsTable` (DV8).
