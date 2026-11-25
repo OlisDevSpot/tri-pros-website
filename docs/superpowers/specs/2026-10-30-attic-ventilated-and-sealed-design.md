@@ -21,7 +21,7 @@ It also draws ducts to today's code: new ducts are hung from the rafters.
    - It mounts inside one gable vent and is run by its fan thermostat.
    - In Thermal it clearly lowers the attic reading and the ceiling under it, and shows the attic's heat leaving through that vent.
    - It cuts the electric bill by at least 4%.
-   - It is drawn in the whole-home attic and in today's up-close roof & attic screen.
+   - It is drawn in the whole-home attic (not up close: owner ruling 2026-10-30, see Non-goals).
 3. **Ceiling openings (R107).** Recessed light cans and plumbing vent pipes in the whole-home attic, like the can and pipe up close. Here the pipes go on out through the roof.
 4. **Boots on the ceiling (R108).** Every register boot sits on the ceiling over its register. Today the boots float, and so do today's ducts.
 5. **Hung ducts (R109).** R-6 and R-8 ducts hang from the rafters. Other ducts rest on the attic floor.
@@ -35,7 +35,7 @@ It also draws ducts to today's code: new ducts are hung from the rafters.
 - **Attic dust drifting into the rooms** (R104). It is a home stress and belongs to TS3b.7.
 - **Any interaction between the fan and air sealing** (owner: sold separately, too much detail).
 - **Air pulled in through the other gable vent.** The fan's one story is hot air out.
-- **Finer up-close screens** (TS3b.4b). The fan goes into today's single roof & attic slice. R92 notes that the fan and its gable end move to the attic screen when that screen is split.
+- **Anything up close** (owner ruling 2026-10-30, TS3b.4b brainstorm, R119/R120). Up close becomes the home's own model with the chosen system lit and stepped open, and the roof & attic assembly kit retires in TS3b.4b, so nothing in this work goes into the kit. Everything is built on the home, and TS3b.4b lights and steps those same parts up close.
 - **Changing the up-close air-sealing collars or pipe.** Up close keeps today's collars and a pipe that stops inside the attic.
 - **Duct changes on a flat roof.** They keep today's drawing in the joist space.
 - **Any new catalog or database row.** The "Attic fan installation" scope already exists in the catalog.
@@ -47,15 +47,15 @@ It also draws ducts to today's code: new ducts are hung from the rafters.
 - **Anything on a flat roof that implies an attic:** no gable vents, no fan, no row for radiant barrier, air sealing or the fan, no foam collars, no leak arrows.
 - **The scene and the proposal disagreeing on the fan's bill cut** (R101: one rule).
 - **A double-tap that lands on a vent slat, a leak arrow or the fan's heat lane** instead of the house behind it.
-- **A slower iPad.** More than 10% added frame time on the existing frame-time probe, before vs after.
+- **A slower iPad.** More than 10% added draw calls or triangles on the worst-case attic, before vs after (owner ruling 2026-10-30: headless frame times are not evidence; the owner checks the iPad by eye).
 
 ## Constraints
 
 **Parts come from the assembly** (`src/shared/modules/construction/core/constants/assemblies/roof-attic.ts`).
 - The fan is a part of `ROOF_ATTIC`.
 - **Flat roof hiding (R111):** `attic-fan`, `air-sealing` and `radiant-barrier` take part-level `forms: ['pitched']`, the way `ridge-vent` does. `resolveAssembly` then drops them on a flat roof (`resolve-assembly.ts:77`), so `upgradeRows` builds no row (`upgrade-rows.ts:43-45`).
-- **The `needs-an-attic` blocked reason goes once nothing uses it.** Today it is used in `part-offers.ts:26,121`, its copy at `home-scene-copy.ts:218`, and `verify-trade-scene-layout.ts:111`. That assertion becomes "no row on a flat roof". Whether the material-level `NEEDS_AN_ATTIC` stays is the builder's call, settled with `pnpm tsc`.
-- **Unset roof, my call:** the scene draws an unset roof as a gable (`home-roof-form.ts`). So while the roof is unset, the three attic rows still show, blocked `roof-not-set`, like the roof rows. Today a part with `forms` is dropped when the form is `null` too. The builder keeps these three rows when the form is unset, without changing what the ridge vent does.
+- **The `needs-an-attic` blocked reason goes once nothing uses it.** Today it is used in `part-offers.ts:26,121`, its copy at `home-scene-copy.ts:212`, and `verify-trade-scene-layout.ts:111`. That assertion becomes "no row on a flat roof". Whether the material-level `NEEDS_AN_ATTIC` stays is the builder's call, settled with `pnpm tsc`.
+- **Unset roof:** the three attic rows stay offered, as today. The roof-attic form is never null: the inference reads an unset roof as shingles (`roofType ?? 'shingle'`), so part-level `forms` never drop them, and TS3b.4a pins that nothing is held back until the roof is set (`verify-trade-scene-layout.ts:112-114`). Corrected 2026-10-30 while planning; this replaces an earlier "blocked `roof-not-set`" call that misread the form as null.
 
 **The scope is wired by name.**
 - Add `SCOPE_IDS.atticFan` (`e050ca1b-548b-8263-8634-01293821c390`) in `scope-ids.ts`.
@@ -71,7 +71,8 @@ It also draws ducts to today's code: new ducts are hung from the rafters.
 - The energy-impact tracker on main records the ruling as EI-D27 and lists the fan as a bill-cutting add-on in §3.2 (2026-10-30). Its foundation plan (Task 2, `pickBillCuts`) adds the same `attic-fan` add-on, so whichever lands second takes the other's identical entry.
 
 **Build order.**
-- After the camera plan's Task 6 (`docs/superpowers/plans/2026-10-28-scene-camera-slide.md`). That task edits `home-geometry.ts` and `verify-trade-scene.ts`. Its Task 5 brings `ignoreRaycast`, which every new effect takes.
+- After the camera plan's Task 6 (`docs/superpowers/plans/2026-10-28-scene-camera-slide.md`, committed `120cdfa9b`). That task edits `home-geometry.ts` and `verify-trade-scene.ts`. Its Task 5 brings `ignoreRaycast`, which every new effect takes.
+- **After the TS3b.4a fixes** (`docs/superpowers/specs/2026-10-30-ts3b4a-fixes-design.md`; owner ruling 2026-10-30). They edit the same gable, lane, geometry and copy files, and give the gables the house's paint look. So the gable vents sit on painted gables, and the up-close gable end takes the same paint look, never a hard-coded stucco.
 - Before TS3b.4b.
 
 **Code placement.**
@@ -130,7 +131,7 @@ It also draws ducts to today's code: new ducts are hung from the rafters.
 
 **Where it sits.**
 - **Whole home:** inside the left (−x) gable, behind its vent. Partly open opens the attic for x < 2.4, so the fan is seen there. In Complete only the vent shows.
-- **Up close:** today's pitched slice gains a **gable end** at its far end from the camera. This is a stucco triangle stub with its vent, a frame piece like `kit-walls.tsx`. The fan sits on the inside of it.
+- **Up close:** dropped (owner ruling 2026-10-30, see Non-goals). The sub-points below are void; the kit only has to keep working with the fan's row in its list until it retires.
   - The fan's peel offset is `AT_REST`, so it stays on its mount while the rest peels.
   - Its pin sits on the fan itself, not at `KIT_PIN_Z`.
   - Its up-close paint faces are `{ inner: 'attic', outer: 'attic' }` (`KIT_PART_PAINT_FACES`). Without that entry it falls back to the roof's heat.
@@ -149,12 +150,12 @@ It also draws ducts to today's code: new ducts are hung from the rafters.
   - They live in their own `ATTIC_FAN_HEAT_EFFECTS: WeatherHeatEffects`.
   - `homeHeat()` runs the existing loop first. Then, if the fan's material is `thermostat-fan` and `readings.attic > ATTIC_FAN_ON_ABOVE`, it applies the fan's effect with the existing `applied()`.
   - It sets `atticFanRunning` last.
-  - `StartingHomeHeat` becomes `Omit<HomeHeat, 'bounce' | 'atticFanRunning'>` (`types.ts:321`).
+  - `StartingHomeHeat` becomes `Omit<HomeHeat, 'bounce' | 'atticFanRunning'>` (`types.ts:319`).
   - Every `HomeHeat` literal in `scripts/verify-trade-scene.ts` gains the field.
 - **Running and Idle.**
   - Running: the blades spin during a burst, the way `CondenserFan` spins (`useBurstMotion`), and the status light stays lit while it runs.
   - Idle (installed, attic not over 100 °F): drawn still, light off, never hidden.
-  - The kit's `drawPart` gets the running flag and `burst` beside its `PartRendererProps` (`types.ts:208`, `roof-attic-kit.tsx:38`). `GableRoof` gets them through `HouseRoof`.
+  - `GableRoof` gets the running flag and `burst` through `HouseRoof`.
 
 **Heat while running.**
 
@@ -172,7 +173,6 @@ It also draws ducts to today's code: new ducts are hung from the rafters.
 - Its geometry goes in `constants/home-heat-lanes.ts` (both the Complete and the Partly open sets, so it shows in both home views under Thermal). It is built in `lib/home-heat-lanes.ts`.
   - It uses `heatArrowLane([vent, outside], heatLaneFlows(heat).roof[1])`.
   - It does not go through `run()`, because the fan only ever blows out, and `run()` would reverse it outside summer.
-- Up close it is built the same way in `lib/kit-heat-lanes.ts`, with its points in `KIT_FLOW` (`constants/roof-attic-flows.ts`).
 - Idle: no lane.
 
 **Bill.**
@@ -203,10 +203,10 @@ These are part of every home, not parts. The insulation buries their bases, as i
 ### Register boots and ducts
 
 - **Boots** sit on the ceiling at `WALL_TOP_Y`, over each register.
-  - Pitched: remove the `+0.2` at `attic-ducts.tsx:63`. Flat already sits there.
-  - The boot's top stands just clear of the deepest insulation (`laidInsulationDepth('blown-r38')`), so the duct connection reads.
-  - Wall and portable units have no boots, so there are none to draw.
-- **Today's ducts float.** The runs sit about +0.25 m off the ceiling, against joist tops at +0.14 (`home-geometry.ts:202-204`). The note "lying on the attic floor" at `:200` is stale.
+  - Pitched: remove the `+0.2` at `attic-ducts.tsx:62`. Flat already sits there.
+  - The boot's top stands just clear of the deepest insulation (`DEEPEST_INSULATION`, the largest `INSULATION_DEPTH`), so the duct connection reads and a deeper material added later moves it too.
+  - Wall and portable units have no boots, so there are none to draw. Whether a home has ducts comes from `hvac-attic`'s `appliesTo`, read through the resolved scene, never a second copy of the rule.
+- **Today's ducts float.** The runs sit about +0.25 m off the ceiling, against joist tops at +0.14 (`home-geometry.ts:202-204`).
   - Ducts that don't hang now rest on the joists, sagging as today, each ending in its boot.
 - **Hung ducts** (`r6-silver-flex`, `r8-flex`):
   - The trunk and runs hang level on thin straps from the rafters. The strap top comes from `roofUndersideY` (`lib/roof-underside.ts:6`).
@@ -226,7 +226,7 @@ These are part of every home, not parts. The insulation buries their bases, as i
 - Pitched only (R111).
 
 **Leak arrows, Thermal only, when air sealing is not installed.**
-- Each unsealed ceiling opening gets a short heat lane, built in `homeHeatLanes` alongside the others. `homeHeatLanes` takes a `sealed` argument, since today it takes no parts.
+- Each unsealed ceiling opening gets a short heat lane, built in `homeHeatLanes` alongside the others. `homeHeatLanes` takes the openings that leak (none when sealed), since today it takes no parts.
 - Direction comes from the existing `run()`: in summer and on normal days, from the attic down into the room; in winter, from the room up into the attic.
 - They show whether or not there is insulation, because the gap is in the ceiling, under the blanket.
 - Sealing removes them. No lanes in rain, as for every arrow.
@@ -236,26 +236,20 @@ These are part of every home, not parts. The insulation buries their bases, as i
 
 ### Up close
 
-Today's roof & attic kit gains, on the pitched form only:
-
-- the gable end stub with its vent;
-- the fan part, drawn when installed, Running or Idle by the same flag;
-- the fan's heat lane under Thermal.
-
-Everything else up close is unchanged.
+Nothing changes up close (owner ruling 2026-10-30, see Non-goals). The kit gains no gable end, fan part or fan lane; it only has to keep working with the fan's "No attic fan" row in its part list until TS3b.4b retires it.
 
 ## My calls (not confirmed by the owner)
 
 - **Vents and placement.**
   - The vents are a rectangular louvre, high in each gable.
-  - The fan sits behind the left (−x) vent, and up close at the far end of the slice.
+  - The fan sits behind the left (−x) vent.
   - New ridge vent copy.
 - **Fan look and rule.** An Idle fan is drawn still, not hidden. "Running" is one flag, worked out from the attic before the fan.
 - **Fan numbers.**
   - Summer: attic −20 °F, ceiling −1.5 °F, load 0.9.
   - Normal day: attic −6 °F, ceiling −0.4 °F, load 0.96.
   - Bill: exactly 4% electric, the owner's floor.
-- **Unset roof:** the three attic rows show, blocked `roof-not-set`, rather than vanish.
+- **Unset roof:** the three attic rows stay offered, as TS3b.4a pins (corrected while planning).
 - **Openings.**
   - One can per room, drawn from the attic side.
   - Two pipes, kitchen and bedroom (back slope).
@@ -281,19 +275,19 @@ Everything else up close is unchanged.
 - [ ] The inland wood-shake normal day runs it. Every pitched summer case runs it.
 - [ ] Idle changes no reading. Running changes them by exactly `ATTIC_FAN_HEAT_EFFECTS`.
 - [ ] No upgrade raises the attic reading. Otherwise an upgrade could switch the fan off.
-- [ ] Flat roof: no row for radiant barrier, air sealing or the fan. Unset roof: they show, blocked `roof-not-set`.
+- [ ] Flat roof: no row for radiant barrier, air sealing or the fan. Unset roof: they stay offered.
 - [ ] The fan starts absent. The starting-home figures hold, and `FULL_BUILD` stays as pinned.
 - [ ] The fan's 4% electric cut counts only when it is installed. The savings oracle (`verify-trade-scene.ts:185-188`) learns a second add-on.
-- [ ] Every `HOME_SYSTEMS` row has a label, a glyph, a `KIT_PEEL` entry and a pin.
+- [ ] Every `HOME_SYSTEMS` row has a label and a glyph.
 - [ ] The attic fan scope is drawn and no longer listed as not drawn. `verify-scope-installs.ts` reads Notion, so it runs only with the owner's OK.
 - [ ] Hung vs floor is decided by material. Collars show only when sealed with no insulation on a pitched home.
 
-**By eye** (own browser, a local playwright script; both home views and up close; summer, normal, winter and rain; iPad viewport):
+**By eye** (own browser, a local playwright script; both home views, and up close only to see it still works; summer, normal, winter and rain; iPad viewport):
 - [ ] Vents in both gables of every pitched home, none on flat.
-- [ ] Fan behind the left vent and up close. In summer it spins in a burst, its light is lit, the attic reads cooler, and a heat lane leaves the vent.
+- [ ] Fan behind the left vent. In summer it spins in a burst, its light is lit, the attic reads cooler, and a heat lane leaves the vent.
 - [ ] A can in each room, and two pipes out through the roof, on both roof forms.
 - [ ] Boots on the ceiling. Old ducts on the joists. Hung ducts on straps.
 - [ ] Collars with sealing and no insulation; none with any insulation.
 - [ ] Leak arrows without sealing: down in summer and normal, up in winter. None on a flat roof.
 - [ ] A double-tap on a vent, an arrow or the fan's lane reaches the house behind it.
-- [ ] Frame time no more than 10% above the same probe on the pre-work head. Use the TS3b.3 probe at `.superpowers/sdd/2026-10-23-home-views-and-thermal-lens/shots/final/perf.mjs`, or the iPad.
+- [ ] Draw calls and triangles on the worst-case attic no more than 10% above the same probe on the pre-work head. The probe is the TS3b.3 one (`.superpowers/sdd/2026-10-23-home-views-and-thermal-lens/shots/final/perf.mjs`), rewritten for today's dock and counting draws. The owner checks the iPad by eye.

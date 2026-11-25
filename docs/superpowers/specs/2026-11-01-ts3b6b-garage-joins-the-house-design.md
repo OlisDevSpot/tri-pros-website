@@ -149,6 +149,8 @@ Along the way the garage stops lying where it meets the house: the window that l
 ## 8. Paint wear and the sunny wall
 
 - **Paint wear on the garage (R121).** The garage's walls take paint wear's marks (cracks, stains, peeling), placed by the same pure per-wall functions as the house's walls, handed the garage's faces (the paint wear plan already shapes its placement functions to take a `HouseWall`, so this is a hand-off). The garage keeps the house's paint colour, condition and levels; it has no settings of its own.
+- **The garage's gable or parapet stains and peels too (R203)**, by R204's placement (`F/lib/painted-surface-stains.ts`, paint wear follow-ups), since the garage roof follows the house's form (`garage-gable-end.tsx`). Its heat effects (R146) belong to the `cool` paint material, so a regular repaint softens nothing (R205).
+- **The covered gable's vent streaks go with its vent (R198, R204).** The house gable's stains take their vents from `gableVentOpening(side)` (`painted-surface-stains.ts`). The 6-B rework filters that list as it removes the right vent, so no streak hangs from a vent that is gone.
 - **The sunny wall follows the bearing (R142).** The `exterior-wall` and `window` readings, the `exterior-wall` pin and their callouts in `home-anchors.ts` go on the sunniest house wall under the bearing (`SCENE_ATTRIBUTES`), not on a hard-coded left wall. With the default bearing nothing moves on screen. The shared right wall is never the sunny wall: the garage covers it.
 
 ## 9. Budget

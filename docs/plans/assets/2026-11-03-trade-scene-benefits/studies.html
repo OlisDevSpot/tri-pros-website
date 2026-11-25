@@ -1,0 +1,2253 @@
+<title>Benefits Interior Studies</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Syne:wght@600;700&display=swap">
+<style>
+/* Layout: one review page, one question; three working versions of the Benefits window, each in an iPad-landscape and a phone frame, driven by one shared set of build picks. */
+:root {
+  --bg: oklch(0.972 0.007 250);
+  --surface: oklch(0.995 0.003 250);
+  --ink: oklch(0.24 0.045 258);
+  --ink-2: oklch(0.47 0.03 256);
+  --line: oklch(0.89 0.012 250);
+  --accent: oklch(0.56 0.15 238);
+  --accent-soft: oklch(0.93 0.04 238);
+  --done: oklch(0.5 0.11 152);
+  --no: oklch(0.55 0.16 25);
+  --font-display: 'Syne', 'Avenir Next', 'Segoe UI', sans-serif;
+  --font-body: 'Nunito', 'Segoe UI', system-ui, sans-serif;
+
+  /* The scene's windows are dark in both app themes, so the mocks commit to the app's dark scene tokens. */
+  --m-ground: oklch(0.125 0.04 253);
+  --m-card: oklch(0.206 0.04 253);
+  --m-raised: oklch(0.253 0.04 253);
+  --m-edge: oklch(0.276 0.04 253);
+  --m-pop: oklch(0.347 0.04 253);
+  --m-fg: oklch(0.955 0.008 250);
+  --m-fg-2: oklch(0.77 0.03 252);
+  --m-primary: oklch(0.76 0.13 230);
+  --m-primary-soft: oklch(0.76 0.13 230 / 0.16);
+  --m-primary-line: oklch(0.76 0.13 230 / 0.45);
+  --m-attention-soft: oklch(0.84 0.1 55 / 0.14);
+  --m-success-soft: oklch(0.84 0.11 155 / 0.16);
+  --m-without: oklch(0.6 0.025 252);
+  --m-on-primary: oklch(0.19 0.045 258);
+  --m-success: oklch(0.84 0.11 155);
+  --m-attention: oklch(0.84 0.1 55);
+  --m-glass: oklch(0.17 0.04 253 / 0.92);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: oklch(0.155 0.03 253); --surface: oklch(0.2 0.035 253); --ink: oklch(0.95 0.008 250); --ink-2: oklch(0.77 0.03 252);
+    --line: oklch(0.3 0.035 253); --accent: oklch(0.76 0.13 230); --accent-soft: oklch(0.27 0.06 240); --done: oklch(0.84 0.11 155); --no: oklch(0.8 0.1 25); color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: oklch(0.155 0.03 253); --surface: oklch(0.2 0.035 253); --ink: oklch(0.95 0.008 250); --ink-2: oklch(0.77 0.03 252);
+  --line: oklch(0.3 0.035 253); --accent: oklch(0.76 0.13 230); --accent-soft: oklch(0.27 0.06 240); --done: oklch(0.84 0.11 155); --no: oklch(0.8 0.1 25); color-scheme: dark;
+}
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55 }
+.page { max-width: 1320px; margin: 0 auto; padding-block: 40px 96px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em }
+h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.1 }
+h2 { font-size: clamp(22px, 3vw, 28px); line-height: 1.15 }
+h3 { font-size: 17px }
+p { margin: 0; max-width: 68ch }
+.eyebrow { font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent) }
+.lede { color: var(--ink-2); margin-top: 12px; font-size: 16px }
+.meta { color: var(--ink-2); font-size: 13px; font-weight: 700; letter-spacing: 0.02em }
+.intro { display: grid; gap: 8px; margin-bottom: 20px }
+.carried { display: grid; gap: 8px; padding: 16px 18px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px }
+.carried ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: 6px 20px }
+.carried li { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; color: var(--ink-2); font-size: 14px }
+.carried li::before { content: "✓"; color: var(--done); font-weight: 800 }
+.carried.rejected li::before { content: "×"; color: var(--no) }
+.carried b { color: var(--ink) }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+
+section.q { padding-top: 36px; display: grid; gap: 18px }
+.q-head { display: grid; gap: 8px }
+.variants { display: flex; flex-wrap: wrap; gap: 8px }
+.variants button { font: inherit; font-weight: 700; font-size: 14px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 14px; cursor: pointer; text-align: left; display: grid }
+.variants button small { font-weight: 600; color: var(--ink-2); font-size: 12px }
+.variants button[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft) }
+.variants .rec { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent) }
+.pitch { color: var(--ink-2); min-height: 3em }
+.pitch b { color: var(--ink) }
+
+/* The build picks that drive every mock. */
+.picks { display: grid; gap: 10px; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px }
+.picks-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 14px; color: var(--ink-2) }
+.picks-head b { color: var(--ink) }
+.picks-head .sp { flex: 1 }
+.picks-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); gap: 10px 18px }
+.pk { display: grid; gap: 6px; align-content: start }
+.pk-name { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-2) }
+.pk-row { display: flex; flex-wrap: wrap; gap: 6px }
+.pbtn { font: inherit; font-size: 13px; font-weight: 700; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 4px 11px; cursor: pointer; min-height: 32px }
+.pbtn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface) }
+.pbtn.sub { font-size: 12px; border-style: dashed }
+.pbtn.sub[aria-pressed="true"] { border-style: solid }
+.pbtn:disabled { opacity: 0.4; cursor: default }
+
+.frames { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px; align-items: start }
+@media (max-width: 860px) { .frames { grid-template-columns: minmax(0, 1fr) } }
+.device { display: grid; gap: 8px; min-width: 0 }
+.device-label { font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-2) }
+.bezel { background: oklch(0.2 0.02 253); padding: 10px; border-radius: 22px; width: max-content; max-width: 100% }
+.bezel.phone { border-radius: 34px; padding: 9px }
+.screen { position: relative; overflow: hidden; border-radius: 13px; background: var(--m-ground) }
+.bezel.phone .screen { border-radius: 26px }
+.stage { position: absolute; top: 0; left: 0; transform-origin: 0 0 }
+
+.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px }
+.note { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 8px; align-content: start }
+.note ul { margin: 0; padding-left: 18px; color: var(--ink-2) }
+.note li + li { margin-top: 4px }
+.note b { color: var(--ink) }
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--surface) }
+table { border-collapse: collapse; width: 100%; min-width: 760px; font-size: 14px }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-2) }
+tr:last-child td { border-bottom: 0 }
+.legend { display: grid; gap: 10px; margin-top: 52px; padding: 20px; border: 1px dashed var(--line); border-radius: 14px }
+.legend dl { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 6px 16px; margin: 0 }
+.legend dt { font-weight: 800 }
+.legend dd { margin: 0; color: var(--ink-2) }
+@media (max-width: 560px) { .legend dl { grid-template-columns: minmax(0, 1fr) } .legend dd { margin-bottom: 8px } }
+
+/* ---------- The mock (native device pixels) ---------- */
+.m { position: relative; overflow: hidden; color: var(--m-fg); font-family: var(--font-body); font-size: 14px; line-height: 1.4; -webkit-font-smoothing: antialiased; color-scheme: dark }
+:where(.m) button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: inherit }
+.m svg { width: 16px; height: 16px; flex: none; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round }
+.m [hidden] { display: none !important }
+.m .glass { background: var(--m-glass); border: 1px solid var(--m-edge); box-shadow: 0 8px 24px oklch(0.1 0.04 253 / 0.35) }
+.m-pic { position: absolute; inset: 0; background-size: cover; background-position: center }
+.m-build-tint { position: absolute; inset: 0; pointer-events: none; z-index: 1; box-shadow: inset 0 0 0 3px var(--m-primary); opacity: 0.55 }
+.m-scrim { position: absolute; inset: 0; background: oklch(0.1 0.04 253 / 0.45); z-index: 7 }
+
+/* The group, as built: Benefits open, the toggle on Build. */
+.bar { position: absolute; z-index: 9; bottom: 16px; left: 50%; transform: translateX(-50%); width: max-content; display: flex; align-items: center; gap: 2px; padding: 5px; border-radius: 999px }
+.m.phone .bar { bottom: 10px; border-radius: 26px }
+.bar-item { display: inline-flex; align-items: center; justify-content: center; height: 44px; min-width: 44px; padding: 0 12px; border-radius: 999px; font-weight: 800; font-size: 13.5px; white-space: nowrap; color: var(--m-fg-2); gap: 8px }
+.bar-item[aria-expanded="true"] { background: var(--m-raised); color: var(--m-fg); box-shadow: inset 0 0 0 1px var(--m-pop) }
+.bar-sep { width: 1px; height: 22px; background: var(--m-edge); flex: none; margin: 0 3px }
+.m.phone .bar-sep { display: none }
+.m.phone .bar-item { min-width: 40px; padding: 0 10px; font-size: 13px; gap: 6px }
+.toggle { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 16px 0 12px; border-radius: 999px; font-weight: 800; font-size: 13.5px; background: var(--m-primary); color: var(--m-on-primary) }
+.m.phone .toggle { padding: 0 12px 0 10px; gap: 6px; font-size: 13px }
+
+/* The Controls window shell, as built: head, a body that scrolls inside, the bills footer. */
+.m-modal { position: absolute; z-index: 8; display: flex; flex-direction: column; background: var(--m-card); border: 1px solid var(--m-edge); border-radius: 16px; box-shadow: 0 24px 60px oklch(0.08 0.04 253 / 0.6); overflow: hidden }
+.m.ipad .m-modal { left: 24px; right: 24px; top: 24px; bottom: 80px }
+.m.phone .m-modal { left: 10px; right: 10px; top: 58px; bottom: 76px; border-radius: 20px }
+.mm-head { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--m-edge); min-height: 67px; flex: none }
+.mm-ico { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: var(--m-raised); color: var(--m-fg-2); flex: none }
+.mm-title { font-family: var(--font-display); font-weight: 700; font-size: 18px }
+.mm-tag { font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; border-radius: 999px; padding: 2px 8px; white-space: nowrap; color: var(--m-on-primary); background: var(--m-primary) }
+.mm-x { margin-left: auto; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: var(--m-raised); flex: none }
+.mm-body { flex: 1; min-height: 0; position: relative; overflow: hidden }
+.scroll { overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--m-pop) transparent; overscroll-behavior: contain }
+.mm-foot { display: grid; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--m-edge); font-size: 12.5px; color: var(--m-fg-2); flex: none; position: relative; z-index: 4; background: var(--m-card) }
+.mm-foot-row { display: flex; align-items: center; gap: 12px; min-height: 40px }
+.mm-foot-row .grow { flex: 1; min-width: 0 }
+.mm-foot b { color: var(--m-fg) }
+.mm-link { font-weight: 800; color: var(--m-primary) !important; padding: 8px 4px !important; white-space: nowrap }
+.bills-edit { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center }
+.m.phone .bills-edit { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 10px }
+.m.phone .bills-edit .m-seg, .m.phone .bills-edit .m-hint { grid-column: 1 / -1 }
+.m-label { font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--m-fg-2) }
+.m-hint { font-size: 12px; color: var(--m-fg-2) }
+.m-seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--m-ground); border: 1px solid var(--m-edge); justify-self: start }
+.m-seg button { padding: 6px 13px; border-radius: 999px; font-weight: 700; font-size: 13px; color: var(--m-fg-2); min-height: 34px }
+.m-seg button[aria-pressed="true"] { background: var(--m-raised); color: var(--m-fg); box-shadow: inset 0 0 0 1px var(--m-pop) }
+.m-money { display: inline-flex; align-items: center; gap: 4px; background: var(--m-ground); border: 1px solid var(--m-edge); border-radius: 10px; padding: 0 10px; height: 38px; width: 118px }
+.m-money input { width: 100%; min-width: 0; background: none; border: 0; color: var(--m-fg); font: inherit; font-weight: 800; font-variant-numeric: tabular-nums; outline: none }
+.m-money input::placeholder { color: var(--m-fg-2); font-weight: 700 }
+.m-money span { color: var(--m-fg-2); font-size: 12px; font-weight: 700 }
+.toast { position: absolute; z-index: 11; top: 14px; left: 50%; transform: translateX(-50%); padding: 8px 14px; border-radius: 999px; font-weight: 800; font-size: 13px; background: var(--m-primary); color: var(--m-on-primary); box-shadow: 0 10px 30px oklch(0.1 0.04 253 / 0.45); animation: toast 1.9s ease forwards; white-space: nowrap; pointer-events: none }
+@keyframes toast { 0% { opacity: 0; transform: translate(-50%, -6px) } 12%, 80% { opacity: 1; transform: translate(-50%, 0) } 100% { opacity: 0 } }
+
+/* ---------- The matrix: systems down, kinds across, a dot per benefit ---------- */
+.mx { display: grid; grid-template-columns: var(--lab, 118px) repeat(7, minmax(0, 1fr)); column-gap: 2px; row-gap: 2px; align-items: stretch }
+.mx-corner { font-size: 10.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--m-fg-2); align-self: end; padding: 0 6px 8px }
+.mx-h { display: grid; justify-items: center; align-content: end; gap: 3px; padding: 8px 2px 7px; border-radius: 10px; color: var(--m-fg-2); text-align: center; min-height: 74px }
+.mx-h .nm { font-size: 11px; font-weight: 800; line-height: 1.15; color: var(--m-fg) }
+.mx-h .sm { font-size: 11px; font-weight: 800; color: var(--m-primary); font-variant-numeric: tabular-nums; min-height: 1.15em }
+.mx-h .sm.mute { color: var(--m-fg-2) }
+.mx-h:hover, .mx-sys:hover { background: oklch(0.253 0.04 253 / 0.6) }
+.mx-h[aria-pressed="true"], .mx-sys[aria-pressed="true"] { background: var(--m-raised); box-shadow: inset 0 0 0 1px var(--m-pop) }
+.mx-sys { display: grid; align-content: center; gap: 1px; padding: 6px 8px; border-radius: 10px; min-height: var(--cell, 46px) }
+.mx-sys .nm { font-size: 12.5px; font-weight: 800; line-height: 1.15 }
+.mx-sys .up { font-size: 11px; color: var(--m-fg-2); line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2 }
+.mx-sys.off .nm { color: var(--m-fg-2) }
+.mx-c { min-height: var(--cell, 46px); display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 4px; padding: 6px 4px; border-radius: 10px; position: relative; background: oklch(0.17 0.04 253 / 0.55) }
+.mx-c:disabled { cursor: default }
+.mx-c:not(:disabled):hover { background: var(--m-raised) }
+.mx-c .d { width: var(--dot, 8px); height: var(--dot, 8px); border-radius: 50%; background: var(--m-primary); flex: none }
+.mx-c .d.soon { background: none; border: 1.5px dashed var(--m-fg-2) }
+.mx-c.lit { background: var(--m-primary-soft) }
+.mx-c.sel { box-shadow: inset 0 0 0 2px var(--m-primary); background: var(--m-primary-soft) }
+.mx-key { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 11.5px; font-weight: 700; color: var(--m-fg-2) }
+.mx-key span { display: inline-flex; align-items: center; gap: 5px }
+.mx-key svg { width: 13px; height: 13px }
+.mx-key .d { width: 8px; height: 8px; border-radius: 50%; background: var(--m-primary); display: inline-block }
+.mx-key .d.soon { background: none; border: 1.5px dashed var(--m-fg-2) }
+.m.phone .mx { --lab: 70px; column-gap: 1px }
+.m.phone .mx-h { min-height: 46px; padding: 6px 0 5px }
+.m.phone .mx-h .nm { display: none }
+.m.phone .mx-h .sm { font-size: 10px }
+.m.phone .mx-sys { padding: 6px 4px 6px 6px }
+.m.phone .mx-sys .nm { font-size: 11.5px }
+.m.phone .mx-sys .up { display: none }
+.m.phone .mx-c { --dot: 6px; gap: 3px; padding: 4px 2px }
+
+/* ---------- Statements ---------- */
+.st { display: grid; gap: 18px; align-content: start }
+.st-kicker { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--m-fg-2) }
+.st-kicker svg { width: 14px; height: 14px; color: var(--m-primary) }
+.st-h { font-family: var(--font-display); font-size: 32px; line-height: 1.08; letter-spacing: -0.015em; text-wrap: balance }
+.st-lede { color: var(--m-fg-2); font-size: 15px; max-width: 48ch }
+.st-item { display: grid; gap: 6px; padding-top: 16px; border-top: 1px solid var(--m-edge) }
+.st-item:first-of-type { border-top: 0; padding-top: 0 }
+.st-t { font-family: var(--font-display); font-size: 24px; line-height: 1.12; text-wrap: balance }
+.st-t.big { font-size: 30px }
+.st-d { color: var(--m-fg-2); font-size: 15px; max-width: 52ch; text-wrap: pretty }
+.st-meta { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 2px }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; height: 28px; border-radius: 999px; border: 1px solid var(--m-edge); background: var(--m-ground); font-weight: 700; font-size: 12px; color: var(--m-fg-2); white-space: nowrap }
+.chip.draft { border-style: dashed; color: var(--m-attention); border-color: oklch(0.84 0.1 55 / 0.5); background: none }
+.chip.soon { border-style: dashed }
+.fig { font-family: var(--font-display); font-weight: 700; font-size: 56px; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums }
+.fig small { font-family: var(--font-body); font-size: 18px; font-weight: 800; color: var(--m-fg-2); letter-spacing: 0; margin-left: 4px }
+.fig-note { color: var(--m-fg-2); font-size: 13px }
+.st-grp { display: grid; gap: 10px; align-content: start; padding-top: 16px; border-top: 1px solid var(--m-edge) }
+.st-grp:first-of-type { border-top: 0; padding-top: 0 }
+.st-grp-h { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--m-fg-2) }
+.st-grp-h svg { width: 14px; height: 14px; color: var(--m-primary) }
+.st-line { display: grid; gap: 3px }
+.st-line .t { font-family: var(--font-display); font-size: 20px; line-height: 1.15 }
+.st-line .d { color: var(--m-fg-2); font-size: 14px; max-width: 56ch }
+.st-line .fg { font-weight: 800; color: var(--m-fg); font-variant-numeric: tabular-nums }
+.back { display: inline-flex; align-items: center; gap: 6px; font-weight: 800; font-size: 13px; color: var(--m-primary); min-height: 40px; padding: 0 4px; justify-self: start }
+.empty { display: grid; justify-items: center; align-content: center; text-align: center; gap: 10px; padding: 24px; height: 100% }
+.empty strong { font-family: var(--font-display); font-size: 22px }
+.empty p { color: var(--m-fg-2); max-width: 40ch }
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 42px; padding: 0 16px; border-radius: 12px; font-weight: 800; background: var(--m-raised); box-shadow: inset 0 0 0 1px var(--m-pop) }
+
+/* Overview: the whole build, one line per kind. */
+.ov { display: grid }
+.ov-row { display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 12px 6px; border-bottom: 1px solid var(--m-edge); border-radius: 0; width: 100% }
+.ov-row:last-child { border-bottom: 0 }
+.ov-row:hover { background: oklch(0.253 0.04 253 / 0.5) }
+.ov-ico { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--m-raised); color: var(--m-primary) }
+.ov-ico svg { width: 18px; height: 18px }
+.ov-t { font-weight: 800; font-size: 15px }
+.ov-d { color: var(--m-fg-2); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.ov-n { font-family: var(--font-display); font-size: 20px; font-variant-numeric: tabular-nums; text-align: right }
+.ov-n small { display: block; font-family: var(--font-body); font-size: 11px; font-weight: 800; color: var(--m-fg-2); letter-spacing: 0.04em }
+.ov-row.soon .ov-ico { color: var(--m-fg-2); background: none; box-shadow: inset 0 0 0 1.5px var(--m-pop) }
+
+/* ---------- A · Spread ---------- */
+.sp { display: grid; grid-template-columns: minmax(0, 540px) minmax(0, 1fr); height: 100% }
+.sp .mx { --cell: 54px }
+.m.phone .sp .mx { --cell: 46px }
+.sp-l { padding: 16px 16px 14px 18px; border-right: 1px solid var(--m-edge); display: grid; gap: 14px; align-content: start }
+.sp-r { padding: 26px 34px 28px; height: 100% }
+.sp-r .st { animation: pagein 0.2s cubic-bezier(.2,.8,.2,1) }
+@keyframes pagein { from { opacity: 0; transform: translateY(6px) } }
+.m.phone .sp { grid-template-columns: minmax(0, 1fr) }
+.m.phone .sp-l { border-right: 0; padding: 12px 12px 14px; height: 100% }
+.sheet { position: absolute; inset: 64px 0 0 0; z-index: 3; background: var(--m-raised); border-top: 1px solid var(--m-pop); border-radius: 18px 18px 0 0; box-shadow: 0 -18px 40px oklch(0.08 0.04 253 / 0.55); display: flex; flex-direction: column; animation: sheetin 0.26s cubic-bezier(.2,.8,.2,1) }
+@keyframes sheetin { from { transform: translateY(40px); opacity: 0 } }
+.sheet-h { display: flex; align-items: center; gap: 8px; padding: 6px 10px 0 14px; flex: none }
+.sheet-h::before { content: ""; position: absolute; top: 6px; left: 50%; width: 36px; height: 4px; margin-left: -18px; border-radius: 99px; background: var(--m-pop) }
+.sheet-h .mm-x { width: 40px; height: 40px; background: var(--m-pop) }
+.sheet .scroll { padding: 6px 18px 20px; flex: 1 }
+.m.phone .st-h { font-size: 26px }
+.m.phone .st-t { font-size: 21px }
+.m.phone .st-t.big { font-size: 25px }
+.m.phone .fig { font-size: 46px }
+
+/* ---------- B · Opens in place ---------- */
+.oip { height: 100%; padding: 14px 22px 16px; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 10px }
+.oip-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px }
+.oip-top strong { font-family: var(--font-display); font-size: 20px }
+.oip-top span { color: var(--m-fg-2); font-size: 13px }
+.oip .mx { --lab: 190px; --cell: 64px; --dot: 11px; column-gap: 4px; row-gap: 4px }
+.oip .mx-h { min-height: 86px }
+.oip .mx-h svg { width: 20px; height: 20px }
+.oip .mx-h .nm { font-size: 12.5px }
+.oip .mx-h .sm { font-size: 12px }
+.oip .mx-sys .nm { font-size: 14px }
+.oip .mx-c .d { box-shadow: 0 0 0 3px oklch(0.76 0.13 230 / 0.14) }
+.m.phone .oip { padding: 10px 10px 12px }
+.m.phone .oip .mx { --lab: 70px; --cell: 56px; --dot: 7px; column-gap: 2px; row-gap: 3px }
+.m.phone .oip .mx-h { min-height: 50px }
+.m.phone .oip-top strong { font-size: 17px }
+.ovl { position: absolute; inset: 0; z-index: 3; background: oklch(0.125 0.04 253 / 0.93); display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 10px; padding: 12px 20px 18px; animation: fadein 0.18s ease-out }
+@keyframes fadein { from { opacity: 0 } }
+.ovl-top { display: flex; align-items: center; gap: 10px }
+.ovl-top .sp-x { flex: 1 }
+.ovl-top .nav { display: flex; gap: 6px }
+.ovl-top .nav button { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--m-raised); box-shadow: inset 0 0 0 1px var(--m-pop) }
+.ovl-top .nav button:disabled { opacity: 0.35; cursor: default }
+.ovl-stage { display: grid; place-items: center; min-height: 0 }
+.bigcard { background: var(--m-raised); border: 1px solid var(--m-pop); border-radius: 18px; padding: 28px 32px; width: min(680px, 100%); max-height: 100%; box-shadow: 0 30px 70px oklch(0.08 0.04 253 / 0.6) }
+.deck { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; width: 100%; height: 100%; align-items: stretch; padding: 4px 2px 8px; scrollbar-width: thin; scrollbar-color: var(--m-pop) transparent }
+.deck .bigcard { flex: 0 0 min(430px, 86%); scroll-snap-align: center; width: auto; max-height: none; padding: 22px 24px; display: grid; gap: 14px; align-content: start }
+.m.phone .ovl { padding: 10px 10px 12px }
+.m.phone .bigcard { padding: 20px 18px }
+
+/* ---------- C · Contents and pages ---------- */
+.cv { display: grid; grid-template-columns: minmax(0, 330px) minmax(0, 1fr); gap: 30px; padding: 30px 32px 22px; height: 100%; align-content: start }
+.cv-t { display: grid; gap: 14px; align-content: start; padding-top: 6px }
+.cv-t h3 { font-family: var(--font-display); font-size: 42px; line-height: 1.02; letter-spacing: -0.02em }
+.cv-t p { color: var(--m-fg-2); font-size: 15px }
+.cv-count { font-family: var(--font-display); font-size: 18px }
+.cv-count b { color: var(--m-primary) }
+.m.phone .cv { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 16px 12px 14px }
+.m.phone .cv-t h3 { font-size: 30px }
+.m.phone .cv-t { gap: 6px; padding-top: 0 }
+.pg-wrap { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr) }
+.pg-top { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--m-edge) }
+.pg-top .sp-x { flex: 1; min-width: 0; display: flex; justify-content: center }
+.pg-top .nav { display: flex; gap: 6px }
+.pg-top .nav button { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--m-raised); box-shadow: inset 0 0 0 1px var(--m-pop) }
+.pg-top .nav button:disabled { opacity: 0.35; cursor: default }
+.mini { display: grid; grid-template-columns: repeat(7, 14px); grid-auto-rows: 12px; gap: 2px; padding: 5px 7px; border-radius: 10px; background: var(--m-ground); border: 1px solid var(--m-edge) }
+.mini button { display: grid; place-items: center; border-radius: 3px }
+.mini button::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--m-pop) }
+.mini button.has::after { background: var(--m-fg-2) }
+.mini button.cur { background: var(--m-primary-soft) }
+.mini button.cur.has::after { background: var(--m-primary) }
+.strip-vp { overflow: hidden; position: relative; touch-action: pan-y }
+.strip { display: flex; height: 100%; transition: transform 0.34s cubic-bezier(.2,.8,.2,1) }
+.strip.drag { transition: none }
+.pg { flex: 0 0 100%; height: 100%; padding: 26px 34px 30px }
+.pg-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 34px; align-content: start }
+.m.phone .pg { padding: 18px 16px 22px }
+.m.phone .pg-grid { grid-template-columns: minmax(0, 1fr); gap: 16px }
+.m.phone .pg-top { padding: 8px 10px; gap: 8px }
+.pg-h { display: grid; gap: 6px; margin-bottom: 22px }
+.pg-h .st-h { font-size: 40px }
+.m.phone .pg-h .st-h { font-size: 30px }
+.pg-h .cnt { color: var(--m-fg-2); font-size: 13px; font-weight: 700 }
+
+/* ---------- Savings and bills, one section (round 3) ---------- */
+.m-modal.no-foot .mm-foot { display: none }
+.sav .k, .sav-sum .k { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--m-fg-2); white-space: nowrap }
+.sav-fig { font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1.05; font-variant-numeric: tabular-nums; white-space: nowrap }
+.sav-fig small { font-family: var(--font-body); font-size: 12px; font-weight: 800; color: var(--m-fg-2); margin-left: 2px }
+.sav-fig.ahead { color: var(--m-success) }
+.sav-delta { font-size: 12px; font-weight: 800; color: var(--m-success); font-variant-numeric: tabular-nums; white-space: nowrap }
+.sav-delta:empty { display: none }
+.sav-parts { font-size: 12px; color: var(--m-fg-2); font-variant-numeric: tabular-nums }
+.sav-row { display: flex; flex-wrap: wrap; align-items: end; gap: 8px 10px }
+.bf { display: grid; gap: 3px }
+.sav .m-money, .sav-panel .m-money { width: 104px; height: 40px }
+.sav .m-seg button, .sav-panel .m-seg button { min-height: 32px }
+.sav .m-hint, .sav-panel .m-hint { font-size: 11.5px }
+.oip-top.has-sav { align-items: center }
+.oip-top .sp-x { flex: 1 }
+.why-btn { width: 40px; height: 40px; border-radius: 999px; display: grid; place-items: center; flex: none; font-weight: 800; font-size: 16px; color: var(--m-fg); background: var(--m-raised); box-shadow: inset 0 0 0 1px var(--m-pop) }
+.why-btn:hover, .why-btn[aria-expanded="true"] { box-shadow: inset 0 0 0 1px var(--m-primary); color: var(--m-primary) }
+.oip.r3s { display: flex; flex-direction: column; gap: 12px }
+.oip.r3s .mx { --cell: 52px }
+.oip.r3s .mx-h { min-height: 70px }
+.oip.r3s .empty { height: auto; padding: 16px }
+
+/* The calendar: Today, then one page per year; the rep teleports by tapping or dragging along it. */
+.tl { position: relative; display: flex; align-items: center; gap: 4px; touch-action: none; user-select: none; -webkit-user-select: none }
+.tl-line { position: absolute; left: 20px; right: 20px; top: 50%; height: 2px; margin-top: -1px; background: var(--m-pop); border-radius: 2px; pointer-events: none }
+.tl-fill { position: absolute; inset: 0 auto 0 0; width: calc(var(--to, 0) * 100%); background: var(--m-primary); border-radius: 2px; transition: width 0.38s cubic-bezier(.16,1,.3,1) }
+.tl-stop { position: relative; z-index: 1; flex: 1 1 0; min-width: 40px; height: 48px; display: grid; place-items: center; border-radius: 10px }
+.tl-page { width: 40px; height: 42px; display: grid; grid-template-rows: 9px 1fr; border-radius: 8px; overflow: hidden; background: var(--m-card); box-shadow: inset 0 0 0 1px var(--m-pop); transition: transform 0.3s cubic-bezier(.16,1,.3,1), box-shadow 0.2s, background 0.2s }
+.tl-page::before { content: ""; background: var(--m-pop); transition: background 0.2s }
+.tl-page > b { display: grid; place-items: center; font-size: 11px; font-weight: 800; color: var(--m-fg-2); font-variant-numeric: tabular-nums; letter-spacing: 0.02em }
+.tl-stop.past .tl-page::before { background: var(--m-primary-line) }
+.tl-stop.past .tl-page > b { color: var(--m-fg) }
+.tl-stop.today .tl-page { background: var(--m-raised) }
+.tl-stop.today .tl-page::before { background: var(--m-fg-2) }
+.tl-stop.today .tl-page > b { color: var(--m-fg) }
+.tl-stop[aria-checked="true"] .tl-page { transform: translateY(-2px) scale(1.12); background: var(--m-raised); box-shadow: inset 0 0 0 1.5px var(--m-primary), 0 6px 14px oklch(0.08 0.04 253 / 0.5) }
+.tl-stop[aria-checked="true"] .tl-page::before { background: var(--m-primary) }
+.tl-stop[aria-checked="true"] .tl-page > b { color: var(--m-fg) }
+.tl-stop:focus-visible { outline: 2px solid var(--m-primary); outline-offset: 1px }
+.tl-stop:not([aria-checked="true"]):hover .tl-page { box-shadow: inset 0 0 0 1px var(--m-fg-2) }
+/* R3: the page you teleport to opens up and carries the saving. */
+.tl.pages .tl-stop[aria-checked="true"] { flex: 0 0 132px }
+.tl.pages .tl-stop[aria-checked="true"] .tl-page { width: 124px; height: 64px; transform: translateY(-1px); grid-template-rows: 18px 1fr }
+.tl.pages .tl-page .yr { display: none }
+.tl.pages .tl-stop[aria-checked="true"] .tl-page .yr { display: grid; place-items: center; font-size: 10.5px; font-weight: 800; letter-spacing: 0.12em; color: var(--m-on-primary); background: var(--m-primary) }
+.tl.pages .tl-stop[aria-checked="true"] .tl-page::before { display: none }
+.tl.pages .tl-stop[aria-checked="true"] .tl-page > b { display: none }
+.tl.pages .tl-page .on { display: none }
+.tl.pages .tl-stop[aria-checked="true"] .tl-page .on { display: grid; justify-items: center; align-content: center; gap: 0 }
+.tl.pages .tl-stop[aria-checked="true"] { height: 72px }
+.tl.pages .tl-line { left: 0 }
+
+/* R1 · A flow band: the bills, then the saving today, then the saving ahead. */
+.sav-R1 { display: grid; grid-template-columns: auto auto auto auto minmax(0, 1fr); align-items: center; gap: 14px; padding: 12px 16px; border-radius: 14px; background: var(--m-ground); border: 1px solid var(--m-edge) }
+.sav-step { display: grid; gap: 4px; align-content: start; min-width: 0 }
+.sav-arrow { color: var(--m-fg-2); display: inline-flex }
+.sav-later-h { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap }
+.sav-R1 .tl { margin-top: 2px }
+.m.ipad .sav-R1 { gap: 12px }
+.m.ipad .sav-R1 .sav-step.bills { max-width: 374px }
+.m.ipad .sav-R1 .now .sav-parts { max-width: 150px }
+.m.ipad .sav-R1 .m-money { width: 94px }
+.m.phone .sav-R1 { grid-template-columns: auto minmax(0, 1fr); gap: 10px 12px; padding: 10px 12px }
+.m.phone .sav-R1 .sav-step.bills, .m.phone .sav-R1 .sav-step.later { grid-column: 1 / -1 }
+.m.phone .sav-R1 .sav-arrow { display: none }
+.m.phone .sav-R1 .sav-step.now { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap }
+
+/* R2 · A summary line that opens the three steps. */
+.sav-sum { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 4px 12px 4px 14px; border-radius: 14px; background: var(--m-ground); border: 1px solid var(--m-edge); text-align: left }
+.sav-sum:hover, .sav-sum[aria-expanded="true"] { border-color: var(--m-primary) }
+.sav-sum .bills-mini { font-size: 12.5px; font-weight: 700; color: var(--m-fg-2); white-space: nowrap }
+.sav-sum .bills-mini b { color: var(--m-fg) }
+.sav-sum .sav-fig { font-size: 19px }
+.sav-sum .chev { display: inline-flex; color: var(--m-fg-2); transition: transform 0.2s }
+.sav-sum[aria-expanded="true"] .chev { transform: rotate(180deg) }
+.m.phone .sav-sum { width: 100%; flex-wrap: wrap; gap: 4px 10px; padding: 8px 10px }
+.m.phone .sav-sum .bills-mini { flex: 1 1 100% }
+.sav-panel-bg { position: absolute; inset: 0; z-index: 2; background: oklch(0.1 0.04 253 / 0.55); animation: fadein 0.16s ease-out }
+.sav-panel { position: absolute; z-index: 3; left: 22px; right: 22px; top: 70px; display: grid; grid-template-columns: minmax(0, 1.05fr) auto minmax(0, 0.8fr) auto minmax(0, 1.4fr); gap: 18px; align-items: start; padding: 20px 22px; border-radius: 16px; background: var(--m-raised); border: 1px solid var(--m-pop); box-shadow: 0 24px 50px oklch(0.08 0.04 253 / 0.6); animation: dropin 0.24s cubic-bezier(.16,1,.3,1) }
+@keyframes dropin { from { opacity: 0; transform: translateY(-8px) } }
+.sav-panel .sav-step { gap: 8px }
+.sav-panel .sav-fig { font-size: 34px }
+.sav-panel .sav-arrow { padding-top: 34px }
+.sav-panel .step-n { font-family: var(--font-display); font-size: 15px; font-weight: 700; color: var(--m-fg) }
+.m.phone .sav-panel { left: 8px; right: 8px; top: 8px; grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 16px 14px; max-height: calc(100% - 16px); overflow-y: auto }
+.m.phone .sav-panel .sav-arrow { display: none }
+.m.phone .sav-panel .sav-fig { font-size: 28px }
+
+/* R3 · The calendar is the section: Today holds the bills, the year you teleport to holds the saving. */
+.sav-R3 { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 0; padding: 10px 14px 10px 10px; border-radius: 14px; background: var(--m-ground); border: 1px solid var(--m-edge) }
+.r3-today { display: grid; gap: 6px; padding: 10px 14px; border-radius: 12px; background: var(--m-raised); box-shadow: inset 0 0 0 1px var(--m-pop); position: relative; z-index: 1 }
+.r3-today-h { display: flex; align-items: baseline; justify-content: space-between; gap: 14px }
+.r3-today-h .sav-fig { font-size: 20px }
+.r3-cal { padding-left: 6px; min-width: 0 }
+.r3-cal .tl-line { left: -6px }
+.tl.pages .on .sav-fig { font-size: 19px }
+.tl.pages .on .sav-delta { font-size: 11px }
+.m.phone .sav-R3 { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 8px }
+.m.phone .r3-cal { padding-left: 0 }
+.m.phone .r3-cal .tl-line { left: 0 }
+.m.phone .tl-stop { min-width: 0 }
+.m.phone .tl-page { width: 100%; min-width: 26px; max-width: 34px }
+.m.phone .tl.pages .tl-stop[aria-checked="true"] { flex: 0 0 104px }
+.m.phone .tl.pages .tl-stop[aria-checked="true"] .tl-page { width: 100px; max-width: none }
+.m.phone .tl-page > b { font-size: 9.5px }
+
+/* ---------- Round 4: today's costs, and the four numbers ---------- */
+.sav-R4 { display: grid; grid-template-columns: 404px minmax(0, 1fr); grid-template-rows: auto auto; gap: 10px 16px; align-items: start; padding: 10px; border-radius: 14px; background: var(--m-ground); border: 1px solid var(--m-edge) }
+.sav-R4 .r4-costs { grid-row: 1 / span 2 }
+.sav-R4 .r4-nums { min-width: 0; padding: 4px 4px 0 0 }
+.sav-R4 .r4-cal { min-width: 0; align-self: end }
+.sav-R4 .r4-cal .tl-line { left: 0 }
+.oip.r4s .mx { --cell: 48px }
+.oip.r4s .mx-h { min-height: 64px }
+.r4-costs { gap: 8px }
+.m.ipad .r4-costs .m-money { width: 92px }
+.rp-toggle { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 10px; margin: 0 -4px; border-radius: 10px; font-size: 12.5px; font-weight: 700; color: var(--m-fg-2); text-align: left }
+.rp-toggle b { color: var(--m-fg); font-variant-numeric: tabular-nums }
+.rp-toggle svg { margin-left: auto; transition: transform 0.2s }
+.rp-toggle[aria-expanded="true"] svg { transform: rotate(180deg) }
+.rp-toggle:hover { background: var(--m-card) }
+.rp-rows { display: grid; gap: 2px }
+.rp-row { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; padding: 4px 0; border-top: 1px dashed var(--m-pop) }
+.rp-name { display: grid; line-height: 1.2 }
+.rp-name b { font-size: 13px }
+.rp-name small { font-size: 11.5px; color: var(--m-fg-2) }
+.m-money.rp { width: 104px; height: 40px }
+.rp-rows .m-hint { padding-top: 4px }
+
+/* L1 · ledger */
+.lg { display: grid; grid-template-columns: 76px repeat(3, minmax(0, 1fr)); align-items: baseline; gap: 6px 14px }
+.lg .sav-fig { font-size: 20px }
+.lg-r { font-size: 12px; font-weight: 800; color: var(--m-fg); white-space: nowrap }
+/* L2 · bars */
+.b4 { display: grid; gap: 8px }
+.b4-key { display: flex; gap: 14px; font-size: 11px; font-weight: 700; color: var(--m-fg-2) }
+.b4-key span { display: inline-flex; align-items: center; gap: 5px }
+.b4-key i { width: 10px; height: 10px; border-radius: 3px }
+.b4-key .kb, .b4-before { background: var(--m-pop) }
+.b4-key .ka, .b4-after { background: var(--m-fg-2) }
+.b4-key .kg { background: var(--m-success-soft); box-shadow: inset 0 0 0 1px var(--m-success) }
+.b4-row { display: grid; grid-template-columns: 64px minmax(0, 1fr) auto; align-items: center; gap: 10px }
+.b4-track { position: relative; height: 28px }
+.b4-track > span { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 7px; transition: width 0.45s cubic-bezier(.16,1,.3,1), left 0.45s cubic-bezier(.16,1,.3,1) }
+.b4-before { width: calc(var(--wb) * 100%) }
+.b4-after { width: calc(var(--wa) * 100%) }
+.b4-gap { left: calc(var(--wa) * 100%) !important; width: calc((var(--wb) - var(--wa)) * 100%); background: var(--m-success-soft); box-shadow: inset 0 0 0 1px var(--m-success); display: grid; place-items: center; overflow: hidden; border-radius: 0 7px 7px 0 !important }
+.b4-gap > span { font-size: 11.5px; font-weight: 800; color: var(--m-success); white-space: nowrap; display: inline-flex; align-items: baseline; gap: 4px }
+.b4-gap .sav-fig { font-size: 13px; color: var(--m-success) }
+.b4-gap .sav-fig small { font-size: 10px; color: var(--m-success) }
+.b4-vals { display: inline-flex; align-items: baseline; gap: 4px }
+.b4-vals .sav-fig { font-size: 16px }
+.b4-vals .sav-fig.muted { color: var(--m-fg-2) }
+.b4-vals .sav-arrow svg { width: 12px; height: 12px }
+/* L3 · receipt */
+.rc4s { display: grid; gap: 0 }
+.rc4-when { padding-bottom: 2px }
+.rc4 { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto 96px; align-items: baseline; gap: 10px; padding: 3px 0; border-bottom: 1px dashed var(--m-pop); font-size: 13px }
+.rc4 .op { color: var(--m-fg-2); text-align: center }
+.rc4 small { color: var(--m-fg-2); font-size: 11.5px; font-variant-numeric: tabular-nums }
+.rc4 .sav-fig { font-size: 17px; text-align: right }
+.rc4.strong { border-bottom: 0; font-weight: 800 }
+/* L4 · bridge */
+.br { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px }
+.br-card { display: grid; gap: 2px; padding: 8px 12px; border-radius: 12px; background: var(--m-card); box-shadow: inset 0 0 0 1px var(--m-pop) }
+.br-card.saves { background: var(--m-success-soft); box-shadow: inset 0 0 0 1px var(--m-success) }
+.br-card .sav-fig { font-size: 20px }
+.br-then { display: flex; align-items: baseline; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--m-fg-2); white-space: nowrap }
+.br-then .sav-fig { font-size: 13px }
+.br-then .sav-fig small { font-size: 10px }
+.br .sav-arrow svg { width: 14px; height: 14px }
+
+.m.phone .sav-R4 { grid-template-columns: minmax(0, 1fr); padding: 8px; gap: 10px }
+.m.phone .sav-R4 .r4-costs { grid-row: auto }
+.m.phone .r4-costs .r3-today-h .sav-fig { font-size: 18px }
+.m.phone .lg { grid-template-columns: 58px repeat(3, minmax(0, 1fr)); gap: 4px 8px }
+.m.phone .lg .sav-fig { font-size: 15px }
+.m.phone .lg .sav-fig small { display: none }
+.m.phone .lg .k { font-size: 9.5px; white-space: normal }
+.m.phone .b4-row { grid-template-columns: 52px minmax(0, 1fr); row-gap: 2px }
+.m.phone .b4-vals { grid-column: 2; justify-self: end }
+.m.phone .b4-vals .sav-fig { font-size: 13px }
+.m.phone .b4-key { display: none }
+.m.phone .rc4 { grid-template-columns: 14px minmax(0, 1fr) auto 72px; gap: 6px; font-size: 12px }
+.m.phone .rc4 .sav-fig { font-size: 14px }
+.m.phone .br { gap: 4px }
+.m.phone .br-card { padding: 6px 7px }
+.m.phone .br-card .k { font-size: 9px; white-space: normal }
+.m.phone .br-card .sav-fig { font-size: 15px }
+.m.phone .br-card .sav-fig small { display: none }
+.m.phone .br-then { font-size: 9.5px; flex-wrap: wrap; gap: 0 4px }
+.m.phone .br .sav-arrow { display: none }
+.m.phone .ph-x { display: none }
+.m.phone .rp-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 2px }
+.m.phone .rp-row .stag { grid-column: 1; justify-self: start }
+
+/* ---------- Round 5: two futures ---------- */
+.oip.r5s .mx { --cell: 48px }
+.oip.r5s .mx-h { min-height: 64px }
+.r5-top { flex-wrap: wrap; gap: 8px 12px }
+/* Today's costs, folded into one line in the top row. */
+.cs-line { display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 4px 6px 4px 14px; border-radius: 12px; background: var(--m-ground); border: 1px solid var(--m-edge); text-align: left; margin-left: auto; min-width: 0 }
+.cs-line:hover, .cs-line[aria-expanded="true"] { border-color: var(--m-pop) }
+.cs-parts { font-size: 12.5px; color: var(--m-fg-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0 }
+.cs-total { font-family: var(--font-display); font-size: 17px; font-variant-numeric: tabular-nums; white-space: nowrap }
+.cs-total small { font-family: var(--font-body); font-size: 11px; font-weight: 800; color: var(--m-fg-2) }
+.cs-edit { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 10px; border-radius: 9px; font-size: 12.5px; font-weight: 800; color: var(--m-primary); background: var(--m-card); white-space: nowrap }
+.cs-line[aria-expanded="true"] .cs-edit svg { transform: rotate(180deg) }
+.cs-panel { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 14px 22px; padding: 14px 16px; margin-bottom: 4px; border-radius: 12px; background: var(--m-raised); box-shadow: inset 0 0 0 1px var(--m-pop); animation: dropin 0.22s cubic-bezier(.16,1,.3,1) }
+.cs-col { display: grid; gap: 8px; align-content: start; min-width: 0 }
+.m.phone .r5-top strong { flex: 1 }
+.m.phone .cs-line { order: 5; flex: 1 1 100%; margin-left: 0; flex-wrap: wrap; gap: 2px 10px; padding: 6px 6px 6px 12px }
+.m.phone .cs-line .k { flex: 1 0 auto }
+.m.phone .cs-parts { order: 4; flex: 1 1 100%; white-space: normal; font-size: 11.5px }
+.m.phone .cs-panel { grid-template-columns: minmax(0, 1fr); padding: 12px }
+
+.sav-R5 { display: grid; gap: 10px; padding: 10px 14px 8px; border-radius: 14px; background: var(--m-ground); border: 1px solid var(--m-edge) }
+.f5-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 11.5px; font-weight: 700; color: var(--m-fg-2) }
+.f5-legend span, .p5-l { display: inline-flex; align-items: center; gap: 6px }
+.sw { display: inline-block; width: 14px; height: 3px; border-radius: 2px }
+.sw.without { background: var(--m-without) }
+.sw.with { background: var(--m-primary) }
+.sw.gap { height: 10px; background: var(--m-success-soft); box-shadow: inset 0 0 0 1px var(--m-success) }
+.f5 { display: grid; gap: 6px }
+.f5-say { font-size: 12.5px; color: var(--m-fg-2); line-height: 1.45; max-width: 90ch }
+.f5-say b { color: var(--m-fg); font-variant-numeric: tabular-nums }
+.f5-say em { font-style: normal; font-weight: 800; color: var(--m-success) }
+/* The calendar as the time axis: one page per year under the chart's year, no gaps, so the two line up exactly. */
+.tl.axis { gap: 0 }
+.tl.axis .tl-line { left: 5%; right: 5% }
+.tl.axis .tl-stop { min-width: 0; height: 44px }
+
+/* D1 · the lines */
+.f5-plot { position: relative; height: 112px; margin: 0 0 2px }
+.m .f5-svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; stroke: none; fill: none }
+.f5-svg.faint { opacity: 0.22 }
+.f5-clip { position: absolute; inset: 0; clip-path: inset(-20px calc(100% - var(--x)) -20px -20px); transition: clip-path 0.5s cubic-bezier(.16,1,.3,1) }
+.f5-line { fill: none; stroke-width: 2.5; vector-effect: non-scaling-stroke; stroke-linejoin: round; stroke-linecap: round }
+.f5-line.without { stroke: var(--m-without) }
+.f5-line.with { stroke: var(--m-primary) }
+.f5-gap { fill: var(--m-success-soft); stroke: none }
+.f5-dot { position: absolute; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; box-shadow: 0 0 0 2px var(--m-ground); transition: left 0.5s cubic-bezier(.16,1,.3,1), top 0.5s cubic-bezier(.16,1,.3,1) }
+.f5-dot.without { background: var(--m-without) }
+.f5-dot.with { background: var(--m-primary) }
+.f5-dot.first { left: 5% }
+.f5-dot.first.without { top: var(--y1o) }
+.f5-dot.first.with { top: var(--y1w) }
+.f5-dot.at { left: var(--x) }
+.f5-dot.at.without { top: var(--yo) }
+.f5-dot.at.with { top: var(--yw) }
+.f5-handle { position: absolute; top: -4px; bottom: -6px; left: var(--x); width: 2px; margin-left: -1px; background: var(--m-primary-line); transition: left 0.5s cubic-bezier(.16,1,.3,1) }
+.f5-now { position: absolute; left: 5%; transform: translate(-6px, 0); font-size: 11px; color: var(--m-fg-2); pointer-events: none }
+.f5-now .sav-fig { font-size: 14px }
+.f5-now.without { top: var(--y1o); transform: translate(10px, -115%) }
+.f5-now.with { top: var(--y1w); transform: translate(10px, 15%) }
+.f5.at-today .f5-now { opacity: 0 }
+.f5-lab, .f5-gaplab { position: absolute; left: var(--x); display: grid; gap: 0; white-space: nowrap; pointer-events: none; transition: left 0.5s cubic-bezier(.16,1,.3,1), top 0.5s cubic-bezier(.16,1,.3,1), transform 0.3s }
+.f5-lab .k { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--m-fg-2) }
+.f5-lab .sav-fig { font-size: 20px }
+.f5-lab.without { top: var(--yo); transform: translate(12px, -50%) }
+.f5-lab.with { top: var(--yw); transform: translate(12px, -50%) }
+.f5-gaplab { top: calc((var(--yo) + var(--yw)) / 2); transform: translate(calc(-100% - 12px), -50%); display: inline-flex; align-items: baseline; gap: 5px; font-size: 12px; font-weight: 800; color: var(--m-success) }
+.f5-gaplab .sav-fig { font-size: 18px }
+.f5.flip .f5-lab.without, .f5.flip .f5-lab.with { transform: translate(calc(-100% - 12px), -50%); text-align: right }
+/* Near the end of the axis there is no room on the right, so the saving goes left of the two values. */
+.f5.flip .f5-gaplab { transform: translate(calc(-100% - 100px), -50%) }
+.m.phone .f5.flip .f5-gaplab { transform: translate(calc(-100% - 50px), -50%) }
+/* At Today there is no past to the left, so the saving sits after the two values. */
+.f5.at-today .f5-gaplab { transform: translate(96px, -50%) }
+
+/* D2 · the scenario cards */
+.d2 { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 0.85fr); align-items: stretch; gap: 10px }
+.sc5 { display: grid; gap: 6px; align-content: start; padding: 10px 14px; border-radius: 12px; background: var(--m-card); box-shadow: inset 0 0 0 1px var(--m-pop) }
+.sc5.saves { background: var(--m-success-soft); box-shadow: inset 0 0 0 1px var(--m-success) }
+.sc5-name { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-display); font-size: 15px; font-weight: 700 }
+.sc5-rows { display: grid; grid-template-columns: auto auto; justify-content: start; align-items: baseline; gap: 0 14px }
+.sc5-when { font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--m-fg-2) }
+.sc5 .sav-fig { font-size: 22px }
+.sc5-note { font-size: 11.5px; color: var(--m-fg-2) }
+.sc5-bars { display: grid; gap: 4px }
+.sc5-bars span { height: 6px; border-radius: 3px; background: var(--m-ground) }
+.sc5-bars i { display: block; height: 100%; width: calc(var(--w) * 100%); border-radius: 3px; transition: width 0.5s cubic-bezier(.16,1,.3,1) }
+.sc5.without .sc5-bars i { background: var(--m-without) }
+.sc5.with .sc5-bars i { background: var(--m-primary) }
+.sc5-op { display: grid; place-items: center; color: var(--m-fg-2); font-family: var(--font-display); font-size: 20px; font-weight: 700 }
+.sc5-op svg { width: 18px; height: 18px }
+.v-D2 .r4-cal .tl-line { left: 0 }
+
+/* D3 · the paired columns */
+.p5-plot { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); align-items: end; height: 112px }
+.p5-cell { position: relative; height: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 2px; opacity: 0.4; transition: opacity 0.25s; border-radius: 6px }
+.p5-cell.lit { opacity: 1 }
+.p5-cell:hover { opacity: 0.75 }
+.p5-cell.lit:hover { opacity: 1 }
+.p5-bar { display: block; width: min(16px, 34%); height: var(--h); border-radius: 4px 4px 0 0 }
+.p5-bar.without { background: var(--m-without) }
+.p5-bar.with { background: var(--m-primary) }
+.p5-brk { position: absolute; left: var(--x); top: var(--yo); height: calc(var(--yw) - var(--yo)); width: 6px; margin-left: 22px; border: 2px solid var(--m-success); border-left: 0; border-radius: 0 4px 4px 0; transition: left 0.45s cubic-bezier(.16,1,.3,1), top 0.45s cubic-bezier(.16,1,.3,1), height 0.45s cubic-bezier(.16,1,.3,1); pointer-events: none }
+.p5-call { position: absolute; left: var(--x); top: 0; transform: translateX(36px); display: grid; gap: 1px; padding: 6px 10px; border-radius: 10px; background: var(--m-raised); box-shadow: inset 0 0 0 1px var(--m-pop), 0 6px 16px oklch(0.08 0.04 253 / 0.45); white-space: nowrap; pointer-events: none; transition: left 0.45s cubic-bezier(.16,1,.3,1), transform 0.3s; font-size: 12px; font-weight: 700; color: var(--m-fg-2) }
+.p5-call .sav-fig { font-size: 17px; color: var(--m-fg) }
+.p5-l.gap { color: var(--m-success) }
+.p5-l.gap .sav-fig { color: var(--m-success) }
+.f5.d3.flip .p5-brk { margin-left: -28px; border-left: 2px solid var(--m-success); border-right: 0; border-radius: 4px 0 0 4px }
+.f5.d3.flip .p5-call { transform: translateX(calc(-100% - 36px)) }
+
+.m.phone .sav-R5 { padding: 8px 8px 6px }
+.m.phone .f5-plot { height: 104px }
+.m.phone .f5-lab .sav-fig { font-size: 14px }
+.m.phone .f5-lab .sav-fig small, .m.phone .f5-gaplab .sav-fig small { display: none }
+.m.phone .f5.at-today .f5-gaplab { transform: translate(58px, -50%) }
+.m.phone .f5-lab .k { font-size: 8.5px }
+.m.phone .f5-gaplab .sav-fig { font-size: 14px }
+.m.phone .f5-now { display: none }
+.m.phone .f5-say { font-size: 11.5px }
+.m.phone .d2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 0.9fr); gap: 6px }
+.m.phone .sc5-op { display: none }
+.m.phone .sc5 { padding: 8px 9px; gap: 4px }
+.m.phone .sc5-name { font-size: 12px }
+.m.phone .sc5 .sav-fig { font-size: 15px }
+.m.phone .sc5 .sav-fig small { display: none }
+.m.phone .sc5-rows { grid-template-columns: minmax(0, 1fr); gap: 0 }
+.m.phone .sc5-note { display: none }
+.m.phone .p5-plot { height: 96px }
+.m.phone .p5-call { font-size: 10.5px; padding: 4px 7px }
+.m.phone .p5-call .sav-fig { font-size: 13px }
+.m.phone .p5-call .sav-fig small { display: none }
+.m.phone .p5-brk { margin-left: 13px }
+.m.phone .p5-call { transform: translateX(22px) }
+.m.phone .f5.d3.flip .p5-brk { margin-left: -19px }
+.m.phone .f5.d3.flip .p5-call { transform: translateX(calc(-100% - 22px)) }
+
+/* ---------- Round 6: one window, fixed footprints ---------- */
+.r6 { --ease: cubic-bezier(.16,1,.3,1); position: relative; height: 100%; display: flex; flex-direction: column; gap: 10px; padding: 12px 22px 14px }
+.r6-top { position: relative; z-index: 5; display: flex; align-items: center; gap: 12px; min-height: 46px; flex: none }
+.r6-top > strong { font-family: var(--font-display); font-size: 20px }
+.r6-top .cs-line { margin-left: auto; transition: border-color 160ms var(--ease) }
+.cs-line .cs-edit svg { transition: transform 200ms var(--ease) }
+/* Today's costs open over the window, so nothing under them moves. */
+.cs-pop { position: absolute; top: calc(100% + 6px); right: 52px; width: min(780px, calc(100% - 52px)); opacity: 0; visibility: hidden; transform: translateY(-6px); transition: opacity 200ms var(--ease), transform 200ms var(--ease), visibility 0s linear 200ms }
+.cs-pop.open { opacity: 1; visibility: visible; transform: none; transition: opacity 200ms var(--ease), transform 200ms var(--ease), visibility 0s }
+.cs-pop .cs-panel { animation: none; margin: 0; box-shadow: inset 0 0 0 1px var(--m-pop), 0 18px 40px oklch(0.08 0.04 253 / 0.55) }
+
+/* Lane 1 · D3 with room */
+.r6-band { flex: none; padding: 12px 16px 4px; border-radius: 14px; background: var(--m-ground); border: 1px solid var(--m-edge) }
+.b6 { display: grid; gap: 8px }
+.b6-read { display: flex; align-items: center; gap: 26px; min-height: 46px }
+.b6-year { position: relative; display: grid; place-items: center; min-width: 74px; height: 44px; padding-top: 9px; border-radius: 8px; overflow: hidden; background: var(--m-raised); box-shadow: inset 0 0 0 1.5px var(--m-primary); font-weight: 800; font-size: 14px; font-variant-numeric: tabular-nums }
+.b6-year::before { content: ""; position: absolute; inset: 0 0 auto 0; height: 9px; background: var(--m-primary) }
+.b6-item { display: grid; gap: 1px }
+.b6-k { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--m-fg-2); white-space: nowrap }
+/* A fixed width per figure: counting never pushes its neighbours. */
+.b6-fig { display: inline-block; min-width: 5.6ch; font-size: 26px }
+.b6-base { margin-left: auto; font-size: 12.5px; color: var(--m-fg-2); white-space: nowrap }
+.b6-base b { color: var(--m-fg); font-variant-numeric: tabular-nums }
+.b6-tl { display: grid; gap: 2px; touch-action: none; user-select: none; -webkit-user-select: none; cursor: pointer }
+.b6-plot { position: relative; display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); align-items: end; height: 140px; border-bottom: 1px solid var(--m-pop) }
+.b6-cell { position: relative; height: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 3px; opacity: 0.34; transition: opacity 200ms var(--ease) }
+.b6-cell.now { opacity: 0.7 }
+.b6-cell.lit { opacity: 1 }
+.r6 .p5-bar { width: min(22px, 28%) }
+.b6-brk { margin-left: 30px; transition: left 220ms var(--ease), top 220ms var(--ease), height 220ms var(--ease) }
+.ax6 { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)) }
+.ax6-stop { position: relative; height: 40px; display: grid; place-items: center; border-radius: 8px; font-size: 12.5px; font-weight: 700; color: var(--m-fg-2); font-variant-numeric: tabular-nums; transition: color 160ms var(--ease) }
+.ax6-stop .ax-l { padding: 3px 9px; border-radius: 999px; box-shadow: inset 0 0 0 1px transparent; transition: background 160ms var(--ease), box-shadow 160ms var(--ease) }
+.ax6-stop .ax-t { display: none }
+.ax6-stop:hover { color: var(--m-fg) }
+.ax6-stop[aria-checked="true"] { color: var(--m-fg) }
+.ax6-stop[aria-checked="true"] .ax-l { background: var(--m-primary-soft); box-shadow: inset 0 0 0 1px var(--m-primary) }
+.ax6-stop:focus-visible { outline: 2px solid var(--m-primary); outline-offset: -2px }
+.b6-empty { padding: 8px 0 12px }
+
+/* The matrix keeps one footprint whatever opens. */
+.r6-mx { position: relative; flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) }
+.r6 .mx { --cell: 37px; --lab: 160px; align-content: start }
+.r6 .mx-h { min-height: 54px; padding: 4px 2px }
+.r6 .mx-sys .up { -webkit-line-clamp: 1 }
+.r6 .mx-c, .r6 .mx-h, .r6 .mx-sys { transition: background 160ms var(--ease), box-shadow 160ms var(--ease) }
+.corner-all { display: inline-flex; align-items: center; gap: 4px; min-height: 36px; font-size: 12px; font-weight: 800; letter-spacing: 0; text-transform: none; color: var(--m-primary) }
+.corner-all svg { width: 12px; height: 12px }
+
+/* Compact lines: one benefit each. */
+.bl { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; column-gap: 10px; padding: 6px 2px; border-bottom: 1px solid var(--m-edge) }
+.bl:last-child { border-bottom: 0 }
+.bl-ic { width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center; background: var(--m-raised); color: var(--m-primary) }
+.bl-ic svg { width: 14px; height: 14px }
+.bl.soon .bl-ic { color: var(--m-fg-2); background: none; box-shadow: inset 0 0 0 1.5px var(--m-pop) }
+.bl-t { min-width: 0; font-size: 13px; font-weight: 700; line-height: 1.25 }
+.bl-t small { display: block; font-size: 11.5px; font-weight: 500; color: var(--m-fg-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.bl-f { font-size: 13px; color: var(--m-success); font-variant-numeric: tabular-nums; white-space: nowrap }
+.bl-soon { font-size: 11px; font-weight: 800; color: var(--m-fg-2) }
+.bl-s { grid-column: 2 / -1; font-size: 11px; color: var(--m-fg-2) }
+.rl-title { font-family: var(--font-display); font-size: 16px; font-weight: 700 }
+.rl-ext { font-size: 12.5px; color: var(--m-fg-2) }
+.rl-ext b { color: var(--m-fg); font-variant-numeric: tabular-nums }
+.rl-ext .ok { color: var(--m-success) }
+
+/* E1 · the rail */
+.m-E1 .r6-mx { grid-template-columns: minmax(0, 1fr) 360px; gap: 14px }
+.rail6 { position: relative; min-height: 0; border-radius: 14px; background: var(--m-ground); border: 1px solid var(--m-edge); overflow: hidden }
+.rl-in { position: absolute; inset: 0; display: flex; flex-direction: column; gap: 8px; padding: 12px 14px }
+.rl-h { display: grid; gap: 2px; flex: none }
+.rl-h .back { min-height: 32px; margin: -6px 0 0 -4px }
+.rl-list { display: grid; align-content: start; min-height: 0; flex: 1; overflow-y: auto }
+.rl-k { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 42px; padding: 3px 6px; border-radius: 10px; text-align: left; transition: background 160ms var(--ease) }
+.rl-k:hover { background: var(--m-card) }
+.rl-name { display: grid; font-size: 13px; font-weight: 800; min-width: 0 }
+.rl-name small { font-size: 11.5px; font-weight: 600; color: var(--m-fg-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.rl-n { font-family: var(--font-display); font-size: 16px; font-variant-numeric: tabular-nums }
+.rl-in > .chip.draft { align-self: flex-start; flex: none }
+.rl-in.rest .rl-title { display: flex; align-items: center; justify-content: space-between; gap: 8px }
+.rl-in.rest .rl-list { grid-template-columns: 1fr 1fr; gap: 2px 8px }
+.rl-in.rest .rl-name small { display: none }
+.rl-in.rest .rl-k { min-height: 40px }
+/* Savings carries a dollar figure, so it takes the whole row. */
+.rl-in.rest .rl-k:first-child { grid-column: 1 / -1 }
+
+/* E2 · the popover */
+.pop-layer, .sheet-layer, .ovl-layer { position: absolute; inset: 0; pointer-events: none }
+.pop-layer { z-index: 4 }
+.sheet-layer { z-index: 4 }
+.ovl-layer { z-index: 6 }
+.ovl-layer .ovl { pointer-events: auto }
+.pop6 { position: absolute; width: 340px; max-height: 250px; display: flex; flex-direction: column; gap: 6px; padding: 10px 12px 10px 14px; border-radius: 14px; background: var(--m-raised); box-shadow: inset 0 0 0 1px var(--m-pop), 0 18px 40px oklch(0.08 0.04 253 / 0.55); pointer-events: auto }
+.pop6-arrow { position: absolute; width: 12px; height: 12px; background: var(--m-raised); transform: rotate(45deg); box-shadow: -1px -1px 0 var(--m-pop) }
+.pop6[data-side="left"] .pop6-arrow { box-shadow: -1px 1px 0 var(--m-pop) }
+.pop6[data-side="right"] .pop6-arrow { box-shadow: 1px -1px 0 var(--m-pop) }
+.pop6[data-side="bottom"] .pop6-arrow { box-shadow: 1px 1px 0 var(--m-pop) }
+.pop6-h { display: flex; align-items: center; gap: 8px }
+.pop6-x { margin-left: auto; width: 40px; height: 40px; margin: -8px -8px -8px auto; border-radius: 10px; display: grid; place-items: center; color: var(--m-fg-2) }
+.pop6-x:hover { color: var(--m-fg) }
+.pop6-list { min-height: 0; overflow-y: auto }
+.pop6 > .chip.draft { align-self: flex-start }
+
+/* E3 · the spec sheet */
+.sh6 { position: absolute; inset: 0; pointer-events: auto; display: flex; flex-direction: column; gap: 8px; padding: 10px 14px 12px; border-radius: 14px; background: var(--m-card); box-shadow: inset 0 0 0 1px var(--m-pop) }
+.sh-h { display: flex; align-items: baseline; gap: 6px 16px; flex-wrap: wrap }
+.sh-h .back { min-height: 32px; margin-left: -4px }
+.sh-h .chip.draft { margin-left: auto; align-self: center }
+.sh-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; flex: none }
+.sh-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border-radius: 999px; font-size: 12.5px; font-weight: 700; color: var(--m-fg-2); background: var(--m-ground); box-shadow: inset 0 0 0 1px var(--m-pop); white-space: nowrap; transition: background 160ms var(--ease), box-shadow 160ms var(--ease), color 160ms var(--ease) }
+.sh-chip svg { width: 13px; height: 13px }
+.sh-chip b { color: var(--m-fg); font-variant-numeric: tabular-nums }
+.sh-chip[aria-pressed="true"] { color: var(--m-fg); background: var(--m-primary-soft); box-shadow: inset 0 0 0 1.5px var(--m-primary) }
+.sh-body { min-height: 0; flex: 1; overflow-y: auto; columns: 2; column-gap: 26px }
+.sh-grp { break-inside: avoid; display: grid; padding-bottom: 8px }
+.sh-sys { font-size: 10.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--m-fg-2); padding: 4px 0 2px }
+
+/* Phone */
+.m.phone .r6 { padding: 10px; gap: 8px }
+.m.phone .r6-top { flex-wrap: wrap; gap: 6px 8px }
+.m.phone .r6-top > strong { flex: 1; font-size: 17px }
+.m.phone .cs-pop { right: 0; width: 100%; top: calc(100% + 4px) }
+.m.phone .r6-band { padding: 8px 10px 2px }
+.m.phone .b6-read { flex-wrap: wrap; gap: 4px 12px; min-height: 0 }
+.m.phone .b6-year { min-width: 54px; height: 36px; font-size: 12px; padding-top: 7px }
+.m.phone .b6-year::before { height: 7px }
+.m.phone .b6-fig { font-size: 17px; min-width: 4.4ch }
+.m.phone .b6-fig small { display: none }
+.m.phone .b6-k { font-size: 8.5px; letter-spacing: 0.06em }
+.m.phone .b6-k .sw { width: 9px }
+.m.phone .b6-base { margin-left: 0; flex: 1 1 100%; font-size: 11px }
+.m.phone .b6-plot { height: 92px }
+.m.phone .b6-read { flex-wrap: wrap; gap: 2px 10px }
+.m.phone .b6-base { flex: 1 1 100% }
+.m.phone .ph-x, .m.phone .r6 .cs-parts { display: none }
+.m.phone .r6 .cs-line { flex-wrap: nowrap }
+.m.phone .r6 .p5-bar { width: min(9px, 34%) }
+.m.phone .b6-brk { margin-left: 13px }
+.m.phone .ax6-stop { height: 30px; font-size: 10.5px }
+.m.phone .ax6-stop .ax-l { padding: 2px 5px }
+/* Four years carry a label on the phone, and the picked one; the rest are ticks, reached by dragging along the chart. */
+.m.phone .ax6-stop:not(.key):not([aria-checked="true"]) .ax-l { display: none }
+.m.phone .ax6-stop:not(.key):not([aria-checked="true"]) .ax-t { display: block; width: 2px; height: 8px; border-radius: 1px; background: var(--m-pop) }
+.m.phone .r6 .mx { --cell: 31px; --lab: 66px }
+.m.phone .r6 .mx-h { min-height: 42px }
+.m.phone .m-E1 .r6-mx { grid-template-columns: minmax(0, 1fr) }
+.m.phone .rail6 { position: absolute; inset: 0; z-index: 4; box-shadow: 0 -12px 30px oklch(0.08 0.04 253 / 0.5); transition: opacity 200ms var(--ease), transform 200ms var(--ease), visibility 0s linear 200ms }
+.m.phone .r6:not(.is-open) .rail6 { opacity: 0; visibility: hidden; transform: translateY(12px) }
+.m.phone .r6.is-open .rail6 { transition: opacity 200ms var(--ease), transform 200ms var(--ease), visibility 0s }
+.m.phone .pop6 { width: calc(100% - 16px) }
+.m.phone .sh-body { columns: 1 }
+.m.phone .sh-h .chip.draft { display: none }
+@media (prefers-reduced-motion: reduce) { .cs-pop, .cs-pop.open, .rail6 { transition: none !important } }
+
+/* ---------- Round 7 ---------- */
+/* The head holds today's costs: summary, an outline button like the app's Button (outline, sm), a ghost "?", then the x. */
+.mm-slot { display: none }
+.mm-slot:not(:empty) { position: relative; display: flex; align-items: center; gap: 10px; margin-left: auto; min-width: 0 }
+.mm-slot:not(:empty) + .mm-x { margin-left: 0 }
+.m-modal:has(.mm-slot:not(:empty)) .mm-head { position: relative; z-index: 9 }
+.hs-sum { display: inline-flex; align-items: baseline; gap: 8px; min-width: 0; white-space: nowrap }
+.hs-k { font-size: 11px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--m-fg-2) }
+.hs-parts { font-size: 12.5px; color: var(--m-fg-2); overflow: hidden; text-overflow: ellipsis }
+.hs-miss { color: var(--m-attention); font-weight: 700 }
+.hs-total { font-family: var(--font-display); font-size: 17px; font-variant-numeric: tabular-nums }
+.hs-total small { font-family: var(--font-body); font-size: 11px; font-weight: 800; color: var(--m-fg-2) }
+.hs-btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 12px; border-radius: 8px; font-size: 13px; font-weight: 600; color: var(--m-fg); border: 1px solid var(--m-pop); background: oklch(0.253 0.04 253 / 0.5); white-space: nowrap; transition: background 160ms cubic-bezier(.16,1,.3,1), border-color 160ms cubic-bezier(.16,1,.3,1) }
+/* 36 px drawn, 42 px to a finger, as the scene's chips reach. */
+.hs-btn::after { content: ""; position: absolute; inset: -3px }
+.hs-btn svg { width: 14px; height: 14px }
+.hs-btn:hover { background: var(--m-raised) }
+.hs-btn[aria-expanded="true"] { background: var(--m-raised); border-color: var(--m-fg-2) }
+.hs-why { width: 36px; padding: 0; border-color: transparent; background: none; font-size: 15px; font-weight: 800 }
+.hs-why:hover, .hs-why[aria-expanded="true"] { background: var(--m-raised); border-color: transparent }
+.hs-btn:focus-visible { outline: 2px solid var(--m-primary); outline-offset: 2px }
+.r7-pop { right: 0; top: calc(100% + 18px); width: 560px }
+.r7-pop .ed { padding: 16px 18px 14px; border-radius: 14px; background: var(--m-raised); box-shadow: inset 0 0 0 1px var(--m-pop), 0 18px 40px oklch(0.08 0.04 253 / 0.55) }
+.ed { display: grid; grid-template-columns: minmax(0, 1fr) 132px 118px; align-items: center; gap: 8px 14px }
+.ed-h { grid-column: 1 / -1; font-size: 10.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--m-fg-2); padding-top: 4px }
+.ed-h:not(:first-child) { padding-top: 10px; border-top: 1px solid var(--m-pop); margin-top: 4px }
+.ed-l { display: grid; font-size: 13.5px; font-weight: 700; line-height: 1.25 }
+.ed-l small { font-size: 11.5px; font-weight: 600; color: var(--m-fg-2) }
+.ed-l small.hs-miss { color: var(--m-attention) }
+.ed-f { width: 132px; height: 40px }
+.ed .stag { justify-self: start }
+.ed .m-seg { grid-column: 2 / -1; justify-self: start }
+.ed-v { font-size: 14px }
+.ed-note { grid-column: 2 / -1; font-size: 11.5px; color: var(--m-fg-2) }
+.ed-v + .ed-note { grid-column: 3 }
+.ed-foot { grid-column: 1 / -1; font-size: 11.5px; color: var(--m-fg-2); padding-top: 4px }
+
+/* The window body: the chart, then the matrix with its kinds row held while the systems scroll. */
+.r7 { gap: 10px; padding-top: 14px }
+.r7-mx { position: relative; flex: 1; min-height: 0; display: flex }
+.r7-scroll { flex: 1 1 0; min-width: 0; min-height: 0; overflow-y: auto; overscroll-behavior: contain }
+.r7 .mx { --cell: 44px; --lab: 170px; align-content: start }
+.r7 .mx-corner, .r7 .mx-h { position: sticky; top: 0; z-index: 1; background: var(--m-card) }
+.r7 .mx-h { height: 72px; min-height: 0; padding: 4px 2px; align-content: end; overflow: hidden }
+.r7 .mx-h .nm { min-height: 2.3em; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; align-content: end }
+/* Fixed row heights, so a narrowing column never changes a row's height mid-animation. */
+.r7 .mx-c, .r7 .mx-sys { height: var(--cell); min-height: 0 }
+.r7 .mx-sys .up { -webkit-line-clamp: 1 }
+/* The one move that travels far (253 px) takes the standard curve: expo-out put a third of it into the first frame. */
+.r7-railw { flex: none; width: 0; margin-left: 0; overflow: hidden; transition: width 280ms cubic-bezier(.4,0,.2,1), margin-left 280ms cubic-bezier(.4,0,.2,1) }
+.r7.is-open .r7-railw { width: 380px; margin-left: 14px }
+/* The rail's content keeps its own width, so its text never reflows while the wrapper opens. */
+.r7-rail { width: 380px; height: 100%; border-radius: 14px; background: var(--m-ground); border: 1px solid var(--m-edge); overflow: hidden }
+.r7-rail:empty { border-color: transparent; background: none }
+.r7-in { height: 100%; display: flex; flex-direction: column; padding: 10px 14px 0 }
+.r7-rh { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex: none }
+.r7-rh .back { min-height: 36px; margin-left: -4px }
+.r7-rt { margin: 2px 0 0; font-family: var(--font-display); font-size: 19px; line-height: 1.15; flex: none }
+.r7-rc { font-size: 12.5px; color: var(--m-fg-2); padding: 2px 0 8px; flex: none; border-bottom: 1px solid var(--m-edge) }
+.r7-rc .ok { color: var(--m-success); font-variant-numeric: tabular-nums }
+.r7-rl { min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 4px 0 12px }
+.r7-g { display: grid; padding-top: 6px }
+.r7-gh { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--m-fg-2); padding: 6px 0 2px }
+.r7-gh svg { width: 13px; height: 13px; color: var(--m-primary) }
+.r7l { display: grid; gap: 2px; padding: 8px 0; border-bottom: 1px solid var(--m-edge) }
+.r7-g .r7l:last-child { border-bottom: 0 }
+.r7l-t { display: flex; align-items: baseline; justify-content: space-between; gap: 12px }
+.r7l-t > b:first-child { font-size: 14px; line-height: 1.3 }
+.r7l-f { font-size: 14px; color: var(--m-success); font-variant-numeric: tabular-nums; white-space: nowrap }
+.r7l-soon { font-size: 11.5px; font-weight: 800; color: var(--m-fg-2); white-space: nowrap }
+.r7l-d { margin: 0; font-size: 12.5px; line-height: 1.4; color: var(--m-fg-2); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden }
+.r7l-from { font-size: 11px; color: var(--m-fg-2); opacity: 0.8 }
+
+/* Phone: a deliberate two-row head (title row, then today's costs), and the rail as a sheet over the matrix. */
+.m.phone .m-modal:has(.mm-slot:not(:empty)) .mm-head { flex-wrap: wrap; row-gap: 8px; padding-bottom: 10px }
+.m.phone .mm-slot:not(:empty) { order: 10; flex: 1 1 100%; margin-left: 0 }
+.m.phone .mm-slot:not(:empty) + .mm-x { margin-left: auto }
+.m.phone .hs-parts { display: none }
+.m.phone .hs-sum { flex: 1 }
+.m.phone .r7-pop { width: 100%; top: calc(100% + 14px) }
+.m.phone .r7-pop .ed { max-height: 540px; overflow-y: auto; overscroll-behavior: contain }
+.r7-pop .ed { max-height: 600px; overflow-y: auto; overscroll-behavior: contain }
+.m.phone .ed { grid-template-columns: minmax(0, 1fr) 112px; gap: 6px 10px }
+.m.phone .ed .stag { grid-column: 2; justify-self: end; margin-top: -4px }
+.m.phone .ed-f { width: 112px }
+.m.phone .ed .m-seg, .m.phone .ed-note { grid-column: 1 / -1 }
+.m.phone .ed-v + .ed-note { grid-column: 1 / -1 }
+.m.phone .r7 { padding-top: 10px }
+.m.phone .r7 .mx { --cell: 35px; --lab: 66px }
+.m.phone .r7 .mx-h { height: 46px }
+.m.phone .r7 .mx-h .nm { display: none }
+.m.phone .r7-railw { position: absolute; inset: 0; width: auto; margin: 0; z-index: 4; opacity: 0; visibility: hidden; transform: translateY(12px); transition: opacity 200ms cubic-bezier(.16,1,.3,1), transform 200ms cubic-bezier(.16,1,.3,1), visibility 0s linear 200ms }
+.m.phone .r7.is-open .r7-railw { width: auto; margin: 0; opacity: 1; visibility: visible; transform: none; transition: opacity 200ms cubic-bezier(.16,1,.3,1), transform 200ms cubic-bezier(.16,1,.3,1), visibility 0s }
+.m.phone .r7-rail { width: 100%; box-shadow: 0 -12px 30px oklch(0.08 0.04 253 / 0.5) }
+@media (prefers-reduced-motion: reduce) { .r7-railw, .m.phone .r7-railw { transition: none !important } }
+
+/* B: the open overlay hides the top row behind it, so nothing reads through "All benefits". */
+.mm-body:has(> .ovl) .oip-top, .mm-body:has(> .ovl) .sav, .mm-body:has(> .ovl) .sav-sum, .mm-body:has(> .ovl) .cs-line { visibility: hidden }
+
+/* The "?": the calculator's info sheet, inside the window. A side sheet on the iPad, a drawer on the phone. */
+.why-bg { position: absolute; inset: 0; z-index: 6; background: oklch(0.1 0.04 253 / 0.55); animation: fadein 0.16s ease-out }
+.why { position: absolute; z-index: 7; top: 0; right: 0; bottom: 0; width: 470px; display: flex; flex-direction: column; background: var(--m-raised); border-left: 1px solid var(--m-pop); box-shadow: -18px 0 40px oklch(0.08 0.04 253 / 0.5); animation: whyin 0.24s cubic-bezier(.16,1,.3,1) }
+@keyframes whyin { from { transform: translateX(28px); opacity: 0 } }
+.m.phone .why { top: auto; left: 0; width: auto; max-height: 92%; border-left: 0; border-top: 1px solid var(--m-pop); border-radius: 18px 18px 0 0; box-shadow: 0 -18px 40px oklch(0.08 0.04 253 / 0.55); animation: sheetin 0.26s cubic-bezier(.16,1,.3,1) }
+.why-h { display: flex; align-items: flex-start; gap: 10px; padding: 16px 14px 8px 20px; flex: none }
+.why-h h4 { margin: 0; font-family: var(--font-display); font-size: 21px; line-height: 1.15; flex: 1 }
+.why-h .mm-x { width: 40px; height: 40px; background: var(--m-pop) }
+.why .scroll { padding: 0 20px 22px; flex: 1; min-height: 0 }
+.why-ans { font-size: 16px; font-weight: 700; line-height: 1.4 }
+.why-ans em { font-style: normal; color: var(--m-success) }
+.why-eb { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--m-fg-2); padding: 16px 0 6px }
+.why-p { font-size: 13.5px; color: var(--m-fg-2); line-height: 1.5 }
+.uses-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 7.4rem; gap: 10px; align-items: center; padding: 7px 0; border-bottom: 1px dashed var(--m-edge); font-size: 13.5px }
+.uses-row b, .rc-row b { font-variant-numeric: tabular-nums; white-space: nowrap; text-align: right }
+.stag { justify-self: end; height: 24px; display: inline-flex; align-items: center; padding: 0 8px; border-radius: 999px; font-size: 11px; font-weight: 800; white-space: nowrap }
+.stag.assumption { color: var(--m-attention); background: var(--m-attention-soft) }
+.stag.yours { color: var(--m-primary); background: var(--m-primary-soft) }
+.stag.calc { color: var(--m-fg-2); background: var(--m-pop) }
+.rc-h { display: block; font-size: 10.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--m-fg-2); padding: 12px 0 2px }
+.rc-row { display: grid; grid-template-columns: 1.1rem minmax(0, 1fr) auto; gap: 10px; align-items: baseline; padding: 7px 0; border-bottom: 1px dashed var(--m-edge); font-size: 13.5px }
+.rc-row .op { color: var(--m-fg-2); text-align: center }
+.rc-row small { display: block; font-size: 11.5px; color: var(--m-fg-2) }
+.rc-row.strong { border-bottom-style: solid; font-weight: 800 }
+.rc-row.strong b { color: var(--m-success) }
+.m.phone .uses-row { grid-template-columns: minmax(0, 1fr) auto; row-gap: 3px }
+.m.phone .uses-row .stag { grid-column: 1; justify-self: start }
+
+@media (prefers-reduced-motion: reduce) {
+  .m *, .m *::before, .m *::after { animation: none !important; transition: none !important }
+}
+</style>
+
+<script src="assets.js"></script>
+
+<div class="page">
+  <header class="intro">
+    <h1>What the build brings</h1>
+    <p class="meta">Trade scene · Benefits interior · round 7 · 3 Nov 2026</p>
+    <p class="lede">B, Opens in place, leads, with A and C below it for reference. Round 7 is the section further down: the D3 chart as approved, today’s costs in the window’s head, and the rail opening only for what is picked in the matrix. Set the build in the picks above the frames, and every frame follows.</p>
+  </header>
+
+  <div class="carried" aria-label="Approved so far">
+    <h3>Approved so far, carried into every version</h3>
+    <ul>
+      <li><span><b>The matrix</b>: systems down, kinds of benefit across, a dot per benefit; a dot, a system or a kind opens its benefits as a large statement (R157).</span></li>
+      <li><span><b>Seven kinds</b>: Savings, Easier on HVAC, Protection, Lasts longer, Warranty, Looks &amp; use, Planet (coming soon) (R216).</span></li>
+      <li><span><b>Global and per system</b>: Roof &amp; gutters, Attic, Windows, Walls, Heating &amp; cooling, Foundation; lifespan-type benefits are plain statements, no figures (R127).</span></li>
+      <li><span><b>The window</b>: the Controls window, large and fixed, never resizing; head "Benefits" with the "Tri Pros build" tag; the x closes, no Done (R172, R185).</span></li>
+      <li><span><b>Only the build</b>: Benefits never shows Today; on Today it flips to the build first (R166).</span></li>
+      <li><span><b>The bills</b>: coastal or inland, electric and gas; coastal or inland is the same value as Home facts → Area (R155, R184). They leave the footer and join the savings in B’s top row (R219, refining R189).</span></li>
+      <li><span><b>Opens in place</b>: the matrix fills the window; a dot grows into a large card, a system or a kind lines up its cards; All benefits goes back (R217).</span></li>
+      <li><span><b>Future savings</b>: today, then 5 years on to start, looking up to 10 years ahead; bills rise at their rates and upkeep at 5% a year; the ? explains it the ROI calculator’s way (R218).</span></li>
+      <li><span><b>The calendar</b> (R3): Today, then a page per year to 2036; the year you teleport to opens holding its saving (R219).</span></li>
+      <li><span><b>Today’s costs in one place</b>: the area, the bills and the repairs on each material, with defaults from the materials and their condition today, all editable; the numbers are before the work, after it, the saving, and all three ahead (R220).</span></li>
+      <li><span><b>Two futures</b>: without the build and with it, clearly apart, each now and in the picked year, the saving as their difference; today’s costs folded, opened only to edit (R221).</span></li>
+      <li><span><b>D3, simplified</b>: a pair of columns per year, only the picked year’s figures on screen; benefits opened lighter and faster; homeowner-grade motion with no layout shift (R222).</span></li>
+      <li><span><b>The rail, only for the pick</b>: E1 and the D3 chart carried; costs in the head; the area only while missing; the matrix full width until a pick; the kinds row held while the systems scroll (R223).</span></li>
+      <li><span><b>One registry behind it</b>: each benefit belongs to an upgrade; no documents yet (R128, R215).</span></li>
+    </ul>
+  </div>
+  <div class="carried rejected" aria-label="Rejected before">
+    <h3>Rejected on 30 Oct, so none of these return</h3>
+    <ul>
+      <li><span>The savings figure on top with four summary tiles, then a section per system.</span></li>
+      <li><span>Everything grouped by kind with system tags, systems opening at the foot.</span></li>
+      <li><span>A pinned total strip, then one card per system.</span></li>
+      <li><span>Sub-tabs per kind: one sliding row, two rows of three, or an icon column.</span></li>
+    </ul>
+  </div>
+
+  <section class="q" id="studies">
+    <div class="q-head">
+      <h2>How the matrix opens its benefits</h2>
+      <p class="lede">All three keep the same matrix. They differ in where the large statement appears when you tap, and what stays on screen while you read it.</p>
+    </div>
+    <div class="variants" role="group" aria-label="Versions"></div>
+    <p class="pitch"></p>
+
+    <div class="picks" aria-label="The build in the mocks">
+      <div class="picks-head"><span><b>The build in the mocks</b> · a raised home on the inland default bills, every material Worn</span><span class="sp"></span><button class="pbtn" data-pick="preset" data-v="typical">Typical build</button><button class="pbtn" data-pick="preset" data-v="all">Everything</button><button class="pbtn" data-pick="preset" data-v="none">Nothing picked</button></div>
+      <div class="picks-grid"></div>
+    </div>
+
+    <div class="frames"></div>
+
+    <div class="notes">
+      <div class="note"><h3>How to drive the mocks</h3><ul>
+        <li><b>A dot</b> opens that system's benefits of that kind; <b>a system's name</b> opens all of its benefits; <b>a kind's head</b> opens that kind across the home.</li>
+        <li><b>A</b>: the right page changes; "All benefits" goes back to the whole build. On the phone the statement rises as a sheet.</li>
+        <li><b>B</b>: the card grows out of the dot; a system or a kind lines up its cards (swipe or the arrows). "All benefits" or a tap on the dark edge goes back.</li>
+        <li><b>C</b>: the cover is the contents; a tap turns to that page. Swipe or the arrows turn pages, the small map jumps, "Contents" goes back.</li>
+        <li><b>Edit bills</b> in the footer changes the savings everywhere. (In round 3 the bills move into the top row.)</li>
+        <li><b>Escape</b> goes back to All benefits from a card, a row of cards, A’s statement or C’s pages; at rest it closes the window (a toast here).</li>
+      </ul></div>
+      <div class="note"><h3>Picked: B (R217)</h3><p>The matrix fills the window and every benefit gets a big card of its own when tapped: the most cinematic of the three, which suits the meeting's payoff. A and C stay on the page for reference. My recommendation was A, for keeping the whole matrix beside the statement.</p></div>
+      <div class="note"><h3>My calls, to check</h3><ul>
+        <li>Each system row names its picked upgrades under the system, so the rep can say where a dot comes from.</li>
+        <li>Savings' head shows the monthly figure; the other heads show a count. No figures for Lasts longer, as ruled.</li>
+        <li>Planet is one dashed dot per system with an energy upgrade, "coming soon".</li>
+        <li>Savings counts bills cut <i>and</i> upkeep ended (the repairs a worn material costs), each its own statement.</li>
+      </ul></div>
+    </div>
+
+    <div class="table-wrap"><table>
+      <thead><tr><th>Version</th><th>While reading one part</th><th>Between taps</th><th>Phone</th><th>Cost to build</th></tr></thead>
+      <tbody>
+        <tr><td><b>A · Spread</b> (reference)</td><td>The whole matrix stays beside the statement</td><td>Only the right page changes</td><td>The matrix fills the window; the statement rises as a sheet</td><td>Lowest: one split, one statement view</td></tr>
+        <tr><td><b>B · Opens in place</b> (picked)</td><td>The matrix dims behind one big card, or a row of cards</td><td>A card grows out of the tapped dot, every tap</td><td>The same, sized down</td><td>Medium: the grow motion and a card row</td></tr>
+        <tr><td><b>C · Contents and pages</b> (reference)</td><td>A full page; a small map shows where you are</td><td>The page turns sideways</td><td>The same, pages stack to one column</td><td>Highest: a swipeable page strip and two page sets</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="q" id="future">
+    <div class="q-head">
+      <h2>The rail, only for what is picked</h2>
+      <p class="lede">Round 7 (R223). The title row is gone: today’s costs, their editor and the ? sit in the window’s own head. The area shows only while it is missing. The matrix takes the full width until something in it is picked; then it gives way and the rail opens beside it, saying plainly what is picked. The kinds row stays put while the systems scroll. "E1 · round 6" stays first as the before.</p>
+    </div>
+    <div class="variants" role="group" aria-label="Round 6 and round 7" data-fs-variants></div>
+    <p class="pitch" data-fs-pitch></p>
+    <div class="frames" data-fs-frames></div>
+    <div class="notes">
+      <div class="note"><h3>How to drive it</h3><ul>
+        <li><b>Edit costs</b> in the head opens the editor under it. Coastal or Inland appears only while the area is missing; set it there, or in the picks above (Area), and it becomes the summary’s first word.</li>
+        <li><b>A dot, a system or a kind</b> opens the rail; tap the same again, "All benefits" or Escape to close it.</li>
+        <li><b>Escape</b> steps back: the ?, then the costs editor, then the pick, then the window.</li>
+      </ul></div>
+      <div class="note"><h3>What changed</h3><ul>
+        <li>No rest summary: the matrix already shows the seven kinds and their counts.</li>
+        <li>The rail’s header says what is picked: "Roof &amp; gutters · 7 benefits", "Protection across the home · 5 benefits", "Roof &amp; gutters · Protection".</li>
+        <li>Benefits sit under small kind or system subheads, each with its detail on up to two lines and its figure on the right only where one exists. Draft is marked once.</li>
+      </ul></div>
+      <div class="note"><h3>Calls to check</h3><ul>
+        <li>The head on the phone is two deliberate rows: the title row as always, then today’s total, Edit costs and the ?.</li>
+        <li>The edit control follows the app’s outline Button at its small size, 36 px with a 42 px reach, a pencil and "Edit costs"; it stays pressed while the editor is open, since the window has no Done.</li>
+        <li>On the phone the rail is a sheet over the matrix, with no width change.</li>
+      </ul></div>
+    </div>
+    <div class="table-wrap" data-motion-table><table>
+      <thead><tr><th>Measured every animation frame, iPad frame</th><th>Walls · Warranty cell: travel, steepest frame</th><th>Its vertical drift</th><th>Head, chart, kinds row</th></tr></thead>
+      <tbody>
+        <tr><td>Pick a dot: the rail opens</td><td>253 px left over 17 frames, never back; steepest 40 px (it was 94 px with the expo-out curve, which read as a snap)</td><td>0 px</td><td>0 px</td></tr>
+        <tr><td>Pick something else while open</td><td>0 px: only the rail’s content crossfades</td><td>0 px</td><td>0 px</td></tr>
+        <tr><td>Close: tap the pick again, All benefits, or Escape</td><td>253 px right over 17 frames; steepest 40 px</td><td>0 px</td><td>0 px</td></tr>
+        <tr><td>Open today’s costs</td><td>0 px: the editor opens over the window</td><td>0 px</td><td>0 px</td></tr>
+        <tr><td>Scroll the systems (a short window)</td><td>The rows move; the kinds row stays put (0 px)</td><td>n/a</td><td>0 px</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <aside class="legend" aria-label="Real versus stand-in">
+    <h3>Real vs stand-in</h3>
+    <dl>
+      <dt>Real</dt><dd>The window shell, its tokens, head, tag and bills footer (as built); the systems and their names (<code>HOME_SYSTEM_LABELS</code>); the upgrades the scene installs and their parts (<code>SCOPE_INSTALLS</code>); the bill cuts and how they combine (<code>TRADE_BILL_CUTS</code>, <code>combineCuts</code>: the cool roof 8% electric, the attic 10% and 15%, the radiant barrier 5% and 2%, the attic fan 4% and so on); the upkeep working numbers at Worn (<code>REPAIRS_PER_YEAR</code>: roof $400, windows $200, paint $150, heating and cooling $600 a year); the climate default bills ($200 / $100 inland, $155 / $110 coastal); the claim wording ("about N%", "up to about N%"); the manufacturers you named (Owens Corning Duration COOL, WMB, Cool Life, Goodman).</dd>
+      <dt>Draft</dt><dd>Every benefit statement (marked <i>Draft</i>). Each one is a claim, so you approve the wording before it reaches the registry.</dd>
+      <dt>Stand-in</dt><dd>The scene behind the window (a captured still); "Open Modify" in the empty state (a toast). Each material’s condition is what the code gives a home of 1950–1978 with nothing recorded (Failing, see the repairs rows); the rep sets the real one in Systems.</dd>
+      <dt>Future savings</dt><dd>Real: the ROI calculator's rule (<code>remodel-roi-calculator/lib/project-remodel-roi.ts</code>). Year 1 is the coming twelve months, at today's figures. Each later year grows the bill by its rate once (<code>bill × (1 + rate)<sup>year − 1</sup></code>), and repairs grow with construction prices. The total adds up every month from year 1. Its rates are the team's working numbers (<code>REMODEL_ROI_CONFIG_DEFAULTS</code> in <code>remodel-roi-calculator/constants/config-defaults.ts</code>): electric 7.57%, gas 9.1% and construction 5% a year. Its source tags are Working number, Calculated, and Typed for a bill typed in (the calculator's "You told us"). Ruled for the scene: upkeep rises for the whole look-ahead, where the calculator stops an old install's repairs at its replacement year (R218). Calendar names: year N is named by the calendar year it ends in, counted from 2 Nov 2026, so year 5 is 2031 and year 10 is 2036.</dd>
+      <dt>Repairs rows</dt><dd>Real: one row per home material that carries repairs (<code>HOME_MATERIALS[id].repairs</code>: roof &amp; gutters, windows, exterior paint, heating &amp; cooling), labelled "option · condition" as <code>trade-scenes/lib/repairs-rows.ts</code> does. The working figure is <code>REPAIRS_PER_YEAR[trade] × REPAIRS_SHARE_BY_WEAR[wear]</code> (<code>lib/repairs-figure.ts</code>: New 0, Good 0.4, Fair 0.7, Worn 1, Failing 1.5) in $ a year; a typed figure wins (<code>repairsOverrides</code>). The condition: the code dates a 1950–1978 home to 1964 (<code>ERA_BUILD_YEAR</code>), and <code>wearForAge</code> on a 62-year-old material is Failing for each of the four (<code>resolve-home-materials.ts</code>). After the work, repairs end only on a material the build draws a part of (<code>landed()</code> in <code>lib/scene-savings.ts</code>). Stand-in: the shingle roof and central air are taken as recorded, since the build’s picks imply them.</dd>
+      <dt>Two futures</dt><dd>Without the build is the costs before the work, and with the build the costs after it, from the same costs engine and the same rates as round 4. Colour: with the build is the build’s blue (<code>--m-primary</code>), without is a gray (<code>--m-without</code>), and the saving is the success tint; checked with the dataviz palette validator on the window’s surface (colour-blind ΔE 17.2, normal 19.2, contrast pass). The chart starts at $0. In the build: recharts 3 in <code>ChartContainer</code> with a static <code>ChartConfig</code> naming both series, and the picked year as the active index driven by the calendar (the app’s pinned touch-tooltip recipe).</dd>
+      <dt>Motion</dt><dd>Mapped onto <code>motion/react</code> v12 for the build. Today’s costs and the popover enter and leave through <code>AnimatePresence</code> (opacity and a small translate or scale from the anchor). The rail’s swap is a keyed child under <code>AnimatePresence mode="popLayout"</code> in a fixed-size box. The chart’s bracket and the lit column are plain CSS transitions on transform-friendly properties. The readout figures count with <code>useMotionValue</code> and <code>animate()</code> in tabular figures at a fixed width. Round 7’s width change: the rail’s wrapper is a <code>motion.div</code> animating <code>width</code> (0 ↔ 380 px, 240 ms) inside <code>AnimatePresence</code>, and the matrix is a <code>layout</code> sibling with fixed row heights, so its columns reflow every frame and no cell snaps. The rail’s content keeps its own 380 px width and fades in after the wrapper starts. One easing, <code>[0.16, 1, 0.3, 1]</code>, at 160–280 ms; <code>useReducedMotion</code> lands everything at once. Per the app’s trap: motion goes on the slotted child, never on a <code>Button asChild</code> parent, and no surface gets two opacity entrances.</dd>
+      <dt>Left out</dt><dd>Warranty terms (no term exists in the company constants yet; the Tri Pros workmanship warranty is named without one), manufacturer documents, CO₂ figures, colours.</dd>
+    </dl>
+  </aside>
+</div>
+
+<script>
+(() => {
+  const ASSETS = window.TRIPROS_ASSETS || {}
+  const NATIVE = { ipad: [1180, 820], phone: [390, 844] }
+  const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches
+  const I = {
+    x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    left: '<path d="m15 18-6-6 6-6"/>',
+    right: '<path d="m9 18 6-6-6-6"/>',
+    grid: '<rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/>',
+    swap: '<path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/>',
+    sliders: '<line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/>',
+    home: '<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+    layers: '<path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/>',
+    sparkle: '<path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>',
+    savings: '<circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 18V6"/>',
+    hvac: '<path d="M12.8 19.6A2 2 0 1 0 14 16H2"/><path d="M17.5 8a2.5 2.5 0 1 1 2 4H2"/><path d="M9.8 4.4A2 2 0 1 1 11 8H2"/>',
+    protection: '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/>',
+    lasts: '<path d="M5 22h14"/><path d="M5 2h14"/><path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22"/><path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>',
+    warranty: '<path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/><circle cx="12" cy="8" r="6"/>',
+    looks: '<path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/>',
+    planet: '<path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/>',
+  }
+  const ic = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true">${I[k]}</svg>`
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]))
+
+  // ---- The app's own data ----
+  const SYSTEMS = [['roof', 'Roof & gutters'], ['attic', 'Attic'], ['windows', 'Windows'], ['walls', 'Walls'], ['hc', 'Heating & cooling'], ['foundation', 'Foundation']]
+  const SYS_NAME = Object.fromEntries(SYSTEMS)
+  const KINDS = [['savings', 'Savings'], ['hvac', 'Easier on HVAC'], ['protection', 'Protection'], ['lasts', 'Lasts longer'], ['warranty', 'Warranty'], ['looks', 'Looks & use'], ['planet', 'Planet']]
+  const KIND_NAME = Object.fromEntries(KINDS)
+  const TRADE = { roof: 'roof-and-gutters', attic: 'attic-and-basement', windows: 'windows-and-doors', walls: 'exterior-paint-stucco-and-siding', hc: 'hvac', foundation: 'foundation-and-crawl-space' }
+  const CUTS = {
+    'hvac': { base: { electric: 25, gas: 20 }, addOns: { ducts: { electric: 5, gas: 5 } } },
+    'roof-and-gutters': { base: { electric: 8 } },
+    'windows-and-doors': { base: { electric: 10, gas: 8 } },
+    'attic-and-basement': { base: { electric: 10, gas: 15 }, addOns: { 'radiant-barrier': { electric: 5, gas: 2 }, 'attic-fan': { electric: 4 } } },
+    'foundation-and-crawl-space': { base: { electric: 2, gas: 5 } },
+    'exterior-paint-stucco-and-siding': { base: { electric: 4 } },
+  }
+  const REPAIRS_PER_YEAR = { roof: 400, windows: 200, walls: 150, hc: 600 }
+  // One row per home material that carries repairs, as the scene lists them: the material, its option and its condition.
+  const REPAIR_ROWS = [['roof', 'Roof & gutters', 'Shingle'], ['windows', 'Windows', 'Single pane'], ['walls', 'Exterior paint', 'Water-based paint'], ['hc', 'Heating & cooling', 'Central']]
+  const WEAR_SHARE = { new: 0, good: 0.4, fair: 0.7, worn: 1, failing: 1.5 }
+  const WEAR_NAME = { new: 'New', good: 'Good', fair: 'Fair', worn: 'Worn', failing: 'Failing' }
+  // The code dates a 1950–1978 home to 1964: 62 years old, past every age band, so each original material reads Failing.
+  const TODAY_WEAR = { roof: 'failing', windows: 'failing', walls: 'failing', hc: 'failing' }
+  const workingRepairs = (sys) => Math.round(REPAIRS_PER_YEAR[sys] * WEAR_SHARE[TODAY_WEAR[sys]])
+  const repairsYear = (sys) => V.repairs[sys] ?? workingRepairs(sys)
+  const DEFAULT_BILLS = { inland: { electric: 200, gas: 100 }, coastal: { electric: 155, gas: 110 } }
+  const CLIMATE_LABEL = { inland: 'Inland', coastal: 'Coastal' }
+
+  const PRESETS = {
+    typical: { covering: 'tearoff', coolRoof: true, redeck: false, gutters: false, insulation: 'replace', radiant: true, sealing: true, fan: false, windows: true, repaint: true, coolPaint: true, system: 'split', ducts: true, r8: false, crawl: false },
+    all: { covering: 'tearoff', coolRoof: true, redeck: true, gutters: true, insulation: 'replace', radiant: true, sealing: true, fan: true, windows: true, repaint: true, coolPaint: true, system: 'split', ducts: true, r8: true, crawl: true },
+    none: { covering: 'none', coolRoof: true, redeck: false, gutters: false, insulation: 'none', radiant: false, sealing: false, fan: false, windows: false, repaint: false, coolPaint: true, system: 'none', ducts: false, r8: false, crawl: false },
+  }
+  const V = { repairs: { roof: null, windows: null, walls: null, hc: null }, v: 'B', sel: null, pageIdx: 0, pageSet: 'kind', billsOpen: false, bills: { climate: null, electric: null, gas: null }, p: { ...PRESETS.typical }, grow: null }
+
+  // ---- Savings, the scene's way: each cut takes its share of what the previous ones left ----
+  function sysCutParts(sys, category) {
+    const p = V.p, t = CUTS[TRADE[sys]], parts = []
+    const base = { roof: p.covering !== 'none' && p.coolRoof, attic: p.insulation !== 'none' || p.sealing, windows: p.windows, walls: p.repaint && p.coolPaint, hc: p.system !== 'none', foundation: p.crawl }[sys]
+    if (base && t.base[category]) parts.push(t.base[category])
+    const addOns = { attic: [p.radiant && 'radiant-barrier', p.fan && 'attic-fan'], hc: [p.ducts && 'ducts'] }[sys] || []
+    for (const a of addOns.filter(Boolean)) if (t.addOns?.[a]?.[category]) parts.push(t.addOns[a][category])
+    return parts
+  }
+  const combine = (parts) => 1 - parts.reduce((kept, pc) => kept * (1 - pc / 100), 1)
+  const climate = () => V.bills.climate ?? 'inland'
+  const bill = (c) => V.bills[c] ?? DEFAULT_BILLS[climate()][c]
+  const dollarsOff = (c, combined) => Math.round(bill(c)) - Math.round(bill(c) * (1 - combined))
+  const rowPercent = (parts) => parts.length === 1 ? parts[0] : Math.round(combine(parts) * 100)
+  // The scene credits a material's repairs to any part of it the build draws.
+  function credited(sys) {
+    const p = V.p
+    return Boolean({ roof: p.covering !== 'none' || p.redeck || p.gutters, windows: p.windows, walls: p.repaint, hc: p.system !== 'none' }[sys])
+  }
+  const upkeepOf = (sys) => credited(sys) && REPAIRS_PER_YEAR[sys] ? repairsYear(sys) : 0
+  function totals() {
+    const all = (c) => SYSTEMS.flatMap(([s]) => sysCutParts(s, c))
+    const e = all('electric'), g = all('gas')
+    const eOff = e.length ? dollarsOff('electric', combine(e)) : 0
+    const gOff = g.length ? dollarsOff('gas', combine(g)) : 0
+    const upkeepYear = SYSTEMS.reduce((n, [s]) => n + upkeepOf(s), 0)
+    const upkeep = Math.round(upkeepYear / 12)
+    return { eOff, gOff, ePct: Math.round(combine(e) * 100 / 5) * 5, gPct: Math.round(combine(g) * 100 / 5) * 5, upkeep, month: eOff + gOff + upkeep }
+  }
+
+  // ---- The draft registry: each picked upgrade's benefits ----
+  function benefits() {
+    const p = V.p, out = []
+    const add = (sys, kind, from, title, detail, extra = {}) => out.push({ sys, kind, from, title, detail, ...extra })
+    const savingsLine = (sys, from, how) => {
+      const e = sysCutParts(sys, 'electric'), g = sysCutParts(sys, 'gas')
+      if (!e.length && !g.length) return
+      const bits = [e.length && `electric about ${rowPercent(e)}%`, g.length && `gas about ${rowPercent(g)}%`].filter(Boolean)
+      const off = (e.length ? dollarsOff('electric', combine(e)) : 0) + (g.length ? dollarsOff('gas', combine(g)) : 0)
+      add(sys, 'savings', from, `${bits.join(', ').replace(/^./, (c) => c.toUpperCase())} lower`, `${how} About $${off} a month off $${Math.round(bill('electric'))} electric and $${Math.round(bill('gas'))} gas, on the team's working numbers.`, { fig: off })
+    }
+    const upkeepLine = (sys, from, what) => {
+      const y = upkeepOf(sys)
+      if (y) add(sys, 'savings', from, `${what} upkeep ends`, `A worn one costs about $${y} a year to keep up. The new one starts that at zero.`, { fig: Math.round(y / 12) })
+    }
+    const warranty = (sys, from, maker) => add(sys, 'warranty', from, maker, maker.startsWith('New ') ? 'The Tri Pros workmanship warranty.' : 'The maker’s warranty, plus the Tri Pros workmanship warranty.')
+    const planet = (sys) => add(sys, 'planet', 'Every energy upgrade', 'CO₂ saved and trees equivalent', 'Figures come soon after launch.', { soon: true })
+
+    // Roof & gutters
+    const roofFrom = { tearoff: 'Roof tear-off', overlay: 'Roof overlay' }[p.covering]
+    if (roofFrom) {
+      const cool = p.coolRoof
+      const from = cool ? `${roofFrom} · cool roof` : roofFrom
+      savingsLine('roof', from, 'A cool roof reflects the sun, so less heat reaches the attic.')
+      if (cool) add('roof', 'hvac', from, 'The attic starts cooler', 'Less heat comes down through the ceiling, so the AC runs less.')
+      if (p.covering === 'tearoff') add('roof', 'protection', from, 'No more roof leaks', 'New underlayment, an ice-and-water membrane and a metal drip edge go under the new shingles.')
+      else add('roof', 'protection', from, 'The roof sealed again', 'A new layer of shingles closes the old roof against rain.')
+      if (cool) add('roof', 'lasts', from, 'Shingles that age slower', 'A roof that stays cooler suffers less heat decay.')
+      warranty('roof', from, cool ? 'Owens Corning Duration COOL' : 'New shingles')
+      add('roof', 'looks', from, 'One new roof, edge to edge', 'New shingles and drip edge in one colour.')
+    }
+    if (p.redeck && p.covering === 'tearoff') {
+      add('roof', 'protection', 'Redeck', 'A solid deck under the roof', 'Soft or rotted plywood is replaced before the new roof goes on.')
+      add('roof', 'lasts', 'Redeck', 'The roof holds its nails', 'New plywood keeps the shingles fastened for the roof’s whole life.')
+    }
+    if (p.gutters) {
+      add('roof', 'protection', 'Gutters', 'Rain kept off the walls', 'New aluminum gutters carry the water away from the walls and the foundation.')
+      add('roof', 'looks', 'Gutters', 'Straight, clean gutter lines', 'New gutters along every eave.')
+    }
+    if (roofFrom || (p.redeck && p.covering === 'tearoff') || p.gutters) upkeepLine('roof', roofFrom ?? (p.gutters ? 'Gutters' : 'Redeck'), 'Roof')
+
+    // Attic
+    const atticUps = [p.insulation === 'replace' && 'Insulation', p.insulation === 'topoff' && 'Insulation top-off', p.radiant && 'Radiant barrier', p.sealing && 'Air sealing', p.fan && 'Attic fan'].filter(Boolean)
+    if (atticUps.length) savingsLine('attic', atticUps.join(' · '), 'The attic stops passing its heat into the rooms.')
+    if (p.insulation !== 'none') add('attic', 'hvac', p.insulation === 'replace' ? 'Insulation' : 'Insulation top-off', 'Rooms hold their temperature', `${p.insulation === 'replace' ? 'New' : 'Topped-up'} R-38 blown insulation keeps the heat above the ceiling in summer and in the rooms in winter. The HVAC runs less and lasts longer.`)
+    if (p.radiant) add('attic', 'hvac', 'Radiant barrier', 'The roof’s heat turned back', 'A foil barrier under the rafters reflects the heat before it reaches the insulation.')
+    if (p.sealing) {
+      add('attic', 'hvac', 'Air sealing', 'No attic air through the ceiling', 'Every gap around the lights, the vents and the hatch is sealed.')
+      add('attic', 'protection', 'Air sealing', 'Attic dust stays in the attic', 'Sealed gaps stop the attic’s air and dust coming down into the rooms.')
+    }
+    if (p.fan) add('attic', 'hvac', 'Attic fan', 'Hot attic air pushed out', 'On hot days a thermostat fan pulls the heat out through the gable.')
+
+    // Windows
+    if (p.windows) {
+      savingsLine('windows', 'Window replacement', 'Dual-pane glass loses less heat than the old panes.')
+      upkeepLine('windows', 'Window replacement', 'Window')
+      add('windows', 'hvac', 'Window replacement', 'Less heat through the glass', 'Dual-pane glass slows the heat both ways, summer and winter.')
+      add('windows', 'protection', 'Window replacement', 'Drafts and rain kept out', 'New vinyl frames close tight against the wall.')
+      warranty('windows', 'Window replacement', 'WMB windows')
+      add('windows', 'looks', 'Window replacement', 'Windows that open easily', 'And a screen on every window.')
+    }
+
+    // Walls
+    if (p.repaint) {
+      const cool = p.coolPaint, from = cool ? 'Repaint · Cool Life' : 'Repaint · water-based'
+      if (cool) savingsLine('walls', from, 'Cool Life paint reflects the sun off the walls.')
+      upkeepLine('walls', from, 'Paint')
+      if (cool) add('walls', 'hvac', from, 'Walls that stay cooler', 'Less of the sun’s heat soaks through the walls into the rooms.')
+      add('walls', 'protection', from, 'Cracks, stains and peeling fixed', 'The walls are patched and sealed before the new paint goes on.')
+      if (cool) add('walls', 'protection', from, 'Walls kept from heat decay', 'Reflecting the sun keeps the stucco and the framing behind it cooler.')
+      if (cool) add('walls', 'lasts', from, 'Paint that lasts longer in the sun', 'A cool paint holds its colour and its seal longer.')
+      warranty('walls', from, cool ? 'Cool Life paint' : 'New paint')
+      add('walls', 'looks', from, 'A fresh colour on every wall', 'One even coat, house and garage alike.')
+    }
+
+    // Heating & cooling
+    const sysFrom = { split: 'Split system replacement', package: 'Package unit replacement' }[p.system]
+    const hcUps = [sysFrom, p.ducts && (p.r8 ? 'Ducts · R-8' : 'Ducts')].filter(Boolean)
+    if (hcUps.length) savingsLine('hc', hcUps.join(' · '), sysFrom ? 'A high-efficiency system uses less to do the same work.' : 'Insulated ducts lose less on the way to the rooms.')
+    if (sysFrom) {
+      upkeepLine('hc', sysFrom, 'System')
+      const envelope = p.insulation !== 'none' || p.windows || (p.covering !== 'none' && p.coolRoof) || p.radiant
+      if (envelope) add('hc', 'lasts', sysFrom, 'Runs less, lasts longer', 'With the attic, the roof and the windows done, the new system works fewer hours each day.')
+      warranty('hc', sysFrom, 'Goodman system')
+      add('hc', 'looks', sysFrom, 'Even heating and cooling', 'A new high-efficiency system, quieter in every room.')
+    }
+    if (p.ducts) add('hc', 'hvac', p.r8 ? 'Ducts · R-8' : 'Ducts', 'Air arrives at the rooms cool', p.r8 ? 'R-8 ducts lose even less on the way than standard insulated ducts.' : 'New insulated ducts lose less on the way.')
+
+    // Foundation
+    if (p.crawl) {
+      savingsLine('foundation', 'Crawl space insulation', 'The floor stops leaking the house’s heat into the crawl space.')
+      add('foundation', 'hvac', 'Crawl space insulation', 'Warmer floors in winter', 'R-19 batts under the floor hold the house’s heat.')
+    }
+
+    for (const [s] of SYSTEMS) if (sysCutParts(s, 'electric').length || sysCutParts(s, 'gas').length) planet(s)
+    return out
+  }
+
+  // ---- Derived views ----
+  let B = []
+  const cell = (sys, kind) => B.filter((b) => b.sys === sys && b.kind === kind)
+  const ofSys = (sys) => B.filter((b) => b.sys === sys)
+  const ofKind = (kind) => B.filter((b) => b.kind === kind)
+  const sysUps = (sys) => [...new Set(ofSys(sys).filter((b) => !b.soon).map((b) => b.from))]
+  const realCount = () => B.filter((b) => !b.soon).length
+  const systemsTouched = () => SYSTEMS.filter(([s]) => ofSys(s).length).length
+  function kindSummary(kind) {
+    if (kind === 'savings') { const t = totals(); return t.month ? { text: `$${t.month}/mo`, mute: false } : { text: '', mute: true } }
+    if (kind === 'planet') return { text: ofKind('planet').length ? 'soon' : '', mute: true }
+    const n = ofKind(kind).length
+    return { text: n ? String(n) : '', mute: true }
+  }
+
+  // ---- Shared pieces ----
+  function matrix(dev, opts = {}) {
+    const sel = V.sel
+    const heads = KINDS.map(([k, name]) => {
+      const s = kindSummary(k)
+      return `<button class="mx-h" data-act="kind" data-kind="${k}" aria-pressed="${sel?.type === 'kind' && sel.kind === k}" aria-label="${name}">${ic(k)}<span class="nm">${name}</span><span class="sm ${s.mute ? 'mute' : ''}">${s.text}</span></button>`
+    }).join('')
+    const rows = SYSTEMS.map(([s, name]) => {
+      const ups = sysUps(s)
+      const head = `<button class="mx-sys ${ups.length ? '' : 'off'}" data-act="sys" data-sys="${s}" aria-pressed="${sel?.type === 'sys' && sel.sys === s}" ${ups.length ? '' : 'disabled'}><span class="nm">${esc(name)}</span><span class="up">${ups.length ? esc(ups.join(', ')) : 'No change'}</span></button>`
+      const cells = KINDS.map(([k]) => {
+        const items = cell(s, k)
+        const lit = sel && ((sel.type === 'sys' && sel.sys === s) || (sel.type === 'kind' && sel.kind === k))
+        const on = sel?.type === 'dot' && sel.sys === s && sel.kind === k
+        const label = items.length ? `${SYS_NAME[s]}, ${KIND_NAME[k]}: ${items.length} benefit${items.length > 1 ? 's' : ''}` : `${SYS_NAME[s]}, ${KIND_NAME[k]}: none`
+        return `<button class="mx-c ${lit ? 'lit' : ''} ${on ? 'sel' : ''}" data-act="dot" data-sys="${s}" data-kind="${k}" ${items.length ? '' : 'disabled'} aria-label="${esc(label)}">${items.map((b) => `<span class="d ${b.soon ? 'soon' : ''}"></span>`).join('')}</button>`
+      }).join('')
+      return head + cells
+    }).join('')
+    return `<div class="mx"><span class="mx-corner">${opts.corner ?? ''}</span>${heads}${rows}</div>`
+  }
+  const kindKey = () => `<div class="mx-key">${KINDS.map(([k, n]) => `<span>${ic(k)}${n}</span>`).join('')}<span><i class="d"></i>a benefit</span><span><i class="d soon"></i>coming soon</span></div>`
+  const draft = '<span class="chip draft">Draft</span>'
+  const fromChip = (b) => `<span class="chip">${esc(b.from)}</span>`
+
+  function itemHtml(b, big) {
+    return `<div class="st-item"><span class="st-t ${big ? 'big' : ''}">${esc(b.title)}</span><p class="st-d">${esc(b.detail)}</p><div class="st-meta">${fromChip(b)}${b.fig ? `<span class="chip">$${b.fig}/mo</span>` : ''}${b.soon ? '<span class="chip soon">Coming soon</span>' : draft}</div></div>`
+  }
+  function savingsHero() {
+    const t = totals()
+    if (!t.month) return ''
+    const parts = [t.eOff && `$${t.eOff} electric (up to about ${t.ePct}%)`, t.gOff && `$${t.gOff} gas (up to about ${t.gPct}%)`, t.upkeep && `$${t.upkeep} upkeep`].filter(Boolean)
+    return `<div style="display:grid;gap:6px"><span class="fig">$${t.month}<small>a month</small></span><span class="fig-note">${parts.join(' · ')}. The team’s working numbers, not yet sourced.</span></div>`
+  }
+  // A dot: that system's benefits of that kind. A system: all of its benefits by kind. A kind: that kind across the home.
+  function statement(sel) {
+    if (sel.type === 'dot') {
+      const items = cell(sel.sys, sel.kind)
+      return `<div class="st"><span class="st-kicker">${ic(sel.kind)}${esc(SYS_NAME[sel.sys])} · ${KIND_NAME[sel.kind]}</span>${items.map((b) => itemHtml(b, true)).join('')}</div>`
+    }
+    if (sel.type === 'sys') {
+      const groups = KINDS.map(([k, n]) => [k, n, cell(sel.sys, k)]).filter(([, , items]) => items.length)
+      return `<div class="st"><span class="st-kicker">${esc(sysUps(sel.sys).join(' · '))}</span><h3 class="st-h">${esc(SYS_NAME[sel.sys])}</h3>${groups.map(([k, n, items]) => `<div class="st-grp"><span class="st-grp-h">${ic(k)}${n}</span>${items.map((b) => `<div class="st-line"><span class="t">${esc(b.title)}${b.fig ? ` <span class="fg">· $${b.fig}/mo</span>` : ''}</span><span class="d">${esc(b.detail)}</span></div>`).join('')}</div>`).join('')}<div class="st-meta">${draft}</div></div>`
+    }
+    const k = sel.kind
+    const bySys = SYSTEMS.map(([s, n]) => [s, n, cell(s, k)]).filter(([, , items]) => items.length)
+    if (k === 'planet') return `<div class="st"><span class="st-kicker">${ic(k)}Planet</span><h3 class="st-h">CO₂ saved and trees equivalent</h3><p class="st-lede">Every energy upgrade in this build will show what it saves the planet. The figures come soon after launch.</p><div class="st-meta"><span class="chip soon">Coming soon</span></div></div>`
+    return `<div class="st"><span class="st-kicker">${ic(k)}Across the home</span><h3 class="st-h">${KIND_NAME[k]}</h3>${k === 'savings' ? savingsHero() : ''}${bySys.map(([s, n, items]) => `<div class="st-grp"><span class="st-grp-h">${esc(n)}</span>${items.map((b) => `<div class="st-line"><span class="t">${esc(b.title)}${b.fig ? ` <span class="fg">· $${b.fig}/mo</span>` : ''}</span><span class="d">${esc(b.detail)}</span></div>`).join('')}</div>`).join('')}<div class="st-meta">${draft}</div></div>`
+  }
+  function overview() {
+    const rows = KINDS.map(([k, n]) => {
+      const items = ofKind(k)
+      if (!items.length) return ''
+      const s = kindSummary(k)
+      const first = items[0]
+      const right = k === 'savings' ? `$${totals().month}<small>A MONTH</small>` : k === 'planet' ? '<small>SOON</small>' : `${items.length}<small>${items.length === 1 ? 'BENEFIT' : 'BENEFITS'}</small>`
+      return `<button class="ov-row ${k === 'planet' ? 'soon' : ''}" data-act="kind" data-kind="${k}"><span class="ov-ico">${ic(k)}</span><span style="min-width:0"><span class="ov-t">${n}</span><span class="ov-d" style="display:block">${esc(first.title)}${items.length > 1 && k !== 'planet' ? ` and ${items.length - 1} more` : ''}</span></span><span class="ov-n">${right}</span></button>`
+    }).join('')
+    return `<div class="st"><span class="st-kicker">${ic('sparkle')}Tri Pros build</span><h3 class="st-h">What the build brings</h3><p class="st-lede">${realCount()} benefits across ${systemsTouched()} systems. Tap a kind here, or a dot, a system or a kind in the matrix.</p><div class="ov">${rows}</div></div>`
+  }
+  const emptyHtml = () => `<div class="empty"><strong>Nothing picked for the build yet</strong><p>Pick upgrades in Modify or Systems, and every benefit they bring appears here.</p><button class="btn" data-act="modify">${ic('sliders')}Open Modify</button></div>`
+
+  // ---- A · Spread ----
+  function bodyA(dev) {
+    if (!realCount()) return `<div class="sp"><div class="sp-l">${matrix(dev)}</div>${dev === 'phone' ? '' : `<div class="sp-r">${emptyHtml()}</div>`}</div>`
+    if (dev === 'phone') {
+      return `<div class="sp"><div class="sp-l scroll">${matrix(dev)}${kindKey()}</div></div>${V.sel ? `<div class="sheet"><div class="sheet-h"><button class="back" data-act="clear">${ic('left')}All benefits</button><span style="flex:1"></span><button class="mm-x" data-act="clear" aria-label="Close">${ic('x')}</button></div><div class="scroll">${statement(V.sel)}</div></div>` : ''}`
+    }
+    return `<div class="sp"><div class="sp-l scroll">${matrix(dev)}${kindKey()}</div><div class="sp-r scroll">${V.sel ? `<button class="back" data-act="clear" style="margin:-10px 0 6px -4px">${ic('left')}All benefits</button>${statement(V.sel)}` : overview()}</div></div>`
+  }
+
+  // ---- B · Opens in place ----
+  // A system or a kind lines up one card per kind or per system; a dot is one card.
+  function deckOf(sel) {
+    if (sel.type === 'sys') return KINDS.filter(([k]) => cell(sel.sys, k).length).map(([k]) => ({ sys: sel.sys, kind: k }))
+    if (sel.type === 'kind') return SYSTEMS.filter(([s]) => cell(s, sel.kind).length).map(([s]) => ({ sys: s, kind: sel.kind }))
+    return null
+  }
+  function cardB(c, inDeck) {
+    const items = cell(c.sys, c.kind)
+    return `<div class="bigcard"><div class="st"><span class="st-kicker">${ic(c.kind)}${esc(SYS_NAME[c.sys])} · ${KIND_NAME[c.kind]}</span>${items.map((b) => itemHtml(b, !inDeck)).join('')}</div></div>`
+  }
+  function bodyB(dev, fs) {
+    const top = fs ? savTop(fs, dev) : realCount() ? `<div class="oip-top"><strong>What the build brings</strong><span>${realCount()} benefits · tap a dot, a system or a kind</span></div>` : '<div class="oip-top"><strong>What the build brings</strong></div>'
+    const base = `<div class="oip scroll ${fs ? 'r3s' : ''} ${fs && fs.startsWith('L') ? 'r4s' : ''} ${fs && fs.startsWith('D') ? 'r5s' : ''}">${top}<div>${matrix(dev)}${realCount() ? '' : emptyHtml()}</div></div>`
+    const extra = fs === 'R2' && FS.panel ? r2Panel() : ''
+    if (!V.sel) return base + extra
+    const deck = deckOf(V.sel)
+    const title = V.sel.type === 'sys' ? SYS_NAME[V.sel.sys] : V.sel.type === 'kind' ? `${KIND_NAME[V.sel.kind]} across the home` : ''
+    const stage = deck ? `<div class="deck" data-deck>${V.sel.type === 'kind' && V.sel.kind === 'savings' && totals().month ? (`<div class="bigcard"><div class="st"><span class="st-kicker">${ic('savings')}The whole build</span>${savingsHero()}</div></div>`) : ''}${deck.map((c) => cardB(c, true)).join('')}</div>` : cardB(V.sel, false)
+    return `${base}${extra}<div class="ovl" data-act="ovl-bg"><div class="ovl-top"><button class="back" data-act="clear">${ic('left')}All benefits</button><span class="sp-x"></span>${deck ? `<strong style="font-family:var(--font-display);font-size:17px">${esc(title)}</strong><span class="sp-x"></span><span class="nav"><button data-act="deck" data-dir="-1" aria-label="Previous">${ic('left')}</button><button data-act="deck" data-dir="1" aria-label="Next">${ic('right')}</button></span>` : ''}</div><div class="ovl-stage scroll">${stage}</div></div>`
+  }
+
+  // ---- C · Contents and pages ----
+  const pagesFor = (set) => set === 'kind' ? KINDS.filter(([k]) => ofKind(k).length).map(([k]) => ({ kind: k })) : SYSTEMS.filter(([s]) => ofSys(s).length).map(([s]) => ({ sys: s }))
+  function pageHtml(pg, i, n) {
+    if (pg.kind) {
+      const k = pg.kind
+      const bySys = SYSTEMS.map(([s, nm]) => [s, nm, cell(s, k)]).filter(([, , items]) => items.length)
+      if (k === 'planet') return `<div class="pg scroll"><div class="pg-h"><span class="st-kicker">${ic(k)}Kind ${i + 1} of ${n}</span><h3 class="st-h">Planet</h3><span class="cnt">Coming soon</span></div><p class="st-lede">CO₂ saved and trees equivalent, for every energy upgrade in this build. The figures come soon after launch.</p></div>`
+      return `<div class="pg scroll"><div class="pg-h"><span class="st-kicker">${ic(k)}Kind ${i + 1} of ${n}</span><h3 class="st-h">${KIND_NAME[k]}</h3><span class="cnt">${ofKind(k).length} across ${bySys.length} system${bySys.length > 1 ? 's' : ''}</span></div>${k === 'savings' ? `<div style="margin-bottom:22px">${savingsHero()}</div>` : ''}<div class="pg-grid">${bySys.map(([s, nm, items]) => `<div class="st-grp" style="border-top:0;padding-top:0" data-anchor="${s}-${k}"><span class="st-grp-h">${esc(nm)}</span>${items.map((b) => `<div class="st-line"><span class="t">${esc(b.title)}${b.fig ? ` <span class="fg">· $${b.fig}/mo</span>` : ''}</span><span class="d">${esc(b.detail)}</span></div>`).join('')}</div>`).join('')}</div><div class="st-meta" style="margin-top:18px">${draft}</div></div>`
+    }
+    const s = pg.sys
+    const groups = KINDS.map(([k, nm]) => [k, nm, cell(s, k)]).filter(([, , items]) => items.length)
+    return `<div class="pg scroll"><div class="pg-h"><span class="st-kicker">System ${i + 1} of ${n} · ${esc(sysUps(s).join(' · '))}</span><h3 class="st-h">${esc(SYS_NAME[s])}</h3></div><div class="pg-grid">${groups.map(([k, nm, items]) => `<div class="st-grp" style="border-top:0;padding-top:0" data-anchor="${s}-${k}"><span class="st-grp-h">${ic(k)}${nm}</span>${items.map((b) => `<div class="st-line"><span class="t">${esc(b.title)}${b.fig ? ` <span class="fg">· $${b.fig}/mo</span>` : ''}</span><span class="d">${esc(b.detail)}</span></div>`).join('')}</div>`).join('')}</div><div class="st-meta" style="margin-top:18px">${draft}</div></div>`
+  }
+  function miniMap(pages) {
+    const cur = pages[V.pageIdx]
+    return `<div class="mini" aria-label="Map">${SYSTEMS.map(([s]) => KINDS.map(([k]) => {
+      const has = cell(s, k).length > 0
+      const isCur = cur && ((cur.kind && cur.kind === k) || (cur.sys && cur.sys === s))
+      return `<button class="${has ? 'has' : ''} ${isCur ? 'cur' : ''}" data-act="dot" data-sys="${s}" data-kind="${k}" ${has ? '' : 'disabled'} aria-label="${esc(SYS_NAME[s])}, ${KIND_NAME[k]}"></button>`
+    }).join('')).join('')}</div>`
+  }
+  function bodyC(dev) {
+    if (!V.sel) {
+      return `<div class="cv scroll"><div class="cv-t"><span class="st-kicker">${ic('sparkle')}Tri Pros build</span><h3>What the build brings</h3>${realCount() ? `<span class="cv-count"><b>${realCount()}</b> benefits across <b>${systemsTouched()}</b> systems</span><p>Tap a kind for its page, a system for its page, or a dot to land on that part of a page.</p>` : '<p>Nothing picked for the build yet.</p>'}</div><div>${matrix(dev)}${realCount() ? '' : `<div style="margin-top:16px">${emptyHtml()}</div>`}</div></div>`
+    }
+    const pages = pagesFor(V.pageSet)
+    const n = pages.length
+    return `<div class="pg-wrap"><div class="pg-top"><button class="back" data-act="clear">${ic('grid')}Contents</button><span class="sp-x">${miniMap(pages)}</span><span class="nav"><button data-act="page" data-dir="-1" ${V.pageIdx === 0 ? 'disabled' : ''} aria-label="Previous page">${ic('left')}</button><button data-act="page" data-dir="1" ${V.pageIdx >= n - 1 ? 'disabled' : ''} aria-label="Next page">${ic('right')}</button></span></div><div class="strip-vp" data-strip-vp><div class="strip" data-strip style="transform:translateX(${-V.pageIdx * 100}%)">${pages.map((pg, i) => pageHtml(pg, i, n)).join('')}</div></div></div>`
+  }
+
+  // ---- The window ----
+  const billsLine = () => `${V.bills.climate ? CLIMATE_LABEL[V.bills.climate] : 'Area missing'} · $${Math.round(bill('electric'))} electric · $${Math.round(bill('gas'))} gas`
+  const fromWhere = (c) => V.bills[c] !== null ? 'as typed' : `from the ${CLIMATE_LABEL[climate()].toLowerCase()} defaults`
+  function footHtml() {
+    const seg = `<span class="m-seg" role="group" aria-label="Coastal or inland">${['coastal', 'inland'].map((c) => `<button data-act="climate" data-v="${c}" aria-pressed="${V.bills.climate === c}">${CLIMATE_LABEL[c]}</button>`).join('')}</span>`
+    const money = (c) => `<span class="m-money"><input inputmode="decimal" data-bill="${c}" value="${V.bills[c] ?? ''}" placeholder="$${DEFAULT_BILLS[climate()][c]}" aria-label="${c === 'electric' ? 'Electric' : 'Gas'} bill"><span>/mo</span></span>`
+    return `${V.billsOpen ? `<div class="bills-edit">${seg}<span class="m-label">Electric</span>${money('electric')}<span class="m-label">Gas</span>${money('gas')}<span class="m-hint">Electric ${fromWhere('electric')}, gas ${fromWhere('gas')}.</span></div>` : ''}<div class="mm-foot-row"><span class="grow">Based on <b>${billsLine()}</b></span><button class="mm-link" data-act="bills">${V.billsOpen ? 'Close bills' : 'Edit bills'}</button></div>`
+  }
+  // ---- Savings and bills, one section. The ROI calculator's rule: year 1 is today; each later year grows by its rate once. ----
+  const RISE = { electric: 7.57, gas: 9.1, construction: 5 }
+  const FS = { v: 'R7', ahead: 5, why: false, panel: false, costsOpen: false }
+  const NOW_YEAR = 2026
+  // Year N is the Nth twelve months from today (2 Nov 2026), named by the calendar year it ends in: year 5 runs Nov 2030 to Oct 2031, so it is 2031.
+  // Year 1 runs at today's figures, so it reads Today.
+  const yearName = (n) => n === 1 ? 'Today' : String(NOW_YEAR + n)
+  const byName = (n) => n === 1 ? 'Today' : `By ${NOW_YEAR + n}`
+  const SUP = (n) => String(n).split('').map((d) => '⁰¹²³⁴⁵⁶⁷⁸⁹'[d]).join('')
+  const grows = (pct, year) => (1 + pct / 100) ** (year - 1)
+  const growsOver = (pct, years) => { let sum = 0; for (let t = 1; t <= years; t++) sum += grows(pct, t); return sum }
+  const money = (n) => `$${Math.round(n).toLocaleString('en-US')}`
+  function future(n) {
+    const t = totals()
+    const e = t.eOff * grows(RISE.electric, n), g = t.gOff * grows(RISE.gas, n), u = t.upkeep * grows(RISE.construction, n)
+    return {
+      today: t, e, g, u,
+      month: Math.round(e) + Math.round(g) + Math.round(u),
+      bills: 12 * (t.eOff * growsOver(RISE.electric, n) + t.gOff * growsOver(RISE.gas, n)),
+      upkeepTotal: 12 * t.upkeep * growsOver(RISE.construction, n),
+      get total() { return this.bills + this.upkeepTotal },
+    }
+  }
+  const deltaText = (n) => { const d = aheadValue(n) - aheadValue(1); return n > 1 && d > 0 ? `+$${d}/mo` : '' }
+
+  // ---- Atoms the three versions share ----
+  const climateSeg = () => `<span class="m-seg" role="group" aria-label="Coastal or inland">${['coastal', 'inland'].map((c) => `<button data-act="climate" data-v="${c}" aria-pressed="${V.bills.climate === c}">${CLIMATE_LABEL[c]}</button>`).join('')}</span>`
+  const billField = (c) => `<label class="bf"><span class="k">${c === 'electric' ? 'Electric' : 'Gas'}</span><span class="m-money"><input inputmode="decimal" data-bill="${c}" value="${V.bills[c] ?? ''}" placeholder="$${DEFAULT_BILLS[climate()][c]}" aria-label="${c === 'electric' ? 'Electric' : 'Gas'} bill a month"><span>/mo</span></span></label>`
+  const sourceLine = () => { const e = fromWhere('electric'), g = fromWhere('gas'); return `<span class="m-hint" data-src>${V.bills.climate ? '' : 'Area missing · '}${e === g ? `Electric and gas ${e}` : `Electric ${e}, gas ${g}`}.</span>` }
+  const billsBlock = () => `<div class="sav-row">${climateSeg()}${billField('electric')}${billField('gas')}</div>${sourceLine()}`
+  const todayFig = () => `<b class="sav-fig" data-fig="today" data-num="${totals().month}">$${totals().month}<small>/mo</small></b>`
+  const aheadFig = () => { const m = aheadValue(FS.ahead); return `<b class="sav-fig ahead" data-fig="ahead" data-num="${m}">$${m}<small>/mo</small></b>` }
+  const partsLine = () => { const t = totals(); return [t.eOff && `−$${t.eOff} electric`, t.gOff && `−$${t.gOff} gas`, t.upkeep && `−$${t.upkeep} upkeep`].filter(Boolean).join(' · ') }
+  const whyBtn = () => `<button class="why-btn" data-act="why" aria-expanded="${FS.why}" aria-label="What are future savings?">?</button>`
+  const noSaving = '<span class="sav-parts">No energy upgrade picked yet, so nothing is saved.</span>'
+  // A calendar page per year. `pages` (R3) opens the picked year into a page that carries the saving.
+  function timeline(opts = {}) {
+    const from = opts.from ?? 1
+    const stops = Array.from({ length: 11 - from }, (_, i) => i + from)
+    const span = 10 - from
+    const page = (n) => opts.pages
+      ? `<span class="tl-page"><span class="yr">${yearName(n)}</span><b>${n === 1 ? 'Now' : NOW_YEAR + n}</b><span class="on">${aheadFig()}<span class="sav-delta" data-fig="delta">${deltaText(n)}</span></span></span>`
+      : `<span class="tl-page"><b>${n === 1 ? 'Now' : NOW_YEAR + n}</b></span>`
+    return `<div class="tl ${opts.pages ? 'pages' : ''} ${opts.axis ? 'axis' : ''}" data-tl data-from="${from}" role="radiogroup" aria-label="Look ahead to"><span class="tl-line"><span class="tl-fill" data-tl-fill style="--to:${span ? (FS.ahead - from) / span : 0}"></span></span>${stops.map((n) => `<button class="tl-stop ${n === 1 ? 'today' : ''} ${n < FS.ahead ? 'past' : ''}" role="radio" aria-checked="${n === FS.ahead}" tabindex="${n === FS.ahead ? 0 : -1}" data-act="year" data-y="${n}" aria-label="${n === 1 ? 'Today' : `${NOW_YEAR + n}, year ${n}`}">${page(n)}</button>`).join('')}</div>`
+  }
+
+  // R1 · a flow band: bills → saves today → saves later, always open.
+  function savR1() {
+    const has = totals().month > 0
+    return `<div class="sav sav-R1" data-sav>`
+      + `<div class="sav-step bills"><span class="k">The bills today</span>${billsBlock()}</div>`
+      + `<span class="sav-arrow">${ic('right')}</span>`
+      + `<div class="sav-step now"><span class="k">Saves today</span>${todayFig()}${has ? `<span class="sav-parts">${partsLine()}</span>` : noSaving}</div>`
+      + (has ? `<span class="sav-arrow">${ic('right')}</span><div class="sav-step later"><div class="sav-later-h"><span class="k" data-fig="label">${byName(FS.ahead)}</span>${aheadFig()}<span class="sav-delta" data-fig="delta">${deltaText(FS.ahead)}</span></div>${timeline()}</div>` : '')
+      + '</div>'
+  }
+  // R2 · one summary line; tapping it opens the three steps over the matrix.
+  function savR2() {
+    const has = totals().month > 0
+    return `<button class="sav-sum" data-act="panel" aria-expanded="${FS.panel}" data-sav><span class="bills-mini">${V.bills.climate ? CLIMATE_LABEL[V.bills.climate] : 'Area missing'} · <b>$${Math.round(bill('electric'))}</b> electric · <b>$${Math.round(bill('gas'))}</b> gas</span><span class="sav-arrow">${ic('right')}</span><span><span class="k">Saves today</span>${todayFig()}</span>${has ? `<span class="sav-arrow">${ic('right')}</span><span><span class="k" data-fig="label">${byName(FS.ahead)}</span>${aheadFig()}</span>` : ''}<span class="chev">${ic('down')}</span></button>`
+  }
+  function r2Panel() {
+    const has = totals().month > 0
+    return '<div class="sav-panel-bg" data-act="panel-close"></div><div class="sav-panel" role="dialog" aria-label="Bills and savings">'
+      + `<div class="sav-step"><span class="step-n">The bills today</span>${billsBlock()}</div><span class="sav-arrow">${ic('right')}</span>`
+      + `<div class="sav-step"><span class="step-n">Saves today</span>${todayFig()}${has ? `<span class="sav-parts">${partsLine()}</span>` : noSaving}</div><span class="sav-arrow">${ic('right')}</span>`
+      + `<div class="sav-step"><span class="step-n">Teleport ahead</span>${has ? `<div class="sav-later-h"><span class="k" data-fig="label">${byName(FS.ahead)}</span>${aheadFig()}<span class="sav-delta" data-fig="delta">${deltaText(FS.ahead)}</span></div>${timeline()}` : noSaving}</div>`
+      + '</div>'
+  }
+  // R3 · the calendar is the section: Today holds the bills, the picked year holds the saving.
+  function savR3() {
+    const has = totals().month > 0
+    return `<div class="sav sav-R3" data-sav><div class="r3-today"><div class="r3-today-h"><span class="k">Today · Nov 2026</span><span>${todayFig()}</span></div>${billsBlock()}${has ? '' : noSaving}</div>`
+      + (has ? `<div class="r3-cal">${timeline({ from: 2, pages: true })}</div>` : '')
+      + '</div>'
+  }
+  const SAV = { R1: savR1, R2: savR2, R3: savR3 }
+  function savTop(v, dev) {
+    if (v.startsWith('D')) return `<div class="oip-top has-sav r5-top"><strong>What the build brings</strong>${costsSummary()}${totals().month ? whyBtn() : ''}</div>${savR5()}`
+    if (v.startsWith('L')) return `<div class="oip-top has-sav"><strong>What the build brings</strong><span class="sp-x"></span>${totals().month ? whyBtn() : ''}</div>${savR4(dev)}`
+    const head = `<div class="oip-top has-sav"><strong>What the build brings</strong>${v === 'R2' ? `<span class="sp-x"></span>${savR2()}` : '<span class="sp-x"></span>'}${totals().month ? whyBtn() : ''}</div>`
+    return v === 'R2' ? head : head + SAV[v]()
+  }
+
+  // What it uses / how it's worked out / the math: the calculator's info sheet, line for line.
+  const whyHtml = () => `<div class="why-bg" data-act="why-close"></div><div class="why" role="dialog" aria-label="What are future savings?"><div class="why-h"><h4>What are future savings?</h4><button class="mm-x" data-act="why-close" aria-label="Close">${ic('x')}</button></div><div class="scroll">${whyBody()}</div></div>`
+  // ---- Round 4: today's costs in one place, and four ways to read before, after and the saving ----
+  // Before: the bills plus every repairs row. After: the bills less the build's cuts, and repairs only where the build leaves a material alone.
+  function costs(n) {
+    const t = totals()
+    const repB = Math.round(REPAIR_ROWS.reduce((sum, [k]) => sum + repairsYear(k), 0) / 12)
+    const repA = repB - t.upkeep
+    const ge = grows(RISE.electric, n), gg = grows(RISE.gas, n), gc = grows(RISE.construction, n)
+    const eB = Math.round(bill('electric') * ge), gB = Math.round(bill('gas') * gg), rB = Math.round(repB * gc)
+    const eA = Math.round((bill('electric') - t.eOff) * ge), gA = Math.round((bill('gas') - t.gOff) * gg), rA = Math.round(repA * gc)
+    const before = eB + gB + rB, after = eA + gA + rA
+    return { eB, gB, rB, eA, gA, rA, before, after, saving: before - after }
+  }
+  const isR4 = () => FS.v.startsWith('L')
+  const aheadValue = (n) => isR4() || isR5() || isR6() ? costs(n).saving : future(n).month
+  // A live figure follows the calendar; today's stay put.
+  const fig4 = (key, n, cls = '', live = n !== 1) => { const v = costs(n)[key]; return `<b class="sav-fig ${cls}" ${live ? `data-n4="${key}"` : ''} data-num="${v}">$${v}<small>/mo</small></b>` }
+
+  // Today's costs: the area, the two bills and the repairs rows, one card, one place to edit.
+  const repairsRow = ([k, label, option]) => `<div class="rp-row"><span class="rp-name"><b>${label}</b><small>${option} · ${WEAR_NAME[TODAY_WEAR[k]]}</small></span><span class="m-money rp"><input inputmode="decimal" data-repair="${k}" value="${V.repairs[k] ?? ''}" placeholder="$${workingRepairs(k)}" aria-label="${label} repairs a year"><span>/yr</span></span><span class="stag ${V.repairs[k] !== null ? 'yours' : 'assumption'}">${V.repairs[k] !== null ? 'Typed' : 'Working number'}</span></div>`
+  function costsCard(dev) {
+    const c = costs(1), repMo = c.rB
+    const head = `<div class="r3-today-h"><span class="k">Today’s costs · Nov 2026</span><span><b class="sav-fig" data-num="${c.before}">$${c.before}<small>/mo</small></b></span></div>`
+    const rows = `<div class="rp-rows">${REPAIR_ROWS.map(repairsRow).join('')}<span class="m-hint">Repairs: the team’s working numbers for each material at its condition today, not yet sourced; a typed figure wins. Condition is set in Systems.</span></div>`
+    const toggle = (label) => `<button class="rp-toggle" data-act="costs" aria-expanded="${FS.costsOpen}">${label}${ic('down')}</button>`
+    if (dev === 'phone') {
+      return `<div class="r3-today r4-costs ${FS.costsOpen ? 'open' : ''}">${head}<span class="sav-parts">$${c.eB} electric · $${c.gB} gas · $${repMo} repairs</span>${toggle(FS.costsOpen ? 'Done editing' : 'Edit bills and repairs')}${FS.costsOpen ? `${billsBlock()}${rows}` : ''}</div>`
+    }
+    return `<div class="r3-today r4-costs ${FS.costsOpen ? 'open' : ''}">${head}${billsBlock()}${toggle(`Repairs today <b>$${repMo}/mo</b> · ${REPAIR_ROWS.length} materials`)}${FS.costsOpen ? rows : ''}</div>`
+  }
+
+  // L1 · a ledger: a row for today and one for the picked year; before, after and the saving across.
+  function numsL1() {
+    const n = FS.ahead
+    return `<div class="lg" role="table" aria-label="Costs before and after the work"><span></span><span class="k">Before the work</span><span class="k">After the work</span><span class="k">Saves</span>`
+      + `<span class="lg-r">Today</span>${fig4('before', 1)}${fig4('after', 1)}${fig4('saving', 1, 'ahead')}`
+      + `<span class="lg-r" data-fig="label">${byName(n)}</span>${fig4('before', n)}${fig4('after', n)}${fig4('saving', n, 'ahead')}</div>`
+  }
+  // L2 · two bars: before is the whole bar, after is the part that stays; the gap between them is the saving.
+  const barScale = () => Math.max(1, costs(10).before)
+  function barRow(n, label) {
+    const c = costs(n), s = barScale()
+    return `<div class="b4-row" ${n === 1 ? '' : 'data-b4'} style="--wa:${c.after / s};--wb:${c.before / s}"><span class="lg-r" ${n === 1 ? '' : 'data-fig="label"'}>${label}</span><div class="b4-track"><span class="b4-before"></span><span class="b4-after"></span><span class="b4-gap"><span>saves ${fig4('saving', n)}</span></span></div><span class="b4-vals">${fig4('before', n, 'muted')}<span class="sav-arrow">${ic('right')}</span>${fig4('after', n)}</span></div>`
+  }
+  const numsL2 = () => `<div class="b4"><div class="b4-key"><span><i class="kb"></i>Before the work</span><span><i class="ka"></i>After the work</span><span><i class="kg"></i>The saving</span></div>${barRow(1, 'Today')}${barRow(FS.ahead, byName(FS.ahead))}</div>`
+  // L3 · a receipt for the year on the calendar: what it costs before, less what the build ends, is what it costs after.
+  function numsL3() {
+    const n = FS.ahead, t1 = costs(1)
+    const line = (op, label, key, cls) => `<div class="rc4 ${cls}"><span class="op">${op}</span><span>${label}</span><small>today $${t1[key]}</small>${fig4(key, n, cls === 'ends' ? 'ahead' : '', true)}</div>`
+    return `<div class="rc4s"><span class="k rc4-when" data-fig="label">${byName(n)}</span>`
+      + line('', 'Costs before the work', 'before', '')
+      + line('−', 'What the build ends', 'saving', 'ends')
+      + line('=', 'Costs after the work', 'after', 'strong')
+      + '</div>'
+  }
+  // L4 · a bridge: before on the left, after on the right, the saving between them; each shows today and the picked year.
+  function numsL4() {
+    const n = FS.ahead
+    const card = (label, key, cls) => `<div class="br-card ${cls}"><span class="k">${label.replace(' the work', '<span class="ph-x"> the work</span>')}</span>${fig4(key, 1, cls === 'saves' ? 'ahead' : '')}<span class="br-then"><span data-fig="label">${byName(n)}</span> ${fig4(key, n, cls === 'saves' ? 'ahead' : '')}</span></div>`
+    return `<div class="br">${card('Before the work', 'before', '')}<span class="sav-arrow">${ic('right')}</span>${card('Saves', 'saving', 'saves')}<span class="sav-arrow">${ic('right')}</span>${card('After the work', 'after', '')}</div>`
+  }
+  const NUMS = { L1: numsL1, L2: numsL2, L3: numsL3, L4: numsL4 }
+  function savR4(dev) {
+    const has = totals().month > 0
+    const from = FS.v === 'L3' ? 1 : 2
+    return `<div class="sav sav-R4 v-${FS.v}" data-sav>${costsCard(dev)}`
+      + (has ? `<div class="r4-nums">${NUMS[FS.v]()}</div><div class="r4-cal">${timeline({ from, pages: from === 2 })}</div>` : `<div class="r4-nums">${noSaving}</div>`)
+      + '</div>'
+  }
+  // ---- Round 5: two futures. Without the build the costs keep running as they are; with it they drop. The saving is the gap between them. ----
+  const isR5 = () => FS.v.startsWith('D')
+  const max5 = () => Math.max(1, costs(10).before) * 1.25
+  const yOf = (v) => 100 - (v / max5()) * 100
+  const xOf = (n) => (n - 0.5) * 10
+  const fig5 = (key, n, cls = '') => { const v = costs(n)[key]; return `<b class="sav-fig ${cls}" ${n === 1 ? '' : `data-n4="${key}"`} data-num="${v}">$${v}<small>/mo</small></b>` }
+  const legend5 = () => '<div class="f5-legend" aria-hidden="true"><span><i class="sw without"></i>Without the build</span><span><i class="sw with"></i>With the build</span><span><i class="sw gap"></i>The saving</span></div>'
+  function sayText() {
+    const n = FS.ahead, c1 = costs(1), cn = costs(n)
+    if (n === 1) return `Without the build the costs would be <b>$${c1.before}</b> a month; with it they could be <b>$${c1.after}</b>: <em>$${c1.saving} less</em>.`
+    const when = NOW_YEAR + n
+    return `Without the build the costs would be <b>$${c1.before}</b> a month (<b>$${cn.before}</b> by ${when}); with it they could be <b>$${c1.after}</b> (<b>$${cn.after}</b> by ${when}): <em>$${c1.saving} less now, $${cn.saving} by ${when}</em>.`
+  }
+  const say5 = () => `<p class="f5-say" data-say aria-live="polite">${sayText()}</p>`
+
+  // Today's costs, folded: one line with the total; open, everything it holds today, in one place.
+  function costsSummary() {
+    const c = costs(1)
+    return `<button class="cs-line" data-act="costs" aria-expanded="${FS.costsOpen}"><span class="k">Today’s costs</span><span class="cs-parts">${V.bills.climate ? CLIMATE_LABEL[V.bills.climate] : 'Area missing'} · $${c.eB} electric · $${c.gB} gas · $${c.rB} repairs</span><b class="cs-total">$${c.before}<small>/mo</small></b><span class="cs-edit">${FS.costsOpen ? 'Close' : 'Edit costs'}${ic('down')}</span></button>`
+  }
+  const costsPanel = () => `<div class="cs-panel" role="group" aria-label="Today’s costs"><div class="cs-col"><span class="k">The bills, a month</span>${billsBlock()}</div><div class="cs-col"><span class="k">Repairs a year, by material</span><div class="rp-rows">${REPAIR_ROWS.map(repairsRow).join('')}</div><span class="m-hint">The team’s working numbers for each material at its condition today, not yet sourced; a typed figure wins. Condition is set in Systems.</span></div></div>`
+
+  // D1 · two futures on one time axis: without above, with below, the gap between them shaded as the saving.
+  function d1() {
+    const n = FS.ahead, c = costs(n), c1 = costs(1)
+    const years = Array.from({ length: 10 }, (_, i) => costs(i + 1))
+    const pts = (key) => years.map((y, i) => `${xOf(i + 1) / 10},${yOf(y[key]).toFixed(2)}`).join(' ')
+    const area = `${pts('before')} ${pts('after').split(' ').reverse().join(' ')}`
+    const svg = (cls) => `<svg class="f5-svg ${cls}" viewBox="0 0 10 100" preserveAspectRatio="none" aria-hidden="true"><polygon class="f5-gap" points="${area}"/><polyline class="f5-line without" points="${pts('before')}"/><polyline class="f5-line with" points="${pts('after')}"/></svg>`
+    return `<div class="f5 d1 ${n === 1 ? 'at-today' : ''} ${n > 6 ? 'flip' : ''}" data-f5 style="--x:${xOf(n)}%;--yo:${yOf(c.before)}%;--yw:${yOf(c.after)}%;--y1o:${yOf(c1.before)}%;--y1w:${yOf(c1.after)}%">`
+      + legend5()
+      + `<div class="f5-plot">${svg('faint')}<div class="f5-clip">${svg('')}</div>`
+      + '<span class="f5-dot without first"></span><span class="f5-dot with first"></span>'
+      + `<span class="f5-now without">${fig5('before', 1)}</span><span class="f5-now with">${fig5('after', 1)}</span>`
+      + '<span class="f5-handle"></span><span class="f5-dot without at"></span><span class="f5-dot with at"></span>'
+      + `<span class="f5-lab without"><b class="sav-fig" data-n4="before" data-num="${c.before}">$${c.before}<small>/mo</small></b></span>`
+      + `<span class="f5-lab with"><b class="sav-fig" data-n4="after" data-num="${c.after}">$${c.after}<small>/mo</small></b></span>`
+      + `<span class="f5-gaplab">saves <b class="sav-fig ahead" data-n4="saving" data-num="${c.saving}">$${c.saving}<small>/mo</small></b></span>`
+      + `</div>${timeline({ from: 1, axis: true })}${say5()}</div>`
+  }
+  // D2 · two scenario cards side by side, each now and in the picked year; the difference follows as their consequence.
+  function d2() {
+    const m = costs(10).before
+    const bars = (key) => `<div class="sc5-bars" aria-hidden="true"><span><i style="--w:${costs(1)[key] / m}"></i></span><span><i data-w5="${key}" style="--w:${costs(FS.ahead)[key] / m}"></i></span></div>`
+    const card = (cls, name, key) => `<div class="sc5 ${cls}"><span class="sc5-name"><i class="sw ${cls}"></i>${name}</span><div class="sc5-rows"><span class="sc5-when">Now</span>${fig5(key, 1)}<span class="sc5-when" data-fig="label">${byName(FS.ahead)}</span>${fig5(key, FS.ahead)}</div>${bars(key)}</div>`
+    return `<div class="d2">${card('without', 'Without the build', 'before')}<span class="sc5-op">${ic('right')}</span>${card('with', 'With the build', 'after')}<span class="sc5-op eq">=</span><div class="sc5 saves"><span class="sc5-name">Saves</span><div class="sc5-rows"><span class="sc5-when">Now</span>${fig5('saving', 1, 'ahead')}<span class="sc5-when" data-fig="label">${byName(FS.ahead)}</span>${fig5('saving', FS.ahead, 'ahead')}</div><span class="sc5-note">a month, the difference between the two</span></div></div><div class="r4-cal">${timeline({ from: 2, pages: true })}</div>`
+  }
+  // D3 · a pair of columns per year, without beside with; the picked year lit, the gap marked on it.
+  function d3() {
+    const n = FS.ahead, c = costs(n)
+    const cells = Array.from({ length: 10 }, (_, i) => { const y = costs(i + 1); return `<button class="p5-cell ${i + 1 === n ? 'lit' : ''}" data-act="year" data-y="${i + 1}" tabindex="-1" aria-label="${yearName(i + 1)}: without the build $${y.before}, with it $${y.after}"><i class="p5-bar without" style="--h:${(y.before / max5()) * 100}%"></i><i class="p5-bar with" style="--h:${(y.after / max5()) * 100}%"></i></button>` }).join('')
+    return `<div class="f5 d3 ${n > 6 ? 'flip' : ''}" data-f5 style="--x:${xOf(n)}%;--yo:${yOf(c.before)}%;--yw:${yOf(c.after)}%">${legend5()}<div class="f5-plot p5-plot">${cells}`
+      + '<span class="p5-brk"></span>'
+      + `<span class="p5-call"><span class="p5-l without"><i class="sw without"></i>Without <b class="sav-fig" data-n4="before" data-num="${c.before}">$${c.before}<small>/mo</small></b></span><span class="p5-l with"><i class="sw with"></i>With <b class="sav-fig" data-n4="after" data-num="${c.after}">$${c.after}<small>/mo</small></b></span><span class="p5-l gap">saves <b class="sav-fig ahead" data-n4="saving" data-num="${c.saving}">$${c.saving}<small>/mo</small></b></span></span>`
+      + `</div>${timeline({ from: 1, axis: true })}${say5()}</div>`
+  }
+  const DIR = { D1: d1, D2: d2, D3: d3 }
+  function savR5() {
+    const has = totals().month > 0
+    return `<div class="sav sav-R5 v-${FS.v}" data-sav>${FS.costsOpen ? costsPanel() : ''}${has ? DIR[FS.v]() : `<div>${noSaving}</div>`}</div>`
+  }
+  // Teleporting moves both futures: positions and bars ease, figures count, the sentence follows.
+  function syncR5(n) {
+    if (!isR5()) return
+    const c = costs(n), m = costs(10).before
+    for (const { root, fs } of screens) {
+      if (!fs) continue
+      root.querySelectorAll('[data-f5]').forEach((el) => {
+        el.style.setProperty('--x', `${xOf(n)}%`); el.style.setProperty('--yo', `${yOf(c.before)}%`); el.style.setProperty('--yw', `${yOf(c.after)}%`)
+        el.classList.toggle('flip', n > 6); el.classList.toggle('at-today', n === 1)
+        el.querySelectorAll('.p5-cell').forEach((b) => b.classList.toggle('lit', Number(b.dataset.y) === n))
+      })
+      root.querySelectorAll('[data-w5]').forEach((el) => el.style.setProperty('--w', c[el.dataset.w5] / m))
+      root.querySelectorAll('[data-say]').forEach((el) => { el.innerHTML = sayText() })
+    }
+  }
+
+  // ---- Round 6: D3 with room, four ways to open the benefits, and nothing in the window moving that is not the thing moving ----
+  const R6_MODES = ['B0', 'E1', 'E2', 'E3', 'R7']
+  const isR6 = () => R6_MODES.includes(FS.v)
+  let SOFT = false
+  // A soft paint updates the round-6 window in place (classes, one layer) instead of redrawing it, so nothing reflows.
+  const softPaint = () => { SOFT = true; paint(true); SOFT = false }
+  const EASE = 'cubic-bezier(.16,1,.3,1)'
+
+  // Lane 1 · D3 simplified: the picked year's three figures in a fixed readout, today's as a quiet baseline, the chart below with room.
+  const AX_KEYS = [1, 2, 5, 10]
+  function band6(dev) {
+    const n = FS.ahead, c = costs(n), c1 = costs(1), m = max5()
+    const cells = Array.from({ length: 10 }, (_, i) => { const y = costs(i + 1); return `<span class="b6-cell ${i + 1 === n ? 'lit' : ''} ${i === 0 ? 'now' : ''}" data-y6="${i + 1}"><i class="p5-bar without" style="--h:${(y.before / m) * 100}%"></i><i class="p5-bar with" style="--h:${(y.after / m) * 100}%"></i></span>` }).join('')
+    const stops = Array.from({ length: 10 }, (_, i) => { const y = i + 1; return `<button class="tl-stop ax6-stop ${AX_KEYS.includes(y) ? 'key' : ''} ${y < n ? 'past' : ''}" role="radio" aria-checked="${y === n}" tabindex="${y === n ? 0 : -1}" data-act="year" data-y="${y}" aria-label="${y === 1 ? 'Today' : `${NOW_YEAR + y}, year ${y}`}"><span class="ax-l">${y === 1 ? 'Now' : NOW_YEAR + y}</span><span class="ax-t"></span></button>` }).join('')
+    const fig = (key, cls = '') => `<b class="sav-fig b6-fig ${cls}" data-n4="${key}" data-num="${c[key]}">$${c[key]}<small>/mo</small></b>`
+    return `<div class="b6" data-b6 style="--x:${xOf(n)}%;--yo:${yOf(c.before)}%;--yw:${yOf(c.after)}%">`
+      + `<div class="b6-read" aria-live="polite"><span class="b6-year" data-year6>${byName(n)}</span>`
+      + `<span class="b6-item"><span class="b6-k"><i class="sw without"></i>Without<span class="ph-x"> the build</span></span>${fig('before')}</span>`
+      + `<span class="b6-item"><span class="b6-k"><i class="sw with"></i>With<span class="ph-x"> the build</span></span>${fig('after')}</span>`
+      + `<span class="b6-item saves"><span class="b6-k"><i class="sw gap"></i>Saves</span>${fig('saving', 'ahead')}</span>`
+      + `<span class="b6-base">Today <b>$${c1.before}</b> → <b>$${c1.after}</b>, saves <b>$${c1.saving}</b> a month</span></div>`
+      + `<div class="b6-tl" data-tl data-from="1"><span data-tl-fill hidden></span><div class="b6-plot">${cells}<span class="p5-brk b6-brk"></span></div><div class="ax6" role="radiogroup" aria-label="Look ahead to">${stops}</div></div>`
+      + '</div>'
+  }
+  function syncR6(n) {
+    if (!isR6()) return
+    const c = costs(n)
+    for (const { root, fs } of screens) {
+      if (!fs) continue
+      root.querySelectorAll('[data-b6]').forEach((el) => {
+        el.style.setProperty('--x', `${xOf(n)}%`); el.style.setProperty('--yo', `${yOf(c.before)}%`); el.style.setProperty('--yw', `${yOf(c.after)}%`)
+        el.querySelectorAll('.b6-cell').forEach((b) => b.classList.toggle('lit', Number(b.dataset.y6) === n))
+        const yr = el.querySelector('[data-year6]'); if (yr) yr.textContent = byName(n)
+      })
+    }
+  }
+
+  // Lane 2 · the selection as compact lines: one line each, the kind's icon, the figure where one exists.
+  function selItems() {
+    const s = V.sel
+    if (!s) return []
+    if (s.type === 'all') return B.filter((b) => !s.kind || b.kind === s.kind)
+    if (s.type === 'dot') return cell(s.sys, s.kind)
+    if (s.type === 'sys') return KINDS.flatMap(([k]) => cell(s.sys, k))
+    return SYSTEMS.flatMap(([sy]) => cell(sy, s.kind))
+  }
+  const selTitle = () => { const s = V.sel; return !s ? '' : s.type === 'dot' ? `${SYS_NAME[s.sys]} · ${KIND_NAME[s.kind]}` : s.type === 'sys' ? SYS_NAME[s.sys] : s.type === 'kind' ? `${KIND_NAME[s.kind]} across the home` : s.kind ? KIND_NAME[s.kind] : 'Every benefit of the build' }
+  const extentOf = (items) => {
+    const real = items.filter((b) => !b.soon), sys = new Set(real.map((b) => b.sys)).size, sum = real.reduce((n, b) => n + (b.fig || 0), 0)
+    // Cuts compound, so each system's own saving summed overstates the build's; across systems the build's total is the one figure.
+    return { n: real.length, sys, money: sys > 1 && sum ? totals().month : sum }
+  }
+  const extentLine = (items) => { const e = extentOf(items); return `<b>${e.n}</b> benefit${e.n === 1 ? '' : 's'}${e.sys > 1 ? ` across <b>${e.sys}</b> systems` : ''}${e.money ? ` · <b class="ok">$${e.money}/mo</b> of it in savings` : ''}` }
+  function line6(b, side, detail) {
+    const right = b.fig ? `<b class="bl-f">$${b.fig}/mo</b>` : b.soon ? '<span class="bl-soon">Soon</span>' : ''
+    const meta = side === 'sys' ? SYS_NAME[b.sys] : side === 'kind' ? KIND_NAME[b.kind] : b.from
+    return `<div class="bl ${b.soon ? 'soon' : ''}"><span class="bl-ic">${ic(b.kind)}</span><span class="bl-t">${esc(b.title)}${detail ? `<small>${esc(b.detail)}</small>` : ''}</span>${right}<span class="bl-s">${esc(meta)}</span></div>`
+  }
+  const sideFor = () => V.sel?.type === 'kind' ? 'sys' : V.sel?.type === 'sys' ? 'kind' : V.sel?.type === 'all' ? 'sys' : 'from'
+  const draftNote = '<span class="chip draft">Draft statements</span>'
+
+  // E1 · a rail beside the matrix: the build's extent at rest, the selection's lines on a tap; same footprint either way.
+  function rail6() {
+    if (!V.sel) {
+      const rows = KINDS.map(([k, name]) => {
+        const items = ofKind(k)
+        if (!items.length) return ''
+        const right = k === 'savings' ? `$${totals().month}/mo` : k === 'planet' ? 'Soon' : String(items.length)
+        return `<button class="rl-k" data-act="kind" data-kind="${k}"><span class="bl-ic">${ic(k)}</span><span class="rl-name">${name}<small>${esc(items[0].title)}${items.length > 1 && k !== 'planet' ? ` +${items.length - 1}` : ''}</small></span><b class="rl-n">${right}</b></button>`
+      }).join('')
+      return `<div class="rl-in rest"><div class="rl-h"><span class="rl-title">The whole build ${draftNote}</span><span class="rl-ext">${extentLine(B)}</span></div><div class="rl-list">${rows}</div></div>`
+    }
+    const items = selItems()
+    return `<div class="rl-in"><div class="rl-h"><button class="back" data-act="clear">${ic('left')}All benefits</button><span class="rl-title">${esc(selTitle())}</span><span class="rl-ext">${extentLine(items)}</span></div><div class="rl-list scroll">${items.map((b) => line6(b, sideFor(), true)).join('')}</div>${draftNote}</div>`
+  }
+  // E2 · a small popover next to what was tapped: a dot, a system or a kind.
+  function pop6() {
+    if (!V.sel) return ''
+    const items = selItems()
+    return `<div class="pop6" role="dialog" aria-label="${esc(selTitle())}"><span class="pop6-arrow"></span><div class="pop6-h"><span class="rl-title">${esc(selTitle())}</span><button class="pop6-x" data-act="clear" aria-label="Close">${ic('x')}</button></div><span class="rl-ext">${extentLine(items)}</span><div class="pop6-list scroll">${items.map((b) => line6(b, sideFor(), false)).join('')}</div>${draftNote}</div>`
+  }
+  function placePop(root) {
+    const area = root.querySelector('.r6-mx'), pop = root.querySelector('.pop6')
+    if (!area || !pop || !V.sel) return
+    const s = V.sel
+    const anchor = s.type === 'dot' ? area.querySelector(`.mx-c[data-sys="${s.sys}"][data-kind="${s.kind}"]`) : s.type === 'sys' ? area.querySelector(`.mx-sys[data-sys="${s.sys}"]`) : area.querySelector(`.mx-h[data-kind="${s.kind}"]`)
+    if (!anchor) return
+    const W = area.clientWidth, H = area.clientHeight, pw = pop.offsetWidth, ph = pop.offsetHeight
+    const ax = anchor.offsetLeft, ay = anchor.offsetTop, aw = anchor.offsetWidth, ah = anchor.offsetHeight
+    let left, top, side
+    // A column head, or a frame too narrow for the popover beside the anchor: it goes below the anchor (or above, near the bottom).
+    if (s.type === 'kind' || (ax + aw + 12 + pw > W - 8 && ax - 12 - pw < 8)) {
+      left = Math.min(Math.max(8, ax + aw / 2 - pw / 2), W - pw - 8)
+      if (ay + ah + 8 + ph <= H) { top = ay + ah + 8; side = 'top' } else { top = Math.max(4, ay - 8 - ph); side = 'bottom' }
+    }
+    else if (ax + aw + 12 + pw <= W - 8) { left = ax + aw + 12; top = Math.min(Math.max(4, ay + ah / 2 - 28), H - ph - 4); side = 'left' }
+    else { left = Math.max(8, ax - 12 - pw); top = Math.min(Math.max(4, ay + ah / 2 - 28), H - ph - 4); side = 'right' }
+    pop.style.left = `${left}px`; pop.style.top = `${top}px`; pop.dataset.side = side
+    const arrow = pop.querySelector('.pop6-arrow')
+    if (side === 'top' || side === 'bottom') { arrow.style.left = `${Math.min(pw - 16, Math.max(10, ax + aw / 2 - left - 6))}px`; arrow.style.top = side === 'top' ? '-6px' : `${ph - 6}px` }
+    else { arrow.style.top = `${Math.min(ph - 16, Math.max(10, ay + ah / 2 - top - 6))}px`; arrow.style.left = side === 'left' ? '-6px' : `${pw - 6}px` }
+    pop.style.transformOrigin = side === 'top' ? `${ax + aw / 2 - left}px 0` : side === 'bottom' ? `${ax + aw / 2 - left}px 100%` : side === 'left' ? `0 ${ay + ah / 2 - top}px` : `100% ${ay + ah / 2 - top}px`
+  }
+  // E3 · a spec sheet over the matrix's own footprint: the whole build or the tapped part, dense, filterable by kind.
+  function sheet6() {
+    if (!V.sel) return ''
+    const items = selItems()
+    const sel = V.sel
+    const kindOn = sel.type === 'all' ? sel.kind : sel.type === 'kind' ? sel.kind : null
+    const chips = sel.type === 'all' || sel.type === 'kind'
+      ? `<div class="sh-chips" role="group" aria-label="Filter by kind"><button class="sh-chip" data-act="all" aria-pressed="${!kindOn}">All <b>${extentOf(B).n}</b></button>${KINDS.filter(([k]) => ofKind(k).length).map(([k, nm]) => `<button class="sh-chip" data-act="all" data-kind="${k}" aria-pressed="${kindOn === k}">${ic(k)}${nm} <b>${k === 'planet' ? 'soon' : ofKind(k).filter((b) => !b.soon).length}</b></button>`).join('')}</div>`
+      : ''
+    const groups = SYSTEMS.map(([s, nm]) => [nm, items.filter((b) => b.sys === s)]).filter(([, list]) => list.length)
+    return `<div class="sh6"><div class="sh-h"><button class="back" data-act="clear">${ic('left')}All benefits</button><span class="rl-title">${esc(selTitle())}</span><span class="rl-ext">${extentLine(items)}</span>${draftNote}</div>${chips}<div class="sh-body scroll">${groups.map(([nm, list]) => `<div class="sh-grp"><span class="sh-sys">${esc(nm)}</span>${list.map((b) => line6(b, sel.type === 'sys' || sel.type === 'dot' ? 'from' : 'kind', true)).join('')}</div>`).join('')}</div></div>`
+  }
+  // B as built, over the round-6 window: the card or the row of cards, as round 1.
+  function ovl6() {
+    if (!V.sel || V.sel.type === 'all') return ''
+    const deck = deckOf(V.sel)
+    const title = V.sel.type === 'sys' ? SYS_NAME[V.sel.sys] : V.sel.type === 'kind' ? `${KIND_NAME[V.sel.kind]} across the home` : ''
+    const stage = deck ? `<div class="deck" data-deck>${deck.map((c) => cardB(c, true)).join('')}</div>` : cardB(V.sel, false)
+    return `<div class="ovl" data-act="ovl-bg"><div class="ovl-top"><button class="back" data-act="clear">${ic('left')}All benefits</button><span class="sp-x"></span>${deck ? `<strong style="font-family:var(--font-display);font-size:17px">${esc(title)}</strong><span class="sp-x"></span><span class="nav"><button data-act="deck" data-dir="-1" aria-label="Previous">${ic('left')}</button><button data-act="deck" data-dir="1" aria-label="Next">${ic('right')}</button></span>` : ''}</div><div class="ovl-stage scroll">${stage}</div></div>`
+  }
+  const LAYER = { B0: ovl6, E1: rail6, E2: pop6, E3: sheet6 }
+
+  function bodyR6(dev) {
+    const mode = FS.v, has = totals().month > 0
+    const corner = mode === 'E3' && realCount() ? `<button class="corner-all" data-act="all">All ${realCount()} ${ic('right')}</button>` : ''
+    return `<div class="r6 m-${mode} ${V.sel ? 'is-open' : ''}" data-r6>`
+      + `<div class="r6-top"><strong>What the build brings</strong>${costsSummary()}${has ? whyBtn() : ''}<div class="cs-pop ${FS.costsOpen ? 'open' : ''}" data-cs-panel ${FS.costsOpen ? '' : 'inert'}>${costsPanel()}</div></div>`
+      + `<div class="r6-band" data-band>${has ? band6(dev) : `<div class="b6-empty">${noSaving}</div>`}</div>`
+      + `<div class="r6-mx">${matrix(dev, { corner })}${mode === 'E1' ? `<aside class="rail6" data-layer>${rail6()}</aside>` : ''}${mode === 'E2' ? `<div class="pop-layer" data-layer>${pop6()}</div>` : ''}${mode === 'E3' ? `<div class="sheet-layer" data-layer>${sheet6()}</div>` : ''}</div>`
+      + (mode === 'B0' ? `<div class="ovl-layer" data-layer>${ovl6()}</div>` : '')
+      + '</div>'
+  }
+  // The in-place update: matrix classes, the one layer, the costs panel and the "?"; one easing, 160–280 ms; nothing else touched.
+  function enter(el, keyframes, ms) { if (!REDUCED && el) el.animate(keyframes, { duration: ms, easing: EASE }) }
+  function softR6(root, dev) {
+    const s = V.sel
+    root.querySelectorAll('.mx-c').forEach((c) => {
+      const sy = c.dataset.sys, k = c.dataset.kind
+      c.classList.toggle('lit', Boolean(s && ((s.type === 'sys' && s.sys === sy) || (s.type === 'kind' && s.kind === k))))
+      c.classList.toggle('sel', Boolean(s && s.type === 'dot' && s.sys === sy && s.kind === k))
+    })
+    root.querySelectorAll('.mx-h').forEach((h) => h.setAttribute('aria-pressed', String(s?.type === 'kind' && s.kind === h.dataset.kind)))
+    root.querySelectorAll('.mx-sys').forEach((h) => h.setAttribute('aria-pressed', String(s?.type === 'sys' && s.sys === h.dataset.sys)))
+    const r6 = root.querySelector('[data-r6]')
+    const wasOpen = r6.classList.contains('is-open')
+    r6.classList.toggle('is-open', Boolean(s))
+    const layer = root.querySelector('[data-layer]')
+    if (layer) {
+      const html = LAYER[FS.v]()
+      const leaving = !s && wasOpen && FS.v !== 'E1'
+      const swap = () => {
+        layer.innerHTML = html
+        if (FS.v === 'E2') placePop(root)
+        const first = layer.firstElementChild
+        if (!first) return
+        if (FS.v === 'E1') enter(first, [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], 180)
+        else if (FS.v === 'E2') enter(first, [{ opacity: 0, transform: 'scale(.96)' }, { opacity: 1, transform: 'none' }], 180)
+        else enter(first, [{ opacity: 0 }, { opacity: 1 }], 200)
+      }
+      if (leaving && !REDUCED && layer.firstElementChild) layer.firstElementChild.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, easing: EASE }).finished.then(swap)
+      else swap()
+    }
+    const panel = root.querySelector('[data-cs-panel]')
+    if (panel) {
+      panel.classList.toggle('open', FS.costsOpen)
+      panel.toggleAttribute('inert', !FS.costsOpen)
+      const line = root.querySelector('.cs-line')
+      line.setAttribute('aria-expanded', String(FS.costsOpen))
+      line.querySelector('.cs-edit').innerHTML = `${FS.costsOpen ? 'Close' : 'Edit costs'}${ic('down')}`
+    }
+    const w = root.querySelector('[data-why]')
+    if (w) w.innerHTML = FS.why ? whyHtml() : ''
+  }
+
+  // ---- Round 7: the costs in the head, the matrix full width until something is picked, the rail only for the pick ----
+  I.pencil = '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>'
+  const sameSel = (a, b) => a && b && a.type === b.type && a.sys === b.sys && a.kind === b.kind
+  // The head's trailing items: today's costs, their editor, the "?".
+  function headSlot(dev) {
+    const c = costs(1), area = V.bills.climate ? CLIMATE_LABEL[V.bills.climate] : null
+    const parts = `${area ?? '<span class="hs-miss">Area missing</span>'} · $${c.eB} electric · $${c.gB} gas · $${c.rB} repairs`
+    return `<span class="hs-sum"><span class="hs-k">Today’s costs</span><span class="hs-parts">${parts}</span><b class="hs-total">$${c.before}<small>/mo</small></b></span>`
+      + `<button class="hs-btn hs-edit" data-act="costs" aria-expanded="${FS.costsOpen}" aria-haspopup="dialog">${ic('pencil')}Edit costs</button>`
+      + (totals().month ? `<button class="hs-btn hs-why" data-act="why" aria-expanded="${FS.why}" aria-label="What are future savings?">?</button>` : '')
+      + `<div class="cs-pop r7-pop ${FS.costsOpen ? 'open' : ''}" data-cs-panel ${FS.costsOpen ? '' : 'inert'} role="dialog" aria-label="Today’s costs">${editor7()}</div>`
+  }
+  // One grid: label, field, where the figure comes from. The area shows only while it is missing; once set it is Home facts'.
+  function editor7() {
+    const tag = (typed) => `<span class="stag ${typed ? 'yours' : 'assumption'}">${typed ? 'Typed' : 'Working number'}</span>`
+    const money = (attr, key, value, placeholder, unit, label) => `<span class="m-money ed-f"><input inputmode="decimal" ${attr}="${key}" value="${value ?? ''}" placeholder="$${placeholder}" aria-label="${label}"><span>${unit}</span></span>`
+    const area = V.bills.climate === null
+      ? `<span class="ed-l">Area <small class="hs-miss">missing</small></span><span class="m-seg" role="group" aria-label="Coastal or inland">${['coastal', 'inland'].map((c) => `<button data-act="climate" data-v="${c}" aria-pressed="false">${CLIMATE_LABEL[c]}</button>`).join('')}</span><span class="ed-note">Until it is set the bills use the inland defaults.</span>`
+      : `<span class="ed-l">Area</span><b class="ed-v">${CLIMATE_LABEL[V.bills.climate]}</b><span class="ed-note">From Home facts → Area; change it there.</span>`
+    const bill = (c) => `<span class="ed-l">${c === 'electric' ? 'Electric' : 'Gas'}</span>${money('data-bill', c, V.bills[c], DEFAULT_BILLS[climate()][c], '/mo', `${c === 'electric' ? 'Electric' : 'Gas'} bill a month`)}${tag(V.bills[c] !== null)}`
+    const repair = ([k, label, option]) => `<span class="ed-l">${label}<small>${option} · ${WEAR_NAME[TODAY_WEAR[k]]}</small></span>${money('data-repair', k, V.repairs[k], workingRepairs(k), '/yr', `${label} repairs a year`)}${tag(V.repairs[k] !== null)}`
+    return `<div class="ed"><span class="ed-h">The bills, a month</span>${area}${bill('electric')}${bill('gas')}<span class="ed-h">Repairs, a year</span>${REPAIR_ROWS.map(repair).join('')}<p class="ed-foot">Working numbers are the team’s, not yet sourced; a typed figure wins. A material’s condition is set in Systems.</p></div>`
+  }
+
+  // The rail, for the pick only: what is picked in plain words, the benefits under small subheads, each one readable in full.
+  function railR7() {
+    const s = V.sel
+    if (!s) return ''
+    const items = selItems(), e = extentOf(items), soonOnly = !e.n && items.length
+    const title = s.type === 'dot' ? `${SYS_NAME[s.sys]} · ${KIND_NAME[s.kind]}` : s.type === 'sys' ? SYS_NAME[s.sys] : `${KIND_NAME[s.kind]} across the home`
+    const count = soonOnly ? 'Coming soon' : `${e.n} benefit${e.n === 1 ? '' : 's'}${e.money ? ` · <b class="ok">$${e.money}/mo</b> in savings` : ''}`
+    const line = (b) => `<div class="r7l ${b.soon ? 'soon' : ''}"><div class="r7l-t"><b>${esc(b.title)}</b>${b.fig ? `<b class="r7l-f">$${b.fig}/mo</b>` : b.soon ? '<span class="r7l-soon">Coming soon</span>' : ''}</div><p class="r7l-d">${esc(b.detail)}</p><span class="r7l-from">${esc(b.from)}</span></div>`
+    const groups = s.type === 'sys' ? KINDS.map(([k, n]) => [`${ic(k)}${n}`, cell(s.sys, k)]) : s.type === 'kind' ? SYSTEMS.map(([sy, n]) => [esc(n), cell(sy, s.kind)]) : [[null, items]]
+    return `<div class="r7-in"><div class="r7-rh"><button class="back" data-act="clear">${ic('left')}All benefits</button>${draftNote}</div><h4 class="r7-rt">${esc(title)}</h4><span class="r7-rc">${count}</span>`
+      + `<div class="r7-rl">${groups.filter(([, list]) => list.length).map(([h, list]) => `<div class="r7-g">${h ? `<span class="r7-gh">${h}</span>` : ''}${list.map(line).join('')}</div>`).join('')}</div></div>`
+  }
+  function bodyR7(dev) {
+    const has = totals().month > 0
+    return `<div class="r6 r7 m-R7 ${V.sel ? 'is-open' : ''}" data-r6>`
+      + `<div class="r6-band" data-band>${has ? band6(dev) : `<div class="b6-empty">${noSaving}</div>`}</div>`
+      + `<div class="r7-mx"><div class="r7-scroll scroll" data-mx-scroll>${matrix(dev)}</div><div class="r7-railw" data-railw><aside class="r7-rail" data-layer>${railR7()}</aside></div></div>`
+      + '</div>'
+  }
+  // Open: the rail's wrapper widens, the matrix gives way frame by frame, then the content fades in. Close: the reverse.
+  const RAIL_MS = 280
+  function softR7(root, dev) {
+    const s = V.sel
+    root.querySelectorAll('.mx-c').forEach((c) => {
+      const sy = c.dataset.sys, k = c.dataset.kind
+      c.classList.toggle('lit', Boolean(s && ((s.type === 'sys' && s.sys === sy) || (s.type === 'kind' && s.kind === k))))
+      c.classList.toggle('sel', Boolean(s && s.type === 'dot' && s.sys === sy && s.kind === k))
+    })
+    root.querySelectorAll('.mx-h').forEach((h) => h.setAttribute('aria-pressed', String(s?.type === 'kind' && s.kind === h.dataset.kind)))
+    root.querySelectorAll('.mx-sys').forEach((h) => h.setAttribute('aria-pressed', String(s?.type === 'sys' && s.sys === h.dataset.sys)))
+    const r7 = root.querySelector('[data-r6]'), layer = root.querySelector('[data-layer]')
+    const wasOpen = r7.classList.contains('is-open')
+    clearTimeout(r7._t)
+    if (s) {
+      const html = railR7()
+      const show = () => { layer.innerHTML = html; enter(layer.firstElementChild, [{ opacity: 0, transform: 'translateX(8px)' }, { opacity: 1, transform: 'none' }], 180) }
+      if (wasOpen && layer.firstElementChild && !REDUCED) layer.firstElementChild.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: EASE }).finished.then(show)
+      else show()
+      r7.classList.add('is-open')
+    }
+    else {
+      if (layer.firstElementChild && !REDUCED) layer.firstElementChild.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, easing: EASE, fill: 'forwards' })
+      r7.classList.remove('is-open')
+      r7._t = setTimeout(() => { if (!V.sel) layer.innerHTML = '' }, REDUCED ? 0 : RAIL_MS)
+    }
+    const panel = root.querySelector('[data-cs-panel]')
+    if (panel) { panel.classList.toggle('open', FS.costsOpen); panel.toggleAttribute('inert', !FS.costsOpen) }
+    root.querySelector('.hs-edit')?.setAttribute('aria-expanded', String(FS.costsOpen))
+    root.querySelector('.hs-why')?.setAttribute('aria-expanded', String(FS.why))
+    const w = root.querySelector('[data-why]')
+    if (w) w.innerHTML = FS.why ? whyHtml() : ''
+  }
+
+  // Teleporting moves the round-4 figures in place too.
+  function syncR4(n) {
+    if (!isR4() && !isR5() && !isR6()) return
+    const c = costs(n), s = barScale()
+    for (const { root, fs } of screens) {
+      if (!fs) continue
+      root.querySelectorAll('[data-n4]').forEach((el) => countTo(el, c[el.dataset.n4]))
+      root.querySelectorAll('[data-b4]').forEach((el) => { el.style.setProperty('--wa', c.after / s); el.style.setProperty('--wb', c.before / s) })
+    }
+  }
+
+  // What it uses / how it's worked out / the math: the calculator's info sheet, now with the repairs before and after.
+  function whyBody() {
+    const n = Math.max(2, FS.ahead), when = NOW_YEAR + n, t = totals(), c1 = costs(1), cn = costs(n)
+    const tag = (k) => `<span class="stag ${k}">${{ yours: 'Typed', assumption: 'Working number', calc: 'Calculated' }[k]}</span>`
+    const use = (label, value, k) => `<div class="uses-row"><span>${label}</span><b>${value}</b>${tag(k)}</div>`
+    const row = (op, label, value, note, strong) => `<div class="rc-row ${strong ? 'strong' : ''}"><span class="op">${op}</span><span>${label}${note ? `<small>${note}</small>` : ''}</span><b>${value}</b></div>`
+    const billTag = (c) => V.bills[c] !== null ? 'yours' : 'assumption'
+    const block = (title, c, n2) => `<span class="rc-h">${title}</span>`
+      + row('', 'Without the build', `$${c.before}/mo`, `$${c.eB} electric + $${c.gB} gas + $${c.rB} repairs`)
+      + row('', 'With the build', `$${c.after}/mo`, `$${c.eA} electric + $${c.gA} gas + $${c.rA} repairs`)
+      + row('=', 'Saves', `$${c.saving}/mo`, n2 === 1 ? `up to about ${t.ePct}% of electric, ${t.gPct}% of gas, and the repairs on what the build replaces` : `today’s figures × 1.0757${SUP(n2 - 1)} electric, × 1.091${SUP(n2 - 1)} gas, × 1.05${SUP(n2 - 1)} repairs`, true)
+    return `<p class="why-ans">Without the build the costs would be $${c1.before} a month today and $${cn.before} by ${when}. With it they could be $${c1.after}, and $${cn.after} by ${when}. The difference is the saving: about <em>$${c1.saving} a month now</em> and <em>$${cn.saving} by ${when}</em>.</p>`
+      + '<span class="why-eb">What it uses</span>'
+      + use('Electric bill', `$${Math.round(bill('electric'))}/mo`, billTag('electric')) + use('The build’s electric cut', `up to about ${t.ePct}%`, 'calc') + use('Electric rates rise', `${RISE.electric}%/yr`, 'assumption')
+      + use('Gas bill', `$${Math.round(bill('gas'))}/mo`, billTag('gas')) + use('The build’s gas cut', `up to about ${t.gPct}%`, 'calc') + use('Gas rates rise', `${RISE.gas}%/yr`, 'assumption')
+      + REPAIR_ROWS.map(([k, label]) => use(`${label} repairs${credited(k) ? ', ended by the build' : ''}`, `$${repairsYear(k)}/yr`, V.repairs[k] !== null ? 'yours' : 'assumption')).join('')
+      + use('Construction prices rise', `${RISE.construction}%/yr`, 'assumption')
+      + '<span class="why-eb">How it’s worked out</span>'
+      + `<p class="why-p">Without the build is what the home costs to run and keep up: the two bills and the repairs on each material at its condition. With the build, the bills drop by the build’s cuts and the repairs end on every material the build replaces; the others keep theirs. The saving is the difference. Ahead, the bills rise at their rates and the repairs with construction prices. The coming twelve months are year 1 at today’s figures, so ${when} is year ${n}. The rates are the team’s working numbers, not yet sourced, the same ones the ROI calculator uses.</p>`
+      + '<span class="why-eb">The math</span>'
+      + block('Today, year 1', c1, 1) + block(`${when}, year ${n}`, cn, n)
+  }
+
+  // Teleporting: the calendar and the figures move in place; numbers count to their new value.
+  const tweens = new WeakMap()
+  function countTo(el, to) {
+    const from = Number(el.dataset.num ?? to)
+    el.dataset.num = to
+    const draw = (v) => { el.innerHTML = `$${Math.round(v)}<small>/mo</small>` }
+    cancelAnimationFrame(tweens.get(el))
+    if (REDUCED || from === to) return draw(to)
+    const t0 = performance.now(), dur = 520
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / dur), e = 1 - (1 - k) ** 4
+      draw(from + (to - from) * e)
+      if (k < 1) tweens.set(el, requestAnimationFrame(step))
+    }
+    tweens.set(el, requestAnimationFrame(step))
+  }
+  function setYear(n, focusIn) {
+    n = Math.max(1, Math.min(10, n))
+    if (n === FS.ahead) return
+    FS.ahead = n
+    const m = aheadValue(n)
+    for (const { root, fs } of screens) {
+      if (!fs) continue
+      root.querySelectorAll('[data-tl]').forEach((tl) => {
+        const from = Number(tl.dataset.from)
+        if (n < from) return
+        tl.querySelector('[data-tl-fill]').style.setProperty('--to', (n - from) / (10 - from))
+        tl.querySelectorAll('.tl-stop').forEach((b) => {
+          const y = Number(b.dataset.y)
+          b.setAttribute('aria-checked', String(y === n)); b.tabIndex = y === n ? 0 : -1
+          b.classList.toggle('past', y < n)
+        })
+      })
+      root.querySelectorAll('[data-fig="label"]').forEach((el) => { el.textContent = byName(n) })
+      root.querySelectorAll('[data-fig="delta"]').forEach((el) => { el.textContent = deltaText(n) })
+      // R3 draws every year's page with its own figure; only the opened one shows, so all of them count to the same value.
+      root.querySelectorAll('[data-fig="ahead"]').forEach((el) => countTo(el, m))
+      const w = root.querySelector('.why .scroll')
+      if (w) { const top = w.scrollTop; w.innerHTML = whyBody(); w.scrollTop = top }
+      if (focusIn && root.contains(focusIn)) root.querySelector(`.tl-stop[data-y="${n}"]`)?.focus()
+    }
+    syncR4(n)
+    syncR5(n)
+    syncR6(n)
+  }
+  // Drag along the calendar: the nearest page under the finger is where the rep lands.
+  function wireTimelines() {
+    for (const { root, fs } of screens) {
+      if (!fs) continue
+      root.querySelectorAll('[data-tl]').forEach((tl) => {
+        if (tl.dataset.wired) return
+        tl.dataset.wired = '1'
+        const nearest = (x) => {
+          let best = null, dist = Infinity
+          tl.querySelectorAll('.tl-stop').forEach((b) => { const r = b.getBoundingClientRect(), d = Math.abs(r.left + r.width / 2 - x); if (d < dist) { dist = d; best = Number(b.dataset.y) } })
+          return best
+        }
+        tl.addEventListener('pointerdown', (e) => { tl.setPointerCapture(e.pointerId); tl.dataset.drag = '1'; setYear(nearest(e.clientX)); e.preventDefault() })
+        tl.addEventListener('pointermove', (e) => { if (tl.dataset.drag) setYear(nearest(e.clientX)) })
+        const end = () => { delete tl.dataset.drag }
+        tl.addEventListener('pointerup', end); tl.addEventListener('pointercancel', end)
+      })
+    }
+  }
+  const BODY = { A: bodyA, B: bodyB, C: bodyC }
+  const screens = []
+  function build(dev, scr, fs) {
+    const [w, h] = NATIVE[dev]
+    const stg = scr.querySelector('.stage')
+    const bar = `<div class="bar glass"><button class="bar-item" aria-label="Home facts">${ic('home')}</button><button class="bar-item" aria-label="Systems">${ic('layers')}</button><button class="bar-item" aria-label="Modify">${ic('sliders')}</button><span class="bar-sep"></span><span class="toggle">${ic('swap')}Build</span><span class="bar-sep"></span><button class="bar-item" aria-expanded="true">${ic('sparkle')}Benefits</button></div>`
+    stg.innerHTML = `<div class="m ${dev}" style="width:${w}px;height:${h}px"><div class="m-pic" style="${ASSETS[dev] ? `background-image:url(${ASSETS[dev]})` : ''}"></div><div class="m-build-tint"></div><div class="m-scrim"></div><div class="m-modal ${fs ? 'no-foot' : ''}" role="dialog" aria-label="Benefits"><div class="mm-head"><span class="mm-ico">${ic('sparkle')}</span><span class="mm-title">Benefits</span><span class="mm-tag">Tri Pros build</span><span class="mm-slot" data-head-slot></span><button class="mm-x" data-act="close" aria-label="Close">${ic('x')}</button></div><div class="mm-body" data-body></div><div class="mm-foot" data-foot></div></div>${bar}</div>`
+    screens.push({ dev, root: stg.firstElementChild, fs: Boolean(fs) })
+  }
+  function paint(keepFoot) {
+    B = benefits()
+    // The bills are typed inside the body now, so a redraw puts the caret back where it was.
+    const ae = document.activeElement
+    const field = ae?.dataset?.bill ? `[data-bill="${ae.dataset.bill}"]` : ae?.dataset?.repair ? `[data-repair="${ae.dataset.repair}"]` : null
+    const keep = field ? { root: screens.find((x) => x.root.contains(ae))?.root, field, a: ae.selectionStart, b: ae.selectionEnd } : null
+    for (const { dev, root, fs } of screens) {
+      if (fs && isR6() && SOFT && root.querySelector('[data-r6]')) { if (FS.v === 'R7') softR7(root, dev); else softR6(root, dev); continue }
+      const keepSel = V.sel
+      if (!fs && keepSel?.type === 'all') V.sel = null
+      root.querySelector('[data-body]').innerHTML = fs ? `${isR6() ? (FS.v === 'R7' ? bodyR7(dev) : bodyR6(dev)) : bodyB(dev, FS.v)}<div data-why>${FS.why ? whyHtml() : ''}</div>` : BODY[V.v](dev)
+      if (fs && isR6() && FS.v === 'E2') placePop(root)
+      const slot = root.querySelector('[data-head-slot]')
+      if (slot) slot.innerHTML = fs && FS.v === 'R7' ? headSlot(dev) : ''
+      if (fs) { /* no footer */ }
+      else if (!keepFoot) root.querySelector('[data-foot]').innerHTML = footHtml()
+      else root.querySelectorAll('.mm-foot-row .grow b').forEach((b) => { b.textContent = billsLine() })
+      if (((fs && !isR6()) || (!fs && V.v === 'B')) && V.grow && !REDUCED) growFrom(root, dev)
+      if (!fs && V.v === 'C' && V.sel && V.anchor) {
+        const a = root.querySelector(`[data-strip] .pg:nth-child(${V.pageIdx + 1}) [data-anchor="${V.anchor}"]`)
+        if (a) a.closest('.pg').scrollTop = a.offsetTop - 20
+      }
+      if (!fs && V.v === 'C' && V.sel) wireSwipe(root)
+      V.sel = keepSel
+    }
+    V.grow = null
+    wireTimelines()
+    if (keep?.root) {
+      const inp = keep.root.querySelector(keep.field)
+      if (inp) { inp.focus(); try { inp.setSelectionRange(keep.a, keep.b) } catch { /* inputmode fields take no selection in some engines */ } }
+    }
+  }
+  // The card grows out of the tapped dot.
+  function growFrom(root, dev) {
+    const card = root.querySelector('.ovl-stage > .bigcard, .ovl-stage .deck')
+    const pt = V.grow.get(root)
+    if (!card || !pt) return
+    const r = card.getBoundingClientRect(), s = r.width / card.offsetWidth || 1
+    card.style.transformOrigin = `${(pt.x - r.left) / s}px ${(pt.y - r.top) / s}px`
+    card.animate([{ transform: 'scale(0.12)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 280, easing: 'cubic-bezier(.2,.8,.2,1)' })
+  }
+  function wireSwipe(root) {
+    const vp = root.querySelector('[data-strip-vp]'), strip = root.querySelector('[data-strip]')
+    if (!vp || vp.dataset.wired) return
+    vp.dataset.wired = '1'
+    let x0 = null, dx = 0
+    vp.addEventListener('pointerdown', (e) => { x0 = e.clientX; dx = 0; strip.classList.add('drag') })
+    vp.addEventListener('pointermove', (e) => { if (x0 === null) return; dx = e.clientX - x0; strip.style.transform = `translateX(calc(${-V.pageIdx * 100}% + ${dx / (vp.getBoundingClientRect().width / vp.offsetWidth)}px))` })
+    const end = () => { if (x0 === null) return; strip.classList.remove('drag'); x0 = null; if (Math.abs(dx) > 50) turn(dx < 0 ? 1 : -1); else strip.style.transform = `translateX(${-V.pageIdx * 100}%)` }
+    vp.addEventListener('pointerup', end); vp.addEventListener('pointercancel', end); vp.addEventListener('pointerleave', end)
+  }
+  function turn(dir) {
+    const n = pagesFor(V.pageSet).length
+    const next = Math.max(0, Math.min(n - 1, V.pageIdx + dir))
+    if (next === V.pageIdx) { paint(true); return }
+    V.pageIdx = next; V.anchor = null
+    const pg = pagesFor(V.pageSet)[next]
+    V.sel = pg.kind ? { type: 'kind', kind: pg.kind } : { type: 'sys', sys: pg.sys }
+    paint(true)
+  }
+  function toast(root, text) {
+    const t = document.createElement('div'); t.className = 'toast'; t.textContent = text
+    root.appendChild(t); setTimeout(() => t.remove(), 2000)
+  }
+
+  // ---- Actions ----
+  function select(sel, origin) {
+    if (FS.v === 'R7' && sameSel(V.sel, sel)) { V.sel = null; return softPaint() }
+    V.sel = sel
+    if (V.v === 'C' && sel.type !== 'all') {
+      if (sel.type === 'sys') { V.pageSet = 'sys'; V.pageIdx = pagesFor('sys').findIndex((p) => p.sys === sel.sys); V.anchor = null }
+      else { V.pageSet = 'kind'; V.pageIdx = pagesFor('kind').findIndex((p) => p.kind === sel.kind); V.anchor = sel.type === 'dot' ? `${sel.sys}-${sel.kind}` : null }
+    }
+    if (V.v === 'B' && origin) V.grow = origin
+    softPaint()
+  }
+  const onFrameClick = (e) => {
+    const t = e.target.closest('[data-act]')
+    if (!t) return
+    const scr = screens.find((s) => s.root.contains(t))
+    const act = t.dataset.act
+    if (act === 'why') { FS.why = !FS.why; return softPaint() }
+    if (act === 'why-close') { FS.why = false; return softPaint() }
+    if (act === 'all') return select({ type: 'all', kind: t.dataset.kind || null })
+    if (act === 'year') return setYear(Number(t.dataset.y), t)
+    if (act === 'panel') { FS.panel = !FS.panel; return paint(true) }
+    if (act === 'panel-close') { FS.panel = false; return paint(true) }
+    if (act === 'costs') { FS.costsOpen = !FS.costsOpen; return softPaint() }
+    if (act === 'ovl-bg' && e.target !== t) return
+    if (act === 'kind') return select({ type: 'kind', kind: t.dataset.kind })
+    if (act === 'sys') return select({ type: 'sys', sys: t.dataset.sys })
+    if (act === 'dot') {
+      // The grow starts from the same dot in both frames.
+      const origin = new Map()
+      for (const { root } of screens) {
+        const c = root.querySelector(`.mx-c[data-sys="${t.dataset.sys}"][data-kind="${t.dataset.kind}"]`)
+        if (c) { const r = c.getBoundingClientRect(); origin.set(root, { x: r.left + r.width / 2, y: r.top + r.height / 2 }) }
+      }
+      return select({ type: 'dot', sys: t.dataset.sys, kind: t.dataset.kind }, origin)
+    }
+    if (act === 'clear' || act === 'ovl-bg') { V.sel = null; V.pageIdx = 0; return softPaint() }
+    if (act === 'deck') { const d = scr.root.querySelector('[data-deck]'); if (d) d.scrollBy({ left: Number(t.dataset.dir) * d.clientWidth * 0.8, behavior: REDUCED ? 'auto' : 'smooth' }); return }
+    if (act === 'page') return turn(Number(t.dataset.dir))
+    if (act === 'bills') { V.billsOpen = !V.billsOpen; return paint() }
+    if (act === 'climate') { V.bills.climate = V.bills.climate === t.dataset.v ? null : t.dataset.v; renderPicks(); return paint() }
+    if (act === 'modify') return toast(scr.root, 'Modify opens (stand-in)')
+    if (act === 'close') return toast(scr.root, 'The x closes Benefits')
+  }
+  const onFrameInput = (e) => {
+    const r = e.target.dataset?.repair
+    if (r) {
+      // A typed 0 is a real answer (no repairs); an empty field goes back to the working number.
+      const raw = e.target.value.replace(/[^0-9.]/g, '')
+      V.repairs[r] = raw === '' ? null : Number(raw)
+      return paint(true)
+    }
+    const c = e.target.dataset?.bill
+    if (!c) return
+    const n = parseFloat(e.target.value.replace(/[^0-9.]/g, ''))
+    V.bills[c] = Number.isFinite(n) && n > 0 ? n : null
+    // The other frame's field follows; the one being typed in keeps its caret.
+    document.querySelectorAll(`[data-bill="${c}"]`).forEach((inp) => { if (inp !== e.target) inp.value = V.bills[c] ?? '' })
+    paint(true)
+    document.querySelectorAll('.bills-edit .m-hint').forEach((h) => { h.textContent = `Electric ${fromWhere('electric')}, gas ${fromWhere('gas')}.` })
+  }
+  document.querySelector('.frames').addEventListener('click', onFrameClick)
+  document.querySelector('.frames').addEventListener('input', onFrameInput)
+
+  // ---- Picks ----
+  const PICKS = [
+    ['Roof & gutters', [['covering', 'none', 'No change'], ['covering', 'tearoff', 'Tear-off'], ['covering', 'overlay', 'Overlay'], ['coolRoof', true, 'Cool roof', 'sub'], ['redeck', true, 'Redeck', 'sub'], ['gutters', true, 'Gutters']]],
+    ['Attic', [['insulation', 'none', 'No change'], ['insulation', 'replace', 'Insulation'], ['insulation', 'topoff', 'Top-off'], ['radiant', true, 'Radiant barrier'], ['sealing', true, 'Air sealing'], ['fan', true, 'Attic fan']]],
+    ['Windows', [['windows', true, 'Replace']]],
+    ['Walls', [['repaint', true, 'Repaint'], ['coolPaint', true, 'Cool Life paint', 'sub']]],
+    ['Heating & cooling', [['system', 'none', 'No change'], ['system', 'split', 'Split system'], ['system', 'package', 'Package unit'], ['ducts', true, 'Ducts'], ['r8', true, 'R-8 step up', 'sub']]],
+    ['Foundation', [['crawl', true, 'Crawl space insulation']]],
+    ['Area (Home facts)', [['area', 'none', 'Missing'], ['area', 'inland', 'Inland'], ['area', 'coastal', 'Coastal']]],
+  ]
+  const pickOff = (key) => (key === 'coolRoof' && V.p.covering === 'none') || (key === 'redeck' && V.p.covering !== 'tearoff') || (key === 'coolPaint' && !V.p.repaint) || (key === 'r8' && !V.p.ducts)
+  function renderPicks() {
+    document.querySelector('.picks-grid').innerHTML = PICKS.map(([name, items]) => `<div class="pk"><span class="pk-name">${esc(name)}</span><div class="pk-row">${items.map(([key, val, label, sub]) => {
+      const on = key === 'area' ? (V.bills.climate ?? 'none') === val : typeof val === 'boolean' ? V.p[key] === true : V.p[key] === val
+      return `<button class="pbtn ${sub ? 'sub' : ''}" data-pick="${key}" data-v="${val}" aria-pressed="${on}" ${pickOff(key) ? 'disabled' : ''}>${esc(label)}</button>`
+    }).join('')}</div></div>`).join('')
+  }
+  document.querySelector('.picks').addEventListener('click', (e) => {
+    const t = e.target.closest('[data-pick]')
+    if (!t) return
+    const key = t.dataset.pick, raw = t.dataset.v
+    if (key === 'preset') V.p = { ...PRESETS[raw] }
+    else if (key === 'area') { V.bills.climate = raw === 'none' ? null : raw; renderPicks(); return paint() }
+    else if (raw === 'true') V.p[key] = !V.p[key]
+    else V.p[key] = raw
+    // A selection that no longer has benefits closes back to the whole build.
+    B = benefits()
+    if (V.sel && ((V.sel.type === 'dot' && !cell(V.sel.sys, V.sel.kind).length) || (V.sel.type === 'sys' && !ofSys(V.sel.sys).length) || (V.sel.type === 'kind' && !ofKind(V.sel.kind).length))) { V.sel = null; V.pageIdx = 0 }
+    if (V.v === 'C' && V.sel) { const pages = pagesFor(V.pageSet); V.pageIdx = Math.max(0, pages.findIndex((p) => (p.kind && p.kind === V.sel.kind) || (p.sys && p.sys === V.sel.sys))) }
+    renderPicks(); paint(true)
+  })
+
+  // ---- Versions ----
+  const VARIANTS = [
+    ['B', 'Opens in place', 'the dot grows into a card', true, '<b>B · Opens in place.</b> The matrix fills the window with big cells. A dot grows into one large card over the dimmed matrix; a system or a kind lines up its cards side by side. "All benefits" or a tap on the dark edge goes back.'],
+    ['A', 'Spread', 'matrix left, statement right', false, '<b>A · Spread.</b> Like an open brochure: the matrix is the left page and never moves; the right page is the large statement for what you tapped, and it opens on the whole build, one line per kind. On the phone the matrix fills the window and the statement rises as a sheet.'],
+    ['C', 'Contents and pages', 'a page per kind, swipe between', false, '<b>C · Contents and pages.</b> The cover is a title and the matrix as its contents. A kind opens its page, a system opens its own page, a dot lands on its part of a page. Swipe or use the arrows to turn; the small map shows where you are and jumps.'],
+  ]
+  const sec = document.querySelector('#studies')
+  function renderVariants() {
+    sec.querySelector('.variants').innerHTML = VARIANTS.map(([k, name, sub, rec]) => `<button data-variant="${k}" aria-pressed="${V.v === k}">${rec ? '<span class="rec">Picked</span>' : ''}${k} · ${name}<small>${sub}</small></button>`).join('')
+    sec.querySelector('.pitch').innerHTML = VARIANTS.find(([k]) => k === V.v)[4]
+  }
+  sec.querySelector('.variants').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-variant]')
+    if (!b) return
+    V.v = b.dataset.variant; V.sel = null; V.pageIdx = 0
+    renderVariants(); paint(true)
+  })
+
+  // ---- Mount, scale ----
+  function fit() { fitIn(sec); fitIn(fsec) }
+  function fitIn(sec) {
+    const frames = sec.querySelector('.frames')
+    const stacked = getComputedStyle(frames).gridTemplateColumns.split(' ').length === 1
+    const total = frames.clientWidth
+    const phoneCol = stacked ? total : Math.min(320, total * 0.27)
+    const ipadW = (stacked ? total : total - phoneCol - 24) - 20
+    const sI = Math.min(1, ipadW / 1180)
+    const sP = stacked ? Math.min(1, (total - 18) / 390, 620 / 844) : Math.min(1, (820 * sI) / 844, (phoneCol - 18) / 390)
+    sec.querySelectorAll('.screen').forEach((scr) => {
+      const s = scr.dataset.dev === 'ipad' ? sI : sP
+      const [w, h] = NATIVE[scr.dataset.dev]
+      scr.style.width = `${Math.floor(w * s)}px`; scr.style.height = `${Math.floor(h * s)}px`
+      scr.querySelector('.stage').style.transform = `scale(${s})`
+    })
+  }
+  sec.querySelector('.frames').innerHTML = ['ipad', 'phone'].map((dev) => `<div class="device"><span class="device-label">${dev === 'ipad' ? 'iPad, landscape' : 'Phone'}</span><div class="bezel ${dev}"><div class="screen" data-dev="${dev}"><div class="stage"></div></div></div></div>`).join('')
+  sec.querySelectorAll('.screen').forEach((scr) => build(scr.dataset.dev, scr))
+  const fsec = document.querySelector('#future')
+  const FS_VARIANTS = [
+    ['E1', 'E1 · round 6', 'the before', false, '<b>E1 · round 6.</b> As shown last round: the title row with today’s costs, the rail always open with its summary of the seven kinds.'],
+    ['R7', 'E1 · round 7', 'the rail only for the pick', true, '<b>E1 · round 7.</b> The costs move into the head and the title row goes. The matrix fills the width until something is picked; then it narrows as the rail slides open, and it widens again when the pick is closed. The kinds row stays put while the systems scroll.'],
+  ]
+  function renderFsVariants() {
+    fsec.querySelector('[data-fs-variants]').innerHTML = FS_VARIANTS.map(([k, name, sub, rec]) => `<button data-fs-variant="${k}" aria-pressed="${FS.v === k}">${rec ? '<span class="rec">Recommended</span>' : ''}${name}<small>${sub}</small></button>`).join('')
+    fsec.querySelector('[data-fs-pitch]').innerHTML = FS_VARIANTS.find(([k]) => k === FS.v)[4]
+  }
+  fsec.querySelector('[data-fs-variants]').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-fs-variant]')
+    if (!b) return
+    FS.v = b.dataset.fsVariant; FS.why = false; FS.panel = false; FS.costsOpen = false; V.sel = null
+    // Only L3's calendar has a Now page; the others start at the year after Today.
+    if (!['L3', 'D1', 'D3', ...R6_MODES].includes(FS.v)) FS.ahead = Math.max(2, FS.ahead)
+    renderFsVariants(); paint()
+  })
+  fsec.querySelector('.frames').innerHTML = ['ipad', 'phone'].map((dev) => `<div class="device"><span class="device-label">${dev === 'ipad' ? 'iPad, landscape' : 'Phone'}</span><div class="bezel ${dev}"><div class="screen" data-dev="${dev}"><div class="stage"></div></div></div></div>`).join('')
+  fsec.querySelectorAll('.screen').forEach((scr) => build(scr.dataset.dev, scr, true))
+  fsec.querySelector('.frames').addEventListener('click', onFrameClick)
+  fsec.querySelector('.frames').addEventListener('input', onFrameInput)
+  renderFsVariants()
+  // Escape steps back one level, as the app will: the ?, then R2's panel, then a detail view, then the window itself.
+  let lastSection = false
+  document.addEventListener('pointerdown', (e) => { const hit = screens.find((x) => x.root.contains(e.target)); if (hit) lastSection = hit.fs }, true)
+  document.addEventListener('keydown', (e) => {
+    const tl = e.target.closest?.('[data-tl]')
+    if (tl && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
+      e.preventDefault()
+      setYear(Math.max(Number(tl.dataset.from), FS.ahead + (e.key === 'ArrowRight' ? 1 : -1)), e.target)
+      return
+    }
+    if (e.key !== 'Escape') return
+    if (FS.why) { FS.why = false; return softPaint() }
+    if (FS.panel) { FS.panel = false; return paint(true) }
+    if (FS.costsOpen) { FS.costsOpen = false; return softPaint() }
+    if (V.sel) { V.sel = null; V.pageIdx = 0; return softPaint() }
+    for (const x of screens) if (x.fs === lastSection) toast(x.root, 'Escape closes Benefits')
+  })
+  renderVariants(); renderPicks(); paint(); fit()
+  addEventListener('resize', fit)
+})()
+</script>
