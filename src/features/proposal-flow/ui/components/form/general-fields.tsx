@@ -1,30 +1,33 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import type { ProjectType } from '@/shared/constants/enums'
 import { useFormContext } from 'react-hook-form'
+import { formatProjectType } from '@/features/proposal-flow/lib/format-project-type'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/shared/components/ui/select'
 import { projectTypes, validThroughTimeframes } from '@/shared/constants/enums'
 
-export function GeneralFields() {
+export function GeneralFields({ withName = false }: { withName?: boolean }) {
   const form = useFormContext<ProposalFormSchema>()
 
   return (
     <div className="flex flex-col gap-4 lg:gap-6">
-      <FormField
-        name="project.data.label"
-        control={form.control}
-        render={({ field }) => (
-          <FormItem>
-            <FormLabel>Project Name</FormLabel>
-            <FormControl>
-              <Input placeholder="John Doe" {...field} />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        )}
-      />
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-3 lg:gap-4">
+      {withName && (
+        <FormField
+          name="project.data.label"
+          control={form.control}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Project Name</FormLabel>
+              <FormControl>
+                <Input placeholder="John Doe" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      )}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)]">
         <FormField
           name="project.data.type"
           control={form.control}
@@ -33,7 +36,8 @@ export function GeneralFields() {
               <FormLabel>Project Type</FormLabel>
               <FormControl>
                 <Select
-                  defaultValue="general-remodeling"
+                  value={field.value}
+                  disabled={field.disabled}
                   onValueChange={(val: ProjectType) => {
                     field.onChange(val)
                   }}
@@ -44,7 +48,7 @@ export function GeneralFields() {
                   <SelectContent {...field}>
                     {projectTypes.map(type => (
                       <SelectItem key={type} value={type}>
-                        {type.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                        {formatProjectType(type)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -75,10 +79,9 @@ export function GeneralFields() {
               <FormLabel>Valid Through Timeframe</FormLabel>
               <FormControl>
                 <Select
-                  defaultValue="60 days"
-                  onValueChange={(val: ProjectType) => {
-                    field.onChange(val)
-                  }}
+                  value={field.value}
+                  disabled={field.disabled}
+                  onValueChange={field.onChange}
                 >
                   <SelectTrigger {...field} className="w-full">
                     <SelectValue placeholder="Select a timeframe" />

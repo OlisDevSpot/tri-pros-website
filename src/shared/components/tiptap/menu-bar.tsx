@@ -34,8 +34,8 @@ export function TipTapMenuBar({ editor }: Props) {
   }
 
   return (
-    <div>
-      <div>
+    <div className="min-w-0 flex-1">
+      <div className="flex flex-nowrap overflow-x-auto scrollbar-none *:shrink-0">
         <Button
           size="icon"
           variant="outline"

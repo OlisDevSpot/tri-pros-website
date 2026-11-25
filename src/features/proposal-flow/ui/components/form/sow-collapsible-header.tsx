@@ -2,39 +2,59 @@ import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-s
 import type { PriceDisplayMode } from '@/shared/constants/enums'
 import { ChevronDownIcon, CopyIcon, MoreHorizontalIcon, TrashIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
-import { Badge } from '@/shared/components/ui/badge'
+import { useEditLoading } from '@/features/proposal-flow/contexts/edit-loading-context'
+import { sectionPriceDisplay } from '@/features/proposal-flow/lib/section-price'
+import { LoadingValue } from '@/features/proposal-flow/ui/components/edit-page/loading-value'
 import { Button } from '@/shared/components/ui/button'
+import { CollapsibleTrigger } from '@/shared/components/ui/collapsible'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/shared/components/ui/dropdown-menu'
 import { Input } from '@/shared/components/ui/input'
-import { formatAsDollars } from '@/shared/lib/formatters'
+import { useMediaQuery } from '@/shared/hooks/use-media-query'
 import { cn } from '@/shared/lib/utils'
+import { SectionPrice } from './section-price'
+import { SowHeaderPickers } from './sow-header-pickers'
 
 interface Props {
+  disabled?: boolean
+  index: number
   isOpen: boolean
+  messageBaseId: string
   onDelete: (e: React.MouseEvent) => void
   onDuplicate: (e: React.MouseEvent) => void
+  // Absent outside a Collapsible (the loading stand-in), where the chevron is only a picture.
+  onToggle?: () => void
   onTitleChange: (title: string) => void
   priceDisplayMode: PriceDisplayMode
   sow: ProposalFormSchema['project']['data']['sow'][0]
 }
 
 export function SOWCollapsibleHeader({
+  disabled = false,
+  index,
   isOpen,
+  messageBaseId,
   onDelete,
   onDuplicate,
+  onToggle,
   onTitleChange,
   priceDisplayMode,
   sow,
 }: Props) {
   const [isEditing, setIsEditing] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
+  const loading = useEditLoading()
+  // On a phone a tap on a closed section's title opens the section; the title becomes editable once it is open.
+  const titleOpensSection = useMediaQuery('(max-width: 767px)') && !isOpen
 
   const hasTitle = sow.title.trim().length > 0
-  const hasTrade = sow.trade.label.trim().length > 0
-  const scopeCount = sow.scopes.length
-  const sectionPrice = sow.financials.sectionPrice
-  const showPrice = priceDisplayMode === 'breakdown' && sectionPrice != null && sectionPrice > 0
-  const hasBadges = hasTrade || scopeCount > 0 || showPrice
+  const price = sectionPriceDisplay(sow.financials, priceDisplayMode)
+  // A short title hugs its text like the proposal name beside its chip, so the floor sits on the pickers: they are
+  // capped to leave a long title ~6rem, and the title gives way first down to that before the badges cut off.
+  const titleCellClassName = 'max-md:col-span-2 max-md:col-start-1 max-md:row-start-1 md:shrink-[100]'
+  // Phone: the title text hugs its words, so a tap on the free space beside it opens the section, not the title editor.
+  const titleTextCellClassName = cn(titleCellClassName, 'max-md:max-w-full max-md:justify-self-start')
+  const pickersCellClassName = 'max-md:col-start-1 max-md:row-start-2 md:max-w-[calc(100%-6.5rem)]'
+  const priceCellClassName = 'max-md:col-span-2 max-md:col-start-2 max-md:row-start-2 max-md:justify-self-end md:col-start-2 md:row-start-1'
 
   function handleTitleClick(e: React.MouseEvent) {
     e.stopPropagation()
@@ -53,92 +73,117 @@ export function SOWCollapsibleHeader({
     }
   }
 
+  const chevron = (
+    <ChevronDownIcon
+      className={cn(
+        'size-5 text-muted-foreground transition-transform duration-200',
+        !isOpen && '-rotate-90',
+      )}
+    />
+  )
+
   return (
-    <div className="flex w-full cursor-pointer flex-col gap-1 px-3 py-2.5 transition-colors hover:bg-row-hover pressed:bg-row-press lg:px-4 lg:py-3">
-      <div className="flex items-center justify-between gap-3">
-        {isEditing
+    <div
+      onClick={onToggle}
+      className="grid w-full cursor-pointer grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-1 px-3 py-2.5 transition-colors hover:bg-row-hover pressed:bg-row-press lg:px-4 lg:py-3"
+    >
+      <div className="flex min-w-0 items-center gap-2 max-md:contents md:col-start-1 md:row-start-1">
+        {isEditing && !disabled
           ? (
               <Input
                 ref={inputRef}
                 value={sow.title}
                 placeholder="Section title..."
-                className="h-7 min-w-0 flex-1 text-sm font-medium lg:text-base"
+                className={cn('h-7 min-w-0 flex-1 text-sm font-medium lg:text-base', titleCellClassName)}
                 onClick={e => e.stopPropagation()}
                 onBlur={handleTitleBlur}
                 onChange={e => onTitleChange(e.target.value)}
                 onKeyDown={handleTitleKeyDown}
               />
             )
-          : (
-              <span
-                role="button"
-                tabIndex={0}
-                className={cn(
-                  'min-w-0 truncate rounded px-1 py-0.5 text-sm font-medium transition-colors hover:bg-hover lg:text-base',
-                  !hasTitle && 'text-muted-foreground italic',
-                )}
-                onClick={handleTitleClick}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter')
-                    handleTitleClick(e as unknown as React.MouseEvent)
-                }}
-              >
-                {hasTitle ? sow.title : 'Click to add title...'}
+          : disabled || titleOpensSection
+            ? (
+                <span
+                  className={cn(
+                    'min-w-0 truncate px-1 py-0.5 text-sm font-medium lg:text-base',
+                    titleTextCellClassName,
+                    !disabled && !hasTitle && 'text-muted-foreground italic',
+                  )}
+                >
+                  <LoadingValue width={300}>{disabled || hasTitle ? sow.title : 'Untitled section'}</LoadingValue>
+                </span>
+              )
+            : (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  className={cn(
+                    'min-w-0 truncate rounded px-1 py-0.5 text-sm font-medium transition-colors hover:bg-hover lg:text-base',
+                    titleTextCellClassName,
+                    !hasTitle && 'text-muted-foreground italic',
+                  )}
+                  onClick={handleTitleClick}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter')
+                      handleTitleClick(e as unknown as React.MouseEvent)
+                  }}
+                >
+                  {hasTitle ? sow.title : 'Click to add title...'}
+                </span>
+              )}
+        {loading
+          ? (
+              <span className={cn('flex h-6 items-center', pickersCellClassName)}>
+                <LoadingValue width={54} className="text-xs">{null}</LoadingValue>
               </span>
-            )}
-        <div className="flex shrink-0 items-center gap-1">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                type="button"
-                size="icon"
-                variant="ghost"
-                className="size-8"
-                onClick={e => e.stopPropagation()}
-              >
-                <MoreHorizontalIcon className="size-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}>
-              <DropdownMenuItem onClick={onDuplicate}>
-                <CopyIcon className="size-4" />
-                Duplicate
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDelete} className="text-destructive focus:text-destructive">
-                <TrashIcon className="size-4" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          <ChevronDownIcon
-            className={cn(
-              'size-5 text-muted-foreground transition-transform duration-200',
-              !isOpen && '-rotate-90',
-            )}
-          />
-        </div>
+            )
+          : <SowHeaderPickers index={index} disabled={disabled} messageBaseId={messageBaseId} isOpen={isOpen} className={pickersCellClassName} />}
       </div>
-      {hasBadges && (
-        <div className="flex items-center gap-2">
-          {hasTrade && (
-            <Badge variant="secondary" className="text-xs">
-              {sow.trade.label}
-            </Badge>
-          )}
-          {scopeCount > 0 && (
-            <Badge variant="secondary" className="bg-muted text-xs text-muted-foreground">
-              {scopeCount}
-              {' '}
-              {scopeCount === 1 ? 'scope' : 'scopes'}
-            </Badge>
-          )}
-          {showPrice && (
-            <Badge variant="secondary" className="bg-status-success-bg text-xs font-semibold tabular-nums text-status-success-fg">
-              {formatAsDollars(sectionPrice!)}
-            </Badge>
-          )}
-        </div>
-      )}
+      <LoadingValue width={124} className={cn('text-sm', priceCellClassName)}>
+        <SectionPrice {...price} className={priceCellClassName} />
+      </LoadingValue>
+      <div className="col-start-3 row-start-1 flex shrink-0 items-center">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="-mr-1 size-8"
+              aria-label="Section actions"
+              onClick={e => e.stopPropagation()}
+            >
+              <MoreHorizontalIcon className="size-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" onClick={e => e.stopPropagation()}>
+            <DropdownMenuItem disabled={disabled} onClick={onDuplicate}>
+              <CopyIcon className="size-4" />
+              Duplicate
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled={disabled} onClick={onDelete} className="text-destructive-text focus:text-destructive-text">
+              <TrashIcon className="size-4" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        {onToggle
+          ? (
+              <CollapsibleTrigger asChild>
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="size-8"
+                  aria-label={`${isOpen ? 'Collapse' : 'Expand'} ${sow.title.trim() || sow.trade.label || 'section'}`}
+                  onClick={e => e.stopPropagation()}
+                >
+                  {chevron}
+                </Button>
+              </CollapsibleTrigger>
+            )
+          : chevron}
+      </div>
     </div>
   )
 }

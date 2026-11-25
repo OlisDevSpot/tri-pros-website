@@ -17,3 +17,5 @@ export interface OverrideProposalValues {
   project?: Partial<ProposalFormSchema['project']>
   funding?: Partial<ProposalFormSchema['funding']>
 }
+
+export type ProposalContextTab = 'customer' | 'visit'

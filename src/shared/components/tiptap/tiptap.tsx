@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import DragHandle from '@tiptap/extension-drag-handle-react'
 import Highlight from '@tiptap/extension-highlight'
 import TextAlign from '@tiptap/extension-text-align'
@@ -25,9 +26,11 @@ interface Props {
   isLoading?: boolean
   loadingMessage?: string
   ref?: React.RefObject<TiptapHandle | null>
+  // Stays put at the start of the toolbar row while the format buttons scroll beside it.
+  toolbarStart?: ReactNode
 }
 
-export function Tiptap({ ref, onChange, initialValues, isLoading, loadingMessage }: Props) {
+export function Tiptap({ ref, onChange, initialValues, isLoading, loadingMessage, toolbarStart }: Props) {
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -125,7 +128,8 @@ export function Tiptap({ ref, onChange, initialValues, isLoading, loadingMessage
         </Button>
       </BubbleMenu>
       <div className="tiptap w-full min-h-62.5 flex flex-col relative">
-        <div className="min-h-10 w-full shrink-0">
+        <div data-slot="tiptap-toolbar" className="flex min-h-10 w-full shrink-0 items-start">
+          {toolbarStart && <div className="shrink-0">{toolbarStart}</div>}
           <TipTapMenuBar editor={editor} />
         </div>
         <DragHandle editor={editor}>

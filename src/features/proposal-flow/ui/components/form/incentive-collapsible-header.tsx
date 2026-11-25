@@ -1,9 +1,8 @@
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { format } from 'date-fns'
-import { ChevronDownIcon, TrashIcon } from 'lucide-react'
+import { ChevronDownIcon } from 'lucide-react'
+import { formatLedgerAmount } from '@/features/proposal-flow/lib/format-ledger-amount'
 import { Badge } from '@/shared/components/ui/badge'
-import { Button } from '@/shared/components/ui/button'
-import { formatAsDollars } from '@/shared/lib/formatters'
 import { cn } from '@/shared/lib/utils'
 
 type Incentive = ProposalFormSchema['funding']['incentives'][number]
@@ -11,13 +10,11 @@ type Incentive = ProposalFormSchema['funding']['incentives'][number]
 interface Props {
   incentive: Incentive
   isOpen: boolean
-  onDelete: (e: React.MouseEvent) => void
 }
 
 export function IncentiveCollapsibleHeader({
   incentive,
   isOpen,
-  onDelete,
 }: Props) {
   const typeLabel = incentive.type === 'discount' ? 'Discount' : 'Exclusive Offer'
   const hasAmount = incentive.type === 'discount' && incentive.amount > 0
@@ -33,9 +30,8 @@ export function IncentiveCollapsibleHeader({
             {typeLabel}
           </span>
           {hasAmount && (
-            <Badge variant="secondary" className="bg-status-success-bg text-xs font-semibold tabular-nums text-status-success-fg">
-              -
-              {formatAsDollars(incentive.amount)}
+            <Badge variant="secondary" className="text-xs font-semibold tabular-nums">
+              {formatLedgerAmount(0 - incentive.amount)}
             </Badge>
           )}
           {hasOffer && (
@@ -51,23 +47,12 @@ export function IncentiveCollapsibleHeader({
             </Badge>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-1">
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            className="size-8 text-destructive-text"
-            onClick={onDelete}
-          >
-            <TrashIcon className="size-4" />
-          </Button>
-          <ChevronDownIcon
-            className={cn(
-              'size-5 text-muted-foreground transition-transform duration-200',
-              !isOpen && '-rotate-90',
-            )}
-          />
-        </div>
+        <ChevronDownIcon
+          className={cn(
+            'size-5 shrink-0 text-muted-foreground transition-transform duration-200',
+            !isOpen && '-rotate-90',
+          )}
+        />
       </div>
       {hasNotes && !isOpen && (
         <p className="truncate text-xs text-muted-foreground">

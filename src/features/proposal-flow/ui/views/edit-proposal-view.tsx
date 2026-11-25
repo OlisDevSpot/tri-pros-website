@@ -5,7 +5,6 @@ import type { OverrideProposalValues } from '../../types'
 import type { ProposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
-import { motion } from 'motion/react'
 import { useRouter } from 'next/navigation'
 import { useMemo } from 'react'
 import { useForm } from 'react-hook-form'
@@ -14,9 +13,8 @@ import { useReplaceIncentives } from '@/features/proposal-flow/dal/client/mutati
 import { useUpdateProposal } from '@/features/proposal-flow/dal/client/mutations/use-update-proposal'
 import { useGetProposal } from '@/features/proposal-flow/dal/client/queries/use-get-proposal'
 import { baseDefaultValues, proposalFormSchema } from '@/features/proposal-flow/schemas/form-schema'
-import { ProposalForm } from '@/features/proposal-flow/ui/components/form'
+import { EditProposalShell } from '@/features/proposal-flow/ui/components/edit-page/edit-proposal-shell'
 import { ErrorState } from '@/shared/components/states/error-state'
-import { LoadingState } from '@/shared/components/states/loading-state'
 import { Alert, AlertDescription, AlertTitle } from '@/shared/components/ui/alert'
 import { Button } from '@/shared/components/ui/button'
 import { Form } from '@/shared/components/ui/form'
@@ -27,7 +25,6 @@ import { computeFinalTcp, deriveEditCashDown, resolveDeposit } from '@/shared/mo
 import { fundingDomainToColumns, toFundingInputs } from '@/shared/modules/proposals/core/lib/funding-columns'
 import { getProposalLockState } from '@/shared/modules/proposals/core/lib/proposal-lock'
 import { useTRPC } from '@/trpc/helpers'
-import { CustomerInfoHeader } from '../components/customer-info-header'
 
 interface EditProposalViewProps {
   proposalId: string
@@ -85,17 +82,14 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
     }
   }, [proposal.data])
 
-  if (proposal.isLoading) {
-    return (
-      <LoadingState
-        title="Loading Proposal"
-        description="This might take a few seconds"
-        className="bg-card"
-      />
-    )
-  }
+  const customerId = proposal.data?.customer?.id
+  const customerName = proposal.data?.customer?.name
+  const customer = useMemo(
+    () => (customerId && customerName != null ? { id: customerId, name: customerName } : null),
+    [customerId, customerName],
+  )
 
-  if (!proposal.data) {
+  if (!proposal.isLoading && !proposal.data) {
     return (
       <ErrorState
         title="Error: Could not load proposal"
@@ -105,88 +99,84 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
     )
   }
 
-  const customer = proposal.data.customer
-  const storedFunding = toFundingInputs(proposal.data)
-  const storedFinalTcp = computeFinalTcp({ funding: storedFunding, sow: proposal.data.projectJSON.data.sow })
+  // Built from the stored proposal, so only once it has arrived; until then the form is disabled and nothing
+  // can submit.
+  function saveHandlers(stored: NonNullable<typeof proposal.data>) {
+    const storedFunding = toFundingInputs(stored)
+    const storedFinalTcp = computeFinalTcp({ funding: storedFunding, sow: stored.projectJSON.data.sow })
 
-  function buildMutationData(rawData: ProposalFormSchema) {
-    const nextFinalTcp = computeFinalTcp({ funding: rawData.funding, sow: rawData.project.data.sow })
-    const nextDeposit = resolveDeposit(rawData.funding.depositAmount, nextFinalTcp)
-    const nextCash = deriveEditCashDown({ storedCash: storedFunding.cashInDeal, storedFinalTcp, nextFinalTcp, nextDeposit })
-    const { cashInDealCents, ...columns } = fundingDomainToColumns({ ...rawData.funding, cashInDeal: nextCash })
-    const cashChanged = cashInDealCents !== Math.round(storedFunding.cashInDeal * 100)
+    function buildMutationData(rawData: ProposalFormSchema) {
+      const nextFinalTcp = computeFinalTcp({ funding: rawData.funding, sow: rawData.project.data.sow })
+      const nextDeposit = resolveDeposit(rawData.funding.depositAmount, nextFinalTcp)
+      const nextCash = deriveEditCashDown({ storedCash: storedFunding.cashInDeal, storedFinalTcp, nextFinalTcp, nextDeposit })
+      const { cashInDealCents, ...columns } = fundingDomainToColumns({ ...rawData.funding, cashInDeal: nextCash })
+      const cashChanged = cashInDealCents !== Math.round(storedFunding.cashInDeal * 100)
 
-    return {
-      id: proposalId,
-      data: {
-        label: rawData.project.data.label,
-        priceDisplayMode: rawData.priceDisplayMode,
-        projectJSON: rawData.project,
-        // Incentives are rows — they flow through proposalService.incentives.replace,
-        // never the update payload. envelopeDocumentIds deliberately absent —
-        // applyEnvelopeContext is the only writer (spec §2).
-        ...columns,
-        ...(cashChanged ? { cashInDealCents } : {}),
-      },
+      return {
+        id: proposalId,
+        data: {
+          label: rawData.project.data.label,
+          priceDisplayMode: rawData.priceDisplayMode,
+          projectJSON: rawData.project,
+          // Incentives are rows — they flow through proposalService.incentives.replace,
+          // never the update payload. envelopeDocumentIds deliberately absent —
+          // applyEnvelopeContext is the only writer.
+          ...columns,
+          ...(cashChanged ? { cashInDealCents } : {}),
+        },
+      }
     }
-  }
 
-  function onSubmit(rawData: ProposalFormSchema) {
-    if (proposalLocked) {
-      toast.error('This proposal is locked — see the notice above the form.')
-      return
-    }
-    updateProposal.mutate(buildMutationData(rawData), {
-      onSuccess: () => {
-        replaceIncentives.mutate(
-          { proposalId, incentives: rawData.funding.incentives },
-          {
-            onSuccess: () => {
-              toast.success('Proposal updated')
-              router.push(ROOTS.public.proposalReview(proposalId))
+    function onSubmit(rawData: ProposalFormSchema) {
+      if (proposalLocked) {
+        toast.error('This proposal is locked — see the notice above the form.')
+        return
+      }
+      updateProposal.mutate(buildMutationData(rawData), {
+        onSuccess: () => {
+          replaceIncentives.mutate(
+            { proposalId, incentives: rawData.funding.incentives },
+            {
+              onSuccess: () => {
+                toast.success('Proposal updated')
+                router.push(ROOTS.public.proposalReview(proposalId))
+              },
+              onError: error => toast.error(error.message),
             },
-            onError: error => toast.error(error.message),
-          },
-        )
-      },
-      onError: error => toast.error(error.message),
-    })
+          )
+        },
+        onError: error => toast.error(error.message),
+      })
+    }
+
+    function onSave(rawData: ProposalFormSchema) {
+      if (proposalLocked) {
+        toast.error('This proposal is locked — see the notice above the form.')
+        return
+      }
+      updateProposal.mutate(buildMutationData(rawData), {
+        onSuccess: () => {
+          replaceIncentives.mutate(
+            { proposalId, incentives: rawData.funding.incentives },
+            {
+              onSuccess: () => toast.success('Proposal saved'),
+              onError: error => toast.error(error.message),
+            },
+          )
+        },
+        onError: error => toast.error(error.message),
+      })
+    }
+
+    return { onSubmit, onSave }
   }
 
-  function onSave(rawData: ProposalFormSchema) {
-    if (proposalLocked) {
-      toast.error('This proposal is locked — see the notice above the form.')
-      return
-    }
-    updateProposal.mutate(buildMutationData(rawData), {
-      onSuccess: () => {
-        replaceIncentives.mutate(
-          { proposalId, incentives: rawData.funding.incentives },
-          {
-            onSuccess: () => toast.success('Proposal saved'),
-            onError: error => toast.error(error.message),
-          },
-        )
-      },
-      onError: error => toast.error(error.message),
-    })
-  }
+  const { onSubmit, onSave } = proposal.data ? saveHandlers(proposal.data) : { onSubmit: () => {}, onSave: () => {} }
 
   const viewHref = ROOTS.public.proposalReview(proposalId)
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: -30 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -30 }}
-      transition={{ duration: 0.25 }}
-      className="w-full h-full flex flex-col gap-4"
-    >
-      {customer && (
-        <div className="shrink-0">
-          <CustomerInfoHeader customer={customer} />
-        </div>
-      )}
+  const lockNotice = (
+    <>
       {lockState === 'draft-locked' && (
         <Alert className="shrink-0">
           <AlertTitle>A contract draft exists for this proposal</AlertTitle>
@@ -196,6 +186,7 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
               draft&apos;s documents stale. Discard the draft to edit; you can prepare a new one afterward.
             </span>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               className="w-fit"
@@ -225,19 +216,29 @@ export function EditProposalView({ proposalId }: EditProposalViewProps) {
           </AlertDescription>
         </Alert>
       )}
-      <div className="h-full w-full overflow-auto md:pr-4">
-        <Form {...form}>
-          <ProposalForm
-            isLoading={proposal.isLoading || updateProposal.isPending}
-            initialValues={initProposalValues}
-            onSubmit={onSubmit}
-            onSave={onSave}
-            viewHref={viewHref}
-            proposalId={proposalId}
-          />
-        </Form>
-      </div>
+    </>
+  )
+
+  return (
+    <>
+      <Form {...form}>
+        <EditProposalShell
+          proposalId={proposalId}
+          status={proposal.data?.status ?? null}
+          customer={customer}
+          meetingId={proposal.data?.meetingId}
+          meetingScheduledFor={proposal.data?.meetingScheduledFor}
+          initialValues={initProposalValues}
+          loading={proposal.isLoading}
+          isLoading={proposal.isLoading || updateProposal.isPending}
+          locked={proposalLocked}
+          viewHref={viewHref}
+          lockNotice={lockNotice}
+          onSubmit={onSubmit}
+          onSave={onSave}
+        />
+      </Form>
       <DiscardConfirmDialog />
-    </motion.div>
+    </>
   )
 }
