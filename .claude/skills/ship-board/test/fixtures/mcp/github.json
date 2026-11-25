@@ -1,5 +1,5 @@
 {
- "server": "GitHub",
+ "server": "github",
  "calls": [
   {
    "tool": "issue_read",

@@ -838,7 +838,7 @@ function renderMap(){
 }
 
 // GitHub connector: the display name is the one string the page calls it by.
-const GH={server:"GitHub",owner:"OlisDevSpot",repo:"tri-pros-website",web:"https://github.com/OlisDevSpot/tri-pros-website"};
+const GH={server:"github",owner:"OlisDevSpot",repo:"tri-pros-website",web:"https://github.com/OlisDevSpot/tri-pros-website"};
 S.gh={state:"connecting",open:null,epics:null,bugs:null,subs:{},failed:new Set(),storedAt:null};
 const GH_FIELDS=["number","title","state","labels","updated_at"];
 const ghList=extra=>({owner:GH.owner,repo:GH.repo,state:"OPEN",perPage:100,fields:GH_FIELDS,...extra});

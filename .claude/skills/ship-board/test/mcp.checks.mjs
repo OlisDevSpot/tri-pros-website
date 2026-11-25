@@ -17,19 +17,19 @@ export default async function ({ page, opt }) {
     });
     const call = (server, tool, input) => mcp.callTool(server, tool, input).then((res) => ({ data: res.payload }), (e) => ({ error: e.code }));
     const out = {};
-    out.ghWatch = await watch("GitHub", "issue_read", ISSUE);
+    out.ghWatch = await watch("github", "issue_read", ISSUE);
     out.vcWatch = await watch("Vercel", "list_deployments", { limit: 60, teamId: DEPLOYS.teamId, projectId: DEPLOYS.projectId });
-    out.ghCall = await call("GitHub", "issue_read", ISSUE);
+    out.ghCall = await call("github", "issue_read", ISSUE);
     // After an allowed call, the same watch's next refetch delivers.
     const later = [];
-    const stop = mcp.watchTool("GitHub", "issue_read", ISSUE, (ev) => later.push(ev.type === "data" ? "data" : ev.error.code));
+    const stop = mcp.watchTool("github", "issue_read", ISSUE, (ev) => later.push(ev.type === "data" ? "data" : ev.error.code));
     await new Promise((r) => setTimeout(r, 120));
-    window.__mcpTick("GitHub");
+    window.__mcpTick("github");
     await new Promise((r) => setTimeout(r, 30));
     stop();
     out.ghLater = later;
     out.missesBefore = window.__mcpMisses.length;
-    out.unknownInput = await call("GitHub", "issue_read", { ...ISSUE, issue_number: 1 });
+    out.unknownInput = await call("github", "issue_read", { ...ISSUE, issue_number: 1 });
     out.unknownServer = await call("Linear", "list_issues", {});
     out.misses = window.__mcpMisses.splice(out.missesBefore).map((m) => m.server + " " + m.tool);
     return out;
@@ -50,7 +50,7 @@ export default async function ({ page, opt }) {
   if (vc) expect(r.vcWatch.length === 1 && r.vcWatch[0].error === vc, "--deny=vercel: the Vercel watch gets " + vc + " " + JSON.stringify(r.vcWatch));
   else expect(r.vcWatch.length === 1 && r.vcWatch[0].data?.result?.deployments?.length === 3, "input key order does not matter to a match " + JSON.stringify(r.vcWatch).slice(0, 160));
   expect(r.unknownServer.error === "server_not_connected", "a server with no fixture file is not connected " + JSON.stringify(r.unknownServer));
-  if (!gh) expect(r.unknownInput.error === "tool_error" && r.misses.includes("GitHub issue_read"), "an input with no fixture rejects tool_error and is recorded as a miss " + JSON.stringify(r));
+  if (!gh) expect(r.unknownInput.error === "tool_error" && r.misses.includes("github issue_read"), "an input with no fixture rejects tool_error and is recorded as a miss " + JSON.stringify(r));
 
   // The page itself: a denied Vercel clears the live line to the connector's notice.
   const live = await page.evaluate(() => document.getElementById("live")?.textContent || "");
