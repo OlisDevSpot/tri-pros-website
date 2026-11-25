@@ -5,6 +5,7 @@ import { SOW_PRICING_ROW } from '@/features/proposal-flow/constants/sow-pricing-
 import { Button } from '@/shared/components/ui/button'
 import { FormControl, FormField, FormItem, FormMessage } from '@/shared/components/ui/form'
 import { Input } from '@/shared/components/ui/input'
+import { MoneyField } from '@/shared/components/ui/money-field'
 import { cn } from '@/shared/lib/utils'
 
 interface Props {
@@ -38,17 +39,13 @@ export function SowIncentiveRow({ index, incentiveIndex, disabled, onRemove }: P
         render={({ field }) => (
           <FormItem>
             <FormControl>
-              <Input
-                type="text"
-                inputMode="numeric"
+              <MoneyField
+                {...field}
                 placeholder="$500"
                 aria-label="Incentive amount"
                 className="pr-[11px] text-right"
-                disabled={field.disabled}
-                value={field.value === 0 ? '' : String(field.value)}
-                onChange={(e) => {
-                  field.onChange(Number(e.target.value.replace(/\D/g, '')))
-                }}
+                value={field.value || null}
+                onChange={value => field.onChange(value ?? 0)}
               />
             </FormControl>
             <FormMessage />

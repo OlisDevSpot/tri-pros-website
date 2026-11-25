@@ -4,7 +4,8 @@ import { useFormContext } from 'react-hook-form'
 import { FUNDING_LEDGER_ROW } from '@/features/proposal-flow/constants/funding-ledger'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
-import { InputGroup, InputGroupAddon, InputGroupButton, InputGroupInput } from '@/shared/components/ui/input-group'
+import { InputGroup, InputGroupAddon, InputGroupButton } from '@/shared/components/ui/input-group'
+import { MoneyField } from '@/shared/components/ui/money-field'
 import { formatAsDollars } from '@/shared/lib/formatters'
 import { describeDepositCap, getDepositCap } from '@/shared/modules/proposals/core/lib/financials'
 
@@ -33,16 +34,11 @@ export function FundingDepositRow({ finalTcp }: Props) {
                 </HybridPopoverTooltip>
               </InputGroupAddon>
               <FormControl>
-                <InputGroupInput
+                <MoneyField
                   {...field}
-                  value={field.value ?? ''}
-                  inputMode="numeric"
-                  className="text-right"
+                  className="flex-1 rounded-none border-0 bg-transparent text-right shadow-none focus-visible:ring-0 dark:bg-transparent"
+                  data-slot="input-group-control"
                   placeholder={formatAsDollars(depositCap)}
-                  onChange={(event) => {
-                    const digits = event.target.value.replace(/\D/g, '')
-                    field.onChange(digits === '' ? null : Number(digits))
-                  }}
                 />
               </FormControl>
             </InputGroup>

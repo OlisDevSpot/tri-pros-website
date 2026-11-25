@@ -3,11 +3,10 @@ import type { PriceDisplayMode } from '@/shared/constants/enums'
 import { useFormContext, useWatch } from 'react-hook-form'
 import { FUNDING_LEDGER_ROW } from '@/features/proposal-flow/constants/funding-ledger'
 import { useEditLoading } from '@/features/proposal-flow/contexts/edit-loading-context'
-import { digitsToNumber } from '@/features/proposal-flow/lib/digits-to-number'
 import { formatLedgerAmount } from '@/features/proposal-flow/lib/format-ledger-amount'
 import { fundingLedgerLines } from '@/features/proposal-flow/lib/funding-ledger-lines'
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/shared/components/ui/form'
-import { Input } from '@/shared/components/ui/input'
+import { MoneyField } from '@/shared/components/ui/money-field'
 import { computeFinalTcp } from '@/shared/modules/proposals/core/lib/financials'
 import { FundingDepositRow } from './funding-deposit-row'
 import { FundingLedgerRow } from './funding-ledger-row'
@@ -41,12 +40,12 @@ export function FundingLedger({ pricingMode }: Props) {
                   <dt><FormLabel>{line.label}</FormLabel></dt>
                   <dd>
                     <FormControl>
-                      <Input
+                      <MoneyField
                         {...field}
-                        value={field.value ?? ''}
                         className="w-36 text-right"
                         placeholder="$50,000"
-                        onChange={event => field.onChange(digitsToNumber(event.target.value))}
+                        value={field.value || null}
+                        onChange={value => field.onChange(value ?? 0)}
                       />
                     </FormControl>
                     <FormMessage />
