@@ -217,6 +217,21 @@ form.add{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.4fr) 130px 
 form.add.sk{grid-template-columns:minmax(0,2fr) 130px auto}
 @media (max-width:720px){form.add,form.add.sk{grid-template-columns:1fr}}
 .loops{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px}
+.scen-steps{margin-top:4px}
+.scen-steps .st:last-child{padding-bottom:4px}
+.scen-steps .st.auto::before{border-color:var(--agent);color:var(--agent);background:var(--agent-soft)}
+.scen-steps .lane-h h3{margin-right:0}
+#scen-list{gap:10px}
+details.scen.phase{display:block;padding:0}
+details.scen>summary{cursor:pointer;list-style:none;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:baseline;padding:14px 18px}
+details.scen>summary::-webkit-details-marker{display:none}
+details.scen>summary::before{content:"▸";display:inline-block;width:12px;color:var(--muted);font-size:14px;transition:transform .15s}
+details.scen[open]>summary::before{transform:rotate(90deg)}
+details.scen>summary h2{font-size:20px;margin-right:auto;min-width:0}
+details.scen>summary .scen-count{flex-basis:100%;padding-left:22px;font-size:13px;color:var(--muted)}
+details.scen[open]>summary{border-bottom:1px solid var(--line)}
+details.scen .scen-body{display:grid;gap:14px;padding:14px 18px 18px}
+@media (prefers-reduced-motion:reduce){details.scen>summary::before{transition:none}}
 ol.log{list-style:none;margin:0;padding:0;display:grid;gap:0;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
 ol.log li{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;padding:9px 12px;border-top:1px solid var(--line);font-size:14px}
 ol.log li:first-child{border-top:0}
@@ -469,6 +484,7 @@ a.bl-num{display:inline-flex;align-items:center;justify-content:center;min-heigh
   <a href="#map">Map</a>
   <a href="#merge">Merge</a>
   <a href="#flow">Flow</a>
+  <a href="#scenarios">Scenarios</a>
   <a href="#skills">Skills</a>
   <a href="#setup">Setup</a>
   <a href="#decisions">Decisions<span class="count" id="dec-count" hidden></span></a>
@@ -558,6 +574,14 @@ a.bl-num{display:inline-flex;align-items:center;justify-content:center;min-heigh
     <h2>How the flow has changed</h2>
     <ol class="log" id="flow-log"><li class="muted">No changes yet.</li></ol>
   </div>
+</section>
+
+<section class="view" id="v-scenarios" hidden>
+  <div class="block">
+    <h2>Scenarios: how each kind of work reaches prod</h2>
+    <p>The phases on the Flow tab are the track every lane runs. A scenario is one kind of work walked end to end along it: what starts it, each step in order, and who does each step. <b>Automated</b> steps run on their own; <b>you</b> steps wait for you. A scenario stays proposed until you lock it in.</p>
+  </div>
+  <div id="scen-list" class="block"><div class="loading">Loading scenarios.</div></div>
 </section>
 
 <section class="view" id="v-bottlenecks" hidden>
@@ -692,8 +716,8 @@ const svgEl=(t,a,txt)=>{const e=document.createElementNS("http://www.w3.org/2000
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("on"),2200)}
 const byOrder=(a,b)=>(a.order??99)-(b.order??99)||String(a.name||a.title||"").localeCompare(String(b.name||b.title||""));
 const today=()=>LaneCore.localDay(new Date());
-const VIEWS={map:["map"],lane:["lane"],merge:["merge"],flow:["flow"],setup:["setup"],decisions:["decisions"],skills:["skills"],reference:["bottlenecks","tools"]};
-const ALIAS={now:"map",board:"map",playbook:"flow",bottlenecks:"reference",tools:"reference"};
+const VIEWS={map:["map"],lane:["lane"],merge:["merge"],flow:["flow"],scenarios:["scenarios"],setup:["setup"],decisions:["decisions"],skills:["skills"],reference:["bottlenecks","tools"]};
+const ALIAS={now:"map",board:"map",playbook:"flow",flows:"scenarios",bottlenecks:"reference",tools:"reference"};
 function route(){
   const h=(location.hash||"#map").slice(1);let v;const was=S.lane;S.lane=null;
   if(h.startsWith("lane-")){v="lane";S.lane=h.slice(5)}else{v=ALIAS[h]||h;if(!VIEWS[v])v="map"}
@@ -1053,6 +1077,30 @@ function renderFlowDetail(N){
   if(loops.length)card.append(el("section",{},el("h4",{text:"Return tracks"}),el("ul",{class:"loops"},loops.map(l=>el("li",{},l.dir==="to"?"Goes to ":"Comes back from ",el("a",{href:"#flow",onclick:e=>{e.preventDefault();pick(l.target.id)},text:l.target.name}),": "+l.label)))));
   $("#flow-detail").replaceChildren(nav,card);
 }
+const SCEN_WHO={auto:["agent","automated"],you:["you","you"],mixed:["you","automated, then you"]};
+const SCEN_STATUS={locked:["done","locked in"],proposed:["you","proposed"],pending:["","to agree"]};
+// Which scenarios are open survives live re-renders and reloads, so a snapshot never snaps a card shut.
+const scenOpen=new Set();try{JSON.parse(localStorage.getItem("scenOpen")||"[]").forEach(x=>scenOpen.add(x))}catch{}
+function scenToggle(id,open){if(open)scenOpen.add(id);else scenOpen.delete(id);try{localStorage.setItem("scenOpen",JSON.stringify([...scenOpen]))}catch{}}
+function renderScen(){const box=$("#scen-list");if(!S.scen)return;
+  if(!S.scen.length){box.replaceChildren(el("div",{class:"loading",text:"No scenarios yet."}));return}
+  box.replaceChildren(...S.scen.slice().sort(byOrder).map(f=>{
+    if(f.kind==="rules")return el("article",{class:"phase","data-scen":f.id},el("div",{class:"lane-h"},el("h2",{text:f.name}),f.updated?el("span",{class:"chip",text:"updated "+f.updated}):null),
+      f.summary?el("p",{class:"muted",text:f.summary}):null,
+      el("ul",{class:"reqs"},(f.rules||[]).map(r=>{const[sc,st]=SCEN_STATUS[r.status]||SCEN_STATUS.proposed;return el("li",{},el("span",{},el("span",{class:"chip "+sc,text:st})),el("span",{text:r.text}),el("span"))})));
+    const steps=f.steps||[];const[sc,st]=SCEN_STATUS[f.status]||(steps.length?SCEN_STATUS.proposed:SCEN_STATUS.pending);
+    const yours=steps.filter(s=>s.who&&s.who!=="auto").length;
+    const count=steps.length?`${steps.length} steps · ${yours} need you`+(f.open?.length?` · ${f.open.length} open`:""):(f.summary||"");
+    const card=el("details",{class:"phase scen","data-scen":f.id,open:scenOpen.has(f.id),ontoggle:e=>scenToggle(f.id,e.target.open)},
+      el("summary",{},el("h2",{text:f.name}),el("span",{class:"chip "+sc,text:st}),f.updated?el("span",{class:"chip",text:"updated "+f.updated}):null,count?el("span",{class:"scen-count",text:count}):null));
+    const body=el("div",{class:"scen-body"});
+    if(f.trigger)body.append(el("p",{},el("b",{text:"Starts when: "}),f.trigger));
+    if(f.summary)body.append(el("p",{class:"muted",text:f.summary}));
+    if(steps.length)body.append(el("section",{},el("h4",{text:"Steps"}),el("div",{class:"stations scen-steps"},steps.map((s,i)=>{const[wc,wt]=SCEN_WHO[s.who]||SCEN_WHO.auto;
+      return el("div",{class:"st "+(s.who==="auto"?"auto":"gate"),"data-n":i+1},el("div",{class:"lane-h"},el("h3",{text:s.name}),el("span",{class:"chip "+wc,text:wt})),s.what?el("p",{text:s.what}):null,s.whoNote?el("p",{class:"note",text:s.whoNote}):null)}))));
+    if(f.open?.length)body.append(el("section",{},el("h4",{text:"Open questions"}),el("ul",{class:"loops"},f.open.map(q=>el("li",{text:q})))));
+    if(f.statusNote)body.append(el("p",{class:"note",text:f.statusNote}));
+    card.append(body);return card}))}
 function renderFlowLog(){const ol=$("#flow-log");if(!S.changes)return;ol.replaceChildren();const L=S.changes.slice().sort((a,b)=>String(b.at).localeCompare(String(a.at))).slice(0,40);
   if(!L.length){ol.append(el("li",{},el("span"),el("span",{class:"muted",text:"No changes yet."})));return}
   for(const c of L)ol.append(el("li",{},el("time",{datetime:c.at||"",text:String(c.at||"").slice(0,10)}),el("div",{},c.nodeName?el("b",{text:c.nodeName+": "}):null,c.change||"",c.why?el("span",{class:"why",text:c.why}):null)))}
@@ -1067,7 +1115,7 @@ function renderAll(){renderLanes();renderSetup();renderDecisions();renderSkills(
   try{const u=await window.claude.use("user");const w=u?await u.can("data.write"):null;if(w===false)S.canWrite=false}catch{}
   const timer=setTimeout(()=>{document.querySelectorAll(".loading").forEach(n=>{if(n.isConnected)n.textContent="The board can't be reached yet; it fills in when the connection returns."})},10000);
   const sub=(col,key,fn)=>db.collection(col).onSnapshot(s=>{if(!s.metadata.fromCache)clearTimeout(timer);S[key]=s.docs.map(d=>({id:d.id,...d.data()}));fn()},e=>{clearTimeout(timer);console.warn(col,e?.code)});
-  sub("lanes","lanes",()=>{renderLanes();renderDecisions()});sub("setup","setup",renderSetup);sub("decisions","decisions",()=>{renderDecisions();renderLanes()});sub("skills","skills",()=>{renderSkills();renderFlow()});sub("flow_nodes","flow",renderFlow);sub("flow_changes","changes",renderFlowLog);
+  sub("lanes","lanes",()=>{renderLanes();renderDecisions()});sub("setup","setup",renderSetup);sub("decisions","decisions",()=>{renderDecisions();renderLanes()});sub("skills","skills",()=>{renderSkills();renderFlow()});sub("flow_nodes","flow",renderFlow);sub("flow_changes","changes",renderFlowLog);sub("flows","scen",renderScen);
   db.doc("snapshots/collisions").onSnapshot(s=>{if(s.exists){S.coll=s.data();renderMatrix();if(S.lane)renderLaneView()}},e=>console.warn("collisions",e?.code));
 })();
 </script>
