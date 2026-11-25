@@ -19,7 +19,7 @@ export default async function ({ page, hash, viewport, scheme, opt, skillDir }) 
   const denied = opt.deny.github, asking = opt.approval.includes("github");
 
   const tabs = await page.evaluate(() => [...document.querySelectorAll("#tabs a")].map((a) => a.firstChild.textContent.trim()));
-  expect(eq(tabs, ["Map", "Merge", "Flow", "Skills", "Setup", "Decisions", "Reference"]), "Now became Map and the other tabs stayed: " + JSON.stringify(tabs));
+  expect(eq(tabs, ["Map", "Merge", "Flow", "Scenarios", "Skills", "Setup", "Decisions", "Reference"]), "Now became Map and the other tabs stayed: " + JSON.stringify(tabs));
 
   const line = await page.evaluate(() => { const e = document.getElementById("status-line"); return { text: e.textContent, shown: getComputedStyle(e).display !== "none" }; });
   expect(line.text === "epic map · 15 lanes in flight", "status line counts lanes not shipped or parked: " + line.text);
