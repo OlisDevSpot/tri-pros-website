@@ -1,17 +1,34 @@
 name: Epic
-description: A large piece of work that ships in slices (sub-issues)
+description: A large piece of work that ships as plans (sub-issues)
 title: "Epic: "
-labels: [epic, enhancement]
+labels: [epic]
 body:
-  - type: textarea
-    id: destination
+  - type: markdown
     attributes:
-      label: Destination
-      description: What is true when the epic is done.
+      value: |
+        The body holds only what will still be true when the epic is done. Context, realizations, gaps, requirements, rulings and progress go in the epic's tracker (`docs/plans/<date>-<slug>-epic.md`), never here. See `docs/agents/issue-tracker.md` (Epic body). Add the category label (`enhancement`, `chore` or `refactor`) after opening.
+  - type: textarea
+    id: solves
+    attributes:
+      label: What it solves
+      description: One paragraph on what this epic fixes or improves.
     validations:
       required: true
   - type: textarea
-    id: known
+    id: done-when
     attributes:
-      label: What we know so far
-      description: Decisions, constraints, open questions. Slices arrive as sub-issues from /to-tickets, or a /wayfinder map when it is foggy.
+      label: Done when
+      description: A checkable list of outcomes.
+      value: "- [ ] "
+    validations:
+      required: true
+  - type: textarea
+    id: out-of-scope
+    attributes:
+      label: Out of scope
+      description: Optional. What this epic will not do.
+  - type: textarea
+    id: links
+    attributes:
+      label: Links
+      description: Tracker, spec, lane and branch, references. The tracker can come later, from /to-spec.
