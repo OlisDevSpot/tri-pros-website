@@ -1,0 +1,88 @@
+{
+  "blockReason": {
+    "proposal-page": "edits the proposal form; PR targets feat/proposal-page"
+  },
+  "blockedBy": [],
+  "branch": "feat/edit-proposal-layout-2",
+  "brief": {
+    "agent": [
+      "PE4's four raw money inputs should become MoneyField"
+    ],
+    "aheadBehind": {
+      "ahead": 123,
+      "behind": 0,
+      "onCurrentProd": true
+    },
+    "decided": [
+      {
+        "date": "2026-10-21",
+        "text": "Layout warm-up closed on round 8; every correction is ledger L1-L31 and binds the build (O8)"
+      },
+      {
+        "date": "2026-10-21",
+        "text": "PE4 spec approved"
+      },
+      {
+        "date": "2026-10-20",
+        "text": "Rebuild editor primitives properly; no defensive legacy-transition code (O7)"
+      },
+      {
+        "date": "2026-10-20",
+        "text": "Payment schedule is editable; last payment is the uneditable remainder (O2)"
+      },
+      {
+        "date": "2026-10-20",
+        "text": "How SOW sections display must be edited through UI, not hidden text rules (O3)"
+      }
+    ],
+    "files": 372,
+    "goal": "Reps edit a proposal on a rebuilt page: overview with customer and visit pill, part navigation, SOW sections with a pricing receipt, a funding ledger, and a phone layout.",
+    "lastCommit": {
+      "date": "2026-11-13",
+      "sha": "13adaeb4a",
+      "subject": "docs(proposals): pricing terms from the edit proposal layout work"
+    },
+    "phases": [
+      {
+        "id": "PE1",
+        "name": "Payment schedule editor",
+        "note": "ships only after Zoho Q1",
+        "status": "idea"
+      },
+      {
+        "id": "PE2",
+        "name": "Structured SOW editor (Tiptap blocks)",
+        "note": "no spec yet",
+        "status": "idea"
+      },
+      {
+        "id": "PE3",
+        "name": "Other editor requirements",
+        "status": "idea"
+      },
+      {
+        "id": "PE4",
+        "name": "Edit page layout",
+        "note": "~45 build commits 2026-11-13, on proposal-page",
+        "status": "built"
+      }
+    ],
+    "plan": "docs/superpowers/plans/2026-10-21-edit-proposal-layout.md",
+    "spec": "docs/superpowers/specs/2026-10-21-edit-proposal-layout-design.md",
+    "tracker": "docs/plans/2026-10-20-proposal-editor-epic.md",
+    "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/edit-proposal-layout-2"
+  },
+  "briefAt": "2026-11-21",
+  "issue": 307,
+  "kind": "feature",
+  "move": "agent",
+  "name": "Edit proposal layout (PE4)",
+  "neon": "shared dev",
+  "next": "Swap the 4 raw money inputs for MoneyField; ships right after the proposal page, PR targeting feat/proposal-page.",
+  "notes": "Tracker stale: PE4 row says 'plan written, awaits execute' but the branch holds the build. Stacked on feat/proposal-page (77 of 123 commits are that lane's).",
+  "order": 6,
+  "port": 3014,
+  "stackedOn": "proposal-page",
+  "stage": "review",
+  "updated": "2026-11-13"
+}

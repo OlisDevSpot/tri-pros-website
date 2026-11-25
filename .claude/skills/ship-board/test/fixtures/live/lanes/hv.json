@@ -1,0 +1,124 @@
+{
+  "blockedBy": [],
+  "branch": "feat/home-visit-messages",
+  "brief": {
+    "aheadBehind": {
+      "ahead": 72,
+      "behind": 0,
+      "onCurrentProd": true
+    },
+    "decided": [
+      {
+        "date": "2026-10-16",
+        "text": "Main-line replies and opt-outs push to dispatch only; agents get only 'Homeowner confirmed'"
+      },
+      {
+        "date": "2026-10-14",
+        "text": "Prod release order: Phase A push, overnight migrate, deploy, Phase B push"
+      },
+      {
+        "date": "2026-10-13",
+        "text": "Access is per phone line: super-admins all lines, dispatchers the main line"
+      },
+      {
+        "date": "2026-10-09",
+        "text": "Visit controls are parts of the meeting card, not a separate screen"
+      },
+      {
+        "date": "2026-10-09",
+        "text": "Polling, not push; realtime stays in the meeting flow"
+      },
+      {
+        "date": "2026-10-05",
+        "text": "Super-admins only for now; agents never text customers"
+      }
+    ],
+    "files": 227,
+    "goal": "Booked home visits stick: the office texts and confirms homeowners from a visit meter and visit sheet on meeting cards, with a conversation view per customer.",
+    "lastCommit": {
+      "date": "2026-11-13",
+      "sha": "0b38438f0",
+      "subject": "docs(meetings): the Phase B push also creates the welcome text in-flight index"
+    },
+    "phases": [
+      {
+        "id": "HV1",
+        "name": "Foundation: schema, planner, templates",
+        "note": "inert",
+        "status": "shipped"
+      },
+      {
+        "id": "HV2",
+        "name": "Sending and replies",
+        "note": "inert; some checks deferred to HV10",
+        "status": "shipped"
+      },
+      {
+        "id": "HV3",
+        "name": "Calendar invites, rescheduled outcome, visit notes",
+        "status": "shipped"
+      },
+      {
+        "id": "HV4",
+        "name": "Plan 3 design",
+        "note": "approved 2026-10-13",
+        "status": "spec"
+      },
+      {
+        "id": "HV5",
+        "name": "UI with no new data",
+        "status": "built"
+      },
+      {
+        "id": "HV6",
+        "name": "Backend gate + conversations schema",
+        "note": "dev migrated",
+        "status": "built"
+      },
+      {
+        "id": "HV6a",
+        "name": "Modal layers",
+        "status": "built"
+      },
+      {
+        "id": "HV7",
+        "name": "Wiring: meter, visit sheet, Conversation tab",
+        "note": "tracker still says waiting",
+        "status": "built"
+      },
+      {
+        "id": "HV8",
+        "name": "Conversations page",
+        "note": "plan to write",
+        "status": "plan"
+      },
+      {
+        "id": "HV9",
+        "name": "Home visit page",
+        "status": "idea"
+      },
+      {
+        "id": "HV10",
+        "name": "Launch",
+        "note": "prod release order written",
+        "status": "plan"
+      }
+    ],
+    "plan": "docs/superpowers/plans/2026-10-13-visit-messages-card-and-sheet.md",
+    "spec": "docs/superpowers/specs/2026-10-13-visit-messages-control-and-conversations-design.md",
+    "tracker": "docs/plans/2026-10-13-home-visit-messages-epic.md",
+    "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/home-visit-messages"
+  },
+  "briefAt": "2026-11-21",
+  "issue": 313,
+  "kind": "epic",
+  "move": "parked",
+  "name": "Home visit messages HV5–HV7",
+  "neon": "wt/home-visit-messages",
+  "next": "Held by you on its own branch. To restart: you create an eligible dev meeting for HV7; its 9 schema files wait for the migrations baseline.",
+  "notes": "Its 15 Oct batch release was reverted on prod the next day (8 reverts). · Holds all the range's schema; prod needs a multi-step overnight migration. origin/main carries reverts of eight HV6 commits that HV10 must revert. Tracker status stale.",
+  "order": 11,
+  "port": 3012,
+  "stage": "build",
+  "updated": "2026-11-13"
+}

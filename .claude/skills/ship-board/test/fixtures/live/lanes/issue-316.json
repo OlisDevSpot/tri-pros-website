@@ -1,0 +1,14 @@
+{
+  "blockedBy": [
+    "issue-321"
+  ],
+  "branch": "none yet",
+  "issue": 316,
+  "kind": "platform",
+  "move": "agent",
+  "name": "Board UI: epic map, epic overview, lane page",
+  "next": "Spec approved; it is #316's body. Waits on the sync skill's design (#321). Then: slice #316 with /to-tickets and build on a branch off the main checkout (no worktree).",
+  "order": 10.9,
+  "stage": "spec",
+  "updated": "2026-11-23"
+}

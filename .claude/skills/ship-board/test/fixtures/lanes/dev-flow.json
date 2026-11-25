@@ -112,6 +112,7 @@
     "worktree": null
   },
   "briefAt": "2026-11-14",
+  "issue": 311,
   "kind": "platform",
   "move": "agent",
   "name": "Worktree → PR flow (plan T1–T16)",

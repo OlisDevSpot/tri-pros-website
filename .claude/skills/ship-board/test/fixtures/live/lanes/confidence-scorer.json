@@ -1,0 +1,13 @@
+{
+  "blockedBy": [],
+  "branch": "none yet",
+  "issue": 312,
+  "kind": "platform",
+  "move": "agent",
+  "name": "Confidence scorer for the skip-to-build shortcut",
+  "next": "Fresh session: shape the scorer. A fresh-subagent brief that checks the whole codebase for the pattern and scores open-8 from evidence on the lane row; a field on the lane row for the score; calibration against your approach rejections at review. When it ships, open-7 and open-8 move to enforced.",
+  "notes": "Rules ruled 2026-11-21 in the google-preview-signin session (#294 rejection): hard gate, stop conditions and anchored score live on the Open node as open-7 and open-8.",
+  "order": 10.7,
+  "stage": "idea",
+  "updated": "2026-11-21"
+}

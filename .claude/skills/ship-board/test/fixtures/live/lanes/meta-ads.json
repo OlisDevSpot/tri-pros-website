@@ -1,0 +1,83 @@
+{
+  "blockedBy": [],
+  "branch": null,
+  "brief": {
+    "decided": [
+      {
+        "date": "2026-11-16",
+        "text": "Live tracker page with its own db is the status home for the epic; one sub-plan at a time"
+      }
+    ],
+    "goal": "Run Tri Pros-branded Meta ads in-house: offer, creative, landing, lead handling and closed-loop measurement, with every ad dollar traced to kept appointments and signed contracts.",
+    "phases": [
+      {
+        "id": "MK0",
+        "name": "Ground truth and cleanup",
+        "status": "idea"
+      },
+      {
+        "id": "MK1",
+        "name": "Strategy, offers and operating model",
+        "status": "idea"
+      },
+      {
+        "id": "MK2",
+        "name": "Compliance and consent",
+        "status": "idea"
+      },
+      {
+        "id": "MK3",
+        "name": "Measurement and closed loop",
+        "status": "idea"
+      },
+      {
+        "id": "MK4",
+        "name": "Observability",
+        "note": "spec + plan exist from 2026-07-30",
+        "status": "idea"
+      },
+      {
+        "id": "MK5",
+        "name": "Lead handling and speed-to-lead (GoHighLevel)",
+        "status": "idea"
+      },
+      {
+        "id": "MK6",
+        "name": "Landing system v2",
+        "status": "idea"
+      },
+      {
+        "id": "MK7",
+        "name": "Creative engine",
+        "status": "idea"
+      },
+      {
+        "id": "MK8",
+        "name": "Meta account and campaigns",
+        "status": "idea"
+      },
+      {
+        "id": "MK9",
+        "name": "Reporting, testing loop and intel",
+        "status": "idea"
+      }
+    ],
+    "plan": null,
+    "spec": null,
+    "tracker": "https://claude.ai/artifact/Mn6ymrN5VPqkdTWoTMSYt6",
+    "watch": [
+      "Ads stay at $75/day until the Phase 1 spend gate is met (consent, closed loop to Meta, observability)."
+    ],
+    "worktree": null
+  },
+  "briefAt": "2026-11-21",
+  "issue": 3,
+  "kind": "epic",
+  "move": "you",
+  "name": "Meta ads in-house (epic)",
+  "next": "Answer the Phase 0 decisions on the tracker (D01–D05, D29), then brainstorm MK1 strategy and offers into a short spec. Each sub-plan gets its own lane when it reaches spec.",
+  "notes": "Tracker holds 10 workstreams, 138 requirements (30 spend-gate items) and 29 owner decisions, seeded 2026-11-16 from six research reports.",
+  "order": 14,
+  "stage": "idea",
+  "updated": "2026-11-16"
+}
