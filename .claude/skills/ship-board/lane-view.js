@@ -50,7 +50,7 @@
       risks ? el("button", { type: "button", class: "chip blocked lb-chip", "data-sel": "watch:0" }, plural(risks, "risk", "risks")) : null,
       holds.length ? el("button", { type: "button", class: "chip lb-chip", "data-sel": "lane:" + holds[0] }, "holds up " + plural(holds.length, "lane", "lanes")) : null);
     const box = el("div", { class: "lb-head", "data-section": "header" },
-      el("a", { class: "back", href: "#now", text: "← Now" }),
+      el("a", { class: "back", href: "#map", text: "← Map" }),
       el("div", { class: "eyebrow", text: [l.kind, l.branch, l.briefAt ? "checked " + shortDate(l.briefAt) : null].filter(Boolean).join(" · ") }),
       el("h2", {}, title, ids ? el("span", { class: "lb-ids", text: " " + ids }) : null),
       b.goal ? el("p", { class: "lb-goal", text: b.goal }) : null,
@@ -624,7 +624,7 @@
   function drawLane(box) {
     if (!S.lanes) { box.replaceChildren(el("div", { class: "loading", text: "Loading lane." })); return; }
     const m = laneMap(), l = m[S.lane];
-    if (!l) { V = null; box.replaceChildren(el("a", { class: "back", href: "#now", text: "← Now" }), el("div", { class: "loading", text: "No lane called " + S.lane + "." })); return; }
+    if (!l) { V = null; box.replaceChildren(el("a", { class: "back", href: "#map", text: "← Map" }), el("div", { class: "loading", text: "No lane called " + S.lane + "." })); return; }
     const ds = LaneCore.laneDecisions(S.decisions || [], l.id);
     const layout = LaneCore.layoutBlockerMap(l.id, S.lanes, S.coll);
     const b = l.brief;

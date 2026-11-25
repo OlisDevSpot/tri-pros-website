@@ -3,27 +3,1044 @@
  "calls": [
   {
    "tool": "issue_read",
-   "input": { "method": "get", "owner": "OlisDevSpot", "repo": "tri-pros-website", "issue_number": 327 },
+   "input": {
+    "method": "get",
+    "owner": "OlisDevSpot",
+    "repo": "tri-pros-website",
+    "issue_number": 327
+   },
    "payload": {
     "issue": {
-     "assignees": ["OlisDevSpot"],
+     "assignees": [
+      "OlisDevSpot"
+     ],
      "author_association": "OWNER",
      "body": "## Parent\n\n#316 (board UI spec, §7 and §11)\n\n## What to build\n\nA prefactor so every later slice builds on one set of rules: the board decides a lane's state, a phase's step and a lane's blockers in one place each, and the test harness can fake GitHub and Vercel separately.\n",
-     "closed_by_pull_requests": { "references": [], "total_count": 0 },
+     "closed_by_pull_requests": {
+      "references": [],
+      "total_count": 0
+     },
      "created_at": "2026-11-24T04:55:13Z",
      "has_children": false,
      "has_parent": true,
      "html_url": "https://github.com/OlisDevSpot/tri-pros-website/issues/327",
-     "labels": ["area:infrastructure", "chore", "ready-for-agent"],
+     "labels": [
+      "area:infrastructure",
+      "chore",
+      "ready-for-agent"
+     ],
      "number": 327,
-     "parent": { "number": 316, "repository": "OlisDevSpot/tri-pros-website", "state": "OPEN", "title": "chore(ship-board): board UI — epic map, epic overview, lane page with the blocker map", "url": "https://github.com/OlisDevSpot/tri-pros-website/issues/316" },
+     "parent": {
+      "number": 316,
+      "repository": "OlisDevSpot/tri-pros-website",
+      "state": "OPEN",
+      "title": "chore(ship-board): board UI — epic map, epic overview, lane page with the blocker map",
+      "url": "https://github.com/OlisDevSpot/tri-pros-website/issues/316"
+     },
      "state": "open",
-     "status": { "id": 3, "name": "Todo", "category": "planned" },
+     "status": {
+      "id": 3,
+      "name": "Todo",
+      "category": "planned"
+     },
      "title": "chore(ship-board): one shared rule set in lane-core and a per-tool fake connector in the harness",
      "updated_at": "2026-11-24T05:17:59Z",
-     "user": { "id": 178675480, "login": "OlisDevSpot" }
+     "user": {
+      "id": 178675480,
+      "login": "OlisDevSpot"
+     }
     },
     "method": "get"
+   }
+  },
+  {
+   "tool": "list_issues",
+   "note": "Real open issues, a subset of page 1 (145 open on 2026-11-24), plus #901, made up so a title carrying markup is in the list.",
+   "input": {
+    "owner": "OlisDevSpot",
+    "repo": "tri-pros-website",
+    "state": "OPEN",
+    "perPage": 100,
+    "fields": [
+     "number",
+     "title",
+     "state",
+     "labels",
+     "updated_at"
+    ]
+   },
+   "payload": {
+    "issues": [
+     {
+      "labels": [
+       "area:frontend",
+       "needs-triage"
+      ],
+      "number": 901,
+      "state": "OPEN",
+      "title": "fix: titles like <img src=x onerror=\"window.__ghXss=1\"> render as text",
+      "updated_at": "2026-11-24T06:00:00Z"
+     },
+     {
+      "labels": [
+       "area:infrastructure",
+       "chore",
+       "epic"
+      ],
+      "number": 336,
+      "state": "OPEN",
+      "title": "Epic: Move live work onto GitHub issues",
+      "updated_at": "2026-11-24T05:52:25Z"
+     },
+     {
+      "labels": [
+       "area:infrastructure",
+       "chore",
+       "needs-triage"
+      ],
+      "number": 335,
+      "state": "OPEN",
+      "title": "Pre-commit gate judges the commit, not the checkout",
+      "updated_at": "2026-11-24T04:55:24Z"
+     },
+     {
+      "labels": [
+       "area:infrastructure",
+       "chore",
+       "ready-for-agent"
+      ],
+      "number": 334,
+      "state": "OPEN",
+      "title": "docs(ship-board): glossary, CLAUDE.md slice line, ship-board skill text",
+      "updated_at": "2026-11-24T05:29:18Z"
+     },
+     {
+      "labels": [
+       "area:infrastructure",
+       "chore",
+       "ready-for-agent"
+      ],
+      "number": 327,
+      "state": "OPEN",
+      "title": "chore(ship-board): one shared rule set in lane-core and a per-tool fake connector in the harness",
+      "updated_at": "2026-11-24T05:40:13Z"
+     },
+     {
+      "labels": [
+       "area:infrastructure",
+       "chore",
+       "needs-triage"
+      ],
+      "number": 321,
+      "state": "OPEN",
+      "title": "chore(ship-board): parallel-ship sync skill — keeps GitHub issues and the board in step",
+      "updated_at": "2026-11-24T05:46:10Z"
+     },
+     {
+      "labels": [
+       "area:infrastructure",
+       "chore",
+       "ready-for-human"
+      ],
+      "number": 316,
+      "state": "OPEN",
+      "title": "chore(ship-board): board UI — epic map, epic overview, lane page with the blocker map",
+      "updated_at": "2026-11-24T05:45:17Z"
+     },
+     {
+      "labels": [
+       "area:infrastructure",
+       "chore",
+       "epic"
+      ],
+      "number": 315,
+      "state": "OPEN",
+      "title": "Epic: Dev cycle — Parallel Ship",
+      "updated_at": "2026-11-24T05:44:33Z"
+     },
+     {
+      "labels": [
+       "area:sales-flow",
+       "enhancement",
+       "epic"
+      ],
+      "number": 313,
+      "state": "OPEN",
+      "title": "Epic: Home visit messages (HV5–HV7)",
+      "updated_at": "2026-11-23T04:52:08Z"
+     },
+     {
+      "labels": [
+       "area:infrastructure",
+       "chore",
+       "needs-triage"
+      ],
+      "number": 312,
+      "state": "OPEN",
+      "title": "chore(dev-flow): confidence scorer for the skip-to-build shortcut",
+      "updated_at": "2026-11-23T04:52:01Z"
+     },
+     {
+      "labels": [
+       "area:infrastructure",
+       "chore",
+       "ready-for-agent"
+      ],
+      "number": 311,
+      "state": "OPEN",
+      "title": "chore(dev-flow): worktree → PR flow (plan T1–T16)",
+      "updated_at": "2026-11-23T18:41:08Z"
+     },
+     {
+      "labels": [
+       "area:frontend",
+       "enhancement",
+       "ready-for-human"
+      ],
+      "number": 310,
+      "state": "OPEN",
+      "title": "feat(office-tv): office TV mode",
+      "updated_at": "2026-11-23T04:51:36Z"
+     },
+     {
+      "labels": [
+       "area:frontend",
+       "enhancement",
+       "ready-for-agent"
+      ],
+      "number": 309,
+      "state": "OPEN",
+      "title": "feat(data-view): filter rules (FR4 · FR5)",
+      "updated_at": "2026-11-23T04:51:13Z"
+     },
+     {
+      "labels": [
+       "area:frontend",
+       "enhancement",
+       "ready-for-agent"
+      ],
+      "number": 308,
+      "state": "OPEN",
+      "title": "feat(data-view): one DataView compound for every records table (DV3 · DV3a · DV4)",
+      "updated_at": "2026-11-23T04:51:07Z"
+     },
+     {
+      "labels": [
+       "area:sales-flow",
+       "enhancement",
+       "ready-for-agent"
+      ],
+      "number": 307,
+      "state": "OPEN",
+      "title": "feat(proposal-editor): edit proposal layout (PE4)",
+      "updated_at": "2026-11-23T04:51:02Z"
+     },
+     {
+      "labels": [
+       "area:sales-flow",
+       "enhancement",
+       "ready-for-agent"
+      ],
+      "number": 306,
+      "state": "OPEN",
+      "title": "feat(proposal-flow): the homeowner's proposal page as a story",
+      "updated_at": "2026-11-23T04:50:55Z"
+     },
+     {
+      "labels": [
+       "area:sales-flow",
+       "enhancement",
+       "epic"
+      ],
+      "number": 305,
+      "state": "OPEN",
+      "title": "Epic: Proposal page + Scope chapter",
+      "updated_at": "2026-11-23T04:50:50Z"
+     },
+     {
+      "labels": [
+       "area:sales-flow",
+       "enhancement",
+       "ready-for-agent"
+      ],
+      "number": 304,
+      "state": "OPEN",
+      "title": "feat(trade-scenes): heating & cooling",
+      "updated_at": "2026-11-23T04:50:46Z"
+     },
+     {
+      "labels": [
+       "area:sales-flow",
+       "enhancement",
+       "ready-for-agent"
+      ],
+      "number": 303,
+      "state": "OPEN",
+      "title": "feat(trade-scenes): release 3 — spot chip, Areas, Property facts",
+      "updated_at": "2026-11-23T04:50:39Z"
+     },
+     {
+      "labels": [
+       "area:sales-flow",
+       "enhancement",
+       "epic"
+      ],
+      "number": 302,
+      "state": "OPEN",
+      "title": "Epic: 3D trade scenes",
+      "updated_at": "2026-11-23T04:50:35Z"
+     },
+     {
+      "labels": [
+       "area:backend",
+       "P2",
+       "refactor",
+       "ready-for-agent"
+      ],
+      "number": 285,
+      "state": "OPEN",
+      "title": "refactor(permissions): CASL scope compiler — Phase 0 (engine + Actor scaffolding)",
+      "updated_at": "2026-11-23T04:48:32Z"
+     },
+     {
+      "labels": [
+       "area:frontend",
+       "area:backend",
+       "P1",
+       "enhancement",
+       "needs-triage"
+      ],
+      "number": 282,
+      "state": "OPEN",
+      "title": "feat(dashboard): implement the real Action Queue ('Needs attention')",
+      "updated_at": "2026-11-23T03:17:02Z"
+     },
+     {
+      "labels": [
+       "area:frontend",
+       "area:backend",
+       "P2",
+       "enhancement",
+       "needs-triage"
+      ],
+      "number": 280,
+      "state": "OPEN",
+      "title": "Activity center rebuild + customer-notes as a first-class entity",
+      "updated_at": "2026-11-23T03:17:04Z"
+     },
+     {
+      "labels": [
+       "chore",
+       "ready-for-agent"
+      ],
+      "number": 279,
+      "state": "OPEN",
+      "title": "chore(proposals): façade final-review follow-ups (untracked since 2026-07-18)",
+      "updated_at": "2026-11-23T05:47:09Z"
+     },
+     {
+      "labels": [
+       "area:frontend",
+       "P1",
+       "enhancement",
+       "needs-triage"
+      ],
+      "number": 274,
+      "state": "OPEN",
+      "title": "feat(funnels): build out the complete-interior funnel",
+      "updated_at": "2026-11-23T03:20:26Z"
+     },
+     {
+      "labels": [
+       "area:frontend",
+       "P1",
+       "epic"
+      ],
+      "number": 265,
+      "state": "OPEN",
+      "title": "Epic: Funnel engine completion — shell architecture, hardening, and the complete-interior funnel",
+      "updated_at": "2026-07-18T16:15:33Z"
+     },
+     {
+      "labels": [
+       "area:backend",
+       "area:integrations",
+       "P0",
+       "bug",
+       "needs-triage"
+      ],
+      "number": 223,
+      "state": "OPEN",
+      "title": "fix(gcal): schedule cron + observability — stop silent inbound drop",
+      "updated_at": "2026-11-23T03:21:31Z"
+     },
+     {
+      "labels": [
+       "P0",
+       "area:seo",
+       "epic"
+      ],
+      "number": 222,
+      "state": "OPEN",
+      "title": "[SEO] ROOT: Tri Pros Remodeling SEO Program — 12-Month Master Tracker",
+      "updated_at": "2026-05-20T23:16:39Z"
+     },
+     {
+      "labels": [
+       "area:backend",
+       "P0",
+       "bug",
+       "needs-triage"
+      ],
+      "number": 210,
+      "state": "OPEN",
+      "title": "fix(security): Agent-scoped visibility for customer profile meetings, proposals, and projects",
+      "updated_at": "2026-11-23T03:21:40Z"
+     }
+    ],
+    "pageInfo": {
+     "endCursor": "Y3Vyc29yOnYyOpK0",
+     "hasNextPage": true,
+     "hasPreviousPage": false,
+     "startCursor": "Y3Vyc29yOnYyOpK0"
+    },
+    "totalCount": 145
+   }
+  },
+  {
+   "tool": "list_issues",
+   "input": {
+    "owner": "OlisDevSpot",
+    "repo": "tri-pros-website",
+    "state": "OPEN",
+    "perPage": 100,
+    "fields": [
+     "number",
+     "title",
+     "state",
+     "labels",
+     "updated_at"
+    ],
+    "labels": [
+     "epic"
+    ]
+   },
+   "payload": {
+    "issues": [
+     {
+      "labels": [
+       "area:infrastructure",
+       "chore",
+       "epic"
+      ],
+      "number": 336,
+      "state": "OPEN",
+      "title": "Epic: Move live work onto GitHub issues",
+      "updated_at": "2026-11-24T06:07:29Z"
+     },
+     {
+      "labels": [
+       "area:infrastructure",
+       "chore",
+       "epic"
+      ],
+      "number": 315,
+      "state": "OPEN",
+      "title": "Epic: Dev cycle — Parallel Ship",
+      "updated_at": "2026-11-24T05:44:33Z"
+     },
+     {
+      "labels": [
+       "area:sales-flow",
+       "enhancement",
+       "epic"
+      ],
+      "number": 313,
+      "state": "OPEN",
+      "title": "Epic: Home visit messages (HV5–HV7)",
+      "updated_at": "2026-11-23T04:52:08Z"
+     },
+     {
+      "labels": [
+       "area:sales-flow",
+       "enhancement",
+       "epic"
+      ],
+      "number": 305,
+      "state": "OPEN",
+      "title": "Epic: Proposal page + Scope chapter",
+      "updated_at": "2026-11-23T04:50:50Z"
+     },
+     {
+      "labels": [
+       "area:sales-flow",
+       "enhancement",
+       "epic"
+      ],
+      "number": 302,
+      "state": "OPEN",
+      "title": "Epic: 3D trade scenes",
+      "updated_at": "2026-11-23T04:50:35Z"
+     },
+     {
+      "labels": [
+       "area:frontend",
+       "P1",
+       "epic"
+      ],
+      "number": 265,
+      "state": "OPEN",
+      "title": "Epic: Funnel engine completion — shell architecture, hardening, and the complete-interior funnel",
+      "updated_at": "2026-07-18T16:15:33Z"
+     },
+     {
+      "labels": [
+       "area:backend",
+       "P1",
+       "epic"
+      ],
+      "number": 256,
+      "state": "OPEN",
+      "title": "Epic: Database standardization — JSONB decomposition + proposal calculation standard",
+      "updated_at": "2026-07-24T23:37:18Z"
+     },
+     {
+      "labels": [
+       "area:backend",
+       "area:integrations",
+       "refactor",
+       "epic"
+      ],
+      "number": 248,
+      "state": "OPEN",
+      "title": "Epic: Provider & service single-entrypoint boundary refactor",
+      "updated_at": "2026-08-20T22:23:27Z"
+     },
+     {
+      "labels": [
+       "area:frontend",
+       "area:backend",
+       "P2",
+       "refactor",
+       "epic"
+      ],
+      "number": 240,
+      "state": "OPEN",
+      "title": "Codebase cleanup sweep: post-proposal/contract-independence follow-ups",
+      "updated_at": "2026-05-28T22:29:01Z"
+     },
+     {
+      "labels": [
+       "area:frontend",
+       "area:backend",
+       "P1",
+       "refactor",
+       "epic"
+      ],
+      "number": 233,
+      "state": "OPEN",
+      "title": "refactor(domain): rename Customer → Contact across schema, entity, tRPC, CASL, features, docs",
+      "updated_at": "2026-11-23T03:21:16Z"
+     },
+     {
+      "labels": [
+       "P0",
+       "area:seo",
+       "epic"
+      ],
+      "number": 222,
+      "state": "OPEN",
+      "title": "[SEO] ROOT: Tri Pros Remodeling SEO Program — 12-Month Master Tracker",
+      "updated_at": "2026-05-20T23:16:39Z"
+     },
+     {
+      "labels": [
+       "area:integrations",
+       "P3",
+       "enhancement",
+       "epic"
+      ],
+      "number": 3,
+      "state": "OPEN",
+      "title": "Epic: Meta ads in-house",
+      "updated_at": "2026-11-23T04:52:14Z"
+     }
+    ],
+    "pageInfo": {
+     "endCursor": "Y3Vyc29yOnYyOpK0",
+     "hasNextPage": false,
+     "hasPreviousPage": false,
+     "startCursor": "Y3Vyc29yOnYyOpK0"
+    },
+    "totalCount": 12
+   }
+  },
+  {
+   "tool": "list_issues",
+   "input": {
+    "owner": "OlisDevSpot",
+    "repo": "tri-pros-website",
+    "state": "OPEN",
+    "perPage": 100,
+    "fields": [
+     "number",
+     "title",
+     "state",
+     "labels",
+     "updated_at"
+    ],
+    "labels": [
+     "bug"
+    ]
+   },
+   "payload": {
+    "issues": [
+     {
+      "labels": [
+       "area:backend",
+       "area:integrations",
+       "P0",
+       "bug",
+       "needs-triage"
+      ],
+      "number": 223,
+      "state": "OPEN",
+      "title": "fix(gcal): schedule cron + observability — stop silent inbound drop",
+      "updated_at": "2026-11-23T03:21:31Z"
+     },
+     {
+      "labels": [
+       "area:backend",
+       "P0",
+       "bug",
+       "needs-triage"
+      ],
+      "number": 210,
+      "state": "OPEN",
+      "title": "fix(security): Agent-scoped visibility for customer profile meetings, proposals, and projects",
+      "updated_at": "2026-11-23T03:21:40Z"
+     },
+     {
+      "labels": [
+       "area:frontend",
+       "area:backend",
+       "area:showroom",
+       "P2",
+       "bug",
+       "needs-triage"
+      ],
+      "number": 162,
+      "state": "OPEN",
+      "title": "fix(showroom): hero validation gate + UI disable + cleanup script",
+      "updated_at": "2026-11-23T03:22:53Z"
+     },
+     {
+      "labels": [
+       "area:frontend",
+       "area:showroom",
+       "P2",
+       "bug",
+       "ready-for-agent"
+      ],
+      "number": 161,
+      "state": "OPEN",
+      "title": "fix(showroom): OptimizedImage graceful error state + always-on blur fallback",
+      "updated_at": "2026-11-23T05:47:06Z"
+     },
+     {
+      "labels": [
+       "area:frontend",
+       "area:backend",
+       "P2",
+       "bug",
+       "needs-triage"
+      ],
+      "number": 105,
+      "state": "OPEN",
+      "title": "fix: fresh-pipeline follow-up stage should include follow_up_needed outcomes and repeat fresh meetings",
+      "updated_at": "2026-11-23T03:23:23Z"
+     },
+     {
+      "labels": [
+       "area:frontend",
+       "P1",
+       "bug",
+       "needs-triage"
+      ],
+      "number": 101,
+      "state": "OPEN",
+      "title": "fix(data-table): respect single-axis scroll intent on mobile (CSS-only)",
+      "updated_at": "2026-11-23T03:23:25Z"
+     },
+     {
+      "labels": [
+       "area:frontend",
+       "P2",
+       "bug",
+       "needs-triage"
+      ],
+      "number": 58,
+      "state": "OPEN",
+      "title": "fix(og): OG images broken when sharing URLs with customers",
+      "updated_at": "2026-11-23T03:19:56Z"
+     },
+     {
+      "labels": [
+       "area:frontend",
+       "P2",
+       "bug",
+       "needs-triage"
+      ],
+      "number": 41,
+      "state": "OPEN",
+      "title": "fix(showroom): bulk image actions inconsistent — select all moves/deletes unpredictably",
+      "updated_at": "2026-11-23T03:23:36Z"
+     },
+     {
+      "labels": [
+       "area:showroom",
+       "P2",
+       "bug",
+       "needs-triage"
+      ],
+      "number": 13,
+      "state": "OPEN",
+      "title": "Showroom: Hero image not rendering for some projects despite being set",
+      "updated_at": "2026-11-23T03:20:11Z"
+     }
+    ],
+    "pageInfo": {
+     "endCursor": "Y3Vyc29yOnYyOpK0",
+     "hasNextPage": false,
+     "hasPreviousPage": false,
+     "startCursor": "Y3Vyc29yOnYyOpK0"
+    },
+    "totalCount": 9
+   }
+  },
+  {
+   "tool": "issue_read",
+   "input": {
+    "method": "get_sub_issues",
+    "owner": "OlisDevSpot",
+    "repo": "tri-pros-website",
+    "issue_number": 315,
+    "perPage": 100
+   },
+   "payload": {
+    "method": "get_sub_issues",
+    "sub_issues": [
+     {
+      "assignees": [],
+      "body": "The Parallel Ship board becomes the place Oliver orchestrates the orchestrators: an epic map of GitHub issues and the lanes working them, an epic overview with its requirements, rules and journey, and",
+      "comments": 4,
+      "created_at": "2026-11-23T17:28:49Z",
+      "html_url": "https://github.com/OlisDevSpot/tri-pros-website/issues/316",
+      "id": 6565005251,
+      "labels": [
+       "area:infrastructure",
+       "chore",
+       "ready-for-human"
+      ],
+      "number": 316,
+      "state": "open",
+      "sub_issues_summary": {
+       "completed": 2,
+       "percent_completed": 50,
+       "total": 4
+      },
+      "title": "chore(ship-board): board UI — epic map, epic overview, lane page with the blocker map",
+      "updated_at": "2026-11-24T05:45:17Z",
+      "user": {
+       "id": 178675480,
+       "login": "OlisDevSpot"
+      }
+     },
+     {
+      "assignees": [
+       "OlisDevSpot"
+      ],
+      "body": "Each feature gets its own worktree, database copy and PR with a signed-in preview; main mirrors prod and no laptop holds full prod credentials.",
+      "comments": 15,
+      "created_at": "2026-11-23T04:51:56Z",
+      "html_url": "https://github.com/OlisDevSpot/tri-pros-website/issues/311",
+      "id": 6552531459,
+      "labels": [
+       "area:infrastructure",
+       "chore",
+       "ready-for-agent"
+      ],
+      "number": 311,
+      "state": "open",
+      "sub_issues_summary": {
+       "completed": 0,
+       "percent_completed": 0,
+       "total": 0
+      },
+      "title": "chore(dev-flow): worktree → PR flow (plan T1–T16)",
+      "updated_at": "2026-11-23T18:41:08Z",
+      "user": {
+       "id": 178675480,
+       "login": "OlisDevSpot"
+      }
+     },
+     {
+      "assignees": [],
+      "body": "A fresh-subagent check that scores a plan's readiness from evidence on the lane row, so the skip-to-build shortcut (8/10 from a fresh subagent) has a repeatable gate. Idea stage; shape it in a fresh s",
+      "comments": 0,
+      "created_at": "2026-11-23T04:52:01Z",
+      "html_url": "https://github.com/OlisDevSpot/tri-pros-website/issues/312",
+      "id": 6552532146,
+      "labels": [
+       "area:infrastructure",
+       "chore",
+       "needs-triage"
+      ],
+      "number": 312,
+      "state": "open",
+      "sub_issues_summary": {
+       "completed": 0,
+       "percent_completed": 0,
+       "total": 0
+      },
+      "title": "chore(dev-flow): confidence scorer for the skip-to-build shortcut",
+      "updated_at": "2026-11-23T04:52:01Z",
+      "user": {
+       "id": 178675480,
+       "login": "OlisDevSpot"
+      }
+     },
+     {
+      "assignees": [
+       "OlisDevSpot"
+      ],
+      "body": "The 12 stages in `CLAUDE.md` (GitHub workflow) are the lifecycle of every issue, in an epic or on its own. The skills that run each stage are not tracked as issues; they only need an order (owner, 202",
+      "closed_at": "2026-11-23T18:26:53Z",
+      "comments": 0,
+      "created_at": "2026-11-23T17:41:43Z",
+      "html_url": "https://github.com/OlisDevSpot/tri-pros-website/issues/318",
+      "id": 6565244253,
+      "labels": [
+       "area:infrastructure",
+       "chore",
+       "ready-for-agent"
+      ],
+      "number": 318,
+      "state": "closed",
+      "state_reason": "completed",
+      "sub_issues_summary": {
+       "completed": 0,
+       "percent_completed": 0,
+       "total": 0
+      },
+      "title": "Standardize the ship flow as the issue lifecycle",
+      "updated_at": "2026-11-23T18:26:53Z",
+      "user": {
+       "id": 178675480,
+       "login": "OlisDevSpot"
+      }
+     },
+     {
+      "assignees": [],
+      "body": "A parallel-ship skill that keeps GitHub issues and the Parallel Ship board in step as work happens, so the owner can trust what the board shows without asking a session.",
+      "comments": 0,
+      "created_at": "2026-11-23T18:13:55Z",
+      "html_url": "https://github.com/OlisDevSpot/tri-pros-website/issues/321",
+      "id": 6565836329,
+      "labels": [
+       "area:infrastructure",
+       "chore",
+       "needs-triage"
+      ],
+      "number": 321,
+      "state": "open",
+      "sub_issues_summary": {
+       "completed": 0,
+       "percent_completed": 0,
+       "total": 0
+      },
+      "title": "chore(ship-board): parallel-ship sync skill — keeps GitHub issues and the board in step",
+      "updated_at": "2026-11-24T05:46:10Z",
+      "user": {
+       "id": 178675480,
+       "login": "OlisDevSpot"
+      }
+     },
+     {
+      "assignees": [],
+      "body": "## Problem",
+      "comments": 0,
+      "created_at": "2026-11-24T04:55:24Z",
+      "html_url": "https://github.com/OlisDevSpot/tri-pros-website/issues/335",
+      "id": 6574922738,
+      "labels": [
+       "area:infrastructure",
+       "chore",
+       "needs-triage"
+      ],
+      "number": 335,
+      "state": "open",
+      "sub_issues_summary": {
+       "completed": 0,
+       "percent_completed": 0,
+       "total": 0
+      },
+      "title": "Pre-commit gate judges the commit, not the checkout",
+      "updated_at": "2026-11-24T04:55:24Z",
+      "user": {
+       "id": 178675480,
+       "login": "OlisDevSpot"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "tool": "issue_read",
+   "input": {
+    "method": "get_sub_issues",
+    "owner": "OlisDevSpot",
+    "repo": "tri-pros-website",
+    "issue_number": 302,
+    "perPage": 100
+   },
+   "payload": {
+    "method": "get_sub_issues",
+    "sub_issues": [
+     {
+      "assignees": [],
+      "body": "",
+      "comments": 0,
+      "created_at": "2026-11-23T04:50:39Z",
+      "html_url": "https://github.com/OlisDevSpot/tri-pros-website/issues/303",
+      "id": 6552518303,
+      "labels": [
+       "area:sales-flow",
+       "enhancement",
+       "ready-for-agent"
+      ],
+      "number": 303,
+      "state": "open",
+      "sub_issues_summary": {
+       "completed": 0,
+       "percent_completed": 0,
+       "total": 0
+      },
+      "title": "feat(trade-scenes): release 3 — spot chip, Areas, Property facts",
+      "updated_at": "2026-11-23T04:50:39Z",
+      "user": {
+       "id": 178675480,
+       "login": "OlisDevSpot"
+      }
+     },
+     {
+      "assignees": [],
+      "body": "",
+      "comments": 0,
+      "created_at": "2026-11-23T04:50:39Z",
+      "html_url": "https://github.com/OlisDevSpot/tri-pros-website/issues/304",
+      "id": 6552518304,
+      "labels": [
+       "area:sales-flow",
+       "enhancement",
+       "ready-for-agent"
+      ],
+      "number": 304,
+      "state": "open",
+      "sub_issues_summary": {
+       "completed": 0,
+       "percent_completed": 0,
+       "total": 0
+      },
+      "title": "feat(trade-scenes): heating & cooling",
+      "updated_at": "2026-11-23T04:50:39Z",
+      "user": {
+       "id": 178675480,
+       "login": "OlisDevSpot"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "tool": "issue_read",
+   "input": {
+    "method": "get_sub_issues",
+    "owner": "OlisDevSpot",
+    "repo": "tri-pros-website",
+    "issue_number": 305,
+    "perPage": 100
+   },
+   "payload": {
+    "method": "get_sub_issues",
+    "sub_issues": [
+     {
+      "assignees": [],
+      "body": "",
+      "comments": 0,
+      "created_at": "2026-11-23T04:50:39Z",
+      "html_url": "https://github.com/OlisDevSpot/tri-pros-website/issues/306",
+      "id": 6552518306,
+      "labels": [
+       "area:sales-flow",
+       "enhancement",
+       "ready-for-agent"
+      ],
+      "number": 306,
+      "state": "open",
+      "sub_issues_summary": {
+       "completed": 0,
+       "percent_completed": 0,
+       "total": 0
+      },
+      "title": "feat(proposal-flow): the homeowner's proposal page as a story",
+      "updated_at": "2026-11-23T04:50:39Z",
+      "user": {
+       "id": 178675480,
+       "login": "OlisDevSpot"
+      }
+     },
+     {
+      "assignees": [],
+      "body": "",
+      "comments": 0,
+      "created_at": "2026-11-23T04:50:39Z",
+      "html_url": "https://github.com/OlisDevSpot/tri-pros-website/issues/307",
+      "id": 6552518307,
+      "labels": [
+       "area:sales-flow",
+       "enhancement",
+       "ready-for-agent"
+      ],
+      "number": 307,
+      "state": "open",
+      "sub_issues_summary": {
+       "completed": 0,
+       "percent_completed": 0,
+       "total": 0
+      },
+      "title": "feat(proposal-editor): edit proposal layout (PE4)",
+      "updated_at": "2026-11-23T04:50:39Z",
+      "user": {
+       "id": 178675480,
+       "login": "OlisDevSpot"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "tool": "issue_read",
+   "input": {
+    "method": "get_sub_issues",
+    "owner": "OlisDevSpot",
+    "repo": "tri-pros-website",
+    "issue_number": 313,
+    "perPage": 100
+   },
+   "payload": {
+    "method": "get_sub_issues",
+    "sub_issues": []
    }
   }
  ]

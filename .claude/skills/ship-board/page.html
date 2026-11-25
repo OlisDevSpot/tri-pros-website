@@ -8,18 +8,18 @@
 :root{
   --bg:#eef1f5; --surface:#ffffff; --sunk:#e4e8ee; --ink:#141a22; --muted:#5a6575; --line:#d3d9e2;
   --accent:#2350c8; --you:#a85a06; --you-soft:#fbefdf; --agent:#2350c8; --agent-soft:#e3eafb;
-  --blocked:#b8361f; --blocked-soft:#f9e4df; --done:#1b7a4a; --done-soft:#dff2e8; --parked:#6b7380;
+  --blocked:#b8361f; --blocked-soft:#f9e4df; --done:#1b7a4a; --done-soft:#dff2e8; --parked:#6b7380; --quiet:#7a5bb0;
   --display:"Archivo","Arial Narrow",system-ui,sans-serif; --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif; --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
   --r:8px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0e1116; --surface:#161b22; --sunk:#0b0e12; --ink:#e6eaf0; --muted:#97a1b0; --line:#28303b;
   --accent:#7ea2ff; --you:#f0a54a; --you-soft:#33240f; --agent:#7ea2ff; --agent-soft:#1a2440;
-  --blocked:#f2826b; --blocked-soft:#3a1b15; --done:#55c98d; --done-soft:#11301f; --parked:#8d96a3; color-scheme:dark}}
+  --blocked:#f2826b; --blocked-soft:#3a1b15; --done:#55c98d; --done-soft:#11301f; --parked:#8d96a3; --quiet:#b89cf0; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0e1116; --surface:#161b22; --sunk:#0b0e12; --ink:#e6eaf0; --muted:#97a1b0; --line:#28303b;
   --accent:#7ea2ff; --you:#f0a54a; --you-soft:#33240f; --agent:#7ea2ff; --agent-soft:#1a2440;
-  --blocked:#f2826b; --blocked-soft:#3a1b15; --done:#55c98d; --done-soft:#11301f; --parked:#8d96a3; color-scheme:dark}
+  --blocked:#f2826b; --blocked-soft:#3a1b15; --done:#55c98d; --done-soft:#11301f; --parked:#8d96a3; --quiet:#b89cf0; color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font:15px/1.55 var(--body)}
@@ -249,6 +249,73 @@ dl.facts dd{margin:0;overflow-wrap:anywhere}
 dl.facts .mono{font-size:13px}
 @media (max-width:480px){dl.facts{grid-template-columns:1fr}dl.facts dd{margin-bottom:6px}}
 
+.status-line{margin:0;font:500 12px var(--mono);color:var(--muted)}
+@media (max-width:600px){.status-line{display:none}}
+.notes{display:grid;gap:2px}
+.notes .note{margin:0}
+.notes button{margin-left:8px;min-height:32px}
+/* Map: one block per epic, then standalone plans, bugs and the backlog. A block is a card; its lanes are v7's rows. */
+.map{display:grid;gap:22px;min-width:0}
+.mb{display:grid;gap:0;min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.mb>.tree{border:0;border-radius:0;border-top:1px solid var(--line)}
+.mb-head{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;padding:8px 14px;min-width:0}
+.mb-head h2{font:750 18px/1.2 var(--display);font-stretch:90%;margin:0;overflow-wrap:anywhere}
+.mb-name{color:var(--ink);text-decoration:none;min-width:0;display:inline-flex;align-items:center;min-height:32px}
+.mb-name:hover h2{text-decoration:underline;text-underline-offset:3px}
+.mb-group .mb-head h2{font:700 13px var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.mb-group .mb-head small{color:var(--muted);font-size:13px}
+.chev{flex:none;width:32px;height:32px;padding:0;display:grid;place-items:center;border:0;border-radius:6px;background:transparent;color:var(--muted)}
+.chev:hover{background:var(--sunk)}
+.chev svg{transition:transform .18s ease}
+.chev[aria-expanded="true"] svg{transform:rotate(90deg)}
+@media (prefers-reduced-motion:reduce){.chev svg{transition:none}}
+.mb-prog{display:inline-flex;align-items:center;gap:8px;font:500 12px var(--mono);color:var(--muted);margin-left:auto}
+.mb-prog .bar{display:block;width:90px;height:6px;border-radius:3px;background:var(--sunk);overflow:hidden}
+.mb-prog .bar i{display:block;height:100%;background:var(--done)}
+a.mb-over{display:inline-flex;align-items:center;min-height:32px;padding:0 10px;border-radius:6px;font:600 13px var(--body);text-decoration:none}
+a.mb-over:hover{background:var(--sunk)}
+.mb-dots{display:inline-flex;gap:4px;align-items:center}
+.mb-name .sdot{margin-right:8px}
+.mb-epic .mb-head{align-items:flex-start}
+.mb-id{display:flex;align-items:flex-start;gap:6px 8px;flex:1 1 300px;min-width:0}
+.mb-idline{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;flex:1 1 0;min-width:0}
+.mb-state{display:inline-flex;flex-wrap:wrap;align-items:center;gap:4px 6px;min-width:0}
+/* Only where the header fits one line: a divider that wraps to the start of a line reads as a stray mark. */
+@media (min-width:1000px){.mb-state{padding-left:10px;border-left:1px solid var(--line)}}
+.mb-epic .mb-prog{margin-left:0;flex:none;min-height:32px}
+.mb-epic .mb-prog .bar{width:64px}
+.mb-lines{display:grid;gap:2px;min-width:0;padding:0 14px 10px 54px;margin-top:-4px}
+.sdot{display:inline-block;flex:none;width:10px;height:10px;border-radius:50%;background:var(--parked)}
+.sdot.you{background:var(--you)} .sdot.agent{background:var(--agent)} .sdot.working{background:var(--done);box-shadow:0 0 0 3px var(--done-soft)}
+.sdot.blocked{background:var(--blocked)} .sdot.shipped{background:var(--done)}
+.sdot.quiet{background:transparent;border:2px solid var(--quiet)} .sdot.parked{background:transparent;border:2px dashed var(--parked)}
+.row-name .sdot{margin-right:8px;vertical-align:1px}
+.chip.noissue{background:transparent;box-shadow:inset 0 0 0 1px var(--line)}
+.mb-empty{margin:0;padding:10px 14px;border-top:1px solid var(--line);font-size:13px;color:var(--muted)}
+a.mb-board{display:flex;align-items:center;flex-wrap:wrap;gap:6px 10px;padding:10px 14px;min-height:44px;color:var(--ink);text-decoration:none}
+a.mb-board:hover{background:var(--bg)}
+a.mb-board b{font:750 18px/1.2 var(--display);font-stretch:90%}
+details.mb>summary{display:flex;align-items:center;gap:10px;min-height:44px;padding:6px 14px;cursor:pointer;list-style:none}
+details.mb>summary::-webkit-details-marker{display:none}
+details.mb>summary h2{display:inline;margin:0;font:700 13px var(--mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+details.mb>summary::before{content:"";width:7px;height:7px;margin:0 6px 0 4px;border-right:1.8px solid var(--muted);border-bottom:1.8px solid var(--muted);transform:rotate(-45deg);transition:transform .18s ease}
+details.mb[open]>summary::before{transform:rotate(45deg)}
+@media (prefers-reduced-motion:reduce){details.mb>summary::before{transition:none}}
+.bl{display:grid}
+.bl-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:8px 14px;border-top:1px solid var(--line);min-width:0}
+.bl-main{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;min-width:0}
+.bl-title{overflow-wrap:anywhere;min-width:0}
+.bl-labels{font:500 12px var(--mono);color:var(--muted)}
+a.bl-num{display:inline-flex;align-items:center;justify-content:center;min-height:32px;min-width:32px;padding:0 4px;font:500 13px var(--mono)}
+.bl-row>button{min-height:32px}
+.bl-cmd{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;background:var(--sunk);border-radius:6px;padding:6px 6px 6px 10px}
+.bl-cmd code{font:12.5px/1.5 var(--mono);overflow-wrap:anywhere;user-select:all}
+.bl-cmd button{min-height:32px}
+.bl-cmd p{grid-column:1/-1;margin:0;font-size:12.5px;color:var(--muted)}
+.bl-more{display:flex;align-items:center;min-height:44px;padding:0 14px;border-top:1px solid var(--line)}
+.bl-more a{display:inline-flex;align-items:center;min-height:32px}
+@media (max-width:600px){.mb-name{flex:1 1 calc(100% - 40px)}.mb-lines{padding-left:14px;margin-top:0}.mb-id{flex-wrap:wrap;align-items:center}.mb-idline,.mb-state{display:contents}.mb-epic .mb-prog{min-height:0}.mb-area,a.mb-over{display:none}.mb-prog{margin-left:0;width:100%}.bl-row{grid-template-columns:minmax(0,1fr)}}
+
 /* Lane page: pictures in the main column, details in the inspector beside them (a bottom sheet on narrow screens). */
 #lane-view{container-type:inline-size}
 #lane-view .lb-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start}
@@ -395,10 +462,11 @@ dl.facts .mono{font-size:13px}
 <header class="top"><div class="wrap">
   <div class="eyebrow">Tri Pros · how code reaches prod</div>
   <h1>Parallel Ship Flow</h1>
+  <p class="status-line" id="status-line" aria-live="polite">epic map</p>
   <p class="lede">What's in flight, what blocks what, and what's waiting on you. Lane sessions keep it current.</p>
 </div></header>
 <nav class="tabs" aria-label="Sections"><div class="wrap" id="tabs">
-  <a href="#now">Now</a>
+  <a href="#map">Map</a>
   <a href="#merge">Merge</a>
   <a href="#flow">Flow</a>
   <a href="#skills">Skills</a>
@@ -409,23 +477,18 @@ dl.facts .mono{font-size:13px}
 
 <main><div class="wrap">
 
-<section class="view" id="v-now">
+<section class="view" id="v-map">
   <div class="strip" id="strip" aria-live="polite">
     <div class="agent"><b>–</b><span>in flight</span></div>
     <div class="blocked"><b>–</b><span>blocked by a lane</span></div>
     <div class="you"><b>–</b><span>your move</span></div>
     <div><b>–</b><span>open PRs</span></div>
   </div>
-  <p class="note" id="live" aria-live="polite">Live data: connecting to Vercel.</p>
-  <div class="block">
-    <div class="group-h"><h2>In flight</h2><small>indented lanes wait on the lane above them · tap a lane for its overview</small></div>
-    <div id="tree"><div class="loading">Loading lanes.</div></div>
+  <div class="notes">
+    <p class="note" id="live" aria-live="polite">Live data: connecting to Vercel.</p>
+    <p class="note" id="gh-live" aria-live="polite">GitHub: connecting.</p>
   </div>
-  <div class="block">
-    <h2>Waiting on you</h2>
-    <ul class="todo" id="yours"></ul>
-  </div>
-  <div id="rest" class="block"></div>
+  <div id="map" class="map"><div class="loading">Loading lanes.</div></div>
 </section>
 
 <section class="view" id="v-lane" hidden>
@@ -629,14 +692,14 @@ const svgEl=(t,a,txt)=>{const e=document.createElementNS("http://www.w3.org/2000
 function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("on"),2200)}
 const byOrder=(a,b)=>(a.order??99)-(b.order??99)||String(a.name||a.title||"").localeCompare(String(b.name||b.title||""));
 const today=()=>LaneCore.localDay(new Date());
-const VIEWS={now:["now"],lane:["lane"],merge:["merge"],flow:["flow"],setup:["setup"],decisions:["decisions"],skills:["skills"],reference:["bottlenecks","tools"]};
-const ALIAS={board:"now",playbook:"flow",bottlenecks:"reference",tools:"reference"};
+const VIEWS={map:["map"],lane:["lane"],merge:["merge"],flow:["flow"],setup:["setup"],decisions:["decisions"],skills:["skills"],reference:["bottlenecks","tools"]};
+const ALIAS={now:"map",board:"map",playbook:"flow",bottlenecks:"reference",tools:"reference"};
 function route(){
-  const h=(location.hash||"#now").slice(1);let v;const was=S.lane;S.lane=null;
-  if(h.startsWith("lane-")){v="lane";S.lane=h.slice(5)}else{v=ALIAS[h]||h;if(!VIEWS[v])v="now"}
+  const h=(location.hash||"#map").slice(1);let v;const was=S.lane;S.lane=null;
+  if(h.startsWith("lane-")){v="lane";S.lane=h.slice(5)}else{v=ALIAS[h]||h;if(!VIEWS[v])v="map"}
   if(S.lane!==was)S.sel=null;
   const show=new Set(VIEWS[v]);document.querySelectorAll("section.view").forEach(s=>s.hidden=!show.has(s.id.slice(2)));
-  const tab=v==="lane"?"now":v;document.querySelectorAll("#tabs a").forEach(a=>{if(a.getAttribute("href")==="#"+tab)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
+  const tab=v==="lane"?"map":v;document.querySelectorAll("#tabs a").forEach(a=>{if(a.getAttribute("href")==="#"+tab)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
   if(v==="lane"){renderLaneView();scrollTo(0,0)}
 }
 addEventListener("hashchange",route);
@@ -659,44 +722,144 @@ function renderStrip(){const L=(S.lanes||[]).filter(live),m=laneMap();const b=do
   [L.length,blocked,yours,prs].forEach((n,i)=>b[i].textContent=n)}
 
 function waitingChip(l){const n=S.decisions?LaneCore.openCount(S.decisions,l.id):0;return n?el("span",{class:"chip you",text:n+" waiting on you"}):null}
-function treeRow(l,d,m,parent){
-  const g=stateOf(l,m);const rels=relText(l,m,parent);
-  const top=el("div",{class:"row-top"},el("span",{class:"row-name",text:l.name||l.id}),
-    el("span",{class:"chip",text:stageLabel(l)}),moveChip(l,g),waitingChip(l),l.pr?el("span",{class:"chip agent",text:"PR #"+l.pr}):null,
+const STATE_TXT={you:"your move",agent:"agent",working:"working",quiet:"gone quiet",blocked:"blocked",parked:"parked",shipped:"shipped"};
+// GitHub writes titles as "type(scope): words"; the map shows the words, the full title stays on the issue.
+const plainTitle=t=>{const w=String(t||"").replace(/^(feat|fix|refactor|chore|docs)(\([^)]*\))?!?:\s*/i,"").replace(/^epic:\s*/i,"");return w.charAt(0).toUpperCase()+w.slice(1)};
+function laneTitle(l){const i=l.issue!=null?ghIssue(l.issue):null;return i&&i.title?plainTitle(i.title):(l.name||l.id)}
+const stateDot=g=>el("i",{class:"sdot "+g,title:STATE_TXT[g]||g});
+// An epic's header shows its own lane with these, so a lane row and an epic header never disagree on a lane's state.
+function laneChips(l,g,waiting){
+  return [el("span",{class:"chip",text:stageLabel(l)}),moveChip(l,g),waiting,l.pr?el("span",{class:"chip agent",text:"PR #"+l.pr}):null,
     previewChip(l),
-    el("span",{class:"chip",title:l.session?.lastSeen?"session last wrote "+l.session.lastSeen:"no session has linked to this lane yet"},el("i",{class:"dot"+(sessionOn(l)?" on":"")}),l.session?.lastSeen?ago(l.session.lastSeen):"no session"));
-  const row=el("a",{class:"row "+(d?"child":"root"),href:"#lane-"+l.id,"data-d":d,style:"--d:"+d},top);
-  for(const r of rels)row.append(el("div",{class:"row-rel"+(r.stacked?" stack":""),text:r.text}));
-  if(l.next)row.append(el("div",{class:"row-next",text:(g==="you"?"Your move: ":"Next: ")+l.next}));
+    el("span",{class:"chip",title:l.session?.lastSeen?"session last wrote "+l.session.lastSeen:"no session has linked to this lane yet"},el("i",{class:"dot"+(sessionOn(l)?" on":"")}),l.session?.lastSeen?ago(l.session.lastSeen):"no session")];
+}
+function laneLines(l,m,g){
+  const out=relText(l,m).map(r=>el("div",{class:"row-rel"+(r.stacked?" stack":""),text:r.text}));
+  if(l.next)out.push(el("div",{class:"row-next",text:(g==="you"?"Your move: ":"Next: ")+l.next}));
+  return out;
+}
+function mapRow(l,m){
+  const g=stateOf(l,m);
+  const top=el("div",{class:"row-top"},el("span",{class:"row-name"},stateDot(g),laneTitle(l)),
+    l.issue!=null?el("span",{class:"chip mono",text:"#"+l.issue}):el("span",{class:"chip noissue","data-noissue":"",text:"no issue yet"}),
+    ...laneChips(l,g,waitingChip(l)));
+  return el("a",{class:"row root",href:"#lane-"+l.id,"data-lane":l.id},top,...laneLines(l,m,g));
+}
+const CHEV='<svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const M={fold:{},backlogOpen:false,start:null};
+const waitingIn=ls=>S.decisions?ls.reduce((n,l)=>n+LaneCore.openCount(S.decisions,l.id),0):0;
+function epicBlock(e,m){
+  const r=e.row,g=stateOf(r,m),folded=!!M.fold[r.id],name=plainTitle(e.issue?.title)||r.name||r.id;
+  const chev=e.lanes.length?el("button",{type:"button",class:"chev","aria-expanded":folded?"false":"true","aria-label":(folded?"Expand ":"Collapse ")+name,onclick:()=>{M.fold[r.id]=!folded;renderMap()}}):el("span",{class:"chev","aria-hidden":"true"});
+  if(e.lanes.length)chev.innerHTML=CHEV;
+  const areas=LaneCore.labelNames(e.issue).filter(x=>x.startsWith("area:")).map(x=>el("span",{class:"chip mb-area",text:x.slice(5)}));
+  // One count for the whole epic: its own lane's questions and its plans'.
+  const w=waitingIn([r,...e.lanes]);
+  const p=e.plans;
+  const prog=el("span",{class:"mb-prog","data-progress":p?p.closed+"/"+p.total:"—"},
+    p&&p.total?el("span",{class:"bar"},el("i",{style:"width:"+Math.round(p.closed/p.total*100)+"%"})):null,
+    p?(p.total?p.closed+"/"+p.total+" plans":"no plans yet"):"— plans");
+  // Identity and state wrap inside their own group, so progress and Overview hold the right edge on a wide screen.
+  const head=el("div",{class:"mb-head"},
+    el("div",{class:"mb-id"},chev,el("div",{class:"mb-idline"},
+      el("a",{class:"mb-name",href:"#lane-"+r.id},stateDot(g),el("h2",{text:name})),
+      el("span",{class:"chip mono",text:"#"+r.issue+" epic"}),...areas,
+      el("span",{class:"mb-state"},laneChips(r,g,w?el("span",{class:"chip you",text:w+" waiting on you"}):null)),
+      folded&&e.lanes.length?el("span",{class:"mb-dots","aria-label":e.lanes.length+" plan lanes"},e.lanes.map(l=>{const s=stateOf(l,m);return el("i",{class:"sdot "+s,title:laneTitle(l)+": "+(STATE_TXT[s]||s)})})):null)),
+    prog,el("a",{class:"mb-over",href:"#lane-"+r.id},"Overview"));
+  const lines=laneLines(r,m,g);
+  return el("section",{class:"mb mb-epic","data-block":"epic-"+r.issue,"aria-label":name},head,
+    lines.length?el("div",{class:"mb-lines"},lines):null,
+    folded||!e.lanes.length?null:el("div",{class:"tree"},e.lanes.map(l=>mapRow(l,m))));
+}
+function groupBlock(key,title,count,ls,m,note){
+  return el("section",{class:"mb mb-group","data-block":key},el("div",{class:"mb-head"},el("h2",{},title+" · ",el("span",{"data-count":"",text:count}),key==="bugs"?" in flight":""),note?el("small",{text:note}):null),
+    ls.length?el("div",{class:"tree"},ls.map(l=>mapRow(l,m))):null);
+}
+function ghIssueLink(i){return LaneCore.safeLink(i.html_url)||LaneCore.safeLink(GH.web+"/issues/"+Number(i.number))}
+function backlogRow(i){
+  const open=M.start===i.number,cmd=open?LaneCore.startCommand(i):null;
+  const kinds=LaneCore.labelNames(i).filter(x=>x==="epic"||x==="bug"||/^P[0-3]$/.test(x)||x.startsWith("area:")).map(x=>x.replace(/^area:/,""));
+  const row=el("div",{class:"bl-row","data-issue":i.number},
+    el("div",{class:"bl-main"},el("i",{class:"sdot parked"}),el("a",{class:"bl-num",href:ghIssueLink(i),target:"_blank",rel:"noopener",text:"#"+i.number}),el("span",{class:"bl-title",text:String(i.title||"")}),kinds.length?el("span",{class:"bl-labels",text:kinds.join(" · ")}):null),
+    el("button",{type:"button","aria-expanded":open?"true":"false",onclick:()=>{M.start=open?null:i.number;renderMap()}},open?"Hide command":"Start on issue"));
+  if(cmd)row.append(el("div",{class:"bl-cmd"},el("code",{text:cmd.command}),
+    el("button",{type:"button",onclick:async()=>{try{await navigator.clipboard.writeText(cmd.command);toast("Copied")}catch{toast("Select the command and copy it")}}},"Copy"),
+    el("p",{text:"Run it from the main checkout. The session it starts creates this issue's lane row; the board writes none."})));
   return row;
 }
-function renderTree(){
-  const box=$("#tree");if(!S.lanes)return;const all=laneMap();const L=S.lanes.filter(live).sort(byOrder);const m=Object.fromEntries(L.map(l=>[l.id,l]));
-  if(!L.length){box.replaceChildren(el("div",{class:"loading",text:"Nothing in flight."}));return}
-  const parentOf=l=>l.stackedOn&&m[l.stackedOn]?l.stackedOn:deps(l).find(x=>m[x])||null;
-  const kids={},roots=[];for(const l of L){const p=parentOf(l);if(p)(kids[p]??=[]).push(l);else roots.push(l)}
-  const list=el("div",{class:"tree"}),seen=new Set();
-  const walk=(l,d,p)=>{if(seen.has(l.id))return;seen.add(l.id);list.append(treeRow(l,d,all,p));(kids[l.id]||[]).forEach(k=>walk(k,d+1,l.id))};
-  roots.sort((a,b)=>(kids[b.id]?1:0)-(kids[a.id]?1:0)||byOrder(a,b)).forEach(r=>walk(r,0,null));
-  L.filter(l=>!seen.has(l.id)).forEach(l=>walk(l,0,null));
-  box.replaceChildren(list);
+function backlogBlock(b){
+  const count=b?b.issues.length+b.more:"—";
+  const d=el("details",{class:"mb mb-group","data-block":"backlog",open:M.backlogOpen,ontoggle:e=>{M.backlogOpen=e.target.open}},
+    el("summary",{},el("h2",{class:"mb-sum"},"Backlog · ",el("span",{"data-count":"",text:count})),el("small",{class:"muted",text:"open issues with no lane"})));
+  if(!b)d.append(el("p",{class:"mb-empty",text:"The backlog comes from GitHub."}));
+  else{d.append(el("div",{class:"bl"},b.issues.map(backlogRow)));
+    if(b.more)d.append(el("div",{class:"bl-more"},el("a",{href:LaneCore.safeLink(GH.web+"/issues"),target:"_blank",rel:"noopener",text:b.more+" more open issues on GitHub"})))}
+  return d;
 }
-function renderYours(){
-  const ul=$("#yours");if(!S.lanes)return;ul.replaceChildren();const m=laneMap();
-  for(const l of S.lanes.filter(x=>live(x)&&x.move==="you").sort(byOrder))
-    ul.append(el("li",{},el("a",{class:"what",href:"#lane-"+l.id,text:l.name}),el("span",{class:"chip",text:stageLabel(l)}),el("span",{class:"why",text:l.next||""})));
-  const open=LaneCore.openCount(S.decisions||[]);
-  if(open)ul.append(el("li",{},el("a",{class:"what",href:"#decisions",text:open+" waiting on you in Decisions"}),el("span",{class:"chip you",text:"answer"})));
-  if(S.setup){const live2=S.setup.filter(s=>s.status!=="declined"&&s.status!=="suggested");const done=live2.filter(s=>s.status==="done").length;const sug=S.setup.filter(s=>s.status==="suggested").length;
-    ul.append(el("li",{},el("a",{class:"what",href:"#setup",text:"Provider setup: "+done+" of "+live2.length+" done"}),el("span",{class:"chip",text:sug?sug+" suggested":"setup"}),el("span",{class:"why",text:"GitHub, Vercel, Neon, Google and Orca, in plan order"})))}
-  if(!ul.children.length)ul.append(el("li",{},el("span",{class:"muted",text:"Nothing waiting on you."})));
-}
-function renderRest(){
-  const box=$("#rest");if(!S.lanes)return;box.replaceChildren();
-  for(const[g,title]of[["parked","Parked"],["shipped","Shipped"]]){const L=S.lanes.filter(l=>(g==="shipped"?l.stage==="shipped":l.stage!=="shipped"&&l.move==="parked")).sort(byOrder);if(!L.length)continue;
-    box.append(el("details",{class:"fold"},el("summary",{},el("h2",{text:title+" · "+L.length})),el("ul",{class:"todo"},L.map(l=>el("li",{},el("a",{class:"what",href:"#lane-"+l.id,text:l.name}),el("span",{class:"chip",text:stageLabel(l)}),l.next?el("span",{class:"why",text:l.next}):null)))))}
+function renderMap(){
+  const box=$("#map");if(!box||!S.lanes)return;const m=laneMap();
+  const sl=$("#status-line");if(sl)sl.textContent="epic map · "+S.lanes.filter(live).length+" lanes in flight";
+  const B=LaneCore.mapBlocks(S.lanes,ghData());
+  const complete=!!(S.gh.open&&S.gh.epics&&S.gh.bugs)&&!B.unplaced.length;
+  const out=[];
+  const board=S.decisions?LaneCore.openCount(S.decisions.filter(d=>!d.lane)):0;
+  if(board)out.push(el("section",{class:"mb","data-block":"board"},el("a",{class:"mb-board",href:"#decisions"},el("b",{text:"Board"}),el("span",{},"· ",el("span",{"data-count":"",text:board})," waiting on you"),el("span",{class:"muted",text:"decisions across all lanes"}))));
+  for(const e of B.epics)out.push(epicBlock(e,m));
+  if(B.unplaced.length)out.push(groupBlock("unplaced","Not placed yet",B.unplaced.length,B.unplaced,m,"their epic and kind come from GitHub"));
+  if(B.standalone.length||!complete)out.push(groupBlock("standalone","Standalone plans",complete?B.standalone.length:"—",B.standalone,m));
+  if(B.bugs.length||!complete)out.push(groupBlock("bugs","Bugs",complete?B.bugs.length:"—",B.bugs,m));
+  out.push(backlogBlock(B.backlog));
+  box.replaceChildren(...out);
 }
 
+// GitHub connector: the display name is the one string the page calls it by.
+const GH={server:"GitHub",owner:"OlisDevSpot",repo:"tri-pros-website",web:"https://github.com/OlisDevSpot/tri-pros-website"};
+S.gh={state:"connecting",open:null,epics:null,bugs:null,subs:{},failed:new Set(),storedAt:null};
+const GH_FIELDS=["number","title","state","labels","updated_at"];
+const ghList=extra=>({owner:GH.owner,repo:GH.repo,state:"OPEN",perPage:100,fields:GH_FIELDS,...extra});
+const GH_LISTS={open:ghList({}),epics:ghList({labels:["epic"]}),bugs:ghList({labels:["bug"]})};
+const ghSubsInput=n=>({method:"get_sub_issues",owner:GH.owner,repo:GH.repo,issue_number:n,perPage:100});
+const GH_MSG={server_not_connected:"GitHub isn't connected for you. Add it at claude.ai → Settings → Connectors.",server_not_found:"GitHub isn't connected for you. Add it at claude.ai → Settings → Connectors.",needs_reauth:"GitHub needs you to sign in again at claude.ai → Settings → Connectors.",selection_required:"Pick which GitHub connector this page should use at claude.ai.",not_in_manifest:"This page isn't allowed to read GitHub for you. Turn GitHub on in this page's permissions.",not_granted:"This page wasn't allowed to read GitHub. Reload to be asked again.",approval_required:"GitHub access is waiting for your approval.",blocked_by_policy:"Your organization blocks a GitHub tool this page reads.",capability_disabled:"Connectors are off in this view.",rate_limited:"GitHub is rate-limiting; it retries on its own.",server_unavailable:"GitHub didn't answer; it retries on its own.",upstream_error:"GitHub didn't answer; it retries on its own.",tool_error:"GitHub returned an error for one of the board's reads.",unavailable:"Live GitHub data needs the page open on claude.ai."};
+const GH_KEEP=["rate_limited","server_unavailable","upstream_error","tool_error"];
+const ghData=()=>({open:S.gh.open,epics:S.gh.epics,bugs:S.gh.bugs,subs:S.gh.subs});
+function ghIssue(n){const g=S.gh;for(const list of [g.open?.issues,g.epics,g.bugs,...Object.values(g.subs)])for(const i of list||[])if(i&&i.number===n)return i;return null}
+function ghIngest(key,result){
+  const p=result?.payload;
+  if(key.startsWith("sub:"))S.gh.subs[key.slice(4)]=Array.isArray(p?.sub_issues)?p.sub_issues:[];
+  else if(key==="open")S.gh.open=p&&Array.isArray(p.issues)?p:{issues:[],totalCount:0,pageInfo:{}};
+  else S.gh[key]=Array.isArray(p?.issues)?p.issues:[];
+  S.gh.failed.delete(key);S.gh.state="ok";
+  const at=result?.cache?.storedAt;if(at&&(!S.gh.storedAt||at<S.gh.storedAt))S.gh.storedAt=at;
+}
+function ghEvent(key,ev){
+  if(ev.type==="data")ghIngest(key,ev.result);
+  else{const code=ev.error?.code||"upstream_error";
+    if(GH_KEEP.includes(code)){S.gh.failed.add(key);if(S.gh.state!=="ok")S.gh.state=code}
+    else S.gh={...S.gh,state:code,open:null,epics:null,bugs:null,subs:{},failed:new Set(),storedAt:null}}
+  syncGhSubs();renderGhLive();renderMap();
+}
+const ghStops={};
+function ghWatch(key,tool,input){if(!ghStops[key])ghStops[key]=S.mcp.watchTool(GH.server,tool,input,ev=>ghEvent(key,ev),{refetchInterval:120000})}
+// One get_sub_issues watch per epic row: it moves with the rows, and closes when a row stops being an epic.
+function syncGhSubs(){
+  if(!S.mcp||!S.lanes)return;
+  const want=new Set(LaneCore.mapBlocks(S.lanes,ghData()).epics.map(e=>"sub:"+e.row.issue));
+  for(const k of Object.keys(ghStops))if(k.startsWith("sub:")&&!want.has(k)){ghStops[k]();delete ghStops[k];delete S.gh.subs[k.slice(4)]}
+  for(const k of want)ghWatch(k,"issue_read",ghSubsInput(Number(k.slice(4))));
+}
+// A watch cannot ask for approval; this one call can, and the refetch it triggers carries the rest.
+async function allowGitHub(btn){
+  btn.disabled=true;
+  try{const r=await S.mcp.callTool(GH.server,"list_issues",GH_LISTS.open);ghEvent("open",{type:"data",result:r});try{await S.mcp.invalidate?.(GH.server)}catch{}}
+  catch(e){ghEvent("open",{type:"error",error:e})}
+}
+function renderGhLive(){const p=$("#gh-live");if(!p)return;const g=S.gh;
+  if(g.state==="ok"){p.replaceChildren("GitHub: live, refreshed every 2 min"+(g.storedAt?", as of "+ago(new Date(g.storedAt).toISOString()):"")+".",g.failed.size?" "+GH_MSG.tool_error:"");return}
+  if(g.state==="connecting"){p.textContent="GitHub: connecting.";return}
+  p.replaceChildren("GitHub: "+(GH_MSG[g.state]||"GitHub is unavailable ("+g.state+").")+" Epics, plans, bugs and the backlog come from it.",
+    g.state==="approval_required"&&S.mcp?el("button",{type:"button",class:"primary",onclick:e=>allowGitHub(e.currentTarget)},"Allow GitHub"):"");
+}
 function facts(rows){const dl=el("dl",{class:"facts"});for(const[k,v,mono]of rows){if(v==null||v==="")continue;dl.append(el("dt",{text:k}),el("dd",{class:mono?"mono":null},v))}return dl}
 function link(href,text){return el("a",{href,target:"_blank",rel:"noopener",text})}
 // Vercel connector: the project and team ids come from the Vercel bot's PR comments.
@@ -712,24 +875,27 @@ function ingestVercel(payload){
   S.vc={state:"ok",byBranch:by,prod,at:Date.now()};
 }
 function renderLive(){const p=$("#live");if(!p)return;const v=S.vc;
-  if(v.state==="ok"){p.replaceChildren("Live from Vercel, refreshed every 2 min. ",v.prod?el("span",{},"Prod last deployed ",el("b",{text:ago(new Date(v.prod.t).toISOString())}),v.prod.sha?" ("+v.prod.sha+")":"",v.prod.state&&v.prod.state!=="READY"?el("span",{class:"chip blocked",text:v.prod.state.toLowerCase()}):""):"No production deploy in the latest list.",". GitHub: not connected yet.")}
+  if(v.state==="ok"){p.replaceChildren("Live from Vercel, refreshed every 2 min. ",v.prod?el("span",{},"Prod last deployed ",el("b",{text:ago(new Date(v.prod.t).toISOString())}),v.prod.sha?" ("+v.prod.sha+")":"",v.prod.state&&v.prod.state!=="READY"?el("span",{class:"chip blocked",text:v.prod.state.toLowerCase()}):""):"No production deploy in the latest list.",".")}
   else if(v.state==="connecting")p.textContent="Live data: connecting to Vercel.";
-  else p.textContent="Live data: "+(VC_MSG[v.state]||"Vercel is unavailable ("+v.state+").")+" GitHub: not connected yet.";
+  else p.textContent="Live data: "+(VC_MSG[v.state]||"Vercel is unavailable ("+v.state+").");
 }
 const VSTATE={READY:["done","preview ready"],BUILDING:["agent","building"],QUEUED:["agent","queued"],INITIALIZING:["agent","starting"],ERROR:["blocked","build failed"],CANCELED:["","canceled"]};
 function previewChip(l){const d=l.branch&&S.vc.byBranch[l.branch];if(!d)return null;const[c,t]=VSTATE[d.state]||["",d.state.toLowerCase()||"deployed"];return el("span",{class:"chip "+c,title:"Vercel preview, "+ago(new Date(d.t).toISOString())},t)}
 function previewFact(l){const d=l.branch&&S.vc.byBranch[l.branch];if(!d)return S.vc.state==="ok"?"no preview deploy for this branch":null;const[,t]=VSTATE[d.state]||["",d.state.toLowerCase()];return el("span",{},d.url?link(d.url,t):t," · "+ago(new Date(d.t).toISOString())+(d.sha?" · "+d.sha:""),d.inspector?el("span",{}," · ",link(d.inspector,"build log")):"")}
-async function startVercel(){
+async function startConnectors(){
   let mcp=null;try{mcp=await window.claude?.use?.("mcp")}catch{}
-  if(!mcp){S.vc={...S.vc,state:"unavailable"};renderLive();return}
+  if(!mcp){S.vc={...S.vc,state:"unavailable"};S.gh={...S.gh,state:"unavailable"};renderLive();renderGhLive();renderMap();return}
+  S.mcp=mcp;
+  for(const k of Object.keys(GH_LISTS))ghWatch(k,"list_issues",GH_LISTS[k]);
+  syncGhSubs();
   mcp.watchTool(VC.server,"list_deployments",{projectId:VC.project,teamId:VC.team,limit:60},ev=>{
-    if(ev.type==="data"){ingestVercel(ev.result?.payload);renderLive();renderTree();renderLaneLive()}
+    if(ev.type==="data"){ingestVercel(ev.result?.payload);renderLive();renderMap();renderLaneLive()}
     else{const code=ev.error?.code||"upstream_error";const keep=["rate_limited","server_unavailable","upstream_error"].includes(code)&&S.vc.state==="ok";
-      if(!keep){S.vc={state:code,byBranch:{},prod:null,at:null};renderTree();renderLaneLive()}renderLive()}
+      if(!keep){S.vc={state:code,byBranch:{},prod:null,at:null};renderMap();renderLaneLive()}renderLive()}
   },{refetchInterval:120000});
 }
-startVercel();
-function renderLanes(){renderStrip();renderTree();renderYours();renderRest();renderTrain();if(S.lane)renderLaneView()}
+startConnectors();
+function renderLanes(){renderStrip();syncGhSubs();renderMap();renderTrain();if(S.lane)renderLaneView()}
 function editForm(l,m){
   const id=l.id;
   const f=el("form",{class:"edit",onsubmit:async e=>{e.preventDefault();const fd=new FormData(f);const pr=String(fd.get("pr")||"").trim();const ok=await save("lanes",id,{stage:fd.get("stage"),move:fd.get("move"),next:String(fd.get("next")||"").trim(),blockedBy:fd.getAll("dep"),pr:pr?Number(pr):null,updated:today()});if(ok){S.editing=null;renderLanes()}}});
@@ -901,7 +1067,7 @@ function renderAll(){renderLanes();renderSetup();renderDecisions();renderSkills(
   try{const u=await window.claude.use("user");const w=u?await u.can("data.write"):null;if(w===false)S.canWrite=false}catch{}
   const timer=setTimeout(()=>{document.querySelectorAll(".loading").forEach(n=>{if(n.isConnected)n.textContent="The board can't be reached yet; it fills in when the connection returns."})},10000);
   const sub=(col,key,fn)=>db.collection(col).onSnapshot(s=>{if(!s.metadata.fromCache)clearTimeout(timer);S[key]=s.docs.map(d=>({id:d.id,...d.data()}));fn()},e=>{clearTimeout(timer);console.warn(col,e?.code)});
-  sub("lanes","lanes",()=>{renderLanes();renderDecisions()});sub("setup","setup",()=>{renderSetup();renderYours()});sub("decisions","decisions",()=>{renderDecisions();renderLanes()});sub("skills","skills",()=>{renderSkills();renderFlow()});sub("flow_nodes","flow",renderFlow);sub("flow_changes","changes",renderFlowLog);
+  sub("lanes","lanes",()=>{renderLanes();renderDecisions()});sub("setup","setup",renderSetup);sub("decisions","decisions",()=>{renderDecisions();renderLanes()});sub("skills","skills",()=>{renderSkills();renderFlow()});sub("flow_nodes","flow",renderFlow);sub("flow_changes","changes",renderFlowLog);
   db.doc("snapshots/collisions").onSnapshot(s=>{if(s.exists){S.coll=s.data();renderMatrix();if(S.lane)renderLaneView()}},e=>console.warn("collisions",e?.code));
 })();
 </script>

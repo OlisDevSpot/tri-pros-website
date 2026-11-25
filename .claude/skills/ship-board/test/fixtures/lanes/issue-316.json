@@ -1,0 +1,13 @@
+{
+  "blockedBy": [
+    "issue-321"
+  ],
+  "branch": "chore/316-map-from-github",
+  "issue": 316,
+  "kind": "platform",
+  "move": "agent",
+  "name": "Board UI: epic map, epic overview, lane page",
+  "next": "Task 6: the Map from GitHub.",
+  "order": 10.9,
+  "stage": "build"
+}

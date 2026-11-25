@@ -106,6 +106,7 @@
     "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/edit-proposal-layout-2"
   },
   "briefAt": "2026-11-14",
+  "issue": 307,
   "kind": "feature",
   "move": "agent",
   "name": "Edit proposal layout (PE4)",

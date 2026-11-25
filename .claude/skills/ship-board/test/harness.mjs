@@ -34,7 +34,7 @@ for (const a of process.argv.slice(2)) {
   else if (k === "approval") opt.approval.push(connectorKey(v, k));
   else { console.error("unknown flag --" + k); process.exit(2); }
 }
-if (!hashes.length) hashes.push("now");
+if (!hashes.length) hashes.push("map");
 if (!opt.viewports.length) opt.viewports.push("1280x900");
 if (!opt.schemes.length) opt.schemes.push("light");
 
@@ -208,6 +208,11 @@ function installMock(cfg) {
       if (a.error) throw Object.assign(new Error(a.error.message), a.error);
       return a.result;
     },
+    // Matching watches re-execute and deliver, as the runtime's invalidate does after a write or an allow.
+    async invalidate(server) {
+      await new Promise((r) => setTimeout(r, 20));
+      watches.filter((w) => !server || w.server === server).forEach((w) => setTimeout(() => deliver(w), 30));
+    },
   };
   // A check calls this to stand in for the next refetch of every watch, or of one server's.
   window.__mcpTick = (server) => watches.filter((w) => !server || w.server === server).forEach(deliver);
@@ -227,11 +232,13 @@ const wrapper = () => {
   return `<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>[hidden]{display:none!important}</style></head><body>\n${page}\n</body></html>`;
 };
 
-// The Reference tab and the Now grouping must not move while the lane page changes; every run guards them.
+// The Reference tab and the Map's blocks must not move while other views change; every run guards them.
+// The Map has two baselines: with GitHub answering, and without it (denied, or waiting for approval).
 const baseline = {
   reference: readFileSync(join(here, "baseline", "reference.txt"), "utf8").replace(/\n$/, ""),
-  nowGroups: JSON.parse(readFileSync(join(here, "baseline", "now-groups.json"), "utf8")),
+  mapBlocks: JSON.parse(readFileSync(join(here, "baseline", "map-blocks.json"), "utf8")),
 };
+const githubAnswers = !opt.deny.github && !opt.approval.includes("github");
 
 mkdirSync(join(here, "shots"), { recursive: true });
 const browser = await chromium.launch();
@@ -261,23 +268,26 @@ try {
     await page.screenshot({ path: join(here, "shots", `${hash}-${vp}-${scheme}.png`), fullPage: true });
 
     const overflowPx = await page.evaluate(() => Math.max(0, document.documentElement.scrollWidth - document.documentElement.clientWidth));
-    const nowGroups = await page.evaluate(() => {
+    const mapBlocks = await page.evaluate(() => {
       const byChip = { "your move": "you", agent: "agent", blocked: "blocked", parked: "parked" };
       const out = {};
-      for (const a of document.querySelectorAll("#tree a.row")) {
-        const id = a.getAttribute("href").replace(/^#lane-/, "");
-        const chip = [...a.querySelectorAll(".row-top .chip")].map((c) => c.textContent.trim()).find((t) => t in byChip);
-        out[id] = byChip[chip] || null;
+      for (const b of document.querySelectorAll("#map [data-block]")) {
+        const block = { count: b.querySelector("[data-count]")?.textContent ?? null, progress: b.querySelector("[data-progress]")?.dataset.progress ?? null, lanes: [] };
+        for (const a of b.querySelectorAll("a.row[data-lane]")) {
+          const chip = [...a.querySelectorAll(".row-top .chip")].map((c) => c.textContent.trim()).find((t) => t in byChip);
+          block.lanes.push(a.dataset.lane + " " + (byChip[chip] || "?") + (a.querySelector("[data-noissue]") ? " · no issue yet" : ""));
+        }
+        out[b.dataset.block] = block;
       }
       return out;
     });
-    const checks = { nowGroups, text: {} };
+    const checks = { mapBlocks, text: {} };
     if (opt.script) {
       const mod = await import(pathToFileURL(opt.script).href);
       Object.assign(checks, (await mod.default({ page, hash, viewport: vp, scheme, opt, skillDir })) || {});
     }
     // Each section is read under the tab that shows it; "reference" keeps the baseline's order: bottlenecks, skills, tools.
-    const tabs = { now: [["now", "now"]], decisions: [["decisions", "decisions"]], reference: [["reference", "bottlenecks"], ["skills", "skills"], ["reference", "tools"]] };
+    const tabs = { map: [["map", "map"]], decisions: [["decisions", "decisions"]], reference: [["reference", "bottlenecks"], ["skills", "skills"], ["reference", "tools"]] };
     const keep = await page.evaluate(() => location.hash);
     for (const [key, views] of Object.entries(tabs)) {
       const parts = [];
@@ -295,7 +305,8 @@ try {
     for (const m of mcp.misses) failures.push("no connector fixture for " + m.server + " " + m.tool + " " + JSON.stringify(m.input));
     if (mcp.watches > 64) failures.push(mcp.watches + " watches registered at once; a view allows 64");
     if (checks.text.reference !== baseline.reference) failures.push("Reference text differs from test/baseline/reference.txt");
-    if (JSON.stringify(checks.nowGroups) !== JSON.stringify(baseline.nowGroups)) failures.push("Now groups differ from test/baseline/now-groups.json");
+    const wantBlocks = baseline.mapBlocks[githubAnswers ? "github" : "nogithub"];
+    if (JSON.stringify(checks.mapBlocks) !== JSON.stringify(wantBlocks)) failures.push("Map blocks differ from test/baseline/map-blocks.json (" + (githubAnswers ? "github" : "nogithub") + ")");
     checks.failures = failures;
     console.log(JSON.stringify({ hash, viewport: vp, scheme, overflowPx, consoleErrors, updates, watches: mcp.watches, checks }));
     if (overflowPx !== 0 || consoleErrors.length || failures.length) failed = true;

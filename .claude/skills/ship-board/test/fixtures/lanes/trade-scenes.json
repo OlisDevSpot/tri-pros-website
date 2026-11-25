@@ -192,6 +192,7 @@
     "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/trade-scenes"
   },
   "briefAt": "2026-11-16",
+  "issue": 302,
   "kind": "epic",
   "move": "agent",
   "name": "Trade scenes, release 3",

@@ -1,0 +1,11 @@
+{
+  "blockedBy": [],
+  "branch": "fix/223-gcal-schedule-cron",
+  "issue": 223,
+  "kind": "fix",
+  "move": "agent",
+  "name": "gcal schedule cron",
+  "next": "Reproduce the silent inbound drop on a dev calendar.",
+  "order": 1.5,
+  "stage": "build"
+}
