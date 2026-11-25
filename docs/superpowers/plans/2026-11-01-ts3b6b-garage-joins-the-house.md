@@ -1,5 +1,9 @@
 # TS3b.6-B: the garage joins the house, Implementation Plan
 
+> ⚠️ **Superseded in part by R211 (owner, 2026-11-02): do not build this plan as written.** It draws the garage from today's standalone constants (`GARAGE`, `garage-boxes.ts`, `HOUSE_WALLS.right`). R211 puts the layout object first: once the layout kit swaps in (L3, masses), 6-B is re-planned as an attached garage mass on it. The rulings (R129, R140, R146, R196–R205) and the pure-heat tasks (1, 3) carry over; the geometry tasks (2, 5–8) are rewritten against the layout kit. It also still waits for TS3b.4b's re-plan.
+
+> **Textures (owner, 2026-11-11): the re-plan carries the garage's textures.** The material-textures build on `feat/scene-layout-lab` (plan `2026-11-10-trade-scene-material-textures.md`) draws materials through `TexturedMaterial` (`ui/components/home-kit/textured-material.tsx`). On a stucco home the garage's walls (`boxes.body` in `garage.tsx`) and gable end (`garage-gable-end.tsx`) already take the stucco plaster through the `stucco` prop and `wallSkinLook(…).texture`. The garage mass must keep that. The garage roof stays one plain colour for now. When the re-plan builds it from the house's own covering pieces (R140), its shingle course takes the grit the way `roof-covering.tsx` does (`<TexturedMaterial set="shingle" map="grey" color="#ffffff" … />` as the `InstancedPieces` child, shingle only). Covering wear leaves the garage roof out (owner).
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** The attached garage becomes part of the home: it has its own temperature (shown as a pin and painted under Thermal) and pushes heat across the shared wall. It meets the house honestly (door, vent, downspout, no arrows over it), its roof is built from the house's own covering pieces, and its walls wear like the house's. Along the way a tear-off gains the code's roof vents and loses the default ridge vent.
@@ -93,6 +97,7 @@ Abbreviations:
   - The owner has said "build".
 
   If any of these fails, stop and tell the owner.
+- [ ] **The upright indoor unit in the garage is part of this move (R299).** Heating & cooling is built (`c3991b789`..`2dda7dd88`, 2026-11-15), so this move adds a task: one `INDOOR_UNIT_PLACEMENTS.garage` entry per roof form in `src/features/trade-scenes/constants/indoor-unit-placements.ts` (an upright line against the shared wall, `upright: true`, its `lineSet`, `closet: []` or a garage enclosure, `trunk` up to the attic plenum spot), and nothing else: the `hvac-location` options (`indoorUnitLocations`) offer every key that has a placement, and `indoorLocation` already reads the placement keys. Its checks join `scripts/verify-heating-cooling.ts` beside the closet's (clear of the garage's car, door and walls; the trunk ends at the plenum spot). Mind R329/R330: the closet's spot and the shared plenum spot are being redesigned with a real home layout, so place the garage unit against that layout if it has landed.
 - [ ] **Re-baseline (the plan predates the code).** Re-read each interface below at the new head. Where one differs, stop with `⚠️ Stale ref — <plan line> says X, but <path> does Y`, and propose the plan fix before any task starts.
   - **TS3b.4b:**
     - `SYSTEM_PARTS` (and whether it still lists `ridge-vent` as a roof part);
