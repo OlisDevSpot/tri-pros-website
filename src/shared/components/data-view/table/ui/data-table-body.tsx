@@ -5,12 +5,13 @@ import type { MouseEvent, ReactNode } from 'react'
 import type { DataTableServerPagination } from '@/shared/components/data-view/table/types'
 
 import { RefreshCw } from 'lucide-react'
-import { memo } from 'react'
+import { memo, use } from 'react'
 
 import { SKELETON_CELL_WIDTHS } from '@/shared/components/data-view/table/constants/skeleton-widths'
 import { DataTableRow } from '@/shared/components/data-view/table/ui/data-table-row'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { TableBody, TableCell, TableRow } from '@/shared/components/ui/table'
+import { DataViewPendingContext } from '@/shared/dal/client/lib/data-view-pending-context'
 import { cn } from '@/shared/lib/utils'
 
 interface DataTableBodyProps<TData extends { id: string }> {
@@ -47,9 +48,11 @@ function DataTableBodyImpl<TData extends { id: string }>({
   const meta = table.options.meta
   const columns = table.options.columns
   const visibleColumnIds = table.getVisibleLeafColumns().map(column => column.id).join(',')
+  // Only a first draw: stale placeholders sit under DataView.Body's own aria-busy, and the error fallback's are not loading.
+  const isFirstDraw = use(DataViewPendingContext) === 'loading' && !!serverPagination?.isPending
 
   return (
-    <TableBody>
+    <TableBody aria-busy={isFirstDraw || undefined}>
       {/* Spacer reflows the rows (a transform would break the frozen column's sticky-left).
           Sized by the `--dt-pull` var the hook writes, so no React render on the drag;
           the opacity divisor must match PULL_TO_REFRESH_THRESHOLD (64). */}
