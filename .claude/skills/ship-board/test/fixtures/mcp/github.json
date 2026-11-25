@@ -1,0 +1,30 @@
+{
+ "server": "GitHub",
+ "calls": [
+  {
+   "tool": "issue_read",
+   "input": { "method": "get", "owner": "OlisDevSpot", "repo": "tri-pros-website", "issue_number": 327 },
+   "payload": {
+    "issue": {
+     "assignees": ["OlisDevSpot"],
+     "author_association": "OWNER",
+     "body": "## Parent\n\n#316 (board UI spec, §7 and §11)\n\n## What to build\n\nA prefactor so every later slice builds on one set of rules: the board decides a lane's state, a phase's step and a lane's blockers in one place each, and the test harness can fake GitHub and Vercel separately.\n",
+     "closed_by_pull_requests": { "references": [], "total_count": 0 },
+     "created_at": "2026-11-24T04:55:13Z",
+     "has_children": false,
+     "has_parent": true,
+     "html_url": "https://github.com/OlisDevSpot/tri-pros-website/issues/327",
+     "labels": ["area:infrastructure", "chore", "ready-for-agent"],
+     "number": 327,
+     "parent": { "number": 316, "repository": "OlisDevSpot/tri-pros-website", "state": "OPEN", "title": "chore(ship-board): board UI — epic map, epic overview, lane page with the blocker map", "url": "https://github.com/OlisDevSpot/tri-pros-website/issues/316" },
+     "state": "open",
+     "status": { "id": 3, "name": "Todo", "category": "planned" },
+     "title": "chore(ship-board): one shared rule set in lane-core and a per-tool fake connector in the harness",
+     "updated_at": "2026-11-24T05:17:59Z",
+     "user": { "id": 178675480, "login": "OlisDevSpot" }
+    },
+    "method": "get"
+   }
+  }
+ ]
+}

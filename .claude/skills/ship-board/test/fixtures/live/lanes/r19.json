@@ -1,0 +1,93 @@
+{
+  "blockedBy": [],
+  "branch": "feat/calculators-r19",
+  "brief": {
+    "aheadBehind": {
+      "ahead": 10,
+      "behind": 0,
+      "onCurrentProd": true
+    },
+    "decided": [
+      {
+        "date": "2026-11-06",
+        "text": "Paint sells at 3.5x, MPU at 2.5x, every other scope 2.8x; the floor binds every layer"
+      },
+      {
+        "date": "2026-11-06",
+        "text": "MPU cost is $4,500, or $5,500 with relocation"
+      },
+      {
+        "date": "2026-11-06",
+        "text": "Paint home sizes 1,350 / 1,800 / 3,000 sq ft; above that is a custom scope"
+      },
+      {
+        "date": "2026-11-06",
+        "text": "Below the floor is unreachable: clamped scopes stay at the floor, others carry the target"
+      },
+      {
+        "date": "2026-11-06",
+        "text": "Call it the proposal-wide multiplier, never job-wide"
+      },
+      {
+        "date": "2026-11-06",
+        "text": "Each extra story adds $1,000 cost to paint"
+      }
+    ],
+    "files": 29,
+    "goal": "The Scope Pricing calculator prices exterior paint by home size and MPU at new costs, with per-scope multipliers and one proposal-wide multiplier the agent controls.",
+    "lastCommit": {
+      "date": "2026-11-13",
+      "sha": "f7edb87ae",
+      "subject": "fix(calculators): below-floor and no-cost copy name the proposal-wide control and a costed scope; solver result never under the floor; shift copy exact"
+    },
+    "phases": [
+      {
+        "id": "R19-T1",
+        "name": "Engine: per-scope multipliers + proposal-wide shift",
+        "status": "built"
+      },
+      {
+        "id": "R19-T2",
+        "name": "Paint by home size, garage, extra stories",
+        "status": "built"
+      },
+      {
+        "id": "R19-T3",
+        "name": "Agent panel scope multiplier list",
+        "status": "built"
+      },
+      {
+        "id": "R19-T4",
+        "name": "Custom scope above 3,000 sq ft priced on card",
+        "status": "built"
+      },
+      {
+        "id": "R19-T5",
+        "name": "Tracker + final review copy fixes",
+        "status": "built"
+      },
+      {
+        "id": "C0-T9",
+        "name": "Scope Pricing layout pick (C0 Task 9)",
+        "note": "waits on owner's warm-up pick",
+        "status": "plan"
+      }
+    ],
+    "plan": "docs/superpowers/plans/2026-11-06-scope-pricing-paint-mpu-repricing.md",
+    "spec": "docs/superpowers/specs/2026-11-06-scope-pricing-paint-mpu-repricing-design.md",
+    "tracker": "docs/plans/2026-09-26-sales-calculators-epic.md",
+    "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/calculators-r19"
+  },
+  "briefAt": "2026-11-21",
+  "kind": "feature",
+  "move": "you",
+  "name": "R19 calculator pricing",
+  "neon": "shared dev",
+  "next": "Squash-merged as #290 (2786913a2) on 2026-11-22. Lane finished: worktree removed, local branch deleted, tag archive/feat/calculators-r19 keeps the tip; port 3013 is free. The remote branch origin/feat/calculators-r19 is still there.",
+  "notes": "Built 11-07, CI green. One conflicting file with the drain: whichever merges second merges origin/main first. · Tracker's status paragraph predates R19 (still describes C0 and R18); the R19 row and PR #290 are current. PR is clean and mergeable.",
+  "order": 2,
+  "port": 3013,
+  "pr": 290,
+  "stage": "shipped",
+  "updated": "2026-11-22"
+}

@@ -1,0 +1,214 @@
+{
+  "blockedBy": [],
+  "brief": {
+    "agent": [
+      "2026-11-23 T1 sitting: prod protected (read back true); NEON_PROD_ENDPOINT_ID in .env (owner set Vercel); dev neondb_owner reset by a yes/no script: logs in to dev, refused by prod, 12/12 .env copies updated; Preview DATABASE_URL and the Actions secret updated by the owner; PR Checks green on re-run.",
+      "Plan edits on branch docs/dev-flow-t1-done (96a17cd0f, unpushed): T1 ticked, T3 password check, new T7a, rulings line + ship-board skill rule for in-place edits.",
+      "WF8 and WF14 edited in place on #311."
+    ],
+    "aheadBehind": null,
+    "decided": [
+      {
+        "date": "2026-11-23",
+        "text": "WF14 updated in place: cut the password on dev only; the four wt/* copies keep prod's until T3a; new copies are checked by wt:db create"
+      },
+      {
+        "date": "2026-11-23",
+        "text": "WF8 updated in place: one name per role, DATABASE_URL = the database this copy uses, DATABASE_PROD_URL for prod scripts; boot guard first, then the rename"
+      },
+      {
+        "date": "2026-11-23",
+        "text": "An owner-changed ruling is edited in its original comment, old text struck through as deprecated"
+      },
+      {
+        "date": "2026-11-23",
+        "text": "Worktree .env becomes a link to main's; db:rotate and a loud CI check (T7a); CI Postgres service stays backlog"
+      },
+      {
+        "date": "2026-11-22",
+        "text": "WF15: the repo stays public; T1's private-repo step is dropped"
+      },
+      {
+        "date": "2026-11-22",
+        "text": "WF14: finish T1 and cut the shared password: reset it on dev and the four lane copies, update .env, worktree .env copies, .env.local and Preview's DATABASE_URL"
+      }
+    ],
+    "evidence": [
+      "T0 shipped: e482d5060 on origin/main (verified)",
+      "T2–T11 not started: none of their named files exist on origin/main (verified, git ls-tree)",
+      "T12 shipped: oAuthProxy at src/shared/domains/auth/server.ts:123, APP_HOSTS.dev localhost:* at src/shared/config/roots.ts:12, OAUTH_PROXY_SECRET gate at server-env.ts:221 (verified)",
+      "T15 not started: scripts/dispatch.sh, scripts/hotfix.sh, docs/workflow.md and package.json dispatch/hotfix still on origin/main (verified)",
+      "Copy passwords equal prod's: local comparison of .env and four .env.local files, booleans only (verified); Vercel Preview's value inferred equal to local dev",
+      "T3a, T9 order and moved T11/T13/T14 parts: plan headings on origin/main@68e0b7168 (verified)"
+    ],
+    "files": 0,
+    "goal": "Each feature gets its own worktree, database copy and PR with a signed-in preview; main mirrors prod and no laptop holds full prod credentials.",
+    "lastCommit": null,
+    "phases": [
+      {
+        "id": "T0",
+        "name": "Drain local main",
+        "note": "#289, squash e482d5060",
+        "status": "shipped"
+      },
+      {
+        "id": "T1",
+        "name": "Lock the doors (console steps)",
+        "note": "done 2026-11-23: prod protected, endpoint id in .env + Vercel, dev password cut (WF14 as updated), Step 2 moved to T3, private repo dropped (WF15)",
+        "status": "shipped"
+      },
+      {
+        "id": "T2",
+        "name": "Neon client additions and branch naming",
+        "status": "plan"
+      },
+      {
+        "id": "T3",
+        "name": "pnpm wt:db create, delete, prune + migrateDb",
+        "note": "migrateDb moved into T9; wt:db link goes to the lane-linking plan (WF13)",
+        "status": "plan"
+      },
+      {
+        "id": "T3a",
+        "name": "Re-fork the four lane copies from prod",
+        "note": "WF11; their test data goes",
+        "status": "plan"
+      },
+      {
+        "id": "T4",
+        "name": "db:refresh:dev without prod's URL",
+        "status": "plan"
+      },
+      {
+        "id": "T5",
+        "name": "Local runs need their own database",
+        "status": "plan"
+      },
+      {
+        "id": "T6",
+        "name": "Copies never reach real people or live files",
+        "status": "plan"
+      },
+      {
+        "id": "T7",
+        "name": "Prod-script Action and prod probe",
+        "status": "plan"
+      },
+      {
+        "id": "T7a",
+        "name": "One .env, db:rotate, loud CI database check",
+        "status": "plan"
+      },
+      {
+        "id": "T8",
+        "name": "Credentials leave the machine",
+        "status": "plan"
+      },
+      {
+        "id": "T9",
+        "name": "Migrations baseline",
+        "note": "runs before wt:db (WF9); prod has no drizzle migrations table",
+        "status": "plan"
+      },
+      {
+        "id": "T10",
+        "name": "Migrations on production deploy + CI",
+        "status": "plan"
+      },
+      {
+        "id": "T11",
+        "name": "Preview databases → lane-linking plan",
+        "note": "moved out by WF13 (WF7, WF8 handed over)",
+        "status": "parked"
+      },
+      {
+        "id": "T12",
+        "name": "Google sign-in through the proxy",
+        "note": "Steps 1–3 shipped (#293, #294, no vercel.app wildcard); browser check and localhost URI removal open",
+        "status": "building"
+      },
+      {
+        "id": "T13",
+        "name": "Orca wiring",
+        "note": "port claim done here; archive hook moved to the lane-linking plan (WF13)",
+        "status": "shipped"
+      },
+      {
+        "id": "T14",
+        "name": "Agent git duties",
+        "note": "gate and lane rules shipped (#295, #296); ship skill moved to the lane-linking plan (WF13)",
+        "status": "shipped"
+      },
+      {
+        "id": "T15",
+        "name": "Retire the old system",
+        "note": "dispatch.sh, hotfix.sh, docs/workflow.md still on main; scope amended by WF4",
+        "status": "plan"
+      },
+      {
+        "id": "T16",
+        "name": "Branch protection on",
+        "note": "squash-only setting dropped (WF3)",
+        "status": "plan"
+      },
+      {
+        "id": "A",
+        "name": "Git flow: merge commits, slices from epic commits, scene branch cleanup",
+        "note": "agreed 21 Nov; design not written",
+        "status": "idea"
+      }
+    ],
+    "plan": "docs/superpowers/plans/2026-11-01-worktree-pr-flow.md",
+    "spec": "docs/superpowers/specs/2026-11-01-worktree-pr-flow-design.md",
+    "stand": "Standalone plan, no tracker. A lane-linking plan (WF13, not written) takes lane creation, wt:db link, previews on lane copies, Orca hooks and the ship skill; this plan keeps the safety base. Plan A (merge commits) runs beside it.",
+    "steps": {
+      "later": "T9 → T2–T3 → T3a → T4–T6 → T8 → T10 → T12 rest → T15 → T16 (WF9); the WF8 rename (boot guard first); the lane-linking plan; plan A.",
+      "next": "T7 (prod-script Action), then T7a: every worktree .env links to main's, pnpm db:rotate, a loud CI database check.",
+      "prod": "T0 shipped; T1 done 2026-11-23; T12 Steps 1–3, T13's port claim and T14's gate and lane rules are live."
+    },
+    "timeline": [
+      {
+        "date": "2026-11-01",
+        "label": "Spec approved, plan written"
+      },
+      {
+        "date": "2026-11-02",
+        "label": "Stress-tested; Neon on Launch"
+      },
+      {
+        "date": "2026-11-06",
+        "label": "Execute in order (WF1, WF2)"
+      },
+      {
+        "date": "2026-11-20",
+        "label": "T0 drain and T12 sign-in relay shipped"
+      },
+      {
+        "date": "2026-11-21",
+        "label": "Rulings WF3–WF8; lane rules on main (#295, #296)"
+      },
+      {
+        "date": "2026-11-22",
+        "label": "Second stress-test, WF9–WF13 (#301); board answers WF14, WF15"
+      }
+    ],
+    "tracker": null,
+    "verifiedAt": "origin/main@295154357 2026-11-23",
+    "watch": [
+      "The four wt/* copies still log in with prod's password until T3a re-forks them (accepted, WF14).",
+      "Archived prod children backup/prod-pre-dev-refresh-2026-11-05 and rehearsal/pre-ship-2026-10-08 hold prod's password; owner said delete after a no-loss check (backup has no compute yet).",
+      "Open previews built before 2026-11-23 carry dev's old password until redeployed."
+    ],
+    "worktree": null
+  },
+  "briefAt": "2026-11-22",
+  "issue": 311,
+  "kind": "platform",
+  "move": "you",
+  "name": "Worktree → PR flow (plan T1–T16, rulings WF1–WF15)",
+  "next": "T7: the prod-script Action, then T7a (one .env per machine, db:rotate, loud CI check). Pending you: OK to add a compute to the archived backup branch for the no-loss check, and to push docs/dev-flow-t1-done.",
+  "notes": "Plan A (git flow, agreed 21 Nov) must rewrite: CLAUDE.md 'Ship' and 'Epic worktrees ship in slices' lines; spec §6 of the 2026-11-01 design; board requirements 5.1 (still squash-only) and 1.1; plan rulings WF3 and Tasks 14 and 16; memory feedback-ship-flow-squash-merge; the repo's default merge button. Scene branch cleanup needs a patch-level no-loss check and an archive/* tag per tip (precedent 2026-11-14), and you decide where the heating & cooling work on feat/trade-scenes-foundation continues before anything is deleted. · No branch yet. Spec and plan shipped in #289.",
+  "order": 10,
+  "stage": "build",
+  "updated": "2026-11-23"
+}

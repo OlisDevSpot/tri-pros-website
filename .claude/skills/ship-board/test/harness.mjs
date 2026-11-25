@@ -2,7 +2,7 @@ import { readFileSync, existsSync, mkdirSync } from "node:fs";
 import { join, dirname, resolve, extname } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { chromium } from "playwright";
-import { loadLanes, loadDecisions, loadSnapshot, loadVercel } from "./fixtures.mjs";
+import { loadLanes, loadDecisions, loadSnapshot, loadConnectors, fixturesDay } from "./fixtures.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const skillDir = resolve(here, "..");
@@ -10,7 +10,13 @@ const ORIGIN = "https://board.test";
 const MIME = { ".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".json": "application/json" };
 
 const hashes = [];
-const opt = { viewports: [], schemes: [], briefs: [], delay: {}, order: ["lanes", "decisions", "collisions"], rejectNext: null, readOnly: false, script: null };
+const opt = { viewports: [], schemes: [], briefs: [], delay: {}, order: ["lanes", "decisions", "collisions"], rejectNext: null, readOnly: false, script: null, deny: {}, approval: [] };
+const connectors = loadConnectors();
+const connectorKey = (k, flag) => {
+  if (connectors.some((c) => c.key === k)) return k;
+  console.error("--" + flag + ": no fixture file test/fixtures/mcp/" + k + ".json");
+  process.exit(2);
+};
 for (const a of process.argv.slice(2)) {
   if (!a.startsWith("--")) { hashes.push(a.replace(/^#/, "")); continue; }
   const [k, ...rest] = a.slice(2).split("=");
@@ -23,6 +29,9 @@ for (const a of process.argv.slice(2)) {
   else if (k === "reject-next") opt.rejectNext = v || "unavailable";
   else if (k === "read-only") opt.readOnly = true;
   else if (k === "script") opt.script = resolve(skillDir, v);
+  // A viewer who declined the connector for this page: not_in_manifest, unless another denial code is named.
+  else if (k === "deny") { const [key, code] = v.split("="); opt.deny[connectorKey(key, k)] = code || "not_in_manifest"; }
+  else if (k === "approval") opt.approval.push(connectorKey(v, k));
   else { console.error("unknown flag --" + k); process.exit(2); }
 }
 if (!hashes.length) hashes.push("now");
@@ -54,7 +63,7 @@ const config = {
     setup: {}, skills: {}, flow_nodes: {}, flow_changes: {},
   },
   snapshot: loadSnapshot(),
-  vercel: loadVercel(),
+  mcp: { servers: connectors, deny: opt.deny, approval: opt.approval },
   order: opt.order,
   delay: opt.delay,
   rejectNext: opt.rejectNext,
@@ -65,6 +74,8 @@ const arrival = (name) => {
   const i = config.order.indexOf(name);
   return (i < 0 ? 0 : i * 100) + (config.delay[name] || 0);
 };
+const clockDay = fixturesDay(lanes, decisions);
+if (!clockDay) throw new Error("no write stamp in the fixtures to set the clock from");
 const settleMs = Math.max(...["lanes", "decisions", "collisions"].map(arrival)) + 600;
 
 // Runs inside the page before any script: the whole mock of window.claude.
@@ -149,14 +160,57 @@ function installMock(cfg) {
   };
   data.snapshots = { collisions: cfg.snapshot };
 
+  // The connector fake answers each (server, tool, input) from test/fixtures/mcp/; input key order does not
+  // matter, as in the runtime's call identity. A call with no fixture is a miss, and a miss fails the run.
+  const canon = (x) => Array.isArray(x) ? x.map(canon) : isObj(x) ? Object.fromEntries(Object.keys(x).sort().map((k) => [k, canon(x[k])])) : x;
+  const sameInput = (a, b) => JSON.stringify(canon(a ?? null)) === JSON.stringify(canon(b ?? null));
+  const servers = Object.fromEntries(cfg.mcp.servers.map((s) => [s.server, s]));
+  const awaiting = new Set(cfg.mcp.approval);
+  window.__mcpMisses = [];
+  window.__mcpWatches = 0;
+  const answer = (server, tool, input) => {
+    const s = servers[server];
+    if (!s) return { error: { code: "server_not_connected", server, message: server + " has no fixture file, so it reads as not connected" } };
+    if (cfg.mcp.deny[s.key]) return { error: { code: cfg.mcp.deny[s.key], server, message: "denied by --deny=" + s.key } };
+    if (awaiting.has(s.key)) return { error: { code: "approval_required", server, message: "waiting for approval (--approval=" + s.key + ")" } };
+    const hit = s.calls.find((c) => c.tool === tool && sameInput(c.input, input));
+    if (!hit) {
+      window.__mcpMisses.push({ server, tool, input: clone(input ?? null) });
+      return { error: { code: "tool_error", server, message: "no fixture for " + server + " " + tool + " " + JSON.stringify(input) } };
+    }
+    return { result: { content: [{ type: "text", text: JSON.stringify(hit.payload) }], payload: clone(hit.payload) } };
+  };
+  const watches = [];
+  const deliver = (w) => {
+    if (!w.live) return;
+    const a = answer(w.server, w.tool, w.input);
+    w.cb(a.error ? { type: "error", error: a.error } : { type: "data", result: a.result });
+  };
   const mcp = {
-    watchTool(server, tool, args, cb) {
-      // A check calls this to stand in for the next 2-minute refetch.
-      window.__vercelTick = () => cb({ type: "data", result: { payload: cfg.vercel } });
-      setTimeout(window.__vercelTick, 50);
-      return () => {};
+    watchTool(server, tool, input, cb) {
+      if (typeof cb !== "function") throw new TypeError("watchTool needs a handler");
+      const w = { server, tool, input: clone(input ?? null), cb, live: true };
+      if (watches.filter((x) => x.live).length >= 64) {
+        setTimeout(() => cb({ type: "error", error: { code: "bad_request", message: "the 64-watch limit per view" } }), 0);
+        return () => {};
+      }
+      watches.push(w);
+      window.__mcpWatches = Math.max(window.__mcpWatches, watches.filter((x) => x.live).length);
+      setTimeout(() => deliver(w), 50);
+      return () => { w.live = false; };
+    },
+    async callTool(server, tool, input) {
+      await new Promise((r) => setTimeout(r, 20));
+      const s = servers[server];
+      // The shell asks only while a page's own call waits; the harness answers Allow, which covers later calls.
+      if (s && awaiting.has(s.key) && !cfg.mcp.deny[s.key]) awaiting.delete(s.key);
+      const a = answer(server, tool, input);
+      if (a.error) throw Object.assign(new Error(a.error.message), a.error);
+      return a.result;
     },
   };
+  // A check calls this to stand in for the next refetch of every watch, or of one server's.
+  window.__mcpTick = (server) => watches.filter((w) => !server || w.server === server).forEach(deliver);
   const user = { can: async () => !cfg.readOnly };
   window.claude = {
     use: async (name) => {
@@ -200,7 +254,7 @@ try {
       return r.fulfill({ status: 200, contentType: MIME[extname(f)] || "application/octet-stream", body: readFileSync(f) });
     });
     // Relative times ("3 d ago") would otherwise drift the saved baselines every day.
-    await page.clock.setFixedTime(new Date("2026-11-16T15:00:00Z"));
+    await page.clock.setFixedTime(new Date(clockDay + "T15:00:00Z"));
     await page.addInitScript(installMock, config);
     await page.goto(`${ORIGIN}/index.html#${hash}`);
     await page.waitForTimeout(settleMs);
@@ -236,11 +290,14 @@ try {
     }
     await page.evaluate((h) => { location.hash = h; }, keep);
     const updates = await page.evaluate(() => window.__updates);
+    const mcp = await page.evaluate(() => ({ watches: window.__mcpWatches, misses: window.__mcpMisses }));
     const failures = [...(checks.failures || [])];
+    for (const m of mcp.misses) failures.push("no connector fixture for " + m.server + " " + m.tool + " " + JSON.stringify(m.input));
+    if (mcp.watches > 64) failures.push(mcp.watches + " watches registered at once; a view allows 64");
     if (checks.text.reference !== baseline.reference) failures.push("Reference text differs from test/baseline/reference.txt");
     if (JSON.stringify(checks.nowGroups) !== JSON.stringify(baseline.nowGroups)) failures.push("Now groups differ from test/baseline/now-groups.json");
     checks.failures = failures;
-    console.log(JSON.stringify({ hash, viewport: vp, scheme, overflowPx, consoleErrors, updates, checks }));
+    console.log(JSON.stringify({ hash, viewport: vp, scheme, overflowPx, consoleErrors, updates, watches: mcp.watches, checks }));
     if (overflowPx !== 0 || consoleErrors.length || failures.length) failed = true;
     await ctx.close();
   }
