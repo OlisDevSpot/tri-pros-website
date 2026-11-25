@@ -28,9 +28,16 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Runner memory
+        run: |
+          free -m
+          node -e "console.log('default heap limit MB', Math.round(require('v8').getHeapStatistics().heap_size_limit / 2 ** 20))"
+
       - name: Build
         run: pnpm build
         env:
+          # The type-check phase outgrew Node's default ~2 GB heap (OOM 2026-11-24, #343).
+          NODE_OPTIONS: --max-old-space-size=6144
           # Real credentials for build-time external calls.
           # Process env overrides .env.ci placeholders (Next.js precedence).
           # Add new secrets here when build-time calls demand them.
