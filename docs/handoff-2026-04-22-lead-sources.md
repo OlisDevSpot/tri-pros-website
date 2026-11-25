@@ -132,7 +132,7 @@ No pending prod DB work.
 
 ### B. User Additions that haven't been shipped yet
 
-4. **Customers table → shared `DataTable`** — user's explicit Addition #5. Today's `LeadSourceCustomersSection` and `AllCustomersSection` are lightweight inline `<table>` elements. User wants them to standardize on the shared `DataTable` primitive (see [`src/shared/components/data-table/`](../src/shared/components/data-table/)):
+4. **Customers table → shared `DataTable`** — user's explicit Addition #5. Today's `LeadSourceCustomersSection` and `AllCustomersSection` are lightweight inline `<table>` elements. User wants them to standardize on the shared `DataTable` primitive (see [`src/shared/components/data-view/table/`](../src/shared/components/data-view/table/)):
    - Frozen first column
    - Column resizing
    - Row-click → customer profile modal (the modal component already exists at [`src/shared/entities/customers/components/profile/`](../src/shared/entities/customers/components/profile/))

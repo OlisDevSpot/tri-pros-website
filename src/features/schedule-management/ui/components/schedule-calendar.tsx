@@ -9,9 +9,9 @@ import { useCallback, useMemo } from 'react'
 
 import { DEFAULT_HIDDEN_DAYS } from '@/features/schedule-management/constants/schedule-calendar-config'
 import { SCHEDULE_FRAME_CLASS } from '@/features/schedule-management/constants/schedule-frame'
-import { calendarDayToLocalDate, localDateToCalendarDay } from '@/shared/components/calendar/lib/calendar-helpers'
-import { CalendarHeader } from '@/shared/components/calendar/ui/calendar-header'
-import { CalendarMonthView } from '@/shared/components/calendar/ui/calendar-month-view'
+import { calendarDayToLocalDate, localDateToCalendarDay } from '@/shared/components/data-view/calendar/lib/calendar-helpers'
+import { CalendarHeader } from '@/shared/components/data-view/calendar/ui/calendar-header'
+import { CalendarMonthView } from '@/shared/components/data-view/calendar/ui/calendar-month-view'
 import { businessToday } from '@/shared/lib/business-time'
 import { cn } from '@/shared/lib/utils'
 

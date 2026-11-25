@@ -1,6 +1,6 @@
 import type { EntityAction } from '@/shared/components/entities/entity-actions/types'
 
-import { CalendarPlusIcon, EyeIcon, PencilIcon, TrashIcon } from 'lucide-react'
+import { CalendarPlusIcon, EyeIcon, TrashIcon } from 'lucide-react'
 
 export const CUSTOMER_ACTIONS = {
   view: {
@@ -9,12 +9,6 @@ export const CUSTOMER_ACTIONS = {
     icon: EyeIcon,
     permission: ['read', 'Customer'],
     primary: true,
-  },
-  edit: {
-    id: 'edit',
-    label: 'Edit Profile',
-    icon: PencilIcon,
-    permission: ['update', 'Customer'],
   },
   scheduleMeeting: {
     id: 'scheduleMeeting',

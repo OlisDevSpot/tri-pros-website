@@ -12,9 +12,7 @@ import { leadSourcesTable } from '@/shared/db/schema/lead-sources'
 import { meetings } from '@/shared/db/schema/meetings'
 import { projects } from '@/shared/db/schema/projects'
 import { proposals } from '@/shared/db/schema/proposals'
-import { customerListInputSchema, listCustomers } from '@/shared/entities/customers/dal/server/queries'
 import { isSignedCustomerSql } from '@/shared/entities/customers/lib/signed-customer-sql'
-import { customerSegments } from '@/shared/entities/lead-sources/constants/customer-segments'
 import { leadSourceCrud } from '@/shared/entities/lead-sources/dal/server/crud'
 import { listLeadSources } from '@/shared/entities/lead-sources/dal/server/queries'
 import { listLeadSourceSpend, setLeadSourceSpend } from '@/shared/entities/lead-sources/dal/server/spend'
@@ -248,28 +246,6 @@ export const leadSourcesRouter = createTRPCRouter({
         .groupBy(sql`EXTRACT(YEAR FROM ${customers.createdAt})`)
         .orderBy(sql`EXTRACT(YEAR FROM ${customers.createdAt}) DESC`)
       return rows.map(r => r.year)
-    }),
-
-  // `segment` stays a top-level input and becomes a fixed filter here, so no toolbar ever shows it.
-  getCustomers: superAdminProcedure
-    .input(customerListInputSchema.extend({
-      id: z.string().uuid(),
-      segment: z.enum(customerSegments).optional(),
-    }))
-    .query(async ({ ctx, input }) => {
-      const [src] = await db
-        .select({ id: leadSourcesTable.id })
-        .from(leadSourcesTable)
-        .where(eq(leadSourcesTable.id, input.id))
-        .limit(1)
-      if (!src) {
-        throw new TRPCError({ code: 'NOT_FOUND', message: 'Lead source not found.' })
-      }
-      const { id: _id, segment, ...query } = input
-      return dalToTrpc(await listCustomers(
-        { ...ctx, scope: null },
-        { ...query, filters: { ...query.filters, sourceId: src.id, segment } },
-      ))
     }),
 
   getStatusCounts: superAdminProcedure

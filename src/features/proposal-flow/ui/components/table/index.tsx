@@ -9,14 +9,13 @@ import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { CreateProjectModal } from '@/features/customer-pipelines/ui/components/create-project-modal'
 import { PROPOSALS_TABLE_QUERY_CONFIG } from '@/features/proposal-flow/constants/proposals-table-query-config'
-import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
-import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
-import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
-import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
-import { DataTable } from '@/shared/components/data-table/ui/data-table'
-import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
-import { RecordsPageHeader } from '@/shared/components/records-page-header'
-import { RecordsPageShell } from '@/shared/components/records-page-shell'
+import { DataView } from '@/shared/components/data-view/core/data-view'
+import { QueryToolbar } from '@/shared/components/data-view/query-toolbar/ui/query-toolbar'
+import { toDataTablePagination } from '@/shared/components/data-view/table/lib/to-data-table-pagination'
+import { toDataTableSorting } from '@/shared/components/data-view/table/lib/to-data-table-sorting'
+import { useColumnVisibility } from '@/shared/components/data-view/table/lib/use-column-visibility'
+import { useEntityColumns } from '@/shared/components/data-view/table/lib/use-entity-columns'
+import { DataTable } from '@/shared/components/data-view/table/ui/data-table'
 import { ROOTS } from '@/shared/config/roots'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
 import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
@@ -136,17 +135,22 @@ export function PastProposalsTable() {
   }), [sharedActions, handleStatusChange, updateProposal])
 
   return (
-    <>
+    <DataView query={query} entityName="proposals">
       <DeleteConfirmDialog />
-
-      <RecordsPageShell
-        header={<RecordsPageHeader title="Proposals" query={query} />}
-        toolbar={(
-          <QueryToolbar query={query} entityName="proposals">
+      <div className="flex h-full min-h-0 flex-col gap-(--gutter)">
+        <DataView.Bar>
+          {/* The row is always one button tall, so it sits at the same height as the pages with actions. */}
+          <header className="flex min-h-9 flex-wrap items-center gap-x-3 gap-y-1">
+            <div className="flex flex-wrap items-baseline gap-x-2">
+              <DataView.Title className="text-lg font-semibold tracking-tight">Proposals</DataView.Title>
+              <DataView.Count className="text-xs text-muted-foreground tabular-nums" />
+            </div>
+          </header>
+          <DataView.Toolbar>
             <QueryToolbar.Standard searchPlaceholder="Search by label or customer…" visibility={visibility} />
-          </QueryToolbar>
-        )}
-        table={(
+          </DataView.Toolbar>
+        </DataView.Bar>
+        <DataView.Body empty>
           <DataTable
             tableId="proposals"
             data={pagination.rows}
@@ -159,8 +163,8 @@ export function PastProposalsTable() {
             serverSorting={toDataTableSorting(query)}
             columnVisibility={visibility.columnVisibility}
           />
-        )}
-      />
+        </DataView.Body>
+      </div>
 
       {projectPrompt && (
         <CreateProjectModal
@@ -173,6 +177,6 @@ export function PastProposalsTable() {
           onClose={() => setProjectPrompt(null)}
         />
       )}
-    </>
+    </DataView>
   )
 }

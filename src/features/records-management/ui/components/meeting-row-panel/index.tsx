@@ -8,7 +8,7 @@ import { MeetingProposalsPane } from '@/features/records-management/ui/component
 import { MeetingRowActionBar } from '@/features/records-management/ui/components/meeting-row-panel/meeting-row-action-bar'
 import { MeetingRowDetails } from '@/features/records-management/ui/components/meeting-row-panel/meeting-row-details'
 import { MeetingTradesPane } from '@/features/records-management/ui/components/meeting-row-panel/meeting-trades-pane'
-import { ExpandedRowPanel } from '@/shared/components/data-table/ui/expanded-row-panel'
+import { ExpandedRowPanel } from '@/shared/components/data-view/table/ui/expanded-row-panel'
 import { useAbility } from '@/shared/domains/permissions/client'
 
 interface MeetingRowPanelProps {

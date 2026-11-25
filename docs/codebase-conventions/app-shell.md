@@ -176,7 +176,7 @@ Rules:
 - A page that uses neither utility renders as before.
 
 **Why**: the phone dashboard wasted the screen's sides and everything behind the dock. Bleeding is local, so `<main>` never learns what its page is, and the layout shape stays fixed.
-**Reference impl**: `src/app/(frontend)/globals.css` (`page-insets`, `bleed-x`, `page-scroll`), `src/shared/components/data-table/ui/data-table.tsx`, `src/features/agent-dashboard/ui/views/dashboard-view.tsx`
+**Reference impl**: `src/app/(frontend)/globals.css` (`page-insets`, `bleed-x`, `page-scroll`), `src/shared/components/data-view/table/ui/data-table.tsx`, `src/features/agent-dashboard/ui/views/dashboard-view.tsx`
 **Verified by**: `node scripts/perf/layout-probe.mjs` (Chromium; WebKit via the Playwright Docker image, see the script's header)
 
 ### html-theme-boot

@@ -1,10 +1,10 @@
-import { ProposalsRoutePendingView } from '@/features/agent-dashboard/ui/components/proposals-route-pending-view'
-import { DataViewPending } from '@/shared/components/data-view-pending'
+import { ProposalsRecordsView } from '@/features/records-management/ui/views/proposals-records-view'
+import { DataViewPending } from '@/shared/components/data-view/core/ui/pending'
 
 export default function ProposalsLoading() {
   return (
     <DataViewPending>
-      <ProposalsRoutePendingView />
+      <ProposalsRecordsView />
     </DataViewPending>
   )
 }

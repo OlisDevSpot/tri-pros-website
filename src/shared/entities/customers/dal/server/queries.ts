@@ -173,7 +173,7 @@ export interface CustomerListRow {
   leadSourceSlug: string | null
 }
 
-/** One customers list for every table: the rules scope it, and callers pin a source or segment through fixed filters. */
+/** One customers list for every table: the read's visibility decides who sees what; a table narrows it with filters, pinned ones included. */
 export async function listCustomers(ctx: ScopedContext, input: CustomerListInput): Promise<DalReturn<PaginatedResult<CustomerListRow>>> {
   return dalDbOperation(async () => {
     const where = and(

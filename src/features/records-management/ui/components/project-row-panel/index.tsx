@@ -10,7 +10,7 @@ import { ProjectRowActionBar } from '@/features/records-management/ui/components
 import { ProjectRowDetails } from '@/features/records-management/ui/components/project-row-panel/project-row-details'
 import { ProjectSalesHistoryPane } from '@/features/records-management/ui/components/project-row-panel/project-sales-history-pane'
 import { ProjectScopesPane } from '@/features/records-management/ui/components/project-row-panel/project-scopes-pane'
-import { ExpandedRowPanel } from '@/shared/components/data-table/ui/expanded-row-panel'
+import { ExpandedRowPanel } from '@/shared/components/data-view/table/ui/expanded-row-panel'
 import { useTRPC } from '@/trpc/helpers'
 
 interface ProjectRowPanelProps {

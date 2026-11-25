@@ -1,14 +1,14 @@
 'use client'
 
-import type { RenderExpandedRow } from '@/shared/components/data-table/types/entity-expanded-row'
-import type { EntityTableView } from '@/shared/components/data-table/types/entity-table-view'
+import type { RenderExpandedRow } from '@/shared/components/data-view/table/types/entity-expanded-row'
+import type { EntityTableView } from '@/shared/components/data-view/table/types/entity-table-view'
 import type { PROJECT_FIELDS } from '@/shared/modules/projects/core/dal/project-fields'
 import type { ProjectColumnKey, ProjectRow, ProjectTableMeta } from '@/shared/modules/projects/core/lib/columns-registry'
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
 
-import { useEntityTable } from '@/shared/components/data-table/lib/use-entity-table'
+import { useEntityTable } from '@/shared/components/data-view/table/lib/use-entity-table'
 import { ROOTS } from '@/shared/config/roots'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { openCustomerProfile } from '@/shared/modules/customers/core/lib/open-customer-profile'

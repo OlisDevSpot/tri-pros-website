@@ -36,8 +36,8 @@
 4. **Client static config:** `MEETING_FILTER_CONFIG` (`src/shared/entities/meetings/constants/meeting-filter-config.ts`, `FilterDefinition[]` from `src/shared/dal/client/lib/types.ts`: select | multi-select | date-range | number-range | boolean); the table view `MEETINGS_RECORDS_TABLE_VIEW` (`src/features/records-management/constants/`) holds `query: PaginatedQueryConfig` (paramPrefix, pageSize, defaultSort, filters) + `columns`.
 5. **URL ↔ input (isomorphic):** `makePaginatedParsers` / `derivePaginatedQueryState` (`src/shared/dal/lib/query/derive-paginated-query-state.ts`), `filterParserRegistry` (`filter-parser-registry.ts`; select/multi-select validate against `options` when present), `makeQueryParsers(prefix)` (`url-state.ts`, reserved suffixes p,q,sort,dir,ps).
 6. **Client hook:** `usePaginatedQuery` (`src/shared/dal/client/hooks/use-paginated-query.ts`) + `checkHydrationParity` (`src/shared/lib/hydration-drift.ts`, dev-only). **Server prefetch:** `loadPaginatedQueryInput` (`src/shared/dal/server/lib/query/load-paginated-query-input.ts`) — same derivation, same config object, or the prefetch is wasted.
-7. **Columns:** `ColumnRegistry`/`ColumnSpec`/`useEntityColumns` (`src/shared/components/data-table/lib/use-entity-columns.tsx`): label, size, sortable, format | custom cell, accessorFn, permission (column-only CASL gate, no server counterpart).
-8. **Toolbar:** `QueryToolbar` (`src/shared/components/query-toolbar/`), `filterRendererRegistry` (one renderer per filter type). Adding a filter type = union + parser registry + renderer registry.
+7. **Columns:** `ColumnRegistry`/`ColumnSpec`/`useEntityColumns` (`src/shared/components/data-view/table/lib/use-entity-columns.tsx`): label, size, sortable, format | custom cell, accessorFn, permission (column-only CASL gate, no server counterpart).
+8. **Toolbar:** `QueryToolbar` (`src/shared/components/data-view/query-toolbar/`), `filterRendererRegistry` (one renderer per filter type). Adding a filter type = union + parser registry + renderer registry.
 
 **Adding one filterable + sortable meetings field today:** 4 files, ~6 edits, linked only by a string id; any typo fails silently.
 

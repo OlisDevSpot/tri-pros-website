@@ -13,8 +13,9 @@ import { LeadDrawer } from '@/features/campaigns-admin/ui/components/leads/lead-
 import { LeadsBulkActionBar } from '@/features/campaigns-admin/ui/components/leads/leads-bulk-action-bar'
 import { LeadsFilterBar } from '@/features/campaigns-admin/ui/components/leads/leads-filter-bar'
 import { buildLeadsColumns } from '@/features/campaigns-admin/ui/lib/leads-columns'
-import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
-import { DataTable } from '@/shared/components/data-table/ui/data-table'
+import { DataView } from '@/shared/components/data-view/core/data-view'
+import { toDataTablePagination } from '@/shared/components/data-view/table/lib/to-data-table-pagination'
+import { DataTable } from '@/shared/components/data-view/table/ui/data-table'
 import { usePaginatedQuery } from '@/shared/dal/client/hooks/use-paginated-query'
 import { fromPaginatedQuery } from '@/shared/dal/client/lib/from-paginated-query'
 import { openCustomerProfile } from '@/shared/modules/customers/core/lib/open-customer-profile'
@@ -130,38 +131,40 @@ export function CampaignsLeadsView() {
   )
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col gap-3">
-      <LeadsFilterBar query={toolbarQuery} />
+    <DataView query={toolbarQuery} entityName="leads">
+      <div className="relative flex min-h-0 flex-1 flex-col gap-3">
+        <LeadsFilterBar query={toolbarQuery} />
 
-      <div className="min-h-0 flex-1">
-        <DataTable
-          columns={columns}
-          data={tableRows}
-          entityName="lead"
-          meta={meta}
-          onRowClick={row => setDrawerRow(row)}
-          serverPagination={toDataTablePagination(toolbarQuery)}
-          skeletonRowClassName="h-[53px]"
-          tableId="campaign-leads"
+        <DataView.Body empty>
+          <DataTable
+            columns={columns}
+            data={tableRows}
+            entityName="lead"
+            meta={meta}
+            onRowClick={row => setDrawerRow(row)}
+            serverPagination={toDataTablePagination(toolbarQuery)}
+            skeletonRowClassName="h-[53px]"
+            tableId="campaign-leads"
+          />
+        </DataView.Body>
+
+        <LeadsBulkActionBar
+          campaigns={campaigns}
+          onClear={() => setSelectedIds(new Set())}
+          selectedIds={[...selectedIds]}
+        />
+
+        <LeadDrawer
+          campaigns={campaigns}
+          onOpenChange={(open) => {
+            if (!open) {
+              setDrawerRow(null)
+            }
+          }}
+          onOpenProfile={handleOpenProfile}
+          row={drawerRow}
         />
       </div>
-
-      <LeadsBulkActionBar
-        campaigns={campaigns}
-        onClear={() => setSelectedIds(new Set())}
-        selectedIds={[...selectedIds]}
-      />
-
-      <LeadDrawer
-        campaigns={campaigns}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDrawerRow(null)
-          }
-        }}
-        onOpenProfile={handleOpenProfile}
-        row={drawerRow}
-      />
-    </div>
+    </DataView>
   )
 }

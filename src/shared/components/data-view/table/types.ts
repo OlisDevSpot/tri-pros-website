@@ -1,0 +1,70 @@
+// -- Date range shape behind the time presets --
+
+export interface DateRange {
+  from: string
+  to: string
+}
+
+export interface TimePreset {
+  label: string
+  value: string
+  getRange: () => DateRange
+}
+
+// -- Server-side pagination control --
+
+/**
+ * Controlled pagination state for server-paged tables. When present, DataTable
+ * switches to `manualPagination` — caller passes the current-page slice as
+ * `data` and reports the global row count via `rowCount`.
+ *
+ * Built by `toDataTablePagination(query)` from a `useDataViewQuery` (or
+ * `fromPaginatedQuery`) result.
+ */
+export interface DataTableServerPagination {
+  pageIndex: number
+  pageSize: number
+  rowCount: number
+  onPageChange: (pageIndex: number) => void
+  onPageSizeChange?: (pageSize: number) => void
+  /** When provided, the pagination footer renders a page-size selector. */
+  pageSizeOptions?: readonly number[]
+  /** No rows to show: a first load with nothing cached, or an error fallback. With no rows, the table draws skeleton rows. */
+  isPending?: boolean
+  /** Refreshing rows already on screen: the footer says "Updating…". */
+  isFetching?: boolean
+  /** The rows belong to an older query while the next one loads; with no rows to show, the table draws skeleton rows (the dim is `DataView.Body`'s). */
+  isStale?: boolean
+  /**
+   * Invalidate + refetch the whole dataset for this table's procedure. Wired to
+   * pull-to-refresh in DataTable. Forwarded from the query result's `refresh`.
+   */
+  onRefresh?: () => Promise<unknown> | void
+}
+
+// -- Server-side sort control --
+
+/**
+ * Controlled sort state for server-sorted tables. When present, DataTable
+ * switches to `manualSorting` — caller drives the order, and column-header
+ * clicks emit `onSortChange` events that the caller routes back to its
+ * server query.
+ *
+ * `sortBy` and `fallbackVisual.id` are sort ids (a column's `sort`), not
+ * column ids — `DataTable` translates between the two via each column's
+ * `meta.sortId`.
+ *
+ * `fallbackVisual` is used to populate the visible sort indicator when the
+ * server is using its natural fallback order (no explicit `sortBy`); the
+ * URL state stays clean while the column header still shows the down-arrow.
+ *
+ * Built by `toDataTableSorting(query, opts)` from a `useDataViewQuery` (or
+ * `fromPaginatedQuery`) result.
+ */
+export interface DataTableServerSorting {
+  sortBy: string | undefined
+  sortDir: 'asc' | 'desc' | undefined
+  onSortChange: (sortBy: string | undefined, sortDir?: 'asc' | 'desc') => void
+  /** Visual default when `sortBy` is undefined; matches the server fallback. A sort id, not a column id. */
+  fallbackVisual?: { id: string, desc: boolean }
+}

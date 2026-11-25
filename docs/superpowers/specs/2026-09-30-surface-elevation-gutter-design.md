@@ -174,7 +174,7 @@ Modify:
 - `src/features/agent-dashboard/ui/components/dashboard-module.tsx`, `dashboard-proposal-card.tsx`, `dashboard-meeting-card.tsx`, `dashboard-project-card.tsx` (+ their skeletons and section lists) — rows, bands.
 - `src/features/analytics/ui/views/analytics-view.tsx` and report components — card gaps.
 - `src/shared/components/records-page-shell.tsx` (only if a gap between cards lives there).
-- `src/shared/components/data-table/ui/data-table.tsx`, `data-table-body.tsx`, `constants/cell-border.ts` (delete if unused), `src/shared/components/ui/table.tsx`.
+- `src/shared/components/data-view/table/ui/data-table.tsx`, `data-table-body.tsx`, `constants/cell-border.ts` (delete if unused), `src/shared/components/ui/table.tsx`.
 - `src/shared/constants/skeleton-tone.ts`, `src/shared/components/ui/skeleton.tsx`.
 - The 206 files in the sweep inventory.
 - `eslint.config.js` — `surface-alpha` rule + `SURFACE_ALPHA_IGNORES`.

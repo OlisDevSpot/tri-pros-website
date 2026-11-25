@@ -4,7 +4,7 @@
 
 **Goal:** Every records table is built from one shared table hook and one shared records page. Meetings moves onto them first, then the projects records page is rebuilt on them: a customer and a status column, an expanded row with the project's trades and its sales history, and a one-click portfolio toggle.
 
-**Architecture:** `useEntityTable` (in `shared/components/data-table/lib`) turns a table view, a column registry, a data-view query result and an action list into `{ visibility, dataTableProps }`. Each entity hook (`useMeetingsTable`, `useProjectsTable`) keeps only its query, its action configs, its own meta entries and its dialogs. `EntityRecordsTable` draws header, toolbar and table from that hook result. Every registry reads its row actions from one meta key, `rowActions`. The projects list read moves onto `PROJECT_FIELDS` + `PROJECT_FIELD_SQL` and carries `customerName` and `hasMeetings`. The expanded row's sales history comes from a new `meetingsRouter.reads.listForProject`, built on a meetings-with-proposals builder pulled out of the customer profile read.
+**Architecture:** `useEntityTable` (in `shared/components/data-view/table/lib`) turns a table view, a column registry, a data-view query result and an action list into `{ visibility, dataTableProps }`. Each entity hook (`useMeetingsTable`, `useProjectsTable`) keeps only its query, its action configs, its own meta entries and its dialogs. `EntityRecordsTable` draws header, toolbar and table from that hook result. Every registry reads its row actions from one meta key, `rowActions`. The projects list read moves onto `PROJECT_FIELDS` + `PROJECT_FIELD_SQL` and carries `customerName` and `hasMeetings`. The expanded row's sales history comes from a new `meetingsRouter.reads.listForProject`, built on a meetings-with-proposals builder pulled out of the customer profile read.
 
 **Tech Stack:** Next.js 15 App Router, tRPC v11, Drizzle + Postgres (Neon), Zod 4, TanStack Table/Query, CASL, shadcn/ui, pnpm, `tsx`.
 
@@ -179,7 +179,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ### Task 2: One meta key for row actions
 
 **Files:**
-- Create: `src/shared/components/data-table/types/entity-table-meta.ts`
+- Create: `src/shared/components/data-view/table/types/entity-table-meta.ts`
 - Modify: `src/shared/entities/meetings/lib/columns-registry.tsx` (`MeetingTableMeta`, the `customerName` cell)
 - Modify: `src/shared/modules/projects/core/lib/columns-registry.tsx` (`ProjectTableMeta`, the `title` cell)
 - Modify: `src/shared/entities/customers/lib/columns-registry.tsx` (`CustomerTableMeta`, the `name` cell)
@@ -191,7 +191,7 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 
 - [ ] **Step 1: The base type**
 
-Create `src/shared/components/data-table/types/entity-table-meta.ts`:
+Create `src/shared/components/data-view/table/types/entity-table-meta.ts`:
 
 ```ts
 import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
@@ -205,7 +205,7 @@ export interface EntityTableMeta<TRow> {
 
 - [ ] **Step 2: The four registries**
 
-In each registry, import `type { EntityTableMeta } from '@/shared/components/data-table/types/entity-table-meta'`, make the meta interface extend it and delete its actions key, and change the one cell that reads it:
+In each registry, import `type { EntityTableMeta } from '@/shared/components/data-view/table/types/entity-table-meta'`, make the meta interface extend it and delete its actions key, and change the one cell that reads it:
 
 | Registry | Interface becomes | Cell change |
 |---|---|---|
@@ -237,7 +237,7 @@ Browser (super-admin): the row menu (the ⋯ beside the primary cell) still open
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/shared/components/data-table/types/entity-table-meta.ts src/shared/entities/meetings/lib/columns-registry.tsx src/shared/modules/projects/core/lib/columns-registry.tsx src/shared/entities/customers/lib/columns-registry.tsx src/shared/modules/proposals/core/lib/columns-registry.tsx src/shared/entities/meetings/components/meetings-table/use-meetings-table.tsx src/shared/entities/customers/components/customers-table.tsx src/features/lead-sources-admin/ui/components/all-customers-section.tsx src/features/lead-sources-admin/ui/components/lead-source-customers-section.tsx src/features/proposal-flow/ui/components/table/index.tsx src/features/project-management/ui/components/table/index.tsx
+git add src/shared/components/data-view/table/types/entity-table-meta.ts src/shared/entities/meetings/lib/columns-registry.tsx src/shared/modules/projects/core/lib/columns-registry.tsx src/shared/entities/customers/lib/columns-registry.tsx src/shared/modules/proposals/core/lib/columns-registry.tsx src/shared/entities/meetings/components/meetings-table/use-meetings-table.tsx src/shared/entities/customers/components/customers-table.tsx src/features/lead-sources-admin/ui/components/all-customers-section.tsx src/features/lead-sources-admin/ui/components/lead-source-customers-section.tsx src/features/proposal-flow/ui/components/table/index.tsx src/features/project-management/ui/components/table/index.tsx
 git diff --cached --stat
 git commit -m "refactor(data-table): every entity table reads its row actions from one meta key
 
@@ -249,9 +249,9 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ### Task 3: The shared table hook and records page; meetings moves onto them
 
 **Files:**
-- Create: `src/shared/components/data-table/types/entity-expanded-row.ts`
-- Create: `src/shared/components/data-table/lib/use-entity-table.ts`
-- Create: `src/shared/components/entity-records-table.tsx`
+- Create: `src/shared/components/data-view/table/types/entity-expanded-row.ts`
+- Create: `src/shared/components/data-view/table/lib/use-entity-table.ts`
+- Create: `src/shared/components/data-view/table/ui/entity-records-table.tsx`
 - Modify: `src/shared/entities/meetings/components/meetings-table/use-meetings-table.tsx`
 - Create: `src/features/records-management/ui/components/meetings-records-table.tsx`
 - Modify: `src/features/records-management/ui/views/meetings-records-view.tsx`
@@ -270,7 +270,7 @@ Before starting: `git status --short src/features/records-management/ui/views/me
 
 - [ ] **Step 1: The expanded-row types**
 
-Create `src/shared/components/data-table/types/entity-expanded-row.ts`:
+Create `src/shared/components/data-view/table/types/entity-expanded-row.ts`:
 
 ```ts
 import type { ReactNode } from 'react'
@@ -288,26 +288,26 @@ export type RenderExpandedRow<TRow> = (row: TRow, ctx: EntityExpandedRowContext<
 
 - [ ] **Step 2: The shared hook**
 
-Create `src/shared/components/data-table/lib/use-entity-table.ts`:
+Create `src/shared/components/data-view/table/lib/use-entity-table.ts`:
 
 ```ts
 'use client'
 
-import type { ColumnRegistry } from '@/shared/components/data-table/lib/use-entity-columns'
-import type { RenderExpandedRow } from '@/shared/components/data-table/types/entity-expanded-row'
-import type { EntityTableMeta } from '@/shared/components/data-table/types/entity-table-meta'
-import type { EntityTableView } from '@/shared/components/data-table/types/entity-table-view'
-import type { DataTableProps } from '@/shared/components/data-table/ui/data-table'
+import type { ColumnRegistry } from '@/shared/components/data-view/table/lib/use-entity-columns'
+import type { RenderExpandedRow } from '@/shared/components/data-view/table/types/entity-expanded-row'
+import type { EntityTableMeta } from '@/shared/components/data-view/table/types/entity-table-meta'
+import type { EntityTableView } from '@/shared/components/data-view/table/types/entity-table-view'
+import type { DataTableProps } from '@/shared/components/data-view/table/ui/data-table'
 import type { EntityActionConfig } from '@/shared/components/entities/entity-actions/types'
 import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
 import type { FieldList, ToolbarFilterId } from '@/shared/dal/lib/query/field-list'
 
 import { useMemo } from 'react'
 
-import { toDataTablePagination } from '@/shared/components/data-table/lib/to-data-table-pagination'
-import { toDataTableSorting } from '@/shared/components/data-table/lib/to-data-table-sorting'
-import { useColumnVisibility } from '@/shared/components/data-table/lib/use-column-visibility'
-import { useEntityColumns } from '@/shared/components/data-table/lib/use-entity-columns'
+import { toDataTablePagination } from '@/shared/components/data-view/table/lib/to-data-table-pagination'
+import { toDataTableSorting } from '@/shared/components/data-view/table/lib/to-data-table-sorting'
+import { useColumnVisibility } from '@/shared/components/data-view/table/lib/use-column-visibility'
+import { useEntityColumns } from '@/shared/components/data-view/table/lib/use-entity-columns'
 
 export interface UseEntityTableOptions<TRow extends { id: string }, TExtra extends object, F extends FieldList, T extends ToolbarFilterId<F>> {
   tableView: EntityTableView<string, F, T>
@@ -373,20 +373,20 @@ If `useEntityColumns(registry, …)` returns `ColumnDef<unknown>[]` instead of `
 
 - [ ] **Step 3: The shared records page**
 
-Create `src/shared/components/entity-records-table.tsx`:
+Create `src/shared/components/data-view/table/ui/entity-records-table.tsx`:
 
 ```tsx
 'use client'
 
 import type { ReactNode } from 'react'
 
-import type { UseColumnVisibilityResult } from '@/shared/components/data-table/lib/use-column-visibility'
-import type { DataTableProps } from '@/shared/components/data-table/ui/data-table'
+import type { UseColumnVisibilityResult } from '@/shared/components/data-view/table/lib/use-column-visibility'
+import type { DataTableProps } from '@/shared/components/data-view/table/ui/data-table'
 import type { DataViewQueryResult } from '@/shared/dal/client/lib/types'
 import type { FieldList, ToolbarFilterId } from '@/shared/dal/lib/query/field-list'
 
-import { DataTable } from '@/shared/components/data-table/ui/data-table'
-import { QueryToolbar } from '@/shared/components/query-toolbar/ui/query-toolbar'
+import { DataTable } from '@/shared/components/data-view/table/ui/data-table'
+import { QueryToolbar } from '@/shared/components/data-view/query-toolbar/ui/query-toolbar'
 import { RecordsPageHeader } from '@/shared/components/records-page-header'
 import { RecordsPageShell } from '@/shared/components/records-page-shell'
 
@@ -477,7 +477,7 @@ export interface UseMeetingsTableOptions {
 
 Keep the meta entries' bodies exactly as they are in the file today (copy them; the block above shows today's entries). `MeetingOutcome` is the type `MeetingTableMeta.onUpdateOutcome` already uses; import it from where the registry imports it.
 
-3. Imports: add `import type { RenderExpandedRow } from '@/shared/components/data-table/types/entity-expanded-row'` and `import { useEntityTable } from '@/shared/components/data-table/lib/use-entity-table'`; remove `ReactNode`, `DataTableProps`, `EntityActionConfig`, `toDataTablePagination`, `toDataTableSorting`, `useColumnVisibility`, `useEntityColumns` and anything else `pnpm lint` reports unused.
+3. Imports: add `import type { RenderExpandedRow } from '@/shared/components/data-view/table/types/entity-expanded-row'` and `import { useEntityTable } from '@/shared/components/data-view/table/lib/use-entity-table'`; remove `ReactNode`, `DataTableProps`, `EntityActionConfig`, `toDataTablePagination`, `toDataTableSorting`, `useColumnVisibility`, `useEntityColumns` and anything else `pnpm lint` reports unused.
 
 4. The `return` stays `return { query, visibility, dataTableProps, dialogs }`. Delete the `MeetingsTableQuery` export if, after Step 6, nothing imports it (`grep -rn "MeetingsTableQuery" src`).
 
@@ -491,7 +491,7 @@ Create `src/features/records-management/ui/components/meetings-records-table.tsx
 import type { UseMeetingsTableOptions } from '@/shared/entities/meetings/components/meetings-table/use-meetings-table'
 
 import { MEETINGS_RECORDS_TABLE_VIEW } from '@/features/records-management/constants/meetings-records-table-view'
-import { EntityRecordsTable } from '@/shared/components/entity-records-table'
+import { EntityRecordsTable } from '@/shared/components/data-view/table/ui/entity-records-table'
 import { useMeetingsTable } from '@/shared/entities/meetings/components/meetings-table/use-meetings-table'
 
 export function MeetingsRecordsTable({ renderExpandedRow }: UseMeetingsTableOptions) {
@@ -505,13 +505,13 @@ Replace `src/features/records-management/ui/views/meetings-records-view.tsx` wit
 ```tsx
 'use client'
 
-import type { EntityExpandedRowContext } from '@/shared/components/data-table/types/entity-expanded-row'
+import type { EntityExpandedRowContext } from '@/shared/components/data-view/table/types/entity-expanded-row'
 import type { MeetingRow } from '@/shared/entities/meetings/lib/columns-registry'
 
 import { MeetingRowPanel } from '@/features/records-management/ui/components/meeting-row-panel'
 import { MeetingsRecordsTable } from '@/features/records-management/ui/components/meetings-records-table'
 import { DataViewBoundary } from '@/shared/components/data-view-boundary'
-import { RecordsPageFrame } from '@/shared/components/records-page-frame'
+import { RecordsPageFrame } from '@/shared/components/data-view/core/ui/records-page-frame'
 
 // Module level keeps its identity stable, so the table's props don't churn.
 function renderMeetingRowPanel(row: MeetingRow, { actions }: EntityExpandedRowContext<MeetingRow>) {
@@ -545,7 +545,7 @@ Render check: `node scripts/perf/records-probe.mjs /dashboard/meetings < /dev/nu
 - [ ] **Step 7: Commit**
 
 ```bash
-git add src/shared/components/data-table/types/entity-expanded-row.ts src/shared/components/data-table/lib/use-entity-table.ts src/shared/components/entity-records-table.tsx src/shared/entities/meetings/components/meetings-table/use-meetings-table.tsx src/features/records-management/ui/components/meetings-records-table.tsx src/features/records-management/ui/views/meetings-records-view.tsx src/shared/entities/meetings/components/meetings-table/meetings-table.tsx
+git add src/shared/components/data-view/table/types/entity-expanded-row.ts src/shared/components/data-view/table/lib/use-entity-table.ts src/shared/components/data-view/table/ui/entity-records-table.tsx src/shared/entities/meetings/components/meetings-table/use-meetings-table.tsx src/features/records-management/ui/components/meetings-records-table.tsx src/features/records-management/ui/views/meetings-records-view.tsx src/shared/entities/meetings/components/meetings-table/meetings-table.tsx
 git diff --cached --stat
 git commit -m "refactor(records): one shared table hook and records page; meetings is built from them and MeetingsTable goes
 
@@ -786,7 +786,7 @@ export const PROJECT_STATUS_BUCKET_COLORS = Object.fromEntries(
 
 In `src/shared/modules/projects/core/lib/columns-registry.tsx`:
 
-- add imports `import type { EntityTableMeta } from '@/shared/components/data-table/types/entity-table-meta'` (if Task 2 didn't already), `import type { SortId } from '@/shared/dal/lib/query/field-list'`, `import type { PROJECT_FIELDS } from '@/shared/modules/projects/core/dal/project-fields'`, `import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'`, `import { deriveProjectStatusBucket } from '@/shared/constants/enums'`, `import { PROJECT_STATUS_BUCKET_COLORS } from '@/shared/modules/projects/core/constants/status-colors'`, `import { PROJECT_STATUS_BUCKET_LABELS } from '@/shared/modules/projects/core/constants/status-labels'`;
+- add imports `import type { EntityTableMeta } from '@/shared/components/data-view/table/types/entity-table-meta'` (if Task 2 didn't already), `import type { SortId } from '@/shared/dal/lib/query/field-list'`, `import type { PROJECT_FIELDS } from '@/shared/modules/projects/core/dal/project-fields'`, `import { CustomerNameCell } from '@/shared/components/data-view/table/ui/customer-name-cell'`, `import { deriveProjectStatusBucket } from '@/shared/constants/enums'`, `import { PROJECT_STATUS_BUCKET_COLORS } from '@/shared/modules/projects/core/constants/status-colors'`, `import { PROJECT_STATUS_BUCKET_LABELS } from '@/shared/modules/projects/core/constants/status-labels'`;
 - `ProjectTableMeta` becomes:
 
 ```ts
@@ -846,15 +846,15 @@ Create `src/shared/modules/projects/core/components/projects-table/use-projects-
 ```tsx
 'use client'
 
-import type { RenderExpandedRow } from '@/shared/components/data-table/types/entity-expanded-row'
-import type { EntityTableView } from '@/shared/components/data-table/types/entity-table-view'
+import type { RenderExpandedRow } from '@/shared/components/data-view/table/types/entity-expanded-row'
+import type { EntityTableView } from '@/shared/components/data-view/table/types/entity-table-view'
 import type { PROJECT_FIELDS } from '@/shared/modules/projects/core/dal/project-fields'
 import type { ProjectColumnKey, ProjectRow, ProjectTableMeta } from '@/shared/modules/projects/core/lib/columns-registry'
 
 import { useRouter } from 'next/navigation'
 import { useCallback, useMemo } from 'react'
 
-import { useEntityTable } from '@/shared/components/data-table/lib/use-entity-table'
+import { useEntityTable } from '@/shared/components/data-view/table/lib/use-entity-table'
 import { ROOTS } from '@/shared/config/roots'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { CustomerProfileModal } from '@/shared/entities/customers/components/profile/customer-profile-modal'
@@ -910,7 +910,7 @@ Check `ROOTS.dashboard.projects.byId` and `.new` exist (`grep -n "projects" src/
 Create `src/features/records-management/constants/projects-records-table-view.ts`:
 
 ```ts
-import type { EntityTableView } from '@/shared/components/data-table/types/entity-table-view'
+import type { EntityTableView } from '@/shared/components/data-view/table/types/entity-table-view'
 import type { ProjectColumnKey } from '@/shared/modules/projects/core/lib/columns-registry'
 
 import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/lib/constants'
@@ -944,7 +944,7 @@ import { PlusIcon } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 
 import { PROJECTS_RECORDS_TABLE_VIEW } from '@/features/records-management/constants/projects-records-table-view'
-import { EntityRecordsTable } from '@/shared/components/entity-records-table'
+import { EntityRecordsTable } from '@/shared/components/data-view/table/ui/entity-records-table'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { useProjectsTable } from '@/shared/modules/projects/core/components/projects-table/use-projects-table'
@@ -977,7 +977,7 @@ Create `src/features/records-management/ui/views/projects-records-view.tsx`:
 
 import { ProjectsRecordsTable } from '@/features/records-management/ui/components/projects-records-table'
 import { DataViewBoundary } from '@/shared/components/data-view-boundary'
-import { RecordsPageFrame } from '@/shared/components/records-page-frame'
+import { RecordsPageFrame } from '@/shared/components/data-view/core/ui/records-page-frame'
 
 export function ProjectsRecordsView() {
   return (
@@ -1669,7 +1669,7 @@ import type { ProjectRow } from '@/shared/modules/projects/core/lib/columns-regi
 
 import { useMemo } from 'react'
 
-import { ExpandedRowPanel } from '@/shared/components/data-table/ui/expanded-row-panel'
+import { ExpandedRowPanel } from '@/shared/components/data-view/table/ui/expanded-row-panel'
 import { useConstructionCatalog } from '@/shared/modules/construction/core/hooks/use-construction-catalog'
 import { resolveScopes } from '@/shared/modules/construction/core/lib/resolve-catalog-ids'
 
@@ -1711,7 +1711,7 @@ Create `project-sales-history-pane.tsx`:
 
 import type { CustomerProfileMeeting } from '@/shared/entities/customers/types'
 
-import { ExpandedRowPanel } from '@/shared/components/data-table/ui/expanded-row-panel'
+import { ExpandedRowPanel } from '@/shared/components/data-view/table/ui/expanded-row-panel'
 import { ProjectMeetingList } from '@/shared/entities/meetings/components/project-meeting-list'
 
 interface ProjectSalesHistoryPaneProps {
@@ -1749,7 +1749,7 @@ import { ProjectRowActionBar } from '@/features/records-management/ui/components
 import { ProjectRowDetails } from '@/features/records-management/ui/components/project-row-panel/project-row-details'
 import { ProjectSalesHistoryPane } from '@/features/records-management/ui/components/project-row-panel/project-sales-history-pane'
 import { ProjectScopesPane } from '@/features/records-management/ui/components/project-row-panel/project-scopes-pane'
-import { ExpandedRowPanel } from '@/shared/components/data-table/ui/expanded-row-panel'
+import { ExpandedRowPanel } from '@/shared/components/data-view/table/ui/expanded-row-panel'
 import { useTRPC } from '@/trpc/helpers'
 
 interface ProjectRowPanelProps {
@@ -1803,20 +1803,20 @@ export function ProjectRowPanel({ project, actions }: ProjectRowPanelProps) {
 }
 ```
 
-Check the `ExpandedRowPanel.Error` and `.Pane` props against `src/shared/components/data-table/ui/expanded-row-panel.tsx` (read only; it carries the owner's uncommitted edit). `sales.isLoading` is false while `enabled` is false, so a project with no meetings shows the empty text at once.
+Check the `ExpandedRowPanel.Error` and `.Pane` props against `src/shared/components/data-view/table/ui/expanded-row-panel.tsx` (read only; it carries the owner's uncommitted edit). `sales.isLoading` is false while `enabled` is false, so a project with no meetings shows the empty text at once.
 
 Replace `projects-records-view.tsx` with:
 
 ```tsx
 'use client'
 
-import type { EntityExpandedRowContext } from '@/shared/components/data-table/types/entity-expanded-row'
+import type { EntityExpandedRowContext } from '@/shared/components/data-view/table/types/entity-expanded-row'
 import type { ProjectRow } from '@/shared/modules/projects/core/lib/columns-registry'
 
 import { ProjectRowPanel } from '@/features/records-management/ui/components/project-row-panel'
 import { ProjectsRecordsTable } from '@/features/records-management/ui/components/projects-records-table'
 import { DataViewBoundary } from '@/shared/components/data-view-boundary'
-import { RecordsPageFrame } from '@/shared/components/records-page-frame'
+import { RecordsPageFrame } from '@/shared/components/data-view/core/ui/records-page-frame'
 
 // Module level keeps its identity stable, so the table's props don't churn.
 function renderProjectRowPanel(row: ProjectRow, { actions }: EntityExpandedRowContext<ProjectRow>) {

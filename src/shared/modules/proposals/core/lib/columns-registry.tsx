@@ -1,15 +1,15 @@
 'use client'
 
-import type { ColumnRegistry } from '@/shared/components/data-table/lib/use-entity-columns'
-import type { EntityTableMeta } from '@/shared/components/data-table/types/entity-table-meta'
+import type { ColumnRegistry } from '@/shared/components/data-view/table/lib/use-entity-columns'
+import type { EntityTableMeta } from '@/shared/components/data-view/table/types/entity-table-meta'
 import type { ProposalStatus } from '@/shared/constants/enums'
 import type { AppRouterOutputs } from '@/trpc/routers/app'
 
 import { EyeIcon, PlusIcon } from 'lucide-react'
 
-import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'
-import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'
-import { StatusDropdownCell } from '@/shared/components/data-table/ui/status-dropdown-cell'
+import { CustomerNameCell } from '@/shared/components/data-view/table/ui/customer-name-cell'
+import { PrimaryCell } from '@/shared/components/data-view/table/ui/primary-cell'
+import { StatusDropdownCell } from '@/shared/components/data-view/table/ui/status-dropdown-cell'
 import { DateTimePicker } from '@/shared/components/date-time-picker'
 import { HybridPopoverTooltip } from '@/shared/components/hybridPopoverTooltip'
 import { proposalStatuses } from '@/shared/constants/enums'

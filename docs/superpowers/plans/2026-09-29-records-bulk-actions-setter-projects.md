@@ -914,11 +914,11 @@ git show --stat HEAD
 Rewritten 2026-10-02 against the render-isolation code. Selection reaches each memoized `DataTableRow` as a prop, like `isExpanded`; no row or cell reads `row.getIsSelected()` while rendering (D49, the `data-table.tsx` meta doc). Rules kept: the checkbox sits in the frozen primary cell beside the chevron; the header holds a tri-state "select page" box; page / page-size / sort changes clear the selection; ids a filter or search removes are pruned in state (`pruneRowSelection`, settlement 6); a checkbox tap never toggles the row or fires `onRowClick` (the existing `isRowClick` guard already treats `label` and `[role=checkbox]` as interactive, so no new guard is needed).
 
 **Files:**
-- Create: `src/shared/components/data-table/lib/prune-row-selection.ts`
+- Create: `src/shared/components/data-view/table/lib/prune-row-selection.ts`
 - Modify: `src/shared/components/ui/checkbox.tsx`
-- Modify: `src/shared/components/data-table/ui/data-table.tsx`
-- Modify: `src/shared/components/data-table/ui/data-table-body.tsx`
-- Modify: `src/shared/components/data-table/ui/data-table-row.tsx` (had another session's uncommitted `tintClassName` edit on 2026-10-02: stop and ask if it is still uncommitted)
+- Modify: `src/shared/components/data-view/table/ui/data-table.tsx`
+- Modify: `src/shared/components/data-view/table/ui/data-table-body.tsx`
+- Modify: `src/shared/components/data-view/table/ui/data-table-row.tsx` (had another session's uncommitted `tintClassName` edit on 2026-10-02: stop and ask if it is still uncommitted)
 - Test (throwaway): `.superpowers/sdd/2026-09-29-records-bulk-actions/tests/prune-row-selection.test.ts`
 
 **Interfaces:**
@@ -933,7 +933,7 @@ Create `.superpowers/sdd/2026-09-29-records-bulk-actions/tests/prune-row-selecti
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 
-import { pruneRowSelection } from '@/shared/components/data-table/lib/prune-row-selection'
+import { pruneRowSelection } from '@/shared/components/data-view/table/lib/prune-row-selection'
 
 test('keeps ticked ids still among the rows', () => {
   assert.deepEqual(pruneRowSelection({ a: true, b: true }, new Set(['a', 'b', 'c'])), { a: true, b: true })
@@ -952,7 +952,7 @@ Run: `pnpm exec tsx --test .superpowers/sdd/2026-09-29-records-bulk-actions/test
 
 - [ ] **Step 2: The prune helper**
 
-Create `src/shared/components/data-table/lib/prune-row-selection.ts`:
+Create `src/shared/components/data-view/table/lib/prune-row-selection.ts`:
 
 ```ts
 import type { RowSelectionState } from '@tanstack/react-table'
@@ -981,13 +981,13 @@ In `src/shared/components/ui/checkbox.tsx`: change the icon import to `import { 
 
 - [ ] **Step 4: Selection state in `DataTable`**
 
-In `src/shared/components/data-table/ui/data-table.tsx`:
+In `src/shared/components/data-view/table/ui/data-table.tsx`:
 
 Imports: add `RowSelectionState` to the `@tanstack/react-table` type import; add
 
 ```tsx
 import type { EntityActionConfig, RowSelection } from '@/shared/components/entities/entity-actions/types'
-import { pruneRowSelection } from '@/shared/components/data-table/lib/prune-row-selection'
+import { pruneRowSelection } from '@/shared/components/data-view/table/lib/prune-row-selection'
 import { isActionPermitted } from '@/shared/components/entities/entity-actions/lib/visible-actions'
 import { BulkActionBar } from '@/shared/components/entities/entity-actions/ui/bulk-action-bar'
 import { Checkbox } from '@/shared/components/ui/checkbox'
@@ -1083,9 +1083,9 @@ Wrap the existing scroller `div` (`:324-465`, `ref={scrollRef}` through its clos
 
 - [ ] **Step 7: Selection as a row prop**
 
-In `src/shared/components/data-table/ui/data-table-body.tsx`: add `canSelect: boolean` to `DataTableBodyProps` and destructure it; in the `rows.map` (`:107-127`), beside `const isExpanded = row.getIsExpanded()`, read `const isSelected = canSelect && row.getIsSelected()` and pass `canSelect={canSelect}` and `isSelected={isSelected}` to `<DataTableRow>`. The body reads state in its own render, as it already does for expansion; `areRowPropsEqual` compares every non-`row` prop, so only the toggled row re-renders.
+In `src/shared/components/data-view/table/ui/data-table-body.tsx`: add `canSelect: boolean` to `DataTableBodyProps` and destructure it; in the `rows.map` (`:107-127`), beside `const isExpanded = row.getIsExpanded()`, read `const isSelected = canSelect && row.getIsSelected()` and pass `canSelect={canSelect}` and `isSelected={isSelected}` to `<DataTableRow>`. The body reads state in its own render, as it already does for expansion; `areRowPropsEqual` compares every non-`row` prop, so only the toggled row re-renders.
 
-In `src/shared/components/data-table/ui/data-table-row.tsx`:
+In `src/shared/components/data-view/table/ui/data-table-row.tsx`:
 - import `import { Checkbox } from '@/shared/components/ui/checkbox'`;
 - add to `DataTableRowProps` after `isExpanded: boolean`:
 
@@ -1141,10 +1141,10 @@ As a super-admin, with screenshots per Global Constraints: `/dashboard/meetings`
 - [ ] **Step 10: Commit**
 
 ```bash
-git add src/shared/components/data-table/lib/prune-row-selection.ts src/shared/components/ui/checkbox.tsx src/shared/components/data-table/ui/data-table.tsx src/shared/components/data-table/ui/data-table-body.tsx src/shared/components/data-table/ui/data-table-row.tsx
+git add src/shared/components/data-view/table/lib/prune-row-selection.ts src/shared/components/ui/checkbox.tsx src/shared/components/data-view/table/ui/data-table.tsx src/shared/components/data-view/table/ui/data-table-body.tsx src/shared/components/data-view/table/ui/data-table-row.tsx
 git commit -m "feat(data-table): row selection owned by the table — checkbox in the primary cell, select page, the bulk bar
 
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/components/data-table/lib/prune-row-selection.ts src/shared/components/ui/checkbox.tsx src/shared/components/data-table/ui/data-table.tsx src/shared/components/data-table/ui/data-table-body.tsx src/shared/components/data-table/ui/data-table-row.tsx
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/components/data-view/table/lib/prune-row-selection.ts src/shared/components/ui/checkbox.tsx src/shared/components/data-view/table/ui/data-table.tsx src/shared/components/data-view/table/ui/data-table-body.tsx src/shared/components/data-view/table/ui/data-table-row.tsx
 git show --stat HEAD
 ```
 
@@ -1676,8 +1676,8 @@ Tasks 11–13 are replaced by `docs/superpowers/plans/2026-10-01-projects-entity
 ### Task 15: Docs, tracker, spec
 
 **Files:**
-- Modify: `src/shared/components/data-table/types.ts:44-49`
-- Modify: `src/shared/components/data-table/hooks/use-table-url-filters.ts:9-16`
+- Modify: `src/shared/components/data-view/table/types.ts:44-49`
+- Modify: `src/shared/components/data-view/table/hooks/use-table-url-filters.ts:9-16`
 - Modify: `GLOSSARY.md:62`
 - Modify: `docs/plans/2026-09-26-records-management-epic.md`
 - Modify: `docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md`
@@ -1725,10 +1725,10 @@ In the spec, add under the header a `> **Plan:** \`docs/superpowers/plans/2026-0
 Run: `pnpm tsc && pnpm lint` → clean.
 
 ```bash
-git add src/shared/components/data-table/types.ts src/shared/components/data-table/hooks/use-table-url-filters.ts GLOSSARY.md docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md
+git add src/shared/components/data-view/table/types.ts src/shared/components/data-view/table/hooks/use-table-url-filters.ts GLOSSARY.md docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md
 git commit -m "docs(records): setter and bulk actions shipped; spec and tracker follow the plan-time settlements
 
-Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/components/data-table/types.ts src/shared/components/data-table/hooks/use-table-url-filters.ts GLOSSARY.md docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md
+Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>" -- src/shared/components/data-view/table/types.ts src/shared/components/data-view/table/hooks/use-table-url-filters.ts GLOSSARY.md docs/plans/2026-09-26-records-management-epic.md docs/superpowers/specs/2026-09-28-records-bulk-actions-and-entity-tables-design.md
 git show --stat HEAD
 ```
 

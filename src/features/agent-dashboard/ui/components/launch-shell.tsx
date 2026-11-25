@@ -3,7 +3,7 @@ import { DASHBOARD_MAIN_CLASS } from '@/features/agent-dashboard/constants/dashb
 import { AppSidebarSkeleton } from '@/features/agent-dashboard/ui/components/app-sidebar-skeleton'
 import { DashboardGenericContentSkeleton } from '@/features/agent-dashboard/ui/components/dashboard-generic-content-skeleton'
 import { DashboardHomePendingView } from '@/features/agent-dashboard/ui/components/dashboard-home-pending-view'
-import { DataViewPending } from '@/shared/components/data-view-pending'
+import { DataViewPending } from '@/shared/components/data-view/core/ui/pending'
 import { SidebarInset, SidebarProvider } from '@/shared/components/ui/sidebar'
 import { PwaLaunchHandoff } from '@/shared/domains/pwa/ui/pwa-launch-handoff'
 import { ServiceWorkerRegistrar } from '@/shared/domains/pwa/ui/service-worker-registrar'

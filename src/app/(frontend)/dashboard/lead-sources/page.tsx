@@ -2,7 +2,7 @@ import type { SearchParams } from 'nuqs/server'
 
 import { redirect } from 'next/navigation'
 
-import { ALL_CUSTOMERS_TABLE_QUERY_CONFIG } from '@/features/lead-sources-admin/constants/lead-sources-table-query-configs'
+import { ALL_CUSTOMERS_TABLE_VIEW } from '@/features/lead-sources-admin/constants/all-customers-table-view'
 import { ALL_PSEUDO_ID } from '@/features/lead-sources-admin/constants/pseudo-ids'
 import { LeadSourcesView } from '@/features/lead-sources-admin/ui/views/lead-sources-view'
 import { ROOTS } from '@/shared/config/roots'
@@ -31,7 +31,7 @@ export default async function LeadSourcesPage({ searchParams }: Props) {
     // there; a one-source pane mounts its table only after a client read.
     const params = await searchParams
     if ((params.id ?? ALL_PSEUDO_ID) === ALL_PSEUDO_ID && params.tab !== 'analytics') {
-      const input = await loadDataViewQueryInput(params, ALL_CUSTOMERS_TABLE_QUERY_CONFIG)
+      const input = await loadDataViewQueryInput(params, ALL_CUSTOMERS_TABLE_VIEW.query)
       prefetch(trpc.customersRouter.business.list.queryOptions(input))
     }
   }

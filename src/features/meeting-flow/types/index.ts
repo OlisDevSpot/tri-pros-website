@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react'
-import type { CalendarEvent } from '@/shared/components/calendar/types'
+import type { CalendarEvent } from '@/shared/components/data-view/calendar/types'
 import type { PresentationHandle, PresentationSlide } from '@/shared/components/presentation/types'
 import type { MeetingOutcome, MeetingType } from '@/shared/constants/enums'
 import type { Project, ProjectMediaFile } from '@/shared/db/schema'

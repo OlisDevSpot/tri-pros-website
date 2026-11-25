@@ -214,9 +214,9 @@ Use slash-separated paths to reference any view context unambiguously. Format: `
 | `Proposals/Table/Proposal` | `proposal-flow/ui/components/table/` | `useProposalActionConfigs` |
 | `Projects/Table/Project` | `project-management/ui/components/table/` | `useProjectActionConfigs` |
 | `Profile/Meetings/Meeting` | `shared/entities/meetings/components/overview-card.tsx` | `useMeetingActionConfigs` |
-| `Profile/Projects/Project` | `shared/entities/customers/components/lists/project-entity-card.tsx` | `useProjectActionConfigs` |
+| `Profile/Projects/Project` | `shared/modules/projects/core/components/project-entity-card.tsx` | `useProjectActionConfigs` |
 | `Profile/Projects/Project/Meeting` | `shared/entities/meetings/components/overview-card.tsx` | `useMeetingActionConfigs` |
-| `Profile/Projects/Project/Meeting/Proposal` | `shared/entities/customers/components/lists/meeting-proposal-row.tsx` | `useProposalActionConfigs` |
+| `Profile/Projects/Project/Meeting/Proposal` | `shared/entities/meetings/components/meeting-proposal-row.tsx` | `useProposalActionConfigs` |
 
 ## JSONB Field Map
 

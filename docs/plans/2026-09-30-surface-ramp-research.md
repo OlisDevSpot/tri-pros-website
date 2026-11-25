@@ -127,7 +127,7 @@ lightningcss 1.30.2. Devices: iPad Safari in the field and desktop Chrome.
 
 ### Q4 — Row banding with expandable rows and a sticky first column
 
-- DOM (`src/shared/components/data-table/ui/data-table-body.tsx`):
+- DOM (`src/shared/components/data-view/table/ui/data-table-body.tsx`):
   - An optional pull-to-refresh spacer `<tr aria-hidden>` comes first (a raw `tr`, not `TableRow`).
   - Then each data row is `TableRow` (`data-slot="table-row"`), followed by a `TableRow data-expanded-row`
     when `renderExpandedRow` is set (line 195). That row stays in the DOM when collapsed.

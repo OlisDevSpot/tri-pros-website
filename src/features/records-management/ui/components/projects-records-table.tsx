@@ -6,7 +6,7 @@ import { PlusIcon } from 'lucide-react'
 import Link from 'next/link'
 
 import { PROJECTS_RECORDS_TABLE_VIEW } from '@/features/records-management/constants/projects-records-table-view'
-import { EntityRecordsTable } from '@/shared/components/entity-records-table'
+import { EntityRecordsTable } from '@/shared/components/data-view/table/ui/entity-records-table'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { useProjectsTable } from '@/shared/modules/projects/core/components/projects-table/use-projects-table'

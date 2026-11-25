@@ -5,7 +5,7 @@ import type { MeetingRow } from '@/shared/entities/meetings/lib/columns-registry
 
 import { useMemo } from 'react'
 
-import { ExpandedRowPanel } from '@/shared/components/data-table/ui/expanded-row-panel'
+import { ExpandedRowPanel } from '@/shared/components/data-view/table/ui/expanded-row-panel'
 import { withToolbarRoles } from '@/shared/components/entities/entity-actions/lib/with-toolbar-roles'
 import { EntityActionMenu } from '@/shared/components/entities/entity-actions/ui/entity-action-menu'
 import { TradeSelectionSummary } from '@/shared/entities/meetings/components/trade-selection-summary'

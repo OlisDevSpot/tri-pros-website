@@ -23,7 +23,6 @@ interface CustomerEntity {
  */
 interface CustomerActionOverrides<T extends CustomerEntity> {
   onView?: (entity: T) => void
-  onEdit?: (entity: T) => void
   onScheduleMeeting?: (entity: T) => void
   onDeleted?: (entity: T) => void
 }
@@ -50,10 +49,6 @@ export function useCustomerActionConfigs<T extends CustomerEntity>(
     {
       action: CUSTOMER_ACTIONS.view,
       onAction: overrides.onView ?? defaultNavigate,
-    },
-    {
-      action: CUSTOMER_ACTIONS.edit,
-      onAction: overrides.onEdit ?? defaultNavigate,
     },
     {
       action: CUSTOMER_ACTIONS.scheduleMeeting,

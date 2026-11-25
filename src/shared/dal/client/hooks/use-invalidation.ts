@@ -53,6 +53,8 @@ export function useInvalidation() {
   function invalidateMeeting(opts?: { meetingId?: string, customerId?: string }) {
     void qc.invalidateQueries(trpc.meetingsRouter.pathFilter())
     void qc.invalidateQueries(cross.customerPipeline())
+    // A customer's Pipeline is derived from whether a meeting exists, so the customers list reads meetings too.
+    void qc.invalidateQueries(trpc.customersRouter.business.list.queryFilter())
     void qc.invalidateQueries(cross.customerProfile(opts?.customerId))
     void qc.invalidateQueries(trpc.dashboardRouter.pathFilter())
   }

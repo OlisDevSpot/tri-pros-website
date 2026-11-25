@@ -7,7 +7,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react'
 
 import { SKELETON_EVENTS_PER_DAY } from '@/features/schedule-management/constants/schedule-calendar-config'
 import { SCHEDULE_FRAME_CLASS } from '@/features/schedule-management/constants/schedule-frame'
-import { getEventsForDay, getWeekDays, isBusinessToday, localDateToCalendarDay, seededIntInRange } from '@/shared/components/calendar/lib/calendar-helpers'
+import { getEventsForDay, getWeekDays, isBusinessToday, localDateToCalendarDay, seededIntInRange } from '@/shared/components/data-view/calendar/lib/calendar-helpers'
 import { cn } from '@/shared/lib/utils'
 
 import { ScheduleCardSkeleton } from './schedule-card-skeleton'

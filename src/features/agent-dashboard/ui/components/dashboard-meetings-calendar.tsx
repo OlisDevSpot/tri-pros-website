@@ -2,7 +2,7 @@
 
 import type { MeetingListRow } from '@/shared/entities/meetings/dal/server/queries'
 
-import { calendarDayToLocalDate, localDateToCalendarDay } from '@/shared/components/calendar/lib/calendar-helpers'
+import { calendarDayToLocalDate, localDateToCalendarDay } from '@/shared/components/data-view/calendar/lib/calendar-helpers'
 import { Calendar } from '@/shared/components/ui/calendar'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { SKELETON_BLOCK_TONE_CLASS, SKELETON_FRAME_TONE_CLASS, SKELETON_TONE_CLASS } from '@/shared/constants/skeleton-tone'

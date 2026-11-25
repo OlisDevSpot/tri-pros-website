@@ -782,13 +782,13 @@ Expected: exactly those two files in the commit.
 **Files:**
 - Modify: `src/shared/dal/client/lib/types.ts` (`DateWindowControls`)
 - Modify: `src/shared/dal/client/hooks/use-data-view-query.ts`
-- Modify: `src/shared/components/query-toolbar/ui/row-cap-notice.tsx`
+- Modify: `src/shared/components/data-view/query-toolbar/ui/row-cap-notice.tsx`
 - Modify: `src/features/schedule-management/constants/schedule-queries.ts` (`SCHEDULE_PENDING_SKELETONS`)
 - Create: `src/features/schedule-management/ui/components/schedule-card-skeleton.tsx`
 - Modify: `src/features/schedule-management/ui/components/schedule-calendar.tsx`
 - Modify: `src/features/schedule-management/ui/components/schedule-week-view.tsx`
 - Modify: `src/features/schedule-management/ui/components/schedule-today-view.tsx`
-- Modify: `src/shared/components/calendar/ui/calendar-month-view.tsx`
+- Modify: `src/shared/components/data-view/calendar/ui/calendar-month-view.tsx`
 
 **Interfaces:**
 - Consumes: Task 2's ±2 prefetch (the check's failed-read step relies on it).
@@ -849,7 +849,7 @@ with:
 
 - [ ] **Step 4: Hide the row-cap notice while pending**
 
-In `src/shared/components/query-toolbar/ui/row-cap-notice.tsx`, replace:
+In `src/shared/components/data-view/query-toolbar/ui/row-cap-notice.tsx`, replace:
 
 ```tsx
   if (query.window.kind !== 'date' || query.total <= query.window.cap) {
@@ -1040,7 +1040,7 @@ with:
 
 - [ ] **Step 10: Month view skeleton lines**
 
-In `src/shared/components/calendar/ui/calendar-month-view.tsx`:
+In `src/shared/components/data-view/calendar/ui/calendar-month-view.tsx`:
 
 Add the import `import { Skeleton } from '@/shared/components/ui/skeleton'`.
 
@@ -1103,7 +1103,7 @@ with:
 
 Run:
 ```bash
-pnpm exec eslint --fix src/shared/dal/client/lib/types.ts src/shared/dal/client/hooks/use-data-view-query.ts src/shared/components/query-toolbar/ui/row-cap-notice.tsx src/features/schedule-management/constants/schedule-queries.ts src/features/schedule-management/ui/components/schedule-card-skeleton.tsx src/features/schedule-management/ui/components/schedule-calendar.tsx src/features/schedule-management/ui/components/schedule-week-view.tsx src/features/schedule-management/ui/components/schedule-today-view.tsx src/shared/components/calendar/ui/calendar-month-view.tsx
+pnpm exec eslint --fix src/shared/dal/client/lib/types.ts src/shared/dal/client/hooks/use-data-view-query.ts src/shared/components/data-view/query-toolbar/ui/row-cap-notice.tsx src/features/schedule-management/constants/schedule-queries.ts src/features/schedule-management/ui/components/schedule-card-skeleton.tsx src/features/schedule-management/ui/components/schedule-calendar.tsx src/features/schedule-management/ui/components/schedule-week-view.tsx src/features/schedule-management/ui/components/schedule-today-view.tsx src/shared/components/data-view/calendar/ui/calendar-month-view.tsx
 pnpm tsc && pnpm lint
 ```
 Expected: no errors. `DateWindowControls` has one constructor (the hook), so nothing else needs the new field.
@@ -1119,7 +1119,7 @@ Expected: `PASS checks:schedule`. The log lines should report skeleton frames fo
 git add -- src/features/schedule-management/ui/components/schedule-card-skeleton.tsx
 git commit -m "feat(schedule): skeletons while a date window's rows load, never another key's rows or \"No events\"
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- src/shared/dal/client/lib/types.ts src/shared/dal/client/hooks/use-data-view-query.ts src/shared/components/query-toolbar/ui/row-cap-notice.tsx src/features/schedule-management/constants/schedule-queries.ts src/features/schedule-management/ui/components/schedule-card-skeleton.tsx src/features/schedule-management/ui/components/schedule-calendar.tsx src/features/schedule-management/ui/components/schedule-week-view.tsx src/features/schedule-management/ui/components/schedule-today-view.tsx src/shared/components/calendar/ui/calendar-month-view.tsx
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- src/shared/dal/client/lib/types.ts src/shared/dal/client/hooks/use-data-view-query.ts src/shared/components/data-view/query-toolbar/ui/row-cap-notice.tsx src/features/schedule-management/constants/schedule-queries.ts src/features/schedule-management/ui/components/schedule-card-skeleton.tsx src/features/schedule-management/ui/components/schedule-calendar.tsx src/features/schedule-management/ui/components/schedule-week-view.tsx src/features/schedule-management/ui/components/schedule-today-view.tsx src/shared/components/data-view/calendar/ui/calendar-month-view.tsx
 git show --stat HEAD
 ```
 Expected: exactly those nine files.
@@ -1542,7 +1542,7 @@ Replace the whole of `src/features/agent-dashboard/ui/components/dashboard-meeti
 
 import type { MeetingListRow } from '@/shared/entities/meetings/dal/server/queries'
 
-import { calendarDayToLocalDate, localDateToCalendarDay } from '@/shared/components/calendar/lib/calendar-helpers'
+import { calendarDayToLocalDate, localDateToCalendarDay } from '@/shared/components/data-view/calendar/lib/calendar-helpers'
 import { Calendar } from '@/shared/components/ui/calendar'
 import { Skeleton } from '@/shared/components/ui/skeleton'
 import { businessDayKey } from '@/shared/lib/business-time'
@@ -1815,7 +1815,7 @@ No commit: `verify.md` is gitignored working evidence for the owner.
 The spec requires the owner's usual UI pass (web-design-guidelines, then /impeccable) before the skeletons count as done. Fixes stay inside the files Tasks 3 and 6 touched.
 
 **Files:**
-- Review and possibly modify: `src/features/schedule-management/ui/components/schedule-card-skeleton.tsx`, `schedule-week-view.tsx`, `schedule-today-view.tsx`, `src/shared/components/calendar/ui/calendar-month-view.tsx`, `src/features/agent-dashboard/ui/components/dashboard-meetings-calendar.tsx`
+- Review and possibly modify: `src/features/schedule-management/ui/components/schedule-card-skeleton.tsx`, `schedule-week-view.tsx`, `schedule-today-view.tsx`, `src/shared/components/data-view/calendar/ui/calendar-month-view.tsx`, `src/features/agent-dashboard/ui/components/dashboard-meetings-calendar.tsx`
 
 - [ ] **Step 1: Capture the pending states**
 

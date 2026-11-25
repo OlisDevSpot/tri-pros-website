@@ -5,8 +5,9 @@ import type { TimeRangeKey } from '@/features/lead-sources-admin/constants/time-
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { PlusIcon, RadioTowerIcon } from 'lucide-react'
 import { parseAsString, useQueryState } from 'nuqs'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
+import { LEAD_SOURCE_CUSTOMERS_TABLE_VIEW } from '@/features/lead-sources-admin/constants/lead-source-customers-table-view'
 import { ALL_PSEUDO_ID } from '@/features/lead-sources-admin/constants/pseudo-ids'
 import { BASE_TIME_RANGE_CHIPS, DEFAULT_RANGE_KEY } from '@/features/lead-sources-admin/constants/time-ranges'
 import { buildChipsWithYears, resolveTimeRange } from '@/features/lead-sources-admin/lib/resolve-time-range'
@@ -16,8 +17,9 @@ import { LeadSourceList } from '@/features/lead-sources-admin/ui/components/lead
 import { NewLeadSourceSheet } from '@/features/lead-sources-admin/ui/components/new-lead-source-sheet'
 import { SourceDetail } from '@/features/lead-sources-admin/ui/components/source-detail'
 import { TimeRangeChips } from '@/features/lead-sources-admin/ui/components/time-range-chips'
-import { PageBar } from '@/shared/components/page-bar'
+import { PageBar } from '@/shared/components/data-view/core/ui/page-bar'
 import { Button } from '@/shared/components/ui/button'
+import { dataViewUrlKeys } from '@/shared/dal/lib/query/derive-data-view-input'
 import { cn } from '@/shared/lib/utils'
 import { useTRPC } from '@/trpc/helpers'
 
@@ -32,6 +34,12 @@ export function LeadSourcesView() {
     'id',
     parseAsString.withDefault(ALL_PSEUDO_ID),
   )
+  const [, setSourcePanePage] = useQueryState(dataViewUrlKeys(LEAD_SOURCE_CUSTOMERS_TABLE_VIEW.query.paramPrefix).pageKey)
+  // The pane's page belongs to the source it was read for; the next source starts on page 1.
+  const selectSource = useCallback((id: string) => {
+    void setSourcePanePage(null)
+    void setSelectedId(id, { history: 'push' })
+  }, [setSourcePanePage, setSelectedId])
   const [rangeKey, setRangeKey] = useQueryState(
     'range',
     parseAsString.withDefault(DEFAULT_RANGE_KEY),
@@ -115,10 +123,10 @@ export function LeadSourcesView() {
               sources={sources}
               isLoading={isLoading}
               selectedId={selectedId}
-              onSelect={id => setSelectedId(id, { history: 'push' })}
+              onSelect={selectSource}
               rangeLabel={activeChip.label}
               onAddCustomer={src => setAddSheetState(src)}
-              onView={id => setSelectedId(id, { history: 'push' })}
+              onView={selectSource}
             />
           </div>
           {/*
@@ -171,7 +179,7 @@ export function LeadSourcesView() {
       <NewLeadSourceSheet
         open={newSheetOpen}
         onOpenChange={setNewSheetOpen}
-        onCreated={id => setSelectedId(id, { history: 'push' })}
+        onCreated={selectSource}
       />
 
       <AddCustomerSheet

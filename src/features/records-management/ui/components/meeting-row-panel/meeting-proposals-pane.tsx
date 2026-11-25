@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { useMemo } from 'react'
 
 import { computeScopeCoverage } from '@/features/records-management/lib/compute-scope-coverage'
-import { ExpandedRowPanel } from '@/shared/components/data-table/ui/expanded-row-panel'
+import { ExpandedRowPanel } from '@/shared/components/data-view/table/ui/expanded-row-panel'
 import { Button } from '@/shared/components/ui/button'
 import { ROOTS } from '@/shared/config/roots'
 import { useAbility } from '@/shared/domains/permissions/client'

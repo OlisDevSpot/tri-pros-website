@@ -1,14 +1,14 @@
 'use client'
 
-import type { RenderExpandedRow } from '@/shared/components/data-table/types/entity-expanded-row'
-import type { EntityTableView } from '@/shared/components/data-table/types/entity-table-view'
+import type { RenderExpandedRow } from '@/shared/components/data-view/table/types/entity-expanded-row'
+import type { EntityTableView } from '@/shared/components/data-view/table/types/entity-table-view'
 import type { MeetingOutcome } from '@/shared/constants/enums'
 import type { MEETING_FIELDS } from '@/shared/entities/meetings/dal/meeting-fields'
 import type { MeetingColumnKey, MeetingRow, MeetingTableMeta } from '@/shared/entities/meetings/lib/columns-registry'
 
 import { useCallback, useMemo, useState } from 'react'
 
-import { useEntityTable } from '@/shared/components/data-table/lib/use-entity-table'
+import { useEntityTable } from '@/shared/components/data-view/table/lib/use-entity-table'
 import { useDataViewQuery } from '@/shared/dal/client/hooks/use-data-view-query'
 import { useAbility } from '@/shared/domains/permissions/client'
 import { AssignProjectDialog } from '@/shared/entities/meetings/components/assign-project-dialog'

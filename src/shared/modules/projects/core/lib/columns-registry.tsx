@@ -1,13 +1,13 @@
 'use client'
 
-import type { ColumnRegistry } from '@/shared/components/data-table/lib/use-entity-columns'
-import type { EntityTableMeta } from '@/shared/components/data-table/types/entity-table-meta'
+import type { ColumnRegistry } from '@/shared/components/data-view/table/lib/use-entity-columns'
+import type { EntityTableMeta } from '@/shared/components/data-view/table/types/entity-table-meta'
 import type { SortId } from '@/shared/dal/lib/query/field-list'
 import type { PROJECT_FIELDS } from '@/shared/modules/projects/core/dal/project-fields'
 import type { AppRouterOutputs } from '@/trpc/routers/app'
 
-import { CustomerNameCell } from '@/shared/components/data-table/ui/customer-name-cell'
-import { PrimaryCell } from '@/shared/components/data-table/ui/primary-cell'
+import { CustomerNameCell } from '@/shared/components/data-view/table/ui/customer-name-cell'
+import { PrimaryCell } from '@/shared/components/data-view/table/ui/primary-cell'
 import { Badge } from '@/shared/components/ui/badge'
 import { deriveProjectStatusBucket } from '@/shared/constants/enums'
 import { cn } from '@/shared/lib/utils'

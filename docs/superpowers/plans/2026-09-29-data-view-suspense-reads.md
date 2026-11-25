@@ -65,8 +65,8 @@
 | `src/shared/components/data-view-boundary.tsx` | 2 | Error boundary + Suspense whose fallback is its children in the pending context |
 | `src/shared/dal/client/hooks/use-data-view-query.ts` | 3 | Deferred URL state, suspense read, pending read |
 | `src/shared/dal/client/lib/types.ts` | 3, 4 | Result types |
-| `src/shared/components/data-table/lib/to-data-table-pagination.ts`, `types.ts`, `ui/data-table.tsx`, `ui/data-table-body.tsx` | 3 | Stale dimming; the error row goes away |
-| `src/shared/components/query-toolbar/ui/bar.tsx`, `src/shared/components/records-page-header.tsx` | 3 | Read `isPending` / `isStale` |
+| `src/shared/components/data-view/table/lib/to-data-table-pagination.ts`, `types.ts`, `ui/data-table.tsx`, `ui/data-table-body.tsx` | 3 | Stale dimming; the error row goes away |
+| `src/shared/components/data-view/query-toolbar/ui/bar.tsx`, `src/shared/components/records-page-header.tsx` | 3 | Read `isPending` / `isStale` |
 | Callers #1, #2, #5–#10 (spec §5.2) | 3 | Boundaries; loading/error branches go |
 | `src/shared/dal/client/hooks/use-paginated-query.ts`, `src/shared/dal/client/lib/from-paginated-query.ts` | 3 (interim map), 4 | Same core for the legacy hook |
 | Callers #3, #4, #11 + `campaigns/page.tsx` | 4 | Boundaries; leads prefetch |
@@ -561,8 +561,8 @@ git show --stat HEAD
 - Modify: `src/shared/dal/client/hooks/use-data-view-query.ts`
 - Modify: `src/shared/dal/client/lib/types.ts` (`DataViewQueryResult`, `DateWindowControls.isPending` doc)
 - Modify: `src/shared/dal/client/lib/from-paginated-query.ts` (interim mapping until Task 4)
-- Modify: `src/shared/components/data-table/lib/to-data-table-pagination.ts`, `src/shared/components/data-table/types.ts` (`DataTableServerPagination`), `src/shared/components/data-table/ui/data-table.tsx:~381`, `src/shared/components/data-table/ui/data-table-body.tsx:~99-107`
-- Modify: `src/shared/components/query-toolbar/ui/bar.tsx`, `src/shared/components/records-page-header.tsx`
+- Modify: `src/shared/components/data-view/table/lib/to-data-table-pagination.ts`, `src/shared/components/data-view/table/types.ts` (`DataTableServerPagination`), `src/shared/components/data-view/table/ui/data-table.tsx:~381`, `src/shared/components/data-view/table/ui/data-table-body.tsx:~99-107`
+- Modify: `src/shared/components/data-view/query-toolbar/ui/bar.tsx`, `src/shared/components/records-page-header.tsx`
 - Modify callers:
   - `src/app/(frontend)/dashboard/(records)/customers/page.tsx`
   - `src/features/records-management/ui/views/meetings-records-view.tsx`

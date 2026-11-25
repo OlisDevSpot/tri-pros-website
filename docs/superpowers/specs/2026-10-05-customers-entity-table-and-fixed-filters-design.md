@@ -1,7 +1,7 @@
 # Customers entity table and fixed filters — design
 
-> **Status:** approved by the owner 2026-10-05; plans written in two parts (`docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters.md`, `…-part-2.md`); both stress-tested 2026-10-07 and the owner's rulings of that day applied here (tracker **D64**, **D65**); the plans' open confirmations all accepted 2026-10-12, and Schedule Meeting re-ruled the same day (**D66**, §5.5). Part 1 (§3, §4, §6) is built (88d0fe37..9c56c55e); part 2 (§5, §7) is planned and waits for data-view phase 1 (D65).
-> **Tracker:** `docs/plans/2026-09-26-records-management-epic.md` — phase **R2**, rulings **D45, D48, D51, D60, D62, D64, D65, D66**, open item **O9**, audit **O3**.
+> **Status:** approved by the owner 2026-10-05; rulings of 2026-10-07 applied; built (plans: `docs/superpowers/plans/2026-10-05-customers-entity-table-and-fixed-filters.md` and `…-part-2.md`).
+> **Tracker:** `docs/plans/2026-09-26-records-management-epic.md` — phase **R2**, rulings **D45, D48, D51, D60, D62, D64, D65, D66, D68, D69**, open item **O9**, audit **O3**.
 > **Facts:** a read-only code audit on 2026-10-05 at `213662b3`. Re-check a `file:line` before relying on it.
 
 ## 1. Goals, non-goals, success criteria
@@ -25,7 +25,7 @@
 - Role-gated filters (they wait for #285).
 
 **Success criteria**
-- The three customers tables show the same rows, columns and URL keys as today, except that the lead-source pane loses its Source column (constant in that pane). Their actions are the same, except that Edit Profile and Schedule Meeting reach real targets (§5.5); the panes gain the row-cap notice the records pages have; switching sources starts the pane on page 1 (§5.4).
+- The three customers tables show the same rows, columns and URL keys as today, except that the lead-source pane loses its Source column (constant in that pane). Their actions are the same, except that Schedule Meeting reaches a real target and Edit Profile goes (§5.5, D69); the panes gain the row-cap notice the records pages have; switching sources starts the pane on page 1 (§5.4).
 - `grep -rn "getCustomers" src` finds no customers-table caller, and the procedure is gone.
 - `grep -rn "liveOnly" src` finds nothing.
 - The dashboard shows the same cards and the same rows as before.
@@ -135,11 +135,11 @@ The pane calls `customersRouter.business.list` with `fixed: { leadSource: [leadS
 
 ### 5.5 A correction: two row actions go to the wrong place
 
-"Edit Profile" and "Schedule Meeting" in every customers table fall through to `router.push(ROOTS.dashboard.pipeline())` (`use-customer-action-configs.ts:44,53-59`), because no table passes `onEdit` or `onScheduleMeeting`. **Ruled (owner, 2026-10-07):** the hook passes both. **Edit Profile** opens the profile modal in its edit mode (`CustomerProfileModal` gains `defaultEditing`, seeding the edit form for a viewer who can edit); opening it as View does would make two actions identical. **Schedule Meeting** opens the standalone `CreateMeetingModal` ("New meeting — <name>"), the target the pipeline kanban's Schedule Meeting already has (owner, 2026-10-12, **D66**; it replaces opening the profile with its Add meeting dialog up, which needed a new prop and risked the dialog losing Escape and focus to the modal). The table hook holds the customer being booked and renders the modal with its other dialogs; both modals wrap the same `CreateMeetingForm`. The pipeline kanban card's Edit Profile has the same fallback and stays out of this spec.
+"Edit Profile" and "Schedule Meeting" in every customers table fall through to `router.push(ROOTS.dashboard.pipeline())` (`use-customer-action-configs.ts:44,53-59`), because no table passes `onEdit` or `onScheduleMeeting`. **Ruled (owner, 2026-10-07):** the hook passes both. **Edit Profile** opens the profile modal in its edit mode (`CustomerProfileModal` gains `defaultEditing`, seeding the edit form for a viewer who can edit); opening it as View does would make two actions identical. **Schedule Meeting** opens the standalone `CreateMeetingModal` ("New meeting — <name>"), the target the pipeline kanban's Schedule Meeting already has (owner, 2026-10-12, **D66**; it replaces opening the profile with its Add meeting dialog up, which needed a new prop and risked the dialog losing Escape and focus to the modal). **Amended 2026-10-23 (D68):** the table hook opens it through the modal layer with `openCreateMeeting`, as the cockpit already did, rather than holding the customer and rendering the modal itself; booking refreshes the customers list, because the row's Pipeline is derived from whether a meeting exists. Both modals wrap the same `CreateMeetingForm`. **Amended 2026-10-23 (D69):** Edit Profile is a legacy action no one uses (owner), so it is deleted from `CUSTOMER_ACTIONS` and `useCustomerActionConfigs` on every customer surface, the kanban card included, and `defaultEditing` is not built. Built: `useCustomersTable` passes `onScheduleMeeting` to `useCustomerActionConfigs`, which calls `openCreateMeeting` for the row's customer (D66, D68).
 
 ### 5.6 One way to open the customer profile
 
-`openCustomerProfile(props)` (`src/shared/modules/customers/core/lib/open-customer-profile.ts`, new; owner 2026-10-07) wraps `openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props })`; its `props` are the modal's own, so `defaultEditing` passes straight through. Every caller moves to it, except a file another session holds at build time (it moves later). The `customer-pipelines` components barrel, whose only export is the modal, goes once nothing imports it.
+`openCustomerProfile(props)` (`src/shared/modules/customers/core/lib/open-customer-profile.ts`, new; owner 2026-10-07) wraps `openModal({ accessor: 'CustomerProfile', Component: CustomerProfileModal, props })`; its `props` are the modal's own. Every caller moves to it, except a file another session holds at build time (it moves later). The `customer-pipelines` components barrel, whose only export is the modal, goes once nothing imports it.
 
 ## 6. Dashboard reads
 

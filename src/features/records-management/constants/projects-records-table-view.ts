@@ -1,4 +1,4 @@
-import type { EntityTableView } from '@/shared/components/data-table/types/entity-table-view'
+import type { EntityTableView } from '@/shared/components/data-view/table/types/entity-table-view'
 import type { ProjectColumnKey } from '@/shared/modules/projects/core/lib/columns-registry'
 
 import { DEFAULT_RECORDS_PAGE_SIZE_OPTIONS } from '@/shared/dal/client/lib/constants'

@@ -853,11 +853,11 @@ Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
 ## Task 5: Records tables: card, bands, solid frozen column
 
 **Files:**
-- Modify: `src/shared/components/data-table/ui/data-table.tsx` (wrapper ~298, header ~316–335, `CELL_BORDER` import)
-- Modify: `src/shared/components/data-table/ui/data-table-body.tsx` (spinner ~73, skeleton rows ~92, rows ~112–205)
-- Modify: `src/shared/components/data-table/ui/expanded-row-panel.tsx` (Root, Pane)
+- Modify: `src/shared/components/data-view/table/ui/data-table.tsx` (wrapper ~298, header ~316–335, `CELL_BORDER` import)
+- Modify: `src/shared/components/data-view/table/ui/data-table-body.tsx` (spinner ~73, skeleton rows ~92, rows ~112–205)
+- Modify: `src/shared/components/data-view/table/ui/expanded-row-panel.tsx` (Root, Pane)
 - Modify: `src/shared/components/ui/table.tsx` (TableRow, TableFooter)
-- Delete: `src/shared/components/data-table/constants/cell-border.ts`
+- Delete: `src/shared/components/data-view/table/constants/cell-border.ts`
 - Create (scratch): `$SCRATCH/surface-verify/checks/tables.mjs`
 
 **Interfaces:**
@@ -933,7 +933,7 @@ Expected: FAIL. There is no `data-band` yet, so the `waitForSelector` times out.
 
 - [ ] **Step 2: `data-table.tsx`**
 
-- Delete `import { CELL_BORDER } from '@/shared/components/data-table/constants/cell-border'`.
+- Delete `import { CELL_BORDER } from '@/shared/components/data-view/table/constants/cell-border'`.
 - Wrapper (~298): `'grow min-h-0 flex flex-col rounded-xl border border-border/50 overflow-hidden'` → `'grow min-h-0 flex flex-col rounded-xl border border-border bg-card shadow-sm overflow-hidden'`.
 - `<TableHeader className="sticky top-0 z-10 bg-background">` → `bg-card`.
 - Header `<TableRow … className="hover:bg-transparent border-border/50">` → `className="hover:bg-transparent"`.
@@ -1015,7 +1015,7 @@ Expected: FAIL. There is no `data-band` yet, so the `waitForSelector` times out.
 - [ ] **Step 5: Delete `CELL_BORDER`**
 
 Run: `grep -rn "CELL_BORDER\|cell-border" src`
-Expected: no output. Then `git rm src/shared/components/data-table/constants/cell-border.ts` (if the owner declined commits, delete the file with `rm` instead).
+Expected: no output. Then `git rm src/shared/components/data-view/table/constants/cell-border.ts` (if the owner declined commits, delete the file with `rm` instead).
 
 - [ ] **Step 6: Table check passes**
 
@@ -1027,7 +1027,7 @@ Expected: four `✓` lines. Then set `route` in `tables.mjs` to `/dashboard/prop
 Run: `pnpm lint && pnpm tsc`
 
 ```bash
-git add src/shared/components/data-table/ui/data-table.tsx src/shared/components/data-table/ui/data-table-body.tsx src/shared/components/data-table/ui/expanded-row-panel.tsx src/shared/components/ui/table.tsx src/shared/components/data-table/constants/cell-border.ts
+git add src/shared/components/data-view/table/ui/data-table.tsx src/shared/components/data-view/table/ui/data-table-body.tsx src/shared/components/data-view/table/ui/expanded-row-panel.tsx src/shared/components/ui/table.tsx src/shared/components/data-view/table/constants/cell-border.ts
 git commit -m "feat(data-table): the table is a card; rows are banded, not ruled; the frozen column matches its row
 
 Co-Authored-By: Claude Opus 5.5 (1M context) <noreply@anthropic.com>"
