@@ -1,0 +1,104 @@
+{
+  "blockedBy": [],
+  "branch": "feat/scene-layout-lab",
+  "brief": {
+    "aheadBehind": {
+      "ahead": 687,
+      "behind": 2,
+      "onCurrentProd": false
+    },
+    "decided": [
+      {
+        "date": "2026-11-16",
+        "text": "The lot stays off the prod page in release 3; it goes on /dashboard/trade-scene in the next release, designed properly first"
+      },
+      {
+        "date": "2026-11-15",
+        "text": "Release 3 = lab merged into the foundation before heating & cooling (d117705e2); heating & cooling stays intact and takes the merge later"
+      },
+      {
+        "date": "2026-11-15",
+        "text": "The lab's spot chip wins every overlap; the lab's Areas (Exterior / Interior / Lot) and Property facts names win; the lab page does not ship"
+      },
+      {
+        "date": "2026-11-15",
+        "text": "Every owed look happens on the merged branch before the ship branch is cut"
+      },
+      {
+        "date": "2026-11-13",
+        "text": "Picking a system never moves the camera; Focus and Look inside are card actions"
+      },
+      {
+        "date": "2026-11-13",
+        "text": "The open card's room follows the open card, never re-aims (D16)"
+      }
+    ],
+    "files": 1736,
+    "goal": "The trade scene's lot becomes editable data: yards, ground materials, fences, real textures, plus a tap-to-edit spot chip and system action card.",
+    "lastCommit": {
+      "date": "2026-11-14",
+      "sha": "657db45ff",
+      "subject": "fix(trade-scenes): the chip's Escape comes before the section's, a tap re-renders only the chip, and the placement clamp holds the top"
+    },
+    "phases": [
+      {
+        "id": "L1+L2",
+        "name": "Lot as data + lot editor",
+        "note": "in the release 3 merge",
+        "status": "built"
+      },
+      {
+        "id": "Fences",
+        "name": "Lot fences as drawn lengths",
+        "note": "owner looked 2026-11-05; in the release 3 merge",
+        "status": "built"
+      },
+      {
+        "id": "Facts+Areas",
+        "name": "Property facts and Areas",
+        "note": "2026-11-07; owner look pending; in the release 3 merge",
+        "status": "built"
+      },
+      {
+        "id": "Textures",
+        "name": "Material textures",
+        "note": "owner finds them flat (R320); in the release 3 merge",
+        "status": "built"
+      },
+      {
+        "id": "Covering T5",
+        "name": "Covering wear Task 5",
+        "note": "in the release 3 merge",
+        "status": "built"
+      },
+      {
+        "id": "Spot chip",
+        "name": "Spot chip + system action card",
+        "note": "2026-11-14; iPad check + copy owed; in the release 3 merge",
+        "status": "built"
+      },
+      {
+        "id": "L3",
+        "name": "Layout L3",
+        "status": "idea"
+      }
+    ],
+    "plan": "docs/superpowers/plans/2026-11-02-scene-layout-l1-l2-lot-as-data.md",
+    "spec": "docs/superpowers/specs/2026-11-02-scene-layout-design.md",
+    "tracker": "docs/plans/2026-10-16-trade-scenes-epic.md",
+    "watch": [
+      "Must never merge origin/main directly (43 add/add conflicts). Diverged from the foundation branch; both sit on old prod."
+    ],
+    "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/scene-layout-lab"
+  },
+  "briefAt": "2026-11-21",
+  "kind": "epic",
+  "move": "you",
+  "name": "Scene layout lab: spot chip",
+  "next": "Superseded by release 3 (#291); every commit is in merge/lab-into-foundation, now tagged archive/. Not removed yet: its uncommitted CONTEXT.md holds about 30 scene terms (Spot chip, Pick, Focus, System action card, Yard, Region, Fence kind, Appearance…) and 9 shipped specs and plans that exist nowhere else. Copy at ~/claude-archive/2026-11-21-scene-lanes/scene-layout-lab/; tag archive/feat/scene-layout-lab set. Your call: carry the terms onto #291, then remove.",
+  "notes": "Merged into the foundation for release 3 at d199e1d8e (2026-11-15). Branched off trade-scenes and carries old main: never push it. Untracked here: specs/plans incl. the paused ground-depth design. Commit eb50d435a alone fails tsc.",
+  "order": 9,
+  "port": 3005,
+  "stage": "review",
+  "updated": "2026-11-22"
+}

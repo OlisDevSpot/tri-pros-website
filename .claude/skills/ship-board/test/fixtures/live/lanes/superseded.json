@@ -1,0 +1,11 @@
+{
+  "blockedBy": [],
+  "branch": "feat/edit-proposal-layout · feat/filter-grouping-fields · merge/lab-into-foundation",
+  "kind": "cleanup",
+  "move": "parked",
+  "name": "Superseded worktrees",
+  "next": "Removed 2026-11-14 after a no-loss check: every commit has a twin on a kept branch; tags archive/edit-proposal-layout and archive/filter-grouping-fields keep the tips; on-disk notes in ~/claude-archive/2026-11-14-superseded-worktrees/. 2026-11-22: merge/lab-into-foundation (.worktrees/release-3-merge) removed after a no-loss check: every scene file matches release 3 except the dev-only lab page and its check's assertion, which release 3 held back on purpose; tag archive/merge/lab-into-foundation keeps the tip.",
+  "order": 13,
+  "stage": "shipped",
+  "updated": "2026-11-22"
+}

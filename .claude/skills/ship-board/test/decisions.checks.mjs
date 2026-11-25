@@ -21,8 +21,8 @@ async function fire(page, what) {
 const laneCard = (page, id) => page.locator(`#lane-view [data-section=decisions] .lb-card[data-id="${id}"]`);
 const tabCard = (page, id) => page.locator(`#dec-list .lb-card[data-id="${id}"]`);
 const headerChip = (page) => page.evaluate(() => [...document.querySelectorAll("#lane-view [data-section=header] .lb-chips [data-sel]")].map((c) => c.textContent).find((t) => /waiting on you/.test(t)) || "");
-const nowChip = (page, lane) => page.evaluate((lane) => {
-  const row = document.querySelector(`#tree a.row[href="#lane-${lane}"]`);
+const mapChip = (page, lane) => page.evaluate((lane) => {
+  const row = document.querySelector(`#map a.row[href="#lane-${lane}"]`);
   return row ? [...row.querySelectorAll(".chip")].map((c) => c.textContent).find((t) => /waiting on you/.test(t)) || "" : null;
 }, lane);
 
@@ -67,8 +67,8 @@ async function run({ page, hash, viewport, scheme, opt, skillDir }, expect) {
   const shot = (name) => page.screenshot({ path: join(skillDir, "test", "shots", `dec-${name}-${viewport}-${scheme}.png`), fullPage: true });
   const n0 = (await updates(page)).length;
 
-  if (hash === "now") {
-    expect((await nowChip(page, "data-views")) === "3 waiting on you", "the Now row for Data views says 3 waiting on you (got " + JSON.stringify(await nowChip(page, "data-views")) + ")");
+  if (hash === "map") {
+    expect((await mapChip(page, "data-views")) === "3 waiting on you", "the Map row for Data views says 3 waiting on you (got " + JSON.stringify(await mapChip(page, "data-views")) + ")");
     return;
   }
   if (hash !== "lane-data-views") return;
@@ -122,8 +122,8 @@ async function run({ page, hash, viewport, scheme, opt, skillDir }, expect) {
 
   // Counts: two open decisions and one open owner check.
   expect((await headerChip(page)) === "3 waiting on you", "the lane header says 3 waiting on you (got " + (await headerChip(page)) + ")");
-  await go(page, "#now");
-  expect((await nowChip(page, "data-views")) === "3 waiting on you", "the Now row for Data views says 3 waiting on you (got " + (await nowChip(page, "data-views")) + ")");
+  await go(page, "#map");
+  expect((await mapChip(page, "data-views")) === "3 waiting on you", "the Map row for Data views says 3 waiting on you (got " + (await mapChip(page, "data-views")) + ")");
   const badge = await page.evaluate(() => document.getElementById("dec-count").textContent);
   const openAll = await page.evaluate(() => LaneCore.openCount(S.decisions));
   expect(badge === String(openAll) && openAll === 4, `the tab badge counts open decisions and checks (badge ${badge}, expected 4)`);
@@ -175,7 +175,7 @@ async function run({ page, hash, viewport, scheme, opt, skillDir }, expect) {
     await casl.locator("textarea[name=own]").fill("ship it");
     const kept = await page.evaluate(async () => {
       const before = document.activeElement;
-      window.__vercelTick();
+      window.__mcpTick("Vercel");
       await new Promise((r) => setTimeout(r, 100));
       return { same: document.activeElement === before, textarea: before.tagName === "TEXTAREA", connected: before.isConnected, value: before.value };
     });

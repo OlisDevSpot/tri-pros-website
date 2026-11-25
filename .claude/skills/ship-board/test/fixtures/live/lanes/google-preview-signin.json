@@ -1,0 +1,75 @@
+{
+  "blockedBy": [],
+  "branch": "fix/oauth-proxy-tunnel-host (merged, deleted)",
+  "brief": {
+    "builtOn": "2026-11-21",
+    "decided": [
+      {
+        "date": "2026-11-21",
+        "text": "Tunnel signs in directly with the x-skip-oauth-proxy header; ngrok redirect URI stays in Google (owner: separate service, own access). #294 reworked to that."
+      },
+      {
+        "date": "2026-11-19",
+        "text": "Prod disables /oauth-proxy-callback so a leaked key can't mint prod sessions (owner: include in the PR)."
+      },
+      {
+        "date": "2026-11-19",
+        "text": "No vercel.app wildcard: previews trust VERCEL_URL + VERCEL_BRANCH_URL only; owner kept it over a custom preview domain."
+      }
+    ],
+    "goal": "Google sign-in on every Vercel preview and any local port, with only production's callback registered in Google.",
+    "lastCommit": {
+      "date": "2026-11-21",
+      "sha": "d26579935",
+      "subject": "fix(auth): ngrok tunnel signs in with Google directly, skipping the relay (#294)"
+    },
+    "phases": [
+      {
+        "id": "relay",
+        "name": "oAuthProxy relay through www",
+        "status": "shipped",
+        "step": "prod"
+      },
+      {
+        "id": "hosts",
+        "name": "Each deployment trusts only its own hosts; prod hand-back door shut",
+        "status": "shipped",
+        "step": "prod"
+      },
+      {
+        "id": "tunnel",
+        "name": "ngrok tunnel signs in directly (PR #294, approach H)",
+        "status": "shipped",
+        "step": "prod"
+      },
+      {
+        "id": "verify",
+        "name": "Owner check left: remove only the localhost redirect URI in Google",
+        "status": "building",
+        "step": "next"
+      }
+    ],
+    "plan": "docs/superpowers/plans/2026-11-18-parallel-lanes-lean-cut.md",
+    "stand": "Shipped: #293 (f722657a6) relays previews and local ports through www; #294 (d26579935) lets the ngrok tunnel sign in directly. Owner verified ngrok on the iPad before the merge; prod sessions 144 after (142 before #293). One owner check left: remove only the localhost redirect URI in Google once every lane has merged main.",
+    "watch": [
+      "Tunnel sign-in relies on better-auth's undocumented x-skip-oauth-proxy header; if an upgrade drops it, tunnel sign-in fails with ERR_SSL_PROTOCOL_ERROR to https://localhost.",
+      "Tunnel sign-in depends on better-auth's undocumented x-skip-oauth-proxy header; after a better-auth upgrade, check tunnel sign-in."
+    ],
+    "worktree": ".worktrees/google-preview-signin"
+  },
+  "briefAt": "2026-11-21",
+  "kind": "platform",
+  "move": "you",
+  "name": "Google sign-in on previews (oAuthProxy)",
+  "neon": "none (no schema change)",
+  "next": "Owner: remove only the localhost redirect URI from the Google OAuth client once every lane has merged main (the ngrok one stays). Worktree and branch removed.",
+  "notes": "Part of the parallel ship epic: lean-cut plan Task 8 = parent plan Task 12 = spec K4. Canonical prod host is www (apex 307s to it); Google lists the www callback (owner 2026-11-19). OAUTH_PROXY_SECRET set in main .env and Vercel Production + Preview (Sensitive) 2026-11-19. Worktree .worktrees/google-preview-signin, branch off origin/main with no upstream.",
+  "order": 10.6,
+  "port": null,
+  "pr": 294,
+  "session": {
+    "lastSeen": "2026-11-21"
+  },
+  "stage": "shipped",
+  "updated": "2026-11-21"
+}

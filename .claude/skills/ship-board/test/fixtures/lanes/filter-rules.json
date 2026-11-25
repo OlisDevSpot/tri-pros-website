@@ -124,6 +124,7 @@
     "worktree": "/home/olis-solutions/olis-v3/nextjs/tri-pros-website/.worktrees/filter-rules"
   },
   "briefAt": "2026-11-14",
+  "issue": 309,
   "kind": "feature",
   "move": "agent",
   "name": "Filter rules FR4 · FR5",

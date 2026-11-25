@@ -1,0 +1,71 @@
+{
+  "blockedBy": [],
+  "branch": "release/2026-11-13-drain",
+  "brief": {
+    "agent": [
+      "Carry merge follow-ups between epics (openCreateMeeting in cockpit, DV path moves, MoneyField)"
+    ],
+    "aheadBehind": {
+      "ahead": 29,
+      "behind": 0,
+      "onCurrentProd": true
+    },
+    "decided": [
+      {
+        "date": "2026-11-13",
+        "text": "Home visit work held on its own branch; one drain PR for everything with no pending check"
+      },
+      {
+        "date": "2026-11-13",
+        "text": "Proposal cluster, data views and R19 each get their own branch; new branches stack on their epic base"
+      },
+      {
+        "date": "2026-11-13",
+        "text": "After #289 merges: reset local main to origin/main, then db:push:dev from main"
+      },
+      {
+        "date": "2026-11-06",
+        "text": "Task 0 runs as one /pre-ship session with the owner present (WF2)"
+      },
+      {
+        "date": "2026-10-21",
+        "text": "A rescheduled meeting's outcome is negative, so it reads red"
+      }
+    ],
+    "files": 50,
+    "goal": "Ships two small fixes (rescheduled meetings show red, modal stack cap 8) plus dev tooling and all held docs, so local main can reset to match prod.",
+    "lastCommit": {
+      "date": "2026-11-13",
+      "sha": "944dea666",
+      "subject": "docs: ADR 0006 accepted, multi-proposal lessons from issue 29, GoGreen epic, Inngest worker design, energy impact and ATTOM updates, auditor ledger"
+    },
+    "phases": [
+      {
+        "id": "T0",
+        "name": "Drain PR #289",
+        "note": "green, mergeable; awaits owner merge",
+        "status": "built"
+      },
+      {
+        "id": "T0-after",
+        "name": "Reset local main + db:push:dev",
+        "note": "approved; runs after #289 merges",
+        "status": "plan"
+      }
+    ],
+    "plan": "docs/superpowers/plans/2026-11-01-worktree-pr-flow.md",
+    "spec": "docs/superpowers/specs/2026-11-01-worktree-pr-flow-design.md",
+    "tracker": null,
+    "worktree": "/tmp/claude-1000/-home-olis-solutions-olis-v3-nextjs-tri-pros-website/f23c3ec7-8869-415b-a571-7f897dbc32a3/scratchpad/drain-wt"
+  },
+  "briefAt": "2026-11-21",
+  "kind": "chore",
+  "move": "agent",
+  "name": "Drain: modal cap, /orient, dev router, docs",
+  "next": "Shipped as #289 (e482d5060) on 2026-11-21; local main matches origin/main. Left: realign the dev database (approved) and delete the release/2026-11-13-drain branch.",
+  "notes": "50 files, +6402 lines; the oldest code (modal cap 8) is from 15 Oct. Worktree lives in a scratchpad folder, not .worktrees/. · Docs-heavy: 27 of 50 files are docs. No schema, env or package change. Worktree lives in another session's scratchpad, so it is fragile.",
+  "order": 1,
+  "pr": 289,
+  "stage": "shipped",
+  "updated": "2026-11-21"
+}

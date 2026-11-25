@@ -102,7 +102,7 @@ export default async function ({ page, hash, viewport, scheme, opt, skillDir }) 
   }
 
   if (lane === "nope") {
-    const t = await page.evaluate(() => ({ text: document.getElementById("lane-view").innerText, back: !!document.querySelector('#lane-view a.back[href="#now"]') }));
+    const t = await page.evaluate(() => ({ text: document.getElementById("lane-view").innerText, back: !!document.querySelector('#lane-view a.back[href="#map"]') }));
     expect(t.back, "unknown lane keeps the back link");
     expect(t.text.includes("No lane called nope"), "unknown lane says No lane called nope");
     return { failures };
@@ -131,7 +131,7 @@ export default async function ({ page, hash, viewport, scheme, opt, skillDir }) 
     expect(s.empty.includes("brief"), "old-shape data views shows the brief empty state");
     expect(s.releaseMap, "old-shape data views still draws the release map");
     const steps = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#lane-view .lb-map [data-step]")].map((e) => [e.dataset.step, e.querySelectorAll(".lb-ph").length])));
-    expect(eq(steps, { prod: 0, release: 13, next: 0, later: 0 }), "phases with no step sit under This release " + JSON.stringify(steps));
+    expect(eq(steps, { prod: 2, release: 3, next: 3, later: 5 }), "phases with no step are placed by their status " + JSON.stringify(steps));
   }
   if (lane === "superseded") {
     expect(eq(s.sections, ["header", "stands", "blocks", "decisions"]), "superseded sections " + JSON.stringify(s.sections));
@@ -303,6 +303,24 @@ export default async function ({ page, hash, viewport, scheme, opt, skillDir }) 
       return res;
     });
     expect(loop.flag && loop.kind === "more" && eq(loop.names.sort(), ["lane:data-views", "lane:proposal-page"]), "a loop opens in the panel naming only its lanes: " + JSON.stringify(loop));
+
+    // A blocker issue with no lane row still blocks: drawn as its own node, and the row agrees.
+    const noLane = await page.evaluate(() => {
+      const keep = S.lanes;
+      S.lanes = keep.map((l) => (l.id === "data-views" ? { ...l, blockedBy: ["issue-999"] } : l));
+      renderLanes();
+      const n = document.querySelector('#lane-view .lb-bmap [data-node="issue-999"]');
+      const t = n?.querySelector("text"), r = n?.querySelector("rect");
+      const fits = !!t && t.getBoundingClientRect().right <= r.getBoundingClientRect().right;
+      const edge = [...document.querySelectorAll("#lane-view .lb-bmap path.lb-wait title")].some((e) => /no lane/.test(e.textContent));
+      const row = [...document.querySelectorAll('#map a.row[href="#lane-data-views"] .chip')].map((c) => c.textContent);
+      const res = { text: t?.textContent, fits, edge, row, col: n?.getAttribute("data-col") };
+      S.lanes = keep;
+      renderLanes();
+      return res;
+    });
+    expect(noLane.text === "#999 · no lane" && noLane.fits && noLane.col === "0", "a blocker issue with no row is drawn as #999 · no lane in the waits-on column " + JSON.stringify(noLane));
+    expect(noLane.edge && noLane.row.includes("blocked"), "the no-lane blocker draws a waits edge and the row reads blocked " + JSON.stringify(noLane));
   }
 
   return { ...out, failures };

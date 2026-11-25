@@ -4,14 +4,30 @@
   const OLD_KEYS = ["open", "notes", "orientPage", "statusBlock", "pr"];
 
   const deps = (l) => [...new Set([l.stackedOn, ...(l.blockedBy || [])].filter(Boolean))];
-  const activeDeps = (l, m) => deps(l).filter((d) => m[d] && m[d].stage !== "shipped");
+  // The sync skill writes a blocker issue nobody has opened a lane for as issue-<n>; it still blocks.
+  const ISSUE_ID = /^issue-([1-9]\d*)$/;
+  const noLane = (id, m) => { const x = !m[id] && ISSUE_ID.exec(id); return x ? Number(x[1]) : null; };
+  const activeDeps = (l, m) => deps(l).filter((d) => (m[d] ? m[d].stage !== "shipped" : noLane(d, m) !== null));
+  function resolveDeps(lanes) {
+    const m = Object.fromEntries(lanes.map((l) => [l.id, l]));
+    return Object.fromEntries(lanes.map((l) => [l.id, activeDeps(l, m).map((id) => {
+      const n = noLane(id, m);
+      return n !== null ? { id, issue: n, noLane: true } : { id, issue: m[id].issue ?? null, noLane: false };
+    })]));
+  }
   const isLive = (l) => l.stage !== "shipped" && l.move !== "parked";
-  function groupOf(l, m) {
+  // Owner ruling: a lane on the agent's move has gone quiet after 4 days with no commit, push, preview build or check-in.
+  const QUIET_DAYS = 4;
+  // One reading of a lane for its row, its blocker-map node and its Decisions group. Without activity the agent's
+  // lanes stay "agent": "working" would claim activity nobody has measured.
+  function stateOf(l, m, activity) {
     if (l.stage === "shipped") return "shipped";
     if (l.move === "parked") return "parked";
     if (activeDeps(l, m).length) return "blocked";
     if (l.move === "you") return "you";
-    return "agent";
+    const q = activity && activity.quietDays;
+    if (typeof q !== "number") return "agent";
+    return q >= QUIET_DAYS ? "quiet" : "working";
   }
 
   // Tarjan: a lane that only waits on a loop is not in it.
@@ -43,7 +59,7 @@
     const m = Object.fromEntries(lanes.map((l) => [l.id, l]));
     const me = m[laneId];
     const placed = new Set([laneId]);
-    const mk = (id, col) => ({ id, col, ...(m[id] && m[id].move === "parked" && m[id].stage !== "shipped" ? { parked: true } : {}) });
+    const mk = (id, col) => ({ id, col, ...(m[id] && m[id].move === "parked" && m[id].stage !== "shipped" ? { parked: true } : {}), ...(noLane(id, m) !== null ? { noLane: noLane(id, m) } : {}) });
     const cols = [[], [mk(laneId, 1)], [], []];
     activeDeps(me, m).forEach((id) => { placed.add(id); cols[0].push(mk(id, 0)); });
     const dependents = (ids) => lanes.filter((l) => isLive(l) && !placed.has(l.id) && deps(l).some((d) => ids.includes(d))).map((l) => l.id);
@@ -113,7 +129,7 @@
 
   const pad = (n) => String(n).padStart(2, "0");
   const localDay = (d) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
-  const isEpic = (brief) => Array.isArray(brief && brief.phases) && brief.phases.length >= 5;
+  const hasStepMap = (brief) => Array.isArray(brief && brief.phases) && brief.phases.length >= 5;
   const normalizeOptions = (options) => (options || []).map((o) => typeof o === "string" ? { label: o, consequence: "" } : { label: o.label, consequence: o.consequence || "" });
 
   const isCheck = (d) => d.kind === "check";
@@ -146,14 +162,19 @@
     return { answer, answeredOn: today, own: own ? true : null, note: n || null, reply: null, replyOn: null, appliedOn: null };
   }
 
+  // Until the sync skill writes a step on every phase, the phase's status places it.
+  const STEP_BY_STATUS = { shipped: "prod", built: "release", building: "release", decided: "next", plan: "next", spec: "next", idea: "later", parked: "later" };
+  function stepFor(phase) {
+    if (!phase) return "release";
+    if (phase.step === "parked") return "later"; // parked work must not read as this-release work
+    if (STEPS.includes(phase.step)) return phase.step;
+    return STEP_BY_STATUS[phase.status] || "release";
+  }
+
   function pinsByStep(brief, decisions, laneId) {
     const out = { prod: [], release: [], next: [], later: [] };
     const phases = (brief && brief.phases) || [];
-    const stepOf = (d) => {
-      const s = (phases.find((p) => p.id === d.phase) || {}).step;
-      if (s === "parked") return "later"; // a decision on parked work must not read as this-release work
-      return STEPS.includes(s) ? s : "release";
-    };
+    const stepOf = (d) => stepFor(phases.find((p) => p.id === d.phase));
     const { open, checks } = laneDecisions(decisions, laneId);
     const ordered = [...open].sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
     ordered.forEach((d, i) => out[stepOf(d)].push({ kind: "decision", id: d.id, n: i + 1 }));
@@ -181,7 +202,9 @@
   const isObj = (x) => !!x && typeof x === "object" && !Array.isArray(x);
   const isStr = (x) => typeof x === "string";
   // Optional fields: absent and null read the same, since the page clears a field by writing null.
-  function validateBrief(b) {
+  const isIssueNo = (x) => Number.isInteger(x) && x > 0;
+  // The row's issue anchors a brief written for that row, so the number need not be copied into the brief.
+  function validateBrief(b, lane) {
     const p = [];
     if (!isObj(b)) return ["brief is missing"];
     const rows = (k) => {
@@ -195,7 +218,8 @@
     if (b.stand != null && !isStr(b.stand)) p.push("stand must be a string");
     if (b.phases === undefined) p.push("missing phases");
     else if (!Array.isArray(b.phases)) p.push("phases must be a list");
-    if (!b.tracker && !b.plan && !b.spec) p.push("needs one of tracker, plan or spec");
+    if (b.issue != null && !isIssueNo(b.issue)) p.push("issue must be a positive integer");
+    if (b.issue == null && !(lane && lane.issue != null) && !b.tracker && !b.plan && !b.spec) p.push("needs one of issue, tracker, plan or spec");
     rows("phases").forEach((ph, i) => {
       if (!isObj(ph)) { p.push("phase " + i + " must be an object"); return; }
       if (!ph.id || !ph.name) p.push("phase " + i + " needs id and name");
@@ -223,10 +247,20 @@
     if (ab != null && !(isObj(ab) && typeof ab.ahead === "number" && typeof ab.behind === "number" && typeof ab.onCurrentProd === "boolean")) p.push("aheadBehind must be {ahead, behind, onCurrentProd}");
     for (const k of ["watch", "agent", "evidence"]) rows(k).forEach((x, i) => { if (!isStr(x)) p.push(k + " row " + i + " must be a string"); });
     if (rows("watch").length > 3) p.push("watch has more than 3 items");
-    const decided = rows("decided");
-    if (decided.length > 6) p.push("decided has more than 6 rows");
-    decided.forEach((d, i) => { if (!isObj(d) || !isStr(d.date) || !DAY.test(d.date) || !isStr(d.text)) p.push("decided row " + i + " needs a YYYY-MM-DD date and text"); });
     for (const k of OLD_KEYS) if (k in b) p.push("old-shape key " + k);
+    return p;
+  }
+
+  const ISO_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})$/;
+  // Only the fields the board's rules read from a row; the brief has validateBrief.
+  function validateLane(l) {
+    if (!isObj(l)) return ["lane is missing"];
+    const p = [];
+    if (l.issue != null && !isIssueNo(l.issue)) p.push("issue must be a positive integer");
+    if (typeof l.order !== "number" || !Number.isFinite(l.order)) p.push("order must be a number");
+    if (l.blockedBy != null && !(Array.isArray(l.blockedBy) && l.blockedBy.every((x) => isStr(x) && x))) p.push("blockedBy must be a list of row ids");
+    const at = l.blockedBySyncedAt;
+    if (at != null && !(isStr(at) && (DAY.test(at) || (ISO_TIME.test(at) && !Number.isNaN(Date.parse(at)))))) p.push("blockedBySyncedAt must be YYYY-MM-DD or an ISO time");
     return p;
   }
 
@@ -268,5 +302,90 @@
     return { brief, notes, decisions };
   }
 
-  globalThis.LaneCore = { deps, activeDeps, isLive, groupOf, findCycle, layoutBlockerMap, localDay, isEpic, normalizeOptions, laneDecisions, openCount, answerPatch, pinsByStep, waitGap, collisionAsOf, collisionStale, validateBrief, validateDecision, docId, migrateBrief };
+  // GitHub returns labels as names from list_issues and get_sub_issues, as {name} objects from some other tools.
+  const labelNames = (issue) => ((issue && issue.labels) || []).map((x) => (typeof x === "string" ? x : x && x.name)).filter(Boolean);
+  const hasLabel = (issue, name) => labelNames(issue).includes(name);
+
+  // parentOf(n) answers an epic's number, null for no parent, undefined while some epic's sub-issues are unknown.
+  function kindOf(row, issue, parentOf) {
+    if (!row || row.issue == null) return "standalone";
+    if (!issue) return null;
+    if (hasLabel(issue, "epic")) return "epic";
+    const p = parentOf(row.issue);
+    if (p === undefined) return null;
+    if (p !== null) return "epic";
+    return hasLabel(issue, "bug") ? "bug" : "standalone";
+  }
+
+  // gh: {open: list_issues payload | null, epics: issues | null, bugs: issues | null, subs: {epicNumber: sub_issues}}.
+  // A missing list or epic means "not answered yet": the rows it would place wait in `unplaced`, never guessed.
+  function mapBlocks(rows, gh) {
+    const g = gh || {};
+    const known = new Map();
+    for (const list of [g.open && g.open.issues, g.epics, g.bugs]) for (const i of list || []) if (!known.has(i.number)) known.set(i.number, i);
+    // Both label lists are complete, so an open issue missing from them (a later page, or closed) carries neither label.
+    const issueOf = (n) => known.get(n) || (g.epics && g.bugs ? { number: n, labels: [] } : undefined);
+    const live = rows.filter((r) => r.stage !== "shipped").sort((a, b) => (a.order ?? 99) - (b.order ?? 99) || String(a.id).localeCompare(String(b.id)));
+    const epicRows = live.filter((r) => r.issue != null && hasLabel(issueOf(r.issue), "epic"));
+    const subs = g.subs || {};
+    const parentOf = (n) => {
+      const e = epicRows.find((r) => (subs[r.issue] || []).some((s) => s.number === n));
+      if (e) return e.issue;
+      return epicRows.every((r) => subs[r.issue]) ? null : undefined;
+    };
+    const epics = epicRows.map((r) => {
+      const s = subs[r.issue];
+      return { row: r, issue: issueOf(r.issue), lanes: [], plans: s ? { closed: s.filter((x) => String(x.state).toLowerCase() === "closed").length, total: s.length } : null };
+    });
+    const byIssue = Object.fromEntries(epics.map((e) => [e.row.issue, e]));
+    const out = { epics, standalone: [], bugs: [], unplaced: [], backlog: null };
+    for (const r of live) {
+      if (epicRows.includes(r)) continue;
+      const k = kindOf(r, r.issue == null ? null : issueOf(r.issue), parentOf);
+      if (k === "epic") byIssue[parentOf(r.issue)].lanes.push(r);
+      else if (k === "bug") out.bugs.push(r);
+      else if (k === "standalone") out.standalone.push(r);
+      else out.unplaced.push(r);
+    }
+    if (g.open) {
+      const withRow = new Set(rows.map((r) => r.issue).filter((n) => n != null));
+      const free = [...known.values()].filter((i) => !withRow.has(i.number));
+      const issues = [...free.filter((i) => hasLabel(i, "epic")), ...free.filter((i) => !hasLabel(i, "epic"))];
+      const total = g.open.totalCount, nextPage = g.open.pageInfo && g.open.pageInfo.hasNextPage;
+      // Issues past the first page are counted from GitHub's total; the known ones are already in `issues`.
+      const unseen = nextPage && typeof total === "number" ? Math.max(0, total - known.size) : 0;
+      out.backlog = { issues, more: unseen };
+    }
+    return out;
+  }
+
+  // The lane hook reads the issue number from {type}/{issue}-{slug} (CLAUDE.md, Branch).
+  const BRANCH_TYPES = ["feat", "fix", "refactor", "chore", "docs"];
+  const TYPE_BY_LABEL = [["bug", "fix"], ["refactor", "refactor"], ["chore", "chore"], ["documentation", "docs"], ["docs", "docs"]];
+  const SLUG_MAX = 40;
+  function startCommand(issue) {
+    const title = String(issue.title || "");
+    const pre = /^(feat|fix|refactor|chore|docs)(\([^)]*\))?!?:\s*/i.exec(title);
+    const type = pre ? pre[1].toLowerCase() : (TYPE_BY_LABEL.find(([l]) => hasLabel(issue, l)) || [null, "feat"])[1];
+    const words = title.slice(pre ? pre[0].length : 0).replace(/^epic:\s*/i, "")
+      .normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
+    let slug = "";
+    for (const w of words) { const next = slug ? slug + "-" + w : w; if (next.length > SLUG_MAX) break; slug = next; }
+    const branch = (BRANCH_TYPES.includes(type) ? type : "feat") + "/" + issue.number + "-" + (slug || "issue");
+    // .worktrees/ is gitignored and outside tsconfig, so a lane's copy never shows up in the main checkout.
+    // The env files come from .worktreeinclude, and a checkout without node_modules cannot pass the pre-commit gate.
+    const dir = ".worktrees/" + issue.number + "-" + (slug || "issue");
+    return { branch, command: "git fetch -q origin && git worktree add -b " + branch + " " + dir + " origin/main && (xargs -a .worktreeinclude -I{} cp --parents {} " + dir + "/ || true) && cd " + dir + " && pnpm install --frozen-lockfile && claude" };
+  }
+
+  function safeLink(url) {
+    if (typeof url !== "string" || !url) return null;
+    let u;
+    try { u = new URL(url); } catch { return null; }
+    if (u.protocol !== "https:") return null;
+    const h = u.hostname;
+    return h === "github.com" || h === "vercel.app" || h.endsWith(".vercel.app") ? u.href : null;
+  }
+
+  globalThis.LaneCore = { deps, noLane, activeDeps, resolveDeps, isLive, stateOf, findCycle, layoutBlockerMap, localDay, hasStepMap, normalizeOptions, laneDecisions, openCount, answerPatch, stepFor, pinsByStep, waitGap, collisionAsOf, collisionStale, validateBrief, validateLane, validateDecision, docId, migrateBrief, labelNames, kindOf, mapBlocks, startCommand, safeLink };
 })();
