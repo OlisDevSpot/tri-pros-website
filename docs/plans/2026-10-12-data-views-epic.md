@@ -1,6 +1,15 @@
 # Data views — Epic Tracker
 
-> **Status:** 🔨 **BUILDING.** DV0 (instant tab return) and DV1 (edge-to-edge) are on prod. DV2 (the data-view spec) was approved on 2026-10-14. DV3, DV3a and DV4 are built on local main and wait for the owner to ship them together (data-view spec §11 #18). Next is the ship, then DV5 and DV6 (the calendars and the kanban) and R3 (proposals onto a field list).
+> **Status**
+> - Stage: built · DV3 · DV3a · DV4 in review (PR #297, review flows on the board); DV5–DV11 not planned
+> - Built on: `feat/data-views` · Verified at: `feat/data-views@cb0a592c4` (2026-11-25) · page: https://claude.ai/artifact/7D8kgccA7iy6f8ATWzLdqS#lane-data-views
+> - Done: DV0, DV1 (prod) · DV2 spec · DV3 #308, DV3a #356, DV4 #357 (PR #297, with D70 and D71)
+> - Next: owner walks #297's review flows → squash-merge → DV5 #358 and DV6 #359 plans (both after #308)
+> - Open: A1 prod check · A3 glossary · skeleton rows under the error fallback (owner)
+> - Blocked: DV5 #358, DV6 #359, DV8 #360 on #308 · DV9 #361 on DV8 · DV10 #362 on DV6
+
+Epic: [#354](https://github.com/OlisDevSpot/tri-pros-website/issues/354). Its body is the contract; everything that changes lives here.
+
 > **Started:** 2026-10-12, when the owner re-anchored the dashboard work on one structure: an entity rendered in a data view.
 > **This file is the live index of the order.** Update it as each step lands, and cite its IDs (DV1…) in specs, plans and commits. It holds no design. The design lives in the specs below, and the entity-table work keeps its own tracker.
 > **Baseline:** `origin/main` at `eff6ff23f` (2026-10-13).
