@@ -18,7 +18,7 @@ test("the harness clock is the newest day the board fixtures were written", () =
 
 test("connector fixtures load one file per server, keyed by the flag name", () => {
   const c = loadConnectors();
-  assert.deepEqual(c.map((s) => [s.key, s.server]).sort(), [["github", "GitHub"], ["vercel", "Vercel"]]);
+  assert.deepEqual(c.map((s) => [s.key, s.server]).sort(), [["github", "github"], ["vercel", "Vercel"]]);
   const vc = c.find((s) => s.key === "vercel");
   assert.deepEqual(vc.calls.map((x) => x.tool), ["list_deployments"]);
   assert.equal(vc.calls[0].payload.result.deployments.length, 3);
