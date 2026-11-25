@@ -4,7 +4,13 @@
 > - Stage: building · T1 done 2026-11-23 (Step 2 moved to T3 and the cut kept to dev by WF14; Step 6 dropped, WF15) · WF8 and WF14 updated in place on #311 · T12, T13, T14 partly done · WF16 (2026-11-24): docs go straight to `main` · CI's `next build` ran out of memory 2026-11-24: Build gets a 6 GB heap (#343, PR #344)
 > - Built on: `origin/main` (no lane branch) · Verified at: `origin/main@295154357` (2026-11-23) · page: https://claude.ai/artifact/7D8kgccA7iy6f8ATWzLdqS#lane-dev-flow
 > - Done: T0 (#289) · T1 (prod protected; `NEON_PROD_ENDPOINT_ID` in `.env` + Vercel Preview/Production; dev's `neondb_owner` password cut and the new address in `.env`, every worktree `.env`, Vercel Preview `DATABASE_URL`, the Actions secret `DATABASE_URL`) · T12 Steps 1–3 (#293, #294; no vercel.app wildcard) · T13 port claim · T14 per-checkout pre-commit gate, pre-ship retired, lane rules in CLAUDE.md (#295, #296)
-> - Next: T7 (prod-script Action), then T7a (one `.env`, one rotation command, loud CI DB check), then WF9's order: T9 → T2–T3 → T3a → T4–T6 → T8 → T10 → T12 rest → T15 → T16. The WF8 rename (one name per role) needs its own task: endpoint boot guard first, then the rename in one change. The lane-linking plan (WF13) is not written yet.
+> - Next (WF9, order updated 2026-11-24):
+>   1. T5: the prod-endpoint guard, and the eight scripts that open `DATABASE_URL` themselves move onto `@/shared/db`. This closes a live risk: every local `.env` holds prod, with the full owner login, under `DATABASE_URL`.
+>   2. Then T7 (prod-script Action) and T7a (one `.env`, one rotation command, loud CI DB check).
+>   3. Then T7b: the WF8 rename in one change.
+>   4. Then T9 → T2–T3 → T3a → T4, T6 → T8 → T10 → T12 rest → T15 → T16.
+>
+>   The lane-linking plan (WF13) is not written yet.
 > - Open: the four `wt/*` copies still log in with prod's password until T3a (WF14, accepted) · `trade-scenes` `.env` still holds the R2 pair main used before RF0 (2026-10-20), which `R2_TOKEN` no longer derives; main's pair is current (owner to confirm in Cloudflare; T7a Step 1 links it) · WF12 Vercel token home (blocks the lane-linking plan's `link`) · T10's removal of four non-`db:*` prod scripts not in the spec (owner OK) · Lane / Lane copy / Review slot not in `GLOSSARY.md` (owner to agree the terms) · plan A (merge commits) design not written
 > - Blocked: none
 
@@ -40,12 +46,13 @@ WF = Worktree Flow: the owner's rulings on this plan. Each one is a `Ruling WF<n
 
 ## Review Focus
 
-1. **Scrub fails partway** (bad statement, dropped connection) → branch deleted, `wt:db create` exits 1, no `DATABASE_DEV_URL` written, and the app in that worktree refuses to boot. Test in Tasks 3 and 5.
+1. **Scrub fails partway** (bad statement, dropped connection) → branch deleted, `wt:db create` exits 1, no `DATABASE_URL` written, and the app in that worktree refuses to boot. Test in Tasks 3 and 7b.
 2. **Setup re-run on a half-made copy** (setup killed after the fork, before the scrub) → the copy has no scrub marker, so it is deleted and forked again; a clean copy is reused and still migrated; a lane whose `.env.local` already names a live copy keeps it. Test in Task 3.
 3. **A database with no baseline** (prod before T9 Step 5, a hand-made copy) → `migrateDb` refuses with a plain message and runs no SQL file. Test in Task 9.
 4. **Two PRs' migrations merged out of order** (an added journal entry older than `main`'s newest) → CI fails with a plain message; nothing reaches prod. Test in Task 10.
 5. **Odd git branch names** (`feat/Filters_Grouping`, `feat/a_b` vs `feat/a-b`, 80+ chars, detached HEAD) → distinct, valid Neon names; an empty name is refused. Test in Task 2.
-6. **CI with the boot check on** (no `VERCEL_ENV`, no `DATABASE_DEV_URL` in `.env.ci`) → the PR Checks build stays green. Check in Task 5.
+6. **CI with the prod-endpoint guard on** (no `VERCEL_ENV`; `.env.ci` carries `NEON_PROD_ENDPOINT_ID`; the `DATABASE_URL` secret is development) → the PR Checks build stays green. Check in Tasks 5 and 7b.
+7. **The laptop fallback onto prod** (no `DATABASE_DEV_URL`, `.env`'s `DATABASE_URL` on prod, `DRIZZLE_TARGET` unset) → refused before any connection opens. Test in Task 5.
 
 ---
 
@@ -75,7 +82,7 @@ WF = Worktree Flow: the owner's rulings on this plan. Each one is a `Ruling WF<n
 
 **Files:**
 - Modify: `scripts/lib/neon-api.ts` (add methods to `NeonClient`; rewrite the "(dispatch uses the same two)" comment at line 27)
-- Modify: `scripts/lib/neon-refresh.ts` (add `updated_at: string` to `NeonBranch`; add `unpooledUrl` next to `endpointIdFromUrl`)
+- Modify: `scripts/lib/neon-refresh.ts` (add `updated_at: string` to `NeonBranch`; add `unpooledUrl`; `endpointIdFromUrl` itself moved to `src/shared/config/database-url.ts` in T5)
 - Create: `scripts/lib/neon-worktree.ts`
 - Test: `scripts/verify-neon-worktree.ts`
 
@@ -88,7 +95,7 @@ WF = Worktree Flow: the owner's rulings on this plan. Each one is a `Ruling WF<n
 - Produces (`neon-worktree.ts`, pure):
   - `neonBranchName(gitBranch: string): string` — throws on an empty or whitespace name; `wt/` + `slugify(gitBranch, { maxLen })` (`src/shared/lib/slugify.ts:5`, no parallel slug rule); appends `-<6-char hash of the raw name>` only when the slug differs from `gitBranch.toLowerCase().replaceAll('/', '-')` (so `feat/a_b` and `feat/a-b` part ways) or was truncated
   - `prodBranchId(endpoints: NeonEndpoint[], prodEndpointId: string): string` — throws if not found
-  - `assertNotProdEndpoint(url: string, prodEndpointId: string | undefined): void` — built on `endpointIdFromUrl` (`neon-refresh.ts:20-26`); throws `Refusing: NEON_PROD_ENDPOINT_ID is not set` when the id is empty, and `Refusing: <host> is the production endpoint` on a match (pooled or direct host)
+  - `assertNotProdEndpoint` is not made here: Task 3 imports T5's, from `src/shared/config/database-url.ts`; its cases are tested in T5's `verify-database-url.ts`
   - `prunePlan(input: { branches: NeonBranch[], liveBranchIds: string[], now: Date, idleDays: number }): { orphans: NeonBranch[], idle: NeonBranch[] }` — only `wt/*` branches considered; liveness by Neon branch id (read from each worktree's `.env.local`)
 
 - [ ] **Step 1: Write the failing test** `scripts/verify-neon-worktree.ts`:
@@ -100,10 +107,6 @@ assert.notEqual(neonBranchName('feat/a_b'), neonBranchName('feat/a-b'))
 assert.equal(neonBranchName(`feat/${'x'.repeat(100)}`).length <= 63, true)
 assert.notEqual(neonBranchName(`feat/${'x'.repeat(100)}a`), neonBranchName(`feat/${'x'.repeat(100)}b`))
 assert.throws(() => neonBranchName(''), /branch name/)
-assert.throws(() => assertNotProdEndpoint('postgres://u:p@ep-prod-123-pooler.x.neon.tech/db', 'ep-prod-123'), /production endpoint/)
-assert.throws(() => assertNotProdEndpoint('postgres://u:p@ep-prod-123.x.neon.tech/db', 'ep-prod-123'), /production endpoint/)
-assert.throws(() => assertNotProdEndpoint('postgres://u:p@ep-dev-9.x.neon.tech/db', undefined), /not set/)
-assert.doesNotThrow(() => assertNotProdEndpoint('postgres://u:p@ep-dev-9.x.neon.tech/db', 'ep-prod-123'))
 assert.equal(prodBranchId([{ id: 'ep-prod-123', host: 'h', branch_id: 'br-prod' }], 'ep-prod-123'), 'br-prod')
 assert.equal(unpooledUrl('postgres://u:p@ep-dev-9-pooler.x.neon.tech/db?sslmode=require'), 'postgres://u:p@ep-dev-9.x.neon.tech/db?sslmode=require')
 // connectionUri('br-prod', { pooled: false, prodBranchId: 'br-prod' }) rejects /production branch/ and the fake fetch saw no request
@@ -137,7 +140,7 @@ Runs after T9 Step 5 (WF9): prod carries the baseline row, so every fork inherit
   - `createWorktreeDb(deps: WorktreeDbDeps, input: { gitBranch: string, knownBranchId?: string }): Promise<{ branchId: string, url: string, reused: boolean }>`
   - `deleteWorktreeDb(deps: WorktreeDbDeps, target: { branchId?: string, gitBranch?: string }): Promise<void>`
   - `WorktreeDbDeps = { neon: NeonClient, scrub: (url: string) => Promise<void>, isScrubbed: (url: string) => Promise<boolean>, migrate: (url: string) => Promise<unknown>, prodEndpointId: string }`. The lane-linking plan adds its Vercel dependency here; this plan builds no Vercel call (WF12).
-  - CLI: `pnpm wt:db create` (git branch from `git branch --show-current`; `knownBranchId` from `NEON_BRANCH_ID` in `./.env.local`; writes `DATABASE_DEV_URL=` (pooled) and `NEON_BRANCH_ID=` through `upsertEnvKeys`), `pnpm wt:db delete` (by `NEON_BRANCH_ID` from `.env.local`, falling back to the name; missing `NEON_API_KEY` or nothing to delete → prints why and exits 0, so an archive hook never blocks), `pnpm wt:db prune [--apply]` (lists orphans and copies idle 14+ days; `--apply` deletes orphans only, never an idle copy a live worktree names). Reads `NEON_PROD_ENDPOINT_ID` from env.
+  - CLI: `pnpm wt:db create` (git branch from `git branch --show-current`; `knownBranchId` from `NEON_BRANCH_ID` in `./.env.local`; writes `DATABASE_URL=` (pooled; T7b runs first) and `NEON_BRANCH_ID=` through `upsertEnvKeys`), `pnpm wt:db delete` (by `NEON_BRANCH_ID` from `.env.local`, falling back to the name; missing `NEON_API_KEY` or nothing to delete → prints why and exits 0, so an archive hook never blocks), `pnpm wt:db prune [--apply]` (lists orphans and copies idle 14+ days; `--apply` deletes orphans only, never an idle copy a live worktree names). Reads `NEON_PROD_ENDPOINT_ID` from env.
 
 Create order: `knownBranchId` names a live Neon branch → reuse it (whatever its name), `migrate`. Else name → if `wt/<slug>` exists: `isScrubbed` (unpooled) → true: reuse, then `migrate` · false: delete it and continue as new. New: fork from the prod branch → wait → `connectionUri` (unpooled; refuses the prod branch before fetching) → `assertNotProdEndpoint` → `scrub` → `migrate` → return pooled URL. Any failure after the fork deletes the branch and rethrows.
 
@@ -159,18 +162,18 @@ Create order: `knownBranchId` names a live Neon branch → reuse it (whatever it
 - [ ] **Step 2:** Run → FAIL.
 - [ ] **Step 3:** Implement. **Scrub audit:** check every table holding tokens, webhook secrets, device subscriptions or send triggers. `voip_dids` is the visit-SMS gate: check its FK closure (`pg_constraint`, `confrelid`) before choosing `DELETE` vs `UPDATE`; never `TRUNCATE … CASCADE`. List each addition in the PR body with its reason. Rewrite the docblock at `refresh-dev-from-prod.ts:7-24` (line 19 still describes `wt/issue-N ← development`) and move its `./lib/load-env` import to the top.
 - [ ] **Step 4:** Test → `✅ worktree-db verified`. `pnpm tsc` and `pnpm exec eslint` on the new files clean.
-- [ ] **Step 5 (owner says "run"; after T9 Step 5):** In a scratch worktree, `pnpm wt:db create` → branch `wt/<slug>` appears; `.env.local` has `DATABASE_DEV_URL` whose host ≠ prod and `NEON_BRANCH_ID`; `select count(*) from session` → 0; `select count(*) from drizzle.__scrubbed` → 1. Run `pnpm wt:db create` again → "reused". `pnpm wt:db delete` → branch gone; rerun delete → exits 0.
+- [ ] **Step 5 (owner says "run"; after T9 Step 5):** In a scratch worktree, `pnpm wt:db create` → branch `wt/<slug>` appears; `.env.local` has `DATABASE_URL` whose host ≠ prod and `NEON_BRANCH_ID`; `select count(*) from session` → 0; `select count(*) from drizzle.__scrubbed` → 1. Run `pnpm wt:db create` again → "reused". `pnpm wt:db delete` → branch gone; rerun delete → exits 0.
 - [ ] **Step 6:** Commit `feat(scripts): wt:db creates, scrubs, migrates and deletes per-worktree Neon branches`.
 
 ### Task 3a: Re-fork the four lane copies (WF11)
 
 **Files:** each lane's `src/shared/db/migrations/` (one generated migration per lane with schema changes) and its `.env.local` (not committed).
 
-Lanes: `feat/data-views` (`wt/data-views`), `feat/proposal-page` (`wt/proposal-page`), `feat/home-visit-messages` (`wt/home-visit-messages`), `feat/office-tv-mode` (`wt/office-tv-mode`). All four fork `development` and carry schema pushed by hand; while they exist, `db:refresh:dev` refuses (`refresh-dev-from-prod.ts:83-93`). Their Vercel Preview `DATABASE_DEV_URL` entries (set 2026-11-21) point at these copies.
+Lanes: `feat/data-views` (`wt/data-views`), `feat/proposal-page` (`wt/proposal-page`), `feat/home-visit-messages` (`wt/home-visit-messages`), `feat/office-tv-mode` (`wt/office-tv-mode`). All four fork `development` and carry schema pushed by hand; while they exist, `db:refresh:dev` refuses (`refresh-dev-from-prod.ts:83-93`). Their branch-scoped Vercel Preview entries (set 2026-11-21 as `DATABASE_DEV_URL`, renamed to `DATABASE_URL` in T7b Step 5) point at these copies.
 
 - [ ] **Step 1:** In each lane, `git merge origin/main` (brings the baseline), then `pnpm db:generate --name <lane-slug>`: the generated file is the lane's schema on top of prod. Owner reads each migration's plain-English summary. Commit by path on the lane branch.
 - [ ] **Step 2 (owner says "run", per lane):** `pnpm wt:db delete` in the lane (deletes the old copy by `NEON_BRANCH_ID`), then `pnpm wt:db create` → a new `wt/feat-<slug>` copy forked from prod, scrubbed, migrated with baseline + the lane migration. Verify `migrateDb` reported `applied: 1` (or 0 for a lane with no schema change) and the lane's own tables exist.
-- [ ] **Step 3 (owner, console):** delete or repoint the lane's Preview `DATABASE_DEV_URL` in Vercel (the old copy is gone, so the preview would fail to connect). The lane-linking plan's `wt:db link` replaces this step for every later lane.
+- [ ] **Step 3 (owner, console):** delete or repoint the lane's branch-scoped Preview `DATABASE_URL` in Vercel (the old copy is gone, so the preview would fail to connect). The lane-linking plan's `wt:db link` replaces this step for every later lane.
 - [ ] **Step 4:** `pnpm wt:db prune` lists no orphans; `pnpm db:refresh:dev --dry-run` no longer reports children of `development`. Ask the owner before the real refresh (it resets their dev data), then T9 Step 5's dev half runs.
 
 ### Task 4: `db:refresh:dev` without prod's URL
@@ -179,29 +182,53 @@ Lanes: `feat/data-views` (`wt/data-views`), `feat/proposal-page` (`wt/proposal-p
 - Modify: `scripts/refresh-dev-from-prod.ts`
 
 **Interfaces:**
-- Consumes: env `NEON_PROD_ENDPOINT_ID` (Task 1 Step 3), replacing `endpointIdFromUrl(DATABASE_URL)` as the `prodEndpointId` passed to `resolveTarget`.
+- Consumes: env `NEON_PROD_ENDPOINT_ID` (Task 1 Step 3), replacing `endpointIdFromUrl(<prod URL>)` as the `prodEndpointId` passed to `resolveTarget`.
 
-- [ ] **Step 1:** Replace the `DATABASE_URL` read with `NEON_PROD_ENDPOINT_ID` (fail with a clear message if unset). Replace the `pnpm dispatch …` hints in the has-children error with `pnpm wt:db prune` / `pnpm wt:db delete`.
+- [ ] **Step 1:** Replace the prod URL read (`DATABASE_PROD_URL` after T7b) with `NEON_PROD_ENDPOINT_ID` (fail with a clear message if unset). Replace the `pnpm dispatch …` hints in the has-children error with `pnpm wt:db prune` / `pnpm wt:db delete`.
 - [ ] **Step 2:** `pnpm db:refresh:dev --dry-run` with `DATABASE_URL` unset in the shell → prints target `development`, parent `production`, the scrub plan, touches nothing.
 - [ ] **Step 3:** Commit `refactor(scripts): db:refresh:dev identifies prod by endpoint id, not its URL`.
 
-### Task 5: Local runs need their own database; unset never means prod
+### Task 5: Nothing off production opens the prod database (WF8 step 1, runs right after T1)
+
+Rewritten 2026-11-24 for WF8 (one name per role); built under today's names, before T7. Every local `.env` holds prod, with the full owner login, under `DATABASE_URL`. `src/shared/db/index.ts:9-11` falls back to it whenever `DATABASE_DEV_URL` is missing. Eight scripts open their own connection on `DATABASE_URL`, and three of them say "Default: prod DB". The old gate on a missing `DATABASE_DEV_URL` had no teeth before T8; this guard does from its first commit.
 
 **Files:**
-- Create: `src/shared/config/local-dev-database.ts` — `localDevDatabaseMissing(env)`, pure, no imports (`data-target.ts:3` imports `server-env`, so the check cannot live there without a cycle)
-- Modify: `src/shared/config/server-env.ts` — one gate in the existing `VERCEL_ENV` gate block (`:196-223`), reading `DRIZZLE_TARGET` from `process.env` (it is not in the Zod schema)
-- Modify: `.github/workflows/pr-checks.yml` — Build step env gains `DATABASE_DEV_URL: ${{ secrets.DATABASE_URL }}` (CI has no `VERCEL_ENV`, and `.env.ci` has no `DATABASE_DEV_URL`, so without it the gate fails every PR; after T8 Step 3 that secret is the development branch)
-- Modify: `scripts/backfill-lead-source-fk.ts:8`, `scripts/seed-lead-sources.ts:10-11`, `scripts/migrate-notes-to-activities.ts:26`, `scripts/dump-failed-sow.ts:8`, `scripts/match-before-after.ts:37` — drop each script's own `Pool`/`Client` on `DATABASE_URL` and use `db` from `@/shared/db` (it already follows `isProductionData()`), with `./lib/load-env` imported first
-- Test: `scripts/verify-data-target.ts`
+- Create: `src/shared/config/database-url.ts`. Pure, with no imports, so `drizzle.config.ts` can import it by relative path and `data-target.ts`'s import of `server-env` causes no cycle. Holds `endpointIdFromUrl` (moved from `scripts/lib/neon-refresh.ts:21-27`; `scripts/refresh-dev-from-prod.ts:5` imports it from here, no second copy), `assertNotProdEndpoint` and `selectDatabaseUrl`.
+- Modify: `src/shared/config/server-env.ts`: add `NEON_PROD_ENDPOINT_ID: z.string().optional()` to the schema.
+- Modify: `src/shared/db/index.ts`, `drizzle.config.ts` (CRLF: Edit tool, then check that `git diff --shortstat` stays small), `src/shared/db/lib/db-reset.ts`, `src/shared/db/lib/db-seed.ts`. Each picks its URL through `selectDatabaseUrl`, so there is one rule in one place.
+- Modify: `.env.ci`: add `NEON_PROD_ENDPOINT_ID=ep-flat-wind-afvc0zla`. It is an endpoint id, not a secret, and CI has no `VERCEL_ENV`, so the guard runs in PR Checks' build. The build's `DATABASE_URL` secret has been development since T1 Step 2a.
+- Modify: move these scripts onto `db` from `@/shared/db`, which follows `isProductionData()`, so `DRIZZLE_TARGET=prod` still reaches prod: `dump-failed-sow.ts:8`, `match-before-after.ts:37`, `verify-long-path.ts:23,68`, `verify-short-path.ts:19,53,94`, `verify-sow-pdf-structure.ts:9`, `seed-lead-sources.ts:10-11`, `backfill-lead-source-fk.ts:8`, `migrate-notes-to-activities.ts:26` (all under `scripts/`).
+  - Raw SQL stays as `db.$client.query(...)`, and `./lib/load-env` is imported first.
+  - Each script's own `Pool`/`Client`, the `DRIZZLE_TARGET === 'dev'` branches and the "Default: prod" comments go.
+  - The run lines that say `DRIZZLE_TARGET=prod DATABASE_URL=...` keep `DRIZZLE_TARGET=prod` and drop the inline URL.
+- Test: `scripts/verify-database-url.ts`
 
 **Interfaces:**
-- Produces: `localDevDatabaseMissing(env: { VERCEL_ENV?: string, DRIZZLE_TARGET?: string, DATABASE_DEV_URL?: string }): boolean` — true only when `VERCEL_ENV` is unset, `DRIZZLE_TARGET !== 'prod'`, and `DATABASE_DEV_URL` is empty. The server-env gate throws `DATABASE_DEV_URL is not set. Outside Vercel the app runs only on a lane or dev database (run: pnpm wt:db create).`
-- The gate has teeth only after T8 Step 4 moves `DATABASE_DEV_URL` out of `.env`; until then every worktree's copied `.env` still carries shared dev.
+- Produces `endpointIdFromUrl(connectionString: string): string`, unchanged from `neon-refresh.ts`.
+- Produces `assertNotProdEndpoint(url: string, prodEndpointId: string | undefined): void`. It throws `Refusing: NEON_PROD_ENDPOINT_ID is not set` when the id is empty (fail closed), and `Refusing: <endpoint id> is the production endpoint` on a pooled or direct match. It never prints the URL. Task 2 and the lane-linking plan reuse it.
+- Produces `selectDatabaseUrl(input: { prod: boolean, env: { DATABASE_URL?: string, DATABASE_DEV_URL?: string, NEON_PROD_ENDPOINT_ID?: string } }): string`:
+  - `prod` → `DATABASE_URL`.
+  - Otherwise `DATABASE_DEV_URL ?? DATABASE_URL`, then `assertNotProdEndpoint`.
+  - The guard runs before any `Pool` or `Client` exists, so a refusal opens no connection.
+  - Callers pass `prod`: `isProductionData()` in `src/shared/db/index.ts`, and `DRIZZLE_TARGET === 'prod'` in `drizzle.config.ts`, `db-reset.ts:12` and `db-seed.ts:10` (their rule today, kept).
+  - T7b changes only this function's body.
+- Where it applies: Vercel Production skips the guard (`prod`). Vercel Preview runs it with `NEON_PROD_ENDPOINT_ID` from T1 Step 3. A local `DRIZZLE_TARGET=prod` run skips it; Postgres permissions guard that path after T8.
 
-- [ ] **Step 1: Failing test:** cases — local + no dev URL → true; local + dev URL → false; local + `DRIZZLE_TARGET=prod` → false; `VERCEL_ENV=preview` + no dev URL → false.
-- [ ] **Step 2:** Run → FAIL. **Step 3:** Implement; move the five scripts onto `@/shared/db`.
-- [ ] **Step 4:** Test passes; `pnpm lint && pnpm tsc` clean; in a scratch shell with `DATABASE_DEV_URL=` and `DRIZZLE_TARGET` unset, `pnpm tsx scripts/send-push.ts --help` exits with the message. The PR's own PR Checks build is green.
-- [ ] **Step 5:** Commit `feat(config): a local run without its own database refuses to boot`.
+- [ ] **Step 1: Failing test.** Cases:
+  - pooled prod host → throws `production endpoint`; direct prod host → throws;
+  - id unset → throws `not set`; dev host → returns it;
+  - a non-Neon host → throws `Not a Neon host`;
+  - `prod: true` → returns `DATABASE_URL` with no check;
+  - `prod: false`, no `DATABASE_DEV_URL`, `DATABASE_URL` on prod → throws (today's laptop fallback).
+- [ ] **Step 2:** Run → FAIL. **Step 3:** Implement; move the eight scripts onto `@/shared/db`.
+- [ ] **Step 4 (owner OK): the id in every worktree.** Nine of the eleven `.worktrees/*/.env` files lack `NEON_PROD_ENDPOINT_ID`, so the guard would refuse them. Append the one line to each `.env` that is a regular file and lacks it. Print the folders changed, never a value. T7a's link makes this moot later.
+- [ ] **Step 5: Verify.**
+  - Test passes; `pnpm lint && pnpm tsc` clean; `CI=1 pnpm exec eslint` on the edited scripts and `drizzle.config.ts`.
+  - In a scratch shell, `DATABASE_DEV_URL="$(grep '^DATABASE_URL=' .env | cut -d= -f2-)" pnpm tsx scripts/send-push.ts --help` → exits with the production-endpoint refusal. The URL comes from `.env` and is never echoed; the refusal comes before any connection.
+  - With `NEON_PROD_ENDPOINT_ID=` empty in the shell → `not set`.
+  - Oliver's dev server in the main checkout still boots on dev.
+  - The PR's own PR Checks build is green.
+- [ ] **Step 6:** Commit `feat(db): nothing off production opens the prod database`.
 
 ### Task 6: Copies never reach real people or live files
 
@@ -254,6 +281,50 @@ The 2026-11-23 dev password cut touched about 15 hand-made copies of one address
 - [ ] **Step 3:** `db:rotate` and the CI step. `pnpm lint && pnpm tsc`; `pnpm exec eslint` on the new scripts.
 - [ ] **Step 4:** A new Orca worktree and a `claude --worktree` session both end with `.env` → main's `.env` (`test -L .env`). Commit `chore(env): one shared .env per machine, a rotation command and a loud CI database check`.
 
+### Task 7b: One name per role (WF8 step 2, after T7a)
+
+The rename happens in one change, with no support left for the old name. After T7a every worktree's `.env` links to main's, so the env side is one `.env` plus each lane's `.env.local`.
+
+**Files:**
+- Modify: `src/shared/config/database-url.ts` (T5): only the body of `selectDatabaseUrl`.
+- Modify: `src/shared/config/server-env.ts`:
+  - `DATABASE_URL: z.string()` (the database this copy uses), `DATABASE_PROD_URL: z.string().optional()`; `DATABASE_DEV_URL` leaves the schema.
+  - A new gate: a set `DATABASE_DEV_URL` refuses to boot with `DATABASE_DEV_URL was renamed: put this copy's database under DATABASE_URL`. Without it, a stale `.env.local` would silently fall through to `.env`'s shared dev.
+- Modify every other reader of `DATABASE_DEV_URL` on `origin/main`:
+  - `src/shared/db/index.ts`, `drizzle.config.ts` (CRLF), `src/shared/db/lib/db-reset.ts`, `db-seed.ts`;
+  - `scripts/lib/describe-target-db.ts`, `scripts/lib/neon-refresh.ts`, `scripts/refresh-dev-from-prod.ts`, `scripts/lib/review-slot.ts` + `scripts/verify-review-slot.ts`, `scripts/lib/load-env.ts` (comment), `scripts/dispatch.sh`;
+  - `backfill-media-bucket.ts`, `backfill-media-url-domain.ts`, `backfill-proposal-media-bucket.ts`, `migrate-optimize-images.ts`, `tmp-scan-r2-urls.ts`, and the comments in `normalize-customer-phones.ts` and `send-push.ts`.
+  - Done when `git grep -n DATABASE_DEV_URL -- ':!docs' ':!.claude/agents/knowledge'` finds nothing outside the new gate.
+- Create: `scripts/env-db-inventory.ts`. Read-only and offline:
+  - For the main checkout and every `.worktrees/*/`, list each `.env*` file. Say whether it is a link, then each `DATABASE*` key and where it points: `prod` (matches `NEON_PROD_ENDPOINT_ID`), `shared dev`, `lane copy <wt/…>` (from `NEON_BRANCH_ID`) or `other`.
+  - Never a value, never a connection.
+  - Exits 1 on any `DATABASE_DEV_URL` key, and on any `DATABASE_URL` that points at prod.
+- Test: extend `scripts/verify-database-url.ts`
+
+**Interfaces:**
+- `selectDatabaseUrl(input: { drizzleTarget?: string, vercelEnv?: string, env: { DATABASE_URL?: string, DATABASE_PROD_URL?: string, NEON_PROD_ENDPOINT_ID?: string } }): string`:
+  - `drizzleTarget === 'prod'` → `DATABASE_PROD_URL`, or throws `DRIZZLE_TARGET=prod needs DATABASE_PROD_URL`.
+  - Otherwise → `DATABASE_URL`, with no fallback. `assertNotProdEndpoint` runs unless `vercelEnv === 'production'`.
+  - Vercel Production sets no `DRIZZLE_TARGET`, so it reads its own `DATABASE_URL` (prod), unchanged.
+  - `isProductionData()` stays as it is: it still decides the data policies (calendar guests and similar), not the URL.
+
+- [ ] **Step 1: Failing test.** Cases:
+  - `prod` target with or without `DATABASE_PROD_URL`;
+  - local `DATABASE_URL` on prod → throws; Vercel Production `DATABASE_URL` on prod → returned;
+  - a set `DATABASE_DEV_URL` → the server-env gate message (check the gate's pure predicate);
+  - the inventory script's classifier on fixture env text.
+- [ ] **Step 2:** Run → FAIL. **Step 3:** Implement across the reader list in one commit. `pnpm lint && pnpm tsc`; `CI=1 pnpm exec eslint` on the scripts and `drizzle.config.ts`; `pnpm tsx scripts/verify-review-slot.ts`.
+- [ ] **Step 4 (owner, console, before the merge).** `PROD_ENV_FILE` (T7 Step 2) gains `DATABASE_PROD_URL`, equal to Production's address, because the Action runs `DRIZZLE_TARGET=prod`.
+- [ ] **Step 5 (owner, console, before the merge): the first proof of branch override.** The four lane Preview `DATABASE_DEV_URL` entries (set 2026-11-21, `feat/home-visit-messages`, `feat/office-tv-mode`, `feat/proposal-page`, `feat/data-views`) become branch-scoped Preview `DATABASE_URL` entries: Sensitive, same values. The new gate would refuse the old key.
+  - Redeploy one of those previews and check it reads its lane copy, not shared dev. That proves the branch value overrides the general Preview `DATABASE_URL`, which the lane-linking plan relies on.
+  - Production and the general Preview `DATABASE_URL` are not touched.
+- [ ] **Step 6 (owner says "run", same sitting as the merge): rename the keys, not the values.**
+  - Main `.env`: `DATABASE_URL` → `DATABASE_PROD_URL`, then `DATABASE_DEV_URL` → `DATABASE_URL`, in that order.
+  - Each `.worktrees/*/.env.local` that has it: `DATABASE_DEV_URL` → `DATABASE_URL`.
+  - A key-only `sed` prints the file and the key names changed. Then `pnpm tsx scripts/env-db-inventory.ts` exits 0.
+  - Oliver's dev server in the main checkout and one lane boot on the database the inventory names.
+- [ ] **Step 7:** Commit `refactor(db): DATABASE_URL is the database this copy uses; prod for scripts is DATABASE_PROD_URL`.
+
 ### Task 8: Credentials leave the machine (owner-run, agent-guided)
 
 **Files:**
@@ -266,8 +337,8 @@ The 2026-11-23 dev password cut touched about 15 hand-made copies of one address
 - [ ] **Step 1: Rehearse on a copy (owner says "run").** In a scratch worktree, create role `photos_writer` on its copy (Neon console), run the grant script against the copy, then run each photo workflow's dry path as `photos_writer` against the copy → works; `select count(*) from customers` as `photos_writer` → permission denied. Also on the copy: create role `app_prod`, `GRANT neondb_owner TO app_prod`, connect as `app_prod`, run `migrateDb` with a no-op and one insert/delete on a scratch table → works. If Neon refuses the `GRANT neondb_owner` (the console role may lack admin on it), stop and tell the owner; the fallback is a planned quiet-hour window: reset, update Vercel, redeploy (a few minutes of prod DB errors).
 - [ ] **Step 2 (owner, console + Action):** On production create roles `photos_writer` and `app_prod`; run the prod-script Action with `scripts/grant-photos-writer.ts` and with a one-line `GRANT neondb_owner TO app_prod` script (same file, `--app-prod` flag).
 - [ ] **Step 3 (owner, console): switch the app, then rotate.** Set Vercel Production `DATABASE_URL` (type **Sensitive**, so no token can read it back; check its `type` afterwards) and `PROD_ENV_FILE` to the `app_prod` URL, set the GitHub secret `DATABASE_URL` (used by `pr-checks.yml:39`) to the development branch's URL, redeploy production, verify the site loads and `prod-db-ping` shows `current_user = app_prod`. Only then reset `neondb_owner`'s password on production (kills every old URL in `.worktrees/*/.env`, shell history and this session's transcript). Also rotate `NEON_API_KEY` (spec Residual risks).
-- [ ] **Step 4 (owner): local env reshuffle.** In `.env`: `DATABASE_URL` = the `photos_writer` prod URL; move `EMAIL_DEV_OVERRIDE`, `VOIP_DEV_OVERRIDE_NUMBER`, `DEV_LOGIN_SECRET`, `VERCEL_AUTOMATION_BYPASS_SECRET` (the preview Playwright check needs it in every lane), `VOIP_WEBHOOK_BASE_URL`, `X_BEARER_TOKEN` from `.env.local` into `.env`; move `DATABASE_DEV_URL` (development branch) out of `.env` into the main checkout's `.env.local`; new `NEON_API_KEY`. `VERCEL_TOKEN` stays out until WF12 is decided.
-- [ ] **Step 4a (owner says "run"): re-sync the lanes.** After T7a every worktree's `.env` links to main's, so the new `.env` reaches them all; check `test -L` in each `.worktrees/*/` and that no `.env.local` still holds an old prod or shared-dev URL. A lane on shared dev gets `DATABASE_DEV_URL` (development) in its own `.env.local`. Rotations use `pnpm db:rotate` (T7a).
+- [ ] **Step 4 (owner): local env reshuffle.** In `.env`: `DATABASE_PROD_URL` = the `photos_writer` prod URL (WF8, T7b); move `EMAIL_DEV_OVERRIDE`, `VOIP_DEV_OVERRIDE_NUMBER`, `DEV_LOGIN_SECRET`, `VERCEL_AUTOMATION_BYPASS_SECRET` (the preview Playwright check needs it in every lane), `VOIP_WEBHOOK_BASE_URL`, `X_BEARER_TOKEN` from `.env.local` into `.env`; move `DATABASE_URL` (development branch) out of `.env` into the main checkout's `.env.local`, so a checkout with no database of its own fails the required `DATABASE_URL` and refuses to boot; new `NEON_API_KEY`. `VERCEL_TOKEN` stays out until WF12 is decided.
+- [ ] **Step 4a (owner says "run"): re-sync the lanes.** After T7a every worktree's `.env` links to main's, so the new `.env` reaches them all; check `test -L` in each `.worktrees/*/` and that no `.env.local` still holds an old prod or shared-dev URL. A lane on shared dev gets `DATABASE_URL` (development) in its own `.env.local`. Rotations use `pnpm db:rotate` (T7a).
 - [ ] **Step 5:** Verify: no prod `neondb_owner` or `app_prod` URL in `.env`, `.env.local`, `.worktrees/*/.env*` (grep the prod endpoint id, then check each hit's user is `photos_writer`); Oliver's `pnpm dev` in main works against dev; `DRIZZLE_TARGET=prod pnpm tsx scripts/prod-db-ping.ts` → `current_user = photos_writer`; `pnpm db:refresh:dev --dry-run` works.
 - [ ] **Step 6:** Commit `feat(scripts): photos_writer grants for the local photo workflows`.
 
@@ -280,7 +351,7 @@ Runs after T1 (production protected, so a copy gets its own password) and T7 (th
 - Create: `src/shared/db/migrations/0000_baseline.sql` + `meta/` (generated)
 - Create: `scripts/lib/migrate-db.ts` (moved here from Task 3)
 - Create: `scripts/record-migration-baseline.ts`
-- Modify: `package.json` — keep `"db:generate": "drizzle-kit generate"`; add `"db:migrate:dev": "tsx scripts/migrate-dev.ts"` (calls `migrateDb(unpooledUrl(DATABASE_DEV_URL))`); remove `db:push:dev`
+- Modify: `package.json` — keep `"db:generate": "drizzle-kit generate"`; add `"db:migrate:dev": "tsx scripts/migrate-dev.ts"` (calls `migrateDb(unpooledUrl(DATABASE_URL))` after `selectDatabaseUrl`, so never prod); remove `db:push:dev`
 - Create: `scripts/migrate-dev.ts`
 - Modify: `scripts/refresh-dev-from-prod.ts` — closing hint `pnpm db:push:dev` → `pnpm db:migrate:dev`
 - Test: `scripts/verify-migrate-db.ts`
@@ -292,7 +363,7 @@ Runs after T1 (production protected, so a copy gets its own password) and T7 (th
 
 - [ ] **Step 1:** Delete the old files, then `pnpm db:generate --name baseline`. Expect exactly `0000_baseline.sql`, `meta/0000_snapshot.json`, `meta/_journal.json`. Write `migrate-db.ts` and its test (`verify-migrate-db.ts`: the refusal is a pure check on the row count, tested without a database).
 - [ ] **Step 2: Prove it (owner says "run").** The owner makes a throwaway child of production in the Neon console (the "copy"); its URL goes only into a scratch shell variable, never into an app's env, and the copy is deleted at the end of this task.
-  - (a) `pnpm drizzle-kit push --strict --verbose` against it (in a scratch worktree whose `.env.local` sets `DATABASE_DEV_URL` to the copy, `DRIZZLE_TARGET=dev`; never the main checkout's `.env.local`) → "No changes detected"; answer **No** to any prompt. Any planned statement is drift.
+  - (a) `pnpm drizzle-kit push --strict --verbose` against it (in a scratch worktree whose `.env.local` sets `DATABASE_URL` to the copy, `DRIZZLE_TARGET=dev`; never the main checkout's `.env.local`) → "No changes detected"; answer **No** to any prompt. Any planned statement is drift.
   - (b) Create a child of the copy, `drop schema public cascade; create schema public;` on the child only, `record-migration-baseline.ts` is NOT run there; instead apply `0000_baseline.sql` with drizzle's `migrate()` directly (the one place the no-baseline refusal is bypassed, on purpose, on an empty schema), then Neon Schema Diff (MCP `compare_database_schema`) child vs copy → no differences beyond column order and the `drizzle` schema; list any column-order-only lines in the PR body. Delete the child.
   - If prod has drift, prod wins: edit the Drizzle schema files, regenerate the baseline, repeat; list every drift item in the PR body.
 - [ ] **Step 3:** On the copy: `migrateDb(<copy url>)` → refuses (no baseline); `record-migration-baseline.ts` → one row; `migrateDb(<copy url>)` → `{ applied: 0 }`. Owner deletes the copy.
@@ -366,8 +437,8 @@ Done here: the per-checkout pre-commit gate (`.claude/hooks/pre-commit-gate.sh`)
 Requirements found by the 2026-11-22 stress test; the new plan must carry each one.
 
 1. **Lane creation (WF10):** `/new-lane` skill + `pnpm lane`. Asks "own database or shared dev?"; makes the worktree (orca CLI); pushes the branch first (Vercel refuses a branch variable for a branch GitHub does not have); runs `wt:db create` + `wt:db link` when chosen; links or opens the GitHub issue; adds the board row. `pnpm wt:db create` in an existing lane also links.
-2. **`wt:db link`:** `scripts/lib/vercel-api.ts` on the `createNeonClient` pattern (`request<T>`, errors), injected into `WorktreeDbDeps`. Port from `~/claude-archive/2026-11-21-lane-preview-db/set-lane-preview-db.mjs`: project-name check, refusal when `DRIZZLE_TARGET` is set on Preview, refusal of an unscoped Preview/Production `DATABASE_DEV_URL`, protocol/password/`sslmode` checks, redaction of token, URL and both password forms, the 2xx-with-`failed` check, the re-read check (one entry, Sensitive, target `["preview"]`, nothing on Production). Replace its hardcoded endpoint lists with "the URL's endpoint is this copy's endpoint"; project and team ids from env; follow env-list pagination. **Update** the entry when the copy changes (Sensitive values cannot be read back, so a skip leaves a dead URL). Redeploy the preview after a change. `delete` and `prune --apply` remove the entry. Test with a fake Vercel client. Blocked on WF12 (token home).
-3. **Preview build (old T11):** `buildPlan` migrates a preview only when `DATABASE_DEV_URL` is set and its endpoint is neither prod nor shared dev; otherwise it skips the migration and says why (a lane's first build, a hotfix branch from the main checkout and a shared-dev lane all resolve to shared dev, and must never apply an unmerged migration there). Migrate through `unpooledUrl`. No scrub in the build: a lane copy is scrubbed at `wt:db create`.
+2. **`wt:db link`:** `scripts/lib/vercel-api.ts` on the `createNeonClient` pattern (`request<T>`, errors), injected into `WorktreeDbDeps`. Port from `~/claude-archive/2026-11-21-lane-preview-db/set-lane-preview-db.mjs`: project-name check, refusal when `DRIZZLE_TARGET` is set on Preview; it writes a branch-scoped Preview `DATABASE_URL` (WF8) and refuses to touch Production or the general Preview `DATABASE_URL`, and refuses when that general value is on the prod endpoint (`assertNotProdEndpoint`, T5); protocol/password/`sslmode` checks, redaction of token, URL and both password forms, the 2xx-with-`failed` check, the re-read check (one entry, Sensitive, target `["preview"]`, nothing on Production). Replace its hardcoded endpoint lists with "the URL's endpoint is this copy's endpoint"; project and team ids from env; follow env-list pagination. **Update** the entry when the copy changes (Sensitive values cannot be read back, so a skip leaves a dead URL). Redeploy the preview after a change. `delete` and `prune --apply` remove the entry. Test with a fake Vercel client. Blocked on WF12 (token home).
+3. **Preview build (old T11):** `buildPlan` migrates a preview only when its `DATABASE_URL`'s endpoint is neither prod nor shared dev (a branch-scoped value, WF8); otherwise it skips the migration and says why (a lane's first build, a hotfix branch from the main checkout and a shared-dev lane all resolve to shared dev, and must never apply an unmerged migration there). Migrate through `unpooledUrl`. No scrub in the build: a lane copy is scrubbed at `wt:db create`.
 4. **Orca (old T13):** `scripts.archive: pnpm wt:db delete` (removes the Vercel entry too; exits 0 when there is nothing to do); `.worktreeinclude` drops `.env.local` only after T8 Step 4 has moved every shared secret (incl. `VERCEL_AUTOMATION_BYPASS_SECRET`) into `.env`. Steps that need a running app name Oliver as the actor.
 5. **Ship skill (old T14 skill), named for lanes (`ship-lane`):** merge `origin/main` in, never rebase; on a `_journal.json` conflict regenerate this branch's migration, then `wt:db delete && wt:db create` (which re-links); `db:migrate:dev`; lint, tsc, `mattpocock-skills:code-review` (two axes: our standards, the issue's spec), `merge-risk` overlap report; push; PR with the migration's plain-English summary. After a squash-merge the branch and worktree stay (WF6): `git merge origin/main` into the branch before the next commit. No repo setting change (WF3).
 6. **Vocabulary:** Lane, Lane copy and Review slot go into `GLOSSARY.md` Planning terms once the owner agrees them (`GLOSSARY.md:155` lists "lane" under _Avoid_ for pipeline Stage only).
