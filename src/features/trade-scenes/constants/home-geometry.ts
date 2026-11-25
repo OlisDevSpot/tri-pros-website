@@ -47,6 +47,9 @@ export const WALL_TOP_Y = HOUSE.floorY + HOUSE.wallHeight
 // Metres above grade. A slab floor sits just above the lawn; a raised one clears the 18 in under the joists California's
 // residential code asks for, plus the framing. Working numbers, tuned at the owner's review.
 export const HOME_FLOOR_Y = { slab: 0.15, raised: 0.75 } as const
+// The lawn in the house's own frame on a raised floor, the lowest it stands: what hangs from the house reaches down this far
+// to touch the lawn on every foundation, and on a slab the rest sits under the lawn.
+export const LOWEST_LAWN_Y = -(HOME_FLOOR_Y.raised - HOUSE.floorY)
 export const RAFTER_ORIGIN_Y = WALL_TOP_Y + HOUSE.heel
 export const RIDGE_RISE = HOUSE.halfDepth * Math.tan(HOUSE.pitch)
 export const RIDGE_Y = RAFTER_ORIGIN_Y + RIDGE_RISE
@@ -69,6 +72,8 @@ export const RAFTER_PROFILE = rafterProfile(EAVE_RUN, SLOPE_LENGTH, HOUSE.rafter
 export const FASCIA_CENTRE = eaveFasciaCentre(EAVE_RUN, HOUSE.pitch, ROOF_TRIM.fascia, COVERING_BASE - ROOF_TRIM.fascia.thickness * Math.sin(HOUSE.pitch))
 // How far out from the wall line the gutter's back lip hangs, on the fascia's face.
 export const GUTTER_BACK = HOUSE.eaveOverhang + ROOF_TRIM.fascia.thickness + ROOF_TRIM.gutter.standoff
+// The gable's eave gutters' centre line, out from the house's middle.
+export const GUTTER_OUT = HOUSE.halfDepth + GUTTER_BACK + ROOF_TRIM.gutter.size / 2
 // Where the covering's first course starts, in a slope's own frame: it laps this far past the gutter's back lip, the way
 // shingles run out over a drip edge, so no gap shows between the roof and the gutter from above. A working number, tuned
 // by eye.
@@ -255,9 +260,8 @@ export const EQUIPMENT = {
 // Every hole through the ceiling: a boot at each run's end, a recessed light's can in each room, and the two plumbing vents,
 // the kitchen sink's and the bath stack's. Each stands in a joist bay, clear of its foam collar, and behind the cut line.
 // Both pipes leave through the back slope, between two rafters: Partly open takes the front slope off over the bedroom.
-// The right room's can, boot and sink vent share the joist bay just past the cut, back to front, where the attic's air
-// sealing strip shows them up close; the slim vent stands nearest the attic's heat line, so the arrows pass clear of the
-// boot. Working positions, tuned by eye.
+// The left room's can, boot and bath stack share the joist bay at the attic's left end, where the attic's bare strip shows
+// them up close. Working positions, tuned by eye.
 export const CEILING_OPENINGS: readonly CeilingOpening[] = [
   ...EQUIPMENT.ductRuns.map((run): CeilingOpening => {
     const [x, , z] = run[run.length - 1]
@@ -266,30 +270,47 @@ export const CEILING_OPENINGS: readonly CeilingOpening[] = [
   { kind: 'can', at: [-4.4, -2.2], radius: 0.09 },
   { kind: 'can', at: [1.2, -2.3], radius: 0.09 },
   { kind: 'can', at: [2.9, -2.2], radius: 0.09 },
-  // The one can past the bare strip, under the kept blanket, so the dust over it shows up close. A working position, set by screenshot.
+  // A can under the kept blanket. A working position, set by screenshot.
   { kind: 'can', at: [4.1, -1.9], radius: 0.09 },
   { kind: 'pipe', at: [2.9, -0.6], radius: 0.04 },
-  { kind: 'pipe', at: [-3.15, -2.7], radius: 0.04 },
+  { kind: 'pipe', at: [-4.45, -2.7], radius: 0.04 },
 ]
 
-// Each downspout's [x, z] and its width, by roof form: a gable's at its back corners, a flat roof's two scuppers at the back.
-// The garage stands at the right front corner.
+// A 2 × 3 in downspout, its wide face to the street. A working number, set by shot.
+const DOWNSPOUT_SECTION = { across: 0.076, out: 0.051 } as const
+
+// Each downspout's [x, z] and its section, by roof form: a gable's at its four corners, a flat roof's two scuppers at the back.
+// A set stands out from the wall on the side its z falls. The garage stands just right of the right front one.
 export const DOWNSPOUTS = {
   pitched: {
-    size: 0.08,
+    section: DOWNSPOUT_SECTION,
     at: [
       [-HOUSE.halfLength + 0.3, -HOUSE.halfDepth - 0.08],
       [HOUSE.halfLength - 0.3, -HOUSE.halfDepth - 0.08],
+      [-HOUSE.halfLength + 0.3, HOUSE.halfDepth + 0.08],
+      [HOUSE.halfLength - 0.3, HOUSE.halfDepth + 0.08],
     ],
   },
   lowSlope: {
-    size: 0.09,
+    section: DOWNSPOUT_SECTION,
     at: [
       [-3.5, -HOUSE.halfDepth - 0.09],
       [3.5, -HOUSE.halfDepth - 0.09],
     ],
   },
-} as const satisfies Record<'pitched' | 'lowSlope', { size: number, at: readonly (readonly [number, number])[] }>
+} as const satisfies Record<'pitched' | 'lowSlope', { section: { across: number, out: number }, at: readonly (readonly [number, number])[] }>
+
+// How far the gooseneck under a gable's gutter drops before the downspout runs down the wall, and how far short of a failing
+// gutter its torn downspout hangs. At the foot a shoe bends the water away from the wall: an arc of `radius` turning
+// `turn` radians from straight down, drawn in `pieces` short lengths, then a straight `tail`, its mouth `clearance` over
+// the ground. The shoe and the length of pipe above it are `sleeve` wider than the downspout, so the downspout slides inside
+// them as the floor eases and never shares a face with them. Working numbers, set by shot.
+export const DOWNSPOUT_LOOK = {
+  gooseneckDrop: 0.1,
+  tornGap: 0.3,
+  sleeve: 0.006,
+  shoe: { radius: 0.2, turn: 70 * Math.PI / 180, pieces: 8, tail: 0.08, clearance: 0.01 },
+} as const
 
 export const CRAWL_VENTS_X = [-4.5, -1.5, 1.5, 4.5] as const
 export const CRAWL_VENTS_Z = [-2, 1.5] as const

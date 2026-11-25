@@ -56,6 +56,8 @@ export const SCENE_CHANGE_WORDS = {
   'year-built': 'year built era code age when',
   ...MATERIAL_WORDS,
   'gutters': 'gutter gutters roof',
+  'air-sealing': 'air sealing sealed seal leakage leaks gaps attic ceiling',
+  'gutter-wear': 'gutter gutters condition wear roof',
   'hvac-components': `equipment ${MATERIAL_WORDS['heating-cooling']}`,
   'ac-tons': `ac size ton tons tonnage ${MATERIAL_WORDS['heating-cooling']}`,
   ...WEAR_WORDS,

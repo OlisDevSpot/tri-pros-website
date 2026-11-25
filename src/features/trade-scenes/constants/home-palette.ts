@@ -23,16 +23,15 @@ export const HOME_PALETTE = {
   primer: '#f2f0ea',
   boardsWorn: '#94764f',
   felt: '#34302c',
-  // Felt dried out by years of attic heat: grey-brown in place of fresh black. A working colour, set by screenshot.
-  feltAged: '#6a6259',
+  // Felt dried out by years of attic heat: a touch browner than fresh black, yet dark enough that a missing shingle still
+  // reads as a gap against the worn covering. A working colour, set by screenshot.
+  feltAged: '#3b3530',
   synthetic: '#8ea3b5',
   foil: '#dfe3e6',
   insulationWorn: '#d8b98c',
   insulationNew: '#f1ebdf',
   // Working number: the dust on the blanket over an air leak, set by screenshot.
   atticDust: '#6b5d4c',
-  gutter: '#efebe3',
-  gutterWorn: '#b9b1a3',
   ridgeVent: '#3a3a3b',
   glass: '#a8c3cc',
   // The build's Low-E glass: near-black with no blue cast. A working number, set by shot.

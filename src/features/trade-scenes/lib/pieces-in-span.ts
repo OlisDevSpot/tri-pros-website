@@ -3,7 +3,7 @@ import type { PieceLayout } from '@/shared/components/scene/types'
 // The pieces of a covering laid over a longer run that fall in one span of it. A piece stretched to its width is cut at
 // the span's ends, so two spans side by side meet in one joint; a moulded one (a tile) goes whole to the span holding its
 // centre, so it is never drawn twice.
-export function piecesInSpan(pieces: readonly PieceLayout[], zFrom: number, zTo: number, stretched: boolean): PieceLayout[] {
+export function piecesInSpan<T extends PieceLayout>(pieces: readonly T[], zFrom: number, zTo: number, stretched: boolean): T[] {
   if (!stretched) {
     return pieces.filter(piece => piece.z >= zFrom && piece.z < zTo)
   }

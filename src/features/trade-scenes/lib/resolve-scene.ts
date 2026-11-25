@@ -11,6 +11,7 @@ import { comfortFromReadings } from '@/features/trade-scenes/lib/comfort-from-re
 import { currentYear } from '@/features/trade-scenes/lib/current-year'
 import { homeHeat } from '@/features/trade-scenes/lib/home-heat'
 import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
+import { gutterPartWear } from '@/features/trade-scenes/lib/part-state'
 import { sceneSavings } from '@/features/trade-scenes/lib/scene-savings'
 import { ASSEMBLIES } from '@/shared/modules/construction/core/constants/assemblies'
 import { ASSEMBLY_IDS } from '@/shared/modules/construction/core/constants/assembly-ids'
@@ -67,7 +68,7 @@ function resolveHomeAssembly(id: Exclude<AssemblyId, 'yard-ground'>, inputs: Sce
   }
 }
 
-// One call composes the construction model for every surface (home, system card, Benefits), so a colour, a reading, a ribbon width and a
+// One call composes the construction model for every surface (home, system action card, Benefits), so a colour, a reading, a ribbon width and a
 // dollar figure can never disagree.
 export function resolveScene(inputs: SceneResolveInputs, cuts: TradeBillCuts, year: number = currentYear()): SceneTargets {
   const climate = inputs.climate ?? CLIMATE_FALLBACK
@@ -115,5 +116,6 @@ export function resolveScene(inputs: SceneResolveInputs, cuts: TradeBillCuts, ye
     residents: castResidents(inputs.household),
     savings,
     fasciaReplaced: inputs.view === 'proposed' && inputs.proposedScopeIds.includes(FASCIA_REPLACEMENT_SCOPE_ID),
+    existingGutterWear: gutterPartWear(roofAttic?.existing.parts.gutter),
   }
 }

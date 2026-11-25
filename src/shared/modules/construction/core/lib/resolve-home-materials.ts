@@ -6,13 +6,15 @@ import { ASSEMBLIES } from '@/shared/modules/construction/core/constants/assembl
 import { ERA_FALLBACK } from '@/shared/modules/construction/core/constants/era-defaults'
 import { HOME_MATERIAL_IDS } from '@/shared/modules/construction/core/constants/home-material-ids'
 import { HOME_MATERIALS } from '@/shared/modules/construction/core/constants/home-materials'
+import { ROOF_WEAR_LIMITS } from '@/shared/modules/construction/core/constants/roof-wear-limits'
 import { homeAge } from '@/shared/modules/construction/core/lib/home-age'
 import { roofFormOf } from '@/shared/modules/construction/core/lib/roof-form-of'
 import { wearForAge } from '@/shared/modules/construction/core/lib/wear-for-age'
 
 export function bandsOf(id: HomeMaterialId, property: PropertyProfile): AgeBands {
   const { bands } = HOME_MATERIALS[id]
-  return id === 'roof' ? bands[property.roofType ?? 'shingle'] : bands.all
+  // A roof type with a wear limit has no age bands; the gutters, rated against the roof's era, read the shingle ones.
+  return id === 'roof' ? bands[property.roofType ?? 'shingle'] ?? bands.shingle : bands.all
 }
 
 // Unset counts as Worn wherever wear is read: offers, upkeep, the look and rain.
@@ -73,10 +75,12 @@ function resolveOne(id: HomeMaterialId, facts: HomeFacts): ResolvedHomeMaterial 
   }
 
   const replacedAtSomePoint = recorded !== null && guess !== null && recorded !== guess
-  const eraWear = replacedAtSomePoint ? null : wearForAge(bandsOf(id, property), homeAge(property.yearBuilt, facts.year))
+  const limit = id === 'roof' && property.roofType ? ROOF_WEAR_LIMITS[property.roofType] : undefined
+  const eraWear = limit?.guess ?? (replacedAtSomePoint ? null : wearForAge(bandsOf(id, property), homeAge(property.yearBuilt, facts.year)))
   const setWear = facts.materials.wear[id]
   if (setWear) {
-    return { id, option, optionBasis, wear: setWear, wearBasis: 'recorded', eraWear, absent: false }
+    const wear = limit && !limit.choices.includes(setWear) ? limit.choices[0] : setWear
+    return { id, option, optionBasis, wear, wearBasis: 'recorded', eraWear, absent: false }
   }
   return { id, option, optionBasis, wear: eraWear, wearBasis: eraWear === null ? null : 'era-typical', eraWear, absent: false }
 }

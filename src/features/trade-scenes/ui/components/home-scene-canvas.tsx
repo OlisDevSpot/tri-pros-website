@@ -1,7 +1,7 @@
 'use client'
 
 import type { ReadingId } from '@/features/trade-scenes/constants/home-anchors'
-import type { HomeKitInputs, HomeSpotId, TradeSceneInputs } from '@/features/trade-scenes/types'
+import type { HomeKitInputs, HomeSpotId, TradeSceneInputs, Vec3 } from '@/features/trade-scenes/types'
 
 import { useMemo, useState } from 'react'
 import { AgXToneMapping } from 'three'
@@ -10,10 +10,11 @@ import { useShallow } from 'zustand/react/shallow'
 import { CLIMATE_FALLBACK } from '@/features/trade-scenes/constants/climate-bills'
 import { INSIDE_READING_IDS, READING_CALLOUTS } from '@/features/trade-scenes/constants/home-anchors'
 import { HOME_CAMERA_FAR } from '@/features/trade-scenes/constants/home-geometry'
-import { READING_COPY, SCENE_COPY, SYSTEM_PIN_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
+import { READING_COPY, SCENE_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
 import { HOME_PRIMARY_ASSEMBLY } from '@/features/trade-scenes/constants/scene-controls'
 import { useControlsOpen } from '@/features/trade-scenes/contexts/scene-controls-context'
 import { useSceneLoad, useSceneLoadApi } from '@/features/trade-scenes/contexts/scene-load-context'
+import { TextureStoreProvider } from '@/features/trade-scenes/contexts/texture-store-context'
 import { useSceneTapAway } from '@/features/trade-scenes/hooks/use-scene-tap-away'
 import { useSceneTapClaim } from '@/features/trade-scenes/hooks/use-scene-tap-claim'
 import { useSceneTargets } from '@/features/trade-scenes/hooks/use-scene-targets'
@@ -36,7 +37,8 @@ import { HomeSceneFallback } from '@/features/trade-scenes/ui/components/home-sc
 import { PartPins } from '@/features/trade-scenes/ui/components/panel/part-pins'
 import { ThermalLegend } from '@/features/trade-scenes/ui/components/panel/thermal-legend'
 import { ReadingPin } from '@/features/trade-scenes/ui/components/reading-pin'
-import { SpotPin } from '@/features/trade-scenes/ui/components/spot-pin'
+import { SceneCursor } from '@/features/trade-scenes/ui/components/scene-cursor'
+import { SpotChipsHost } from '@/features/trade-scenes/ui/components/spot-chip/spot-chips-host'
 import { SCENE_DEFAULT_CAMERA } from '@/shared/components/scene/constants/scene-camera'
 import { useSceneInputs, useSceneInputsApi } from '@/shared/components/scene/contexts/scene-inputs-context'
 import { ScenePinsContext } from '@/shared/components/scene/contexts/scene-pins-context'
@@ -59,7 +61,8 @@ export function HomeSceneCanvas() {
   const targets = useSceneTargets()
   const inputs = useSceneInputs(useShallow(selectHomeKitInputs))
   const lookInside = useSceneInputs((state: TradeSceneInputs) => state.lookInside)
-  const cameraFocus = useSceneInputs((state: TradeSceneInputs) => state.cameraFocus)
+  const pickedSystem = useSceneInputs((state: TradeSceneInputs) => state.pickedSystem)
+  const open = useSceneInputs((state: TradeSceneInputs) => houseOpen(state))
   const emphasizedPart = useSceneInputs((state: TradeSceneInputs) => state.emphasizedPart)
   const thermal = useSceneInputs((state: TradeSceneInputs) => state.thermalCamera)
   const inputKey = useSceneInputs(sceneBurstKey)
@@ -68,8 +71,8 @@ export function HomeSceneCanvas() {
   const store = useSceneInputsApi<TradeSceneInputs>()
   const controlsOpen = useControlsOpen()
   const { claimTap } = useSceneTapClaim()
-  // With nothing open, a tap on the scene lets the pins at a spot go; with Systems open, its own tap-away answers the tap.
-  // A write with no pins showing changes nothing.
+  // With nothing open, a tap on the scene lets the spot chip go; with Systems open, its own tap-away answers the tap.
+  // A write with no chip showing changes nothing.
   useSceneTapAway(controlsOpen === null, () => store.setState({ tappedSpot: null }))
   // A touch or a wheel stream on the canvas wakes a home that went still, so a rep who reaches for it mid-story, or pans it
   // on a trackpad, sees it live again.
@@ -78,16 +81,16 @@ export function HomeSceneCanvas() {
   const burstKey = `${inputKey}|${touches}|${live}`
 
   const form = homeRoofForm(targets.assemblies[HOME_PRIMARY_ASSEMBLY]?.form)
-  const open = houseOpen({ homeView: inputs.homeView, cameraFocus })
-  // Looking inside always has a system in focus.
-  const system = lookInside ? cameraFocus : null
+  // Looking inside always has a system picked.
+  const system = lookInside ? pickedSystem : null
   const rows = useMemo(() => system === null ? [] : systemPartRows(system, targets), [system, targets])
   // The one place the emphasis meets the rows: the house, the camera and the pins all take it from here.
   const lit = useMemo(() => system === null ? null : systemLit(system, rows, emphasizedPart), [system, rows, emphasizedPart])
 
-  // The tap that shows a spot's pins must not also let them go; with Systems open it is still the tap that puts Systems away.
-  const tapSpot = (spot: HomeSpotId) => {
-    store.setState({ tappedSpot: spot })
+  // The tap that shows a spot's chip must not also let it go; with Systems open it is still the tap that puts Systems away.
+  const tapSpot = (spot: HomeSpotId, point: Vec3, rides: 'lift' | 'ground') => {
+    const previous = store.getState().tappedSpot
+    store.setState({ tappedSpot: { id: (previous?.id ?? 0) + 1, spot, point, rides, editing: null } })
     if (controlsOpen === null) {
       claimTap()
     }
@@ -129,9 +132,13 @@ export function HomeSceneCanvas() {
           </>
         )}
       >
-        <HomeCameraRig lit={lit} />
-        {/* Up close leaves the home view as the homeowner picked it: the system's own fade shows what is inside. */}
-        <HomeKit targets={targets} inputs={inputs} burstKey={burstKey} lit={lit} open={open} thermal={thermal} onSpotTap={tapSpot} />
+        <SceneCursor>
+          <HomeCameraRig lit={lit} />
+          <TextureStoreProvider>
+            {/* Up close leaves the home view as the homeowner picked it: the system's own fade shows what is inside. */}
+            <HomeKit targets={targets} inputs={inputs} burstKey={burstKey} lit={lit} open={open} thermal={thermal} onSpotTap={tapSpot} />
+          </TextureStoreProvider>
+        </SceneCursor>
         <ScenePinsProjector />
         {/* Last, and the pass before the signal: equal-priority frames run in mount order, so the copy is taken before a
             real frame draws over it in the same frame. The pass stays through the handover, so a resize or a sidebar fold
@@ -152,8 +159,8 @@ export function HomeSceneCanvas() {
             if (reading) {
               return renderReading(reading)
             }
-            const system = spotFromPinId(id)
-            return system && <SpotPin system={system} label={SYSTEM_PIN_LABELS[system]} />
+            const spot = spotFromPinId(id)
+            return spot ? <SpotChipsHost spot={spot} /> : null
           }}
         />
       )}

@@ -2,11 +2,12 @@ import type { HomeSystemId, SystemPartId, Vec3, WindowPieceId } from '@/features
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 
 import { CEILING_OPENING_LOOK } from '@/features/trade-scenes/constants/home-details'
-import { ATTIC_FAN_SPOT, CEILING_OPENINGS, COVERING_BASE, EQUIPMENT, GUTTER_BACK, GUTTER_Y, HOUSE, HOUSE_WALLS, LOW_SLOPE, LOW_SLOPE_DECK_Y, LOW_SLOPE_ROOF_Y, RAFTER_ORIGIN_Y, RIDGE_Y, SLOPE_LENGTH, WALL_TOP_Y, WINDOW_FRAMES } from '@/features/trade-scenes/constants/home-geometry'
+import { ATTIC_FAN_SPOT, COVERING_BASE, EQUIPMENT, GUTTER_BACK, GUTTER_Y, HOUSE, HOUSE_WALLS, LOW_SLOPE, LOW_SLOPE_DECK_Y, LOW_SLOPE_ROOF_Y, RAFTER_ORIGIN_Y, RIDGE_Y, SLOPE_LENGTH, WALL_TOP_Y, WINDOW_FRAMES } from '@/features/trade-scenes/constants/home-geometry'
 import { LEAK } from '@/features/trade-scenes/constants/home-life'
-import { ATTIC_HEAT_LINE, DUCT_PIN_RISE, LOOK_INSIDE_WINDOW, PART_PIECES, STEP_DEPTHS } from '@/features/trade-scenes/constants/look-inside'
+import { ATTIC_HEAT_LINE, DUCT_PIN_RISE, LOOK_INSIDE_WINDOW, PART_PIECES, STEP_CUTS, STEP_DEPTHS } from '@/features/trade-scenes/constants/look-inside'
 import { WINDOW_SEAL_LOOKS } from '@/features/trade-scenes/constants/system-part-looks'
 import { atticJoistBoxes } from '@/features/trade-scenes/lib/attic-joist-boxes'
+import { ceilingOpenings } from '@/features/trade-scenes/lib/ceiling-openings'
 import { packageUnitPlacement } from '@/features/trade-scenes/lib/package-unit-placement'
 import { stepBottom, stepCentre, stepCutBack, stepStarts } from '@/features/trade-scenes/lib/step-cut-back'
 import { flashingBoxes } from '@/features/trade-scenes/lib/window-flashing-boxes'
@@ -38,27 +39,31 @@ const WINDOW_ACROSS = WINDOW_WALL.run === 'z' ? 0 : 2
 // A point on the window's wall, `along` it, at `y`, standing at `across` on the axis across it.
 const onWindowWall = (along: number, y: number, across: number): Vec3 => WINDOW_WALL.run === 'x' ? [along, y, across] : [across, y, along]
 const ductC = EQUIPMENT.ductRuns[2]
-// Up close the attic is looked at by the cut, round the strip its floor's bottom step shows bare, where the parts that keep
-// their place are pointed at. Air sealing is pointed at the foam round the light can nearest that strip, which every home
-// has, ducts or none.
-const BY_THE_CUT = stepCentre('attic', HOUSE.cutX, 1)
-// The heat comes down onto the blanket's step, the step over the bare strip, through the foil on its way.
-const ON_THE_BLANKET = stepCentre('attic', HOUSE.cutX + STEP_DEPTHS.attic, 1)
-const SEALED_CAN = CEILING_OPENINGS.filter(opening => opening.kind === 'can').reduce((best, opening) => Math.abs(opening.at[0] - BY_THE_CUT) < Math.abs(best.at[0] - BY_THE_CUT) ? opening : best)
+const byForm = <T>(of: (form: RoofForm) => T): Record<RoofForm, T> => ({ 'pitched': of('pitched'), 'low-slope': of('low-slope') })
+// Up close the attic is looked at round the strip its floor's bottom step shows bare, where its roof's attic opens, and
+// where the parts that keep their place are pointed at.
+const BY_THE_CUT = byForm(form => stepCentre('attic', STEP_CUTS[form].attic, 1))
+// The heat comes down onto the blanket's step, the step over the bare strip, through the foil on its way; only a gable has
+// a foil.
+const ON_THE_BLANKET = stepCentre('attic', STEP_CUTS.pitched.attic + STEP_DEPTHS.attic, 1)
+// The ceiling is pointed at the opening nearest the middle of that strip, where its foam or its dust shows. A boot is drawn
+// only with ducts, so the pick is from the openings every home has.
+const STRIP_OPENING = byForm(form => ceilingOpenings(false).reduce((best, opening) => Math.abs(opening.at[0] - BY_THE_CUT[form]) < Math.abs(best.at[0] - BY_THE_CUT[form]) ? opening : best))
 // The blanket's pin stands this far past the strip's middle, this far over the joists' tops and this far behind the kept
-// cut edge, clear of the heat coming down onto its step; the ceiling's that far behind it, this far along the strip, clear of
-// the ceiling's reading; the foil's this far past where the heat meets it on the back slope, clear of the arrows; the air
-// sealing's this far over the can's foam, so the pin leaves the foam round it in sight. Working numbers, set by a dark shot.
-const ATTIC_PIN = { blanketAside: 0.7, blanketRise: 0.12, blanketBack: 0.6, ceilingBack: 0.3, ceilingAside: 0, foilAside: 0.45, sealRise: 0.25 } as const
+// cut edge, clear of the heat coming down onto its step; the foil's this far past where the heat meets it on the back slope,
+// clear of the arrows; the ceiling's this far over the opening's foam, so the pin leaves the foam or the dust round it in
+// sight. Working numbers, set by a dark shot.
+const ATTIC_PIN = { blanketAside: 0.7, blanketRise: 0.12, blanketBack: 0.6, foilAside: 0.45, sealRise: 0.25 } as const
 // The ceiling joist nearest the strip, pointed at on its top this far behind the kept cut edge, clear of the ceiling's and the
-// blanket's pins. A working number, set by a dark shot.
+// blanket's pins; a flat roof's joists are its rafters, pinned with the roof. A working number, set by a dark shot.
 const JOIST_BACK = 1.2
 const JOIST_POINT: Vec3 = (() => {
-  const joist = atticJoistBoxes(false).open.reduce((best, box) => Math.abs(box.position[0] - BY_THE_CUT) < Math.abs(best.position[0] - BY_THE_CUT) ? box : best)
+  const near = BY_THE_CUT.pitched
+  const joist = atticJoistBoxes(false).open.reduce((best, box) => Math.abs(box.position[0] - near) < Math.abs(best.position[0] - near) ? box : best)
   return [joist.position[0], joist.position[1] + joist.size[1] / 2, HOUSE.atticFrontZ - JOIST_BACK]
 })()
 // Under either roof the blanket lies on the attic floor, on the span the open house keeps.
-const BLANKET_POINT: Vec3 = [BY_THE_CUT + ATTIC_PIN.blanketAside, WALL_TOP_Y + ATTIC_PIN.blanketRise, HOUSE.atticFrontZ - ATTIC_PIN.blanketBack]
+const BLANKET_POINT = byForm((form): Vec3 => [BY_THE_CUT[form] + ATTIC_PIN.blanketAside, WALL_TOP_Y + ATTIC_PIN.blanketRise, HOUSE.atticFrontZ - ATTIC_PIN.blanketBack])
 
 // The flashing's lining along the sill, the same round either frame: its top is what the pulled frame uncovers.
 const SILL_LINING = flashingBoxes(WINDOW_FRAMES.double).reduce((low, box) => box.position[1] < low.position[1] ? box : low)
@@ -100,9 +105,8 @@ const ROOF_POINTS: Record<RoofForm, Partial<Record<SystemPartId, Vec3>>> = {
     'ridge-vent': [HOUSE.cutX, RIDGE_Y + COVERING_BASE / Math.cos(pitch) + 0.05, 0],
     'gutter': [HOUSE.cutX, GUTTER_Y, HOUSE.halfDepth + GUTTER_BACK],
     'radiant-barrier': slopePoint(ON_THE_BLANKET + ATTIC_PIN.foilAside, ATTIC_HEAT_LINE.along - ATTIC_HEAT_LINE.barrierAlong, -HOUSE.rafterDepth - 0.01, true),
-    'attic-insulation': BLANKET_POINT,
+    'attic-insulation': BLANKET_POINT.pitched,
     'ceiling-joists': JOIST_POINT,
-    'air-sealing': [SEALED_CAN.at[0], WALL_TOP_Y + CEILING_OPENING_LOOK.collar.height + ATTIC_PIN.sealRise, SEALED_CAN.at[1]],
     'attic-fan': ATTIC_FAN_SPOT.position,
     'package-unit': packageUnitPlacement(false, 1).position,
   },
@@ -112,17 +116,17 @@ const ROOF_POINTS: Record<RoofForm, Partial<Record<SystemPartId, Vec3>>> = {
     'deck': [HOUSE.cutX, LOW_SLOPE_DECK_Y + HOUSE.deckThickness / 2, HOUSE.halfDepth / 2 + 0.6],
     'rafters': [HOUSE.cutX, WALL_TOP_Y + LOW_SLOPE.joistSpace / 2, HOUSE.halfDepth / 2 + 1.2],
     'gutter': [HOUSE.cutX, LOW_SLOPE_ROOF_Y, -HOUSE.halfDepth],
-    'attic-insulation': BLANKET_POINT,
+    'attic-insulation': BLANKET_POINT['low-slope'],
     'package-unit': packageUnitPlacement(true, 1).position,
   },
 }
 
 // The ceiling is lit for its story in each system, so it is pointed at where that story shows: the roof's leak coming
-// through it, or, for the attic, its kept cut edge by the strip its bottom step shows bare, where the gaps above it show.
+// through it, or, for the attic, the opening in the strip its bottom step shows bare, leaking or sealed.
 const CEILING_POINTS = {
   roof: [LEAK.spot[0], CEILING_Y, LEAK.spot[1]],
-  attic: [BY_THE_CUT + ATTIC_PIN.ceilingAside, CEILING_Y, HOUSE.atticFrontZ - ATTIC_PIN.ceilingBack],
-} as const satisfies Partial<Record<HomeSystemId, Vec3>>
+  attic: byForm((form): Vec3 => [STRIP_OPENING[form].at[0], WALL_TOP_Y + CEILING_OPENING_LOOK.collar.height + ATTIC_PIN.sealRise, STRIP_OPENING[form].at[1]]),
+} as const satisfies Partial<Record<HomeSystemId, Vec3 | Record<RoofForm, Vec3>>>
 
 // The point `along` metres down a run's line from its plenum end.
 function pointAlong(run: readonly Vec3[], along: number): Vec3 {
@@ -164,7 +168,7 @@ function windowRestingPoint(id: SystemPartId, shown: ReadonlySet<SystemPartId>):
 
 function restingPoint(system: HomeSystemId, form: RoofForm, id: SystemPartId): Vec3 | null {
   if (id === 'ceiling') {
-    return system === 'roof' ? CEILING_POINTS.roof : CEILING_POINTS.attic
+    return system === 'roof' ? CEILING_POINTS.roof : CEILING_POINTS.attic[form]
   }
   return ROOF_POINTS[form][id] ?? SHARED_POINTS[id] ?? null
 }
@@ -192,6 +196,6 @@ export function systemPartFocus(system: HomeSystemId, form: RoofForm, id: System
   if (point === null || (system !== 'roof' && system !== 'attic')) {
     return point
   }
-  const start = stepStarts(system, shown, peel).get(id)
+  const start = stepStarts(system, form, shown, peel).get(id)
   return start === undefined || stepBottom(shown) === id ? point : [stepCentre(system, start, peel), point[1], point[2]]
 }

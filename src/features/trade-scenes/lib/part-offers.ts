@@ -27,7 +27,7 @@ export interface PartOffer {
   dependsOnRoof: boolean
 }
 
-export type OfferBlockedReason = 'roof-not-set' | 'nothing-on-roof' | 'needs-tear-off' | 'needs-redeck' | 'base-included' | 'already-new' | 'no-offer-for-unit'
+export type OfferBlockedReason = 'roof-not-set' | 'nothing-on-roof' | 'needs-tear-off' | 'needs-redeck' | 'base-included' | 'already-new' | 'already-sealed' | 'no-offer-for-unit'
 
 // A scope's own reasons; a unit with nothing to offer blocks the whole system's row, not one scope.
 type ScopeBlockedReason = Exclude<OfferBlockedReason, 'no-offer-for-unit'>
@@ -79,7 +79,11 @@ export function materialOfPart(assemblyId: AssemblyId, partId: string): HomeMate
   return HOME_MATERIAL_IDS.find(id => HOME_MATERIALS[id].parts.some(entry => entry.assembly === assemblyId && entry.part === partId)) ?? null
 }
 
-export function partWear(assemblyId: AssemblyId, partId: string, home: ResolvedHomeMaterials): Wear | null {
+export function partWear(assemblyId: AssemblyId, partId: string, home: ResolvedHomeMaterials, existing: readonly ResolvedPart[]): Wear | null {
+  // The gutters carry a condition of their own, so the build is offered on it and not on the roof's.
+  if (partId === 'gutter') {
+    return existing.find(part => part.id === partId)?.wear ?? null
+  }
   const id = materialOfPart(assemblyId, partId)
   return id === null ? null : home[id]?.wear ?? null
 }
@@ -119,6 +123,10 @@ export function offeredScopes(offer: PartOffer, ctx: OfferContext): { scopeIds: 
   const homeHasPart = ctx.existing.some(part => part.id === offer.partId && part.condition !== 'absent')
   if (ctx.wear === 'new' && homeHasPart) {
     return { scopeIds: [], blocked: 'already-new' }
+  }
+  // Sealing never wears, so a home that has it is offered nothing on it.
+  if (offer.partId === 'air-sealing' && homeHasPart) {
+    return { scopeIds: [], blocked: 'already-sealed' }
   }
   if (offer.partId === 'attic-insulation' && !atticReachable(roofFormOf(ctx.roofType), ctx.picks)) {
     return { scopeIds: [], blocked: 'needs-redeck' }
@@ -173,7 +181,7 @@ export function keepOffered(picks: readonly string[], facts: HomeFacts, efficien
       if (!view.applies || !view.existing.some(part => part.id === offer.partId)) {
         return false
       }
-      const ctx = { roofType: property.roofType, picks: kept, existing: view.existing, assemblyId: view.id, wear: partWear(view.id, offer.partId, home), efficiencyUpgrades }
+      const ctx = { roofType: property.roofType, picks: kept, existing: view.existing, assemblyId: view.id, wear: partWear(view.id, offer.partId, home, view.existing), efficiencyUpgrades }
       return (offeredScopes(offer, ctx).scopeIds as string[]).includes(pick)
     })
     if (next.length === kept.length) {

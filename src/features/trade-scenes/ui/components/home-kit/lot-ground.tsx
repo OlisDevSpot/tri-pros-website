@@ -2,10 +2,13 @@
 
 import type { WeatherSky } from '@/features/trade-scenes/types'
 
-import { useEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 
+import { Color } from 'three'
+
+import { GROUND_MATERIALS } from '@/features/trade-scenes/constants/ground-materials'
 import { GROUND_ROWS } from '@/features/trade-scenes/constants/home-lot'
-import { createLawnTexture } from '@/features/trade-scenes/ui/lib/create-lawn-texture'
+import { TexturedMaterial } from '@/features/trade-scenes/ui/components/home-kit/textured-material'
 import { groundStripGeometry } from '@/features/trade-scenes/ui/lib/ground-strip-geometry'
 import { useOwnedGeometry } from '@/shared/components/scene/hooks/use-owned-geometry'
 
@@ -15,17 +18,16 @@ interface LotGroundProps {
 
 // Wider than the sky dome, so the ground runs out under the fog and never shows an edge.
 const HALF_WIDTH = 140
-const TILE_METRES = 4
 
 export function LotGround({ ground }: LotGroundProps) {
-  const geometry = useOwnedGeometry(() => groundStripGeometry(GROUND_ROWS, HALF_WIDTH, TILE_METRES), [])
-  const lawn = useMemo(createLawnTexture, [])
-  useEffect(() => () => lawn.dispose(), [lawn])
+  // UVs are metres; the texture set decides how many metres one tile covers.
+  const geometry = useOwnedGeometry(() => groundStripGeometry(GROUND_ROWS, HALF_WIDTH, 1), [])
+  // Until the map arrives the lawn shows today's flat green under the weather's tint.
+  const flat = useMemo(() => `#${new Color(GROUND_MATERIALS.sod.look.color).multiply(new Color(ground.color)).getHexString()}`, [ground.color])
 
-  // The lawn carries its own green; the weather only tints it, and wets it through the roughness.
   return (
     <mesh geometry={geometry} receiveShadow>
-      <meshStandardMaterial map={lawn} color={ground.color} roughness={ground.roughness} />
+      <TexturedMaterial set="sod-healthy" map="own" color={flat} mapTint={ground.color} roughness={ground.roughness} />
     </mesh>
   )
 }

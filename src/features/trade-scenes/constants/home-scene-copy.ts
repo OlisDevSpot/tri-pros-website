@@ -1,10 +1,9 @@
 import type { ReadingId } from '@/features/trade-scenes/constants/home-anchors'
-import type { LOOK_INSIDE_SYSTEM_IDS } from '@/features/trade-scenes/constants/home-systems'
-import type { BuildRowPartId, FactsTab, HomeSystemId, HomeView, SavingsCategory, SlotGroup, SystemPieceId, TradeSceneInputs } from '@/features/trade-scenes/types'
+import type { AreaGroupId, BuildRowPartId, FactsTab, HomeSystemId, HomeView, LotSide, SavingsCategory, SlotGroup, SystemPieceId, TradeSceneInputs, YardId, YardSystemId } from '@/features/trade-scenes/types'
 import type { CustomerAgeGroup, HouseholdType, YearBuiltRange } from '@/shared/constants/enums/customers'
 import type { Climate } from '@/shared/modules/construction/core/constants/climate-presets'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
-import type { AcTons, CrawlInsulation, DuctMaterial, ExteriorPaint, FoundationType, GutterOption, HVACComponent, HVACType, InsulationLevel, PaintWearKind, PaintWearLevel, RoofType, Wear, WindowsType } from '@/shared/modules/construction/core/constants/enums'
+import type { AcTons, AirSealingOption, CoveringWearKind, CrawlInsulation, DuctMaterial, ExteriorPaint, FoundationType, GutterOption, HVACComponent, HVACType, InsulationLevel, PaintWearKind, PaintWearLevel, RoofType, Wear, WindowsType } from '@/shared/modules/construction/core/constants/enums'
 import type { HomeMaterialId } from '@/shared/modules/construction/core/constants/home-material-ids'
 import type { InstallStyleId } from '@/shared/modules/construction/core/constants/install-styles'
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
@@ -58,7 +57,7 @@ export const SCENE_COPY = {
   recenter: 'Recenter',
 } as const
 
-// Placeholder copy until the owner's copy pass. What a system card says about the parts up close.
+// Placeholder copy until the owner's copy pass. What a system action card says about the parts up close.
 export const PART_COPY = {
   listLabel: 'What is up there',
   peel: 'Peel it apart',
@@ -119,6 +118,15 @@ export const READING_COPY = {
   disclosure: (climate: Climate, weather: HeatWeather) => `Estimate for a typical ${READING_CLIMATE_PHRASE[climate]} ${READING_SEASON_PHRASE[weather]}. Real temperatures vary.`,
 } as const
 
+// What the top-left pill says aloud: a read-only status, so the words are all a screen reader gets of its icons.
+export const SUMMARY_COPY = {
+  label: ({ weather, outside, thermal }: { weather: Weather, outside: number | null, thermal: boolean }) => [
+    WEATHER_LABELS[weather],
+    ...(outside === null ? [] : [`${outside}${READING_COPY.unit} outside`]),
+    ...(thermal ? [`${DOCK_COPY.thermal.toLowerCase()} on`] : []),
+  ].join(', '),
+} as const
+
 // Placeholders until the owner's copy pass.
 export const REPAIRS_COPY = {
   notSet: 'not set',
@@ -149,7 +157,7 @@ export const PART_LABELS: Record<string, string> = {
 export const SCOPES_AND_ADDONS_COPY = {
   noChange: 'No change',
   verbs: { overlay: 'Overlay', torchDown: 'Torch down', tearOff: 'Tear-off', tileReset: 'Tile reset', redeck: 'Redeck', add: 'Add', topOff: 'Top off', replace: 'Replace', seal: 'Seal', new: 'New', repaint: 'Repaint' },
-  blocked: { 'roof-not-set': 'Set the roof under Home facts', 'nothing-on-roof': 'Nothing offered on a metal roof yet', 'needs-tear-off': 'Needs a tear-off: an overlay keeps the old roof on', 'needs-redeck': 'Needs a redeck: the insulation is under the deck', 'already-new': 'Already new' },
+  blocked: { 'roof-not-set': 'Set the roof under Property facts', 'nothing-on-roof': 'Nothing offered on a metal roof yet', 'needs-tear-off': 'Needs a tear-off: an overlay keeps the old roof on', 'needs-redeck': 'Needs a redeck: the insulation is under the deck', 'already-new': 'Already new', 'already-sealed': 'Already air sealed' },
   unitBlocked: { 'wall-mounted': 'Nothing offered for a wall unit yet', 'portable': 'Nothing offered for a portable unit yet' },
   notSet: 'Not set',
 } as const
@@ -166,16 +174,50 @@ export const WEAR_LABELS = { new: 'New', good: 'Good', fair: 'Fair', worn: 'Worn
 export const HOME_MATERIAL_LABELS = { 'roof': 'Roof & gutters', 'attic-insulation': 'Attic insulation', 'windows': 'Windows', 'exterior-paint': 'Exterior paint', 'heating-cooling': 'Heating & cooling', 'ducts': 'Ducts', 'crawl-insulation': 'Crawl space insulation' } as const satisfies Record<HomeMaterialId, string>
 export const EXTERIOR_PAINT_LABELS = { regular: 'Water-based paint', cool: 'Cool Life reflective paint' } as const satisfies Record<ExteriorPaint, string>
 export const GUTTER_LABELS = { present: 'Gutters', none: 'No gutters' } as const satisfies Record<GutterOption, string>
+export const AIR_SEALING_LABELS = { none: 'Not air sealed', sealed: 'Air sealed' } as const satisfies Record<AirSealingOption, string>
 export const DUCT_LABELS = { 'original-flex': 'Original', 'r6-silver-flex': 'R-6 silver flex', 'r8-flex': 'R-8 flex' } as const satisfies Record<DuctMaterial, string>
 export const CRAWL_INSULATION_LABELS = { none: 'None', insulated: 'Insulated' } as const satisfies Record<CrawlInsulation, string>
 export const AC_TON_LABELS = { 3: '3 ton', 4: '4 ton', 5: '5 ton' } as const satisfies Record<AcTons, string>
+
+export const AREA_GROUP_LABELS = { exterior: 'Exterior', interior: 'Interior', lot: 'Lot' } as const satisfies Record<AreaGroupId, string>
+// Each option's name: Interior shows, dimmed, until there is something inside to pick.
+export const AREA_GROUP_NAMES = { exterior: 'Home exterior', interior: 'Home interior, coming soon', lot: 'Lot' } as const satisfies Record<AreaGroupId, string>
+export const YARD_LABELS = { 'front-yard': 'Front yard', 'back-yard': 'Back yard', 'left-side-yard': 'Left side yard', 'right-side-yard': 'Right side yard' } as const satisfies Record<YardId, string>
+export const YARD_SYSTEM_LABELS = { 'landscaping': 'Landscaping', 'hardscaping': 'Hardscaping', 'fencing': 'Fencing', 'patio-cover': 'Patio cover' } as const satisfies Record<YardSystemId, string>
+
+export const LOT_COPY = {
+  mixed: 'Mixed',
+  keep: 'Keep what is there',
+  wearDot: (ground: string, wear: string) => `${ground}: ${wear}`,
+  yardsToday: 'Yards today',
+  yardsHint: 'The base each yard starts from',
+  fencesToday: 'Fences today',
+  base: (yard: string) => `${yard} · base`,
+  soonTiles: [{ title: 'Patio cover', hint: 'Its own design, soon.' }, { title: 'Lot size', hint: 'Filled from the address, soon.' }],
+  sides: { front: 'Front', back: 'Back', left: 'Left', right: 'Right' } as Record<LotSide, string>,
+  noFence: 'None',
+  removeRegion: 'Remove region',
+  removeRegionHint: "Back to the yard's base.",
+  removeFence: 'Remove fence',
+  removeFenceHint: 'Gone from today and the build.',
+  wholeYard: 'Whole yard',
+  drawRegion: 'Draw a region',
+  drawFence: 'Draw a fence',
+  drawHint: 'Part of the yard gets its own ground or its own fence.',
+  // A fence between two yards stands inside the lot, not inside a yard.
+  inside: 'Inside the lot',
+} as const
+
+export const GROUND_APPEARANCE_COPY = { pattern: 'Pattern', color: 'Colour' } as const
 
 export const HOME_SYSTEM_LABELS = { 'roof': 'Roof & gutters', 'attic': 'Attic', 'windows': 'Windows', 'walls': 'Walls', 'heating-cooling': 'Heating & cooling', 'foundation': 'Foundation' } as const satisfies Record<HomeSystemId, string>
 
 export const HOME_MATERIALS_COPY = {
   gutters: 'Gutters',
+  airSealing: 'Air sealing',
   acSize: 'AC size',
   dotLabel: (material: string, wear: string, years: string) => `${material}: ${wear}, ${years}`,
+  dotLabelNoAge: (material: string, wear: string) => `${material}: ${wear}`,
   years: (from: string, to: string) => `${from}–${to} years`,
   yearsFrom: (from: string) => `${from}+ years`,
 } as const
@@ -192,6 +234,8 @@ export const SHINGLE_COPY = {
 
 export const FRAME_COLOR_COPY = { label: 'Frame colour' } as const
 
+export const GUTTER_COLOR_COPY = { label: 'Gutter colour', header: 'Colour', notPicked: 'Not picked' } as const
+
 export const PAINT_COLOR_COPY = {
   colors: 'Colours',
   combos: 'Popular combos',
@@ -205,14 +249,15 @@ export const PAINT_COLOR_COPY = {
 } as const
 
 export const PAINT_WEAR_LABELS = { 'cracks': 'Cracks', 'stains': 'Stains', 'peeling': 'Peeling', 'fascia-rot': 'Fascia rot' } as const satisfies Record<PaintWearKind, string>
+export const COVERING_WEAR_LABELS = { cracked: 'Cracked', misaligned: 'Misaligned', broken: 'Broken', missing: 'Missing', curling: 'Curling', split: 'Split' } as const satisfies Record<CoveringWearKind, string>
 export const PAINT_WEAR_LEVEL_LABELS = { none: 'None', light: 'Light', moderate: 'Moderate', heavy: 'Heavy' } as const satisfies Record<PaintWearLevel, string>
 
 // Placeholder copy until the owner's copy pass.
 export const CONTROLS_COPY = {
   label: 'Scene controls',
   close: 'Close',
-  sections: { facts: 'Home facts', systems: 'Systems', modify: 'Modify', benefits: 'Benefits' },
-  factsMissing: (count: number) => `Home facts, ${count} missing`,
+  sections: { facts: 'Property facts', systems: 'Areas', modify: 'Modify', benefits: 'Benefits' },
+  factsMissing: (count: number) => `Property facts, ${count} missing`,
   toggleName: (build: boolean) => build ? 'Showing the Tri Pros build; tap to show today' : 'Showing today; tap to show the Tri Pros build',
   facts: {
     tabs: { main: 'Main home', household: 'Household', area: 'Area', lot: 'Lot' } satisfies Record<FactsTab, string>,
@@ -228,10 +273,10 @@ export const CONTROLS_COPY = {
     },
   },
   systems: {
-    title: 'Systems',
+    title: 'Areas',
     yearBuilt: 'Year built',
     setsToday: 'Sets today’s materials',
-    showing: { existing: 'Showing today', proposed: 'Showing the build' } satisfies Record<TradeSceneInputs['view'], string>,
+    cardTitle: (label: string) => `${label} system`,
     noneOnSlab: 'Nothing to add on a slab',
     condition: 'Condition',
     eraAttic: { none: 'No attic insulation', r11: 'R-11 attic', r19: 'R-19 attic', r30: 'R-30 attic', r38: 'R-38 attic' } as const satisfies Record<InsulationLevel, string>,
@@ -271,7 +316,7 @@ export const CONTROLS_COPY = {
     placeholder: { wide: 'Search a change: tile, attic fan, 4 ton…', phone: 'Search a change' },
     search: 'Search a change',
     clear: 'Clear search',
-    groupTags: { facts: 'Home facts', area: 'Area', systems: 'Systems', existing: 'Today', proposed: 'Build', bills: 'Bills' } as const satisfies Record<SlotGroup, string>,
+    groupTags: { facts: 'Property facts', area: 'Area', systems: 'Areas', existing: 'Today', proposed: 'Build', bills: 'Bills' } as const satisfies Record<SlotGroup, string>,
     enter: 'Enter',
     noResults: (query: string) => `Nothing matches “${query}”. Try a material, a system or a value: tile, attic fan, 4 ton.`,
     matches: (count: number) => `${count} changes match`,
@@ -300,11 +345,11 @@ export const BENEFITS_COPY = {
     area: 'Area',
     missing: 'missing',
     missingNote: 'Until it is set the bills use the inland defaults.',
-    setNote: 'From Home facts → Area; change it there.',
+    setNote: 'From Property facts → Area; change it there.',
     billName: (bill: string) => `${bill} bill a month`,
     repairsName: (material: string) => `${material} repairs a year`,
     tags: { working: 'Working number', typed: 'Typed' },
-    foot: 'Working numbers are the team\'s, not yet sourced; a typed figure wins. A material\'s condition is set in Systems.',
+    foot: 'Working numbers are the team\'s, not yet sourced; a typed figure wins. A material\'s condition is set in Areas.',
   },
   savings: {
     clause: (bill: string, claim: string) => `${bill.toLowerCase()} ${claim}`,
@@ -348,7 +393,7 @@ export const BENEFITS_COPY = {
   },
   empty: {
     title: 'Nothing picked for the build yet',
-    body: 'Pick upgrades in Modify or Systems, and every benefit they bring appears here.',
+    body: 'Pick upgrades in Modify or Areas, and every benefit they bring appears here.',
     openModify: 'Open Modify',
   },
   futures: {
@@ -438,6 +483,9 @@ export const SYSTEM_PART_LABELS = {
   'eaves-trim': 'Eaves & trim',
 } as const satisfies Record<SystemPieceId, string>
 
+// The attic names its ceiling by whether its openings are sealed; the roof keeps the part's own label.
+export const ATTIC_CEILING_LABELS = { leaking: 'Ceiling leakage', sealed: 'Ceiling air sealed' } as const
+
 // A piece's own line under its name once picked; a piece with none shows no line.
 export const SYSTEM_PART_DETAILS = {
   'low-e': 'The coating that gives the gas-filled glass its darker, more opaque look: harder to see inside, so more privacy.',
@@ -451,12 +499,13 @@ export const EAVES_TRIM_DETAILS = {
 } as const
 
 // Placeholder copy until the owner's copy pass.
-export const LOOK_INSIDE_COPY = { open: 'Look inside', close: 'Back to the system' } as const
+export const SYSTEM_ACTION_COPY = { focus: 'Focus', lookInside: 'Look inside' } as const
 
-export const SYSTEM_PIN_LABELS = {
-  'roof': `${HOME_SYSTEM_LABELS.roof} system`,
-  'attic': `${HOME_SYSTEM_LABELS.attic} system`,
-  'windows': `${HOME_SYSTEM_LABELS.windows} system`,
-  'walls': `${HOME_SYSTEM_LABELS.walls} system`,
-  'heating-cooling': `${HOME_SYSTEM_LABELS['heating-cooling']} system`,
-} as const satisfies Record<(typeof LOOK_INSIDE_SYSTEM_IDS)[number], string>
+export const QUICK_EDIT_COPY = {
+  edit: (label: string) => `Quick edit ${label}`,
+  done: 'Done editing',
+  openCard: (label: string) => `Open the ${label} system`,
+  wearFold: { 'exterior-paint': 'Paint wear', 'roof': 'Roof wear' },
+  nothingInBuild: (label: string) => `Nothing for ${label.toLowerCase()} in the build yet.`,
+  addInCard: 'Add in the system card',
+} as const

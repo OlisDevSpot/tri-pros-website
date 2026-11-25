@@ -1,61 +1,48 @@
 'use client'
 
-import type { CSSProperties, ReactNode } from 'react'
-import type { WorkDetailsKind } from '@/features/trade-scenes/lib/work-details-kind'
+import type { ReactNode } from 'react'
 
-import type { HomeSystemId, SceneChangeSlotId, TradeSceneInputs } from '@/features/trade-scenes/types'
-import { CONTROLS_CLASSES } from '@/features/trade-scenes/constants/controls-classes'
-import { CONTROLS_COPY, PART_LABELS, SCENE_VIEW_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
+import type { HomeSystemId, TradeSceneInputs } from '@/features/trade-scenes/types'
+import { CONTROLS_COPY, PART_LABELS } from '@/features/trade-scenes/constants/home-scene-copy'
 import { NO_CHANGE_CHOICE } from '@/features/trade-scenes/constants/scene-controls'
-import { CONTROLS_EASE_CSS } from '@/features/trade-scenes/constants/scene-layout'
 import { useApplySceneChange } from '@/features/trade-scenes/hooks/use-apply-scene-change'
 import { useSceneTargets } from '@/features/trade-scenes/hooks/use-scene-targets'
 import { currentYear } from '@/features/trade-scenes/lib/current-year'
 import { sceneChangeSlots } from '@/features/trade-scenes/lib/scene-change-slots'
-import { systemMaterialIds } from '@/features/trade-scenes/lib/system-material-ids'
-import { upgradeRowBlockedLine, upgradeRowState } from '@/features/trade-scenes/lib/upgrade-row-state'
+import { systemBuildEntries } from '@/features/trade-scenes/lib/system-build-entries'
+import { systemInputSlotIds } from '@/features/trade-scenes/lib/system-input-slots'
+import { upgradeRowBlockedLine } from '@/features/trade-scenes/lib/upgrade-row-state'
 import { upgradeRows } from '@/features/trade-scenes/lib/upgrade-rows'
 import { workDetailsKind } from '@/features/trade-scenes/lib/work-details-kind'
+import { BuildSwitch } from '@/features/trade-scenes/ui/components/controls/build-switch'
+import { EntryWorkDetails } from '@/features/trade-scenes/ui/components/controls/entry-work-details'
 import { ExistingChip } from '@/features/trade-scenes/ui/components/controls/existing-chip'
 import { LookInsideBody } from '@/features/trade-scenes/ui/components/controls/look-inside-body'
-import { LookInsideButton } from '@/features/trade-scenes/ui/components/controls/look-inside-button'
 import { MissingChip } from '@/features/trade-scenes/ui/components/controls/missing-chip'
 import { ProposedChip } from '@/features/trade-scenes/ui/components/controls/proposed-chip'
-import { UpgradeSwitch } from '@/features/trade-scenes/ui/components/controls/upgrade-switch'
-import { WorkDetails } from '@/features/trade-scenes/ui/components/controls/work-details'
+import { SystemCardRow } from '@/features/trade-scenes/ui/components/controls/system-card-row'
 import { useSceneInputs } from '@/shared/components/scene/contexts/scene-inputs-context'
-import { cn } from '@/shared/lib/utils'
 
 interface SystemCardBodyProps {
   system: HomeSystemId
 }
 
-// Today and the Tri Pros build, one row each, then the way up close. The side the scene is not showing dims, but its chips
-// still work.
+// Today and the Tri Pros build, one row each, then the way up close while it is on.
 export function SystemCardBody({ system }: SystemCardBodyProps) {
   const state = useSceneInputs((inputs: TradeSceneInputs) => inputs)
   const targets = useSceneTargets()
   const applyChange = useApplySceneChange()
   const year = currentYear()
   const slots = sceneChangeSlots(state, targets, year)
-  const slotOf = (id: SceneChangeSlotId) => slots.find(slot => slot.id === id)
+  const slotOf = (id: string) => slots.find(slot => slot.id === id)
   const facts = { property: state.property, materials: state.homeMaterials, year }
   const picks = state.proposedScopeIds
   const rows = upgradeRows(facts, picks, state.efficiencyUpgrades).find(entry => entry.id === system)?.rows ?? []
-  // Gutters rides with the roof.
-  const existing = systemMaterialIds(system, targets.home).flatMap(id => [
-    <ExistingChip key={id} slot={slotOf(id)!} slots={slots} material={targets.home[id]!} />,
-    ...id === 'roof' ? [<ExistingChip key="gutters" slot={slotOf('gutters')!} slots={slots} material={null} />] : [],
-  ])
+  const existing = systemInputSlotIds(system, targets.home, slots).map(({ slotId, material }) => (
+    <ExistingChip key={slotId} slot={slotOf(slotId)!} slots={slots} material={material} />
+  ))
 
-  const details = (kind: WorkDetailsKind) => (
-    <WorkDetails kind={kind} upgrade={kind === 'vinyl-frame' ? null : slotOf(kind === 'paint' ? 'upgrade:cool-paint' : 'upgrade:cool-roof') ?? null} />
-  )
-  // A toggle's details go last in the row, on a line of their own, so a chip a pick unlocks stays beside the chip that
-  // unlocked it. Keyed by the system: Cool Life swaps the repaint's scope, and the panel must not remount with it.
-  const panels: ReactNode[] = []
-
-  const proposed = rows.flatMap((row): ReactNode[] => {
+  const proposed = systemBuildEntries(rows, picks, state.efficiencyUpgrades).flatMap(({ row, kind, switches }): ReactNode[] => {
     const id = `build:${row.part}` as const
     const label = PART_LABELS[row.part]
     const words = CONTROLS_COPY.systems.buildChips[row.part]
@@ -64,81 +51,36 @@ export function SystemCardBody({ system }: SystemCardBodyProps) {
       return [<ProposedChip key={id} id={id} kind="reason" label={label} text={words.add} reason={line.text} included={line.included} />]
     }
     const slot = slotOf(id)!
-    const { picked, holdsCoolRoof, holdsR8, holdsCoolPaint, holdsR38, holdsBatts } = upgradeRowState(row, picks, state.efficiencyUpgrades)
-    const kind = workDetailsKind(picked)
-    if (kind !== null && row.scopeIds.length === 1) {
-      panels.push(<div key={`details:${system}`} className={CONTROLS_CLASSES.detailsPanel}>{details(kind)}</div>)
-    }
-    const chips: ReactNode[] = [
-      row.scopeIds.length === 1
-        ? (
-            <ProposedChip
-              key={id}
-              id={id}
-              kind="toggle"
-              text={slot.current === NO_CHANGE_CHOICE ? words.add : words.short(slot.options.find(option => option.value === slot.current)!.label)}
-              on={slot.current !== NO_CHANGE_CHOICE}
-              onToggle={() => applyChange(slot.change(slot.current === NO_CHANGE_CHOICE ? row.scopeIds[0] : NO_CHANGE_CHOICE))}
-            />
-          )
-        : (
-            <ProposedChip
-              key={id}
-              id={id}
-              kind="menu"
-              label={label}
-              add={words.add}
-              short={words.short}
-              slot={slot}
-              staysOpenOn={value => workDetailsKind(value) !== null}
-              // Inside the menu the colours line up with its header, and the line pill, which wraps at the menu's width,
-              // keeps a radius that reads at two rows.
-              extra={kind !== null && <div className="px-1.5 pb-1.5 [&_[data-slot=toggle-group]]:rounded-[18px]">{details(kind)}</div>}
-            />
-          ),
-    ]
-    // Batts are a look on a picked replace only; before one is picked the menu beside it already offers the replace.
-    const batts = () => {
-      const battsSlot = slotOf('style:batts')!
-      const on = battsSlot.current === 'on'
-      return battsSlot.unavailable === null && <ProposedChip key={battsSlot.id} id={battsSlot.id} kind="toggle" text={battsSlot.name} on={on} onToggle={() => applyChange(battsSlot.change(on ? 'off' : 'on'))} />
-    }
-    // The fascia replacement sits beside the repaint, the one row on the walls, and only while the rep has set rot to replace.
-    const fasciaReplacement = () => {
-      const fasciaSlot = slotOf('replace:fascia')!
-      const on = fasciaSlot.current === 'on'
-      return fasciaSlot.unavailable === null && <ProposedChip key={fasciaSlot.id} id={fasciaSlot.id} kind="toggle" text={fasciaSlot.name} on={on} onToggle={() => applyChange(fasciaSlot.change(on ? 'off' : 'on'))} />
-    }
-    // A row that holds an upgrade always lists its slot, taken or not yet; the cool roof and Cool Life move into a pick's
-    // details once one is made. The R-8 and R-38 steps, Cool Life paint and batts come only with the chip beside them, which
-    // already says why.
-    return [
-      ...chips,
-      row.part === 'paint' && fasciaReplacement(),
-      holdsCoolRoof && kind === null && <UpgradeSwitch key="upgrade:cool-roof" slot={slotOf('upgrade:cool-roof')!} upgrade="cool-roof" saysWhy />,
-      holdsR8 && <UpgradeSwitch key="upgrade:r8-ducts" slot={slotOf('upgrade:r8-ducts')!} upgrade="r8-ducts" saysWhy={false} />,
-      holdsCoolPaint && kind === null && <UpgradeSwitch key="upgrade:cool-paint" slot={slotOf('upgrade:cool-paint')!} upgrade="cool-paint" saysWhy={false} />,
-      holdsR38 && <UpgradeSwitch key="upgrade:r38-insulation" slot={slotOf('upgrade:r38-insulation')!} upgrade="r38-insulation" saysWhy={false} />,
-      holdsBatts && batts(),
-    ]
+    // Work with something to choose is chosen inside its menu, one way or several, so every such row reads as the roof's does.
+    const menu = row.scopeIds.length > 1 || row.scopeIds.some(scopeId => workDetailsKind(scopeId) !== null)
+    const chip = menu
+      ? (
+          <ProposedChip
+            key={id}
+            id={id}
+            kind="menu"
+            label={label}
+            add={words.add}
+            short={words.short}
+            slot={slot}
+            staysOpenOn={value => workDetailsKind(value) !== null}
+            // Inside the menu the colours line up with its header, and the line pill, which wraps at the menu's width,
+            // keeps a radius that reads at two rows.
+            extra={kind !== null && <div className="px-1.5 pb-1.5 [&_[data-slot=toggle-group]]:rounded-[18px]"><EntryWorkDetails kind={kind} slots={slots} /></div>}
+          />
+        )
+      : (
+          <ProposedChip
+            key={id}
+            id={id}
+            kind="toggle"
+            text={slot.current === NO_CHANGE_CHOICE ? words.add : words.short(slot.options.find(option => option.value === slot.current)!.label)}
+            on={slot.current !== NO_CHANGE_CHOICE}
+            onToggle={() => applyChange(slot.change(slot.current === NO_CHANGE_CHOICE ? row.scopeIds[0] : NO_CHANGE_CHOICE))}
+          />
+        )
+    return [chip, ...switches.map(id => <BuildSwitch key={id} id={id} slot={slotOf(id)!} />)]
   })
-
-  const dimmed = state.view === 'existing' ? 'proposed' : 'existing'
-  const sideRow = (side: 'existing' | 'proposed', chips: ReactNode) => (
-    <div data-system-row={side} data-dimmed={dimmed === side || undefined} className="grid gap-1.5">
-      <span className={CONTROLS_CLASSES.capsLabel}>{SCENE_VIEW_LABELS[side]}</span>
-      <div
-        // The chips take the controls' curve through a variable: a class cannot read the constant.
-        style={{ '--chip-ease': CONTROLS_EASE_CSS } as CSSProperties}
-        className={cn(
-          'flex flex-wrap items-center gap-1.5 *:transition-opacity *:duration-220 *:ease-(--chip-ease) motion-reduce:*:transition-none',
-          dimmed === side && '*:opacity-45 *:hover:opacity-85 *:focus-visible:opacity-85 *:data-[state=open]:opacity-85',
-        )}
-      >
-        {chips}
-      </div>
-    </div>
-  )
 
   const note = (text: string) => <span className="text-xs text-muted-foreground">{text}</span>
   // Only the foundation can have nothing to show: unset, it is asked for here rather than taken for a slab; a slab has no
@@ -147,16 +89,15 @@ export function SystemCardBody({ system }: SystemCardBodyProps) {
     const foundation = slotOf('foundation')!
     return (
       <>
-        {sideRow('existing', <MissingChip slot={foundation} onPick={value => applyChange(foundation.change(value))} />)}
-        {sideRow('proposed', note(CONTROLS_COPY.systems.foundationFirst))}
+        <SystemCardRow side="existing"><MissingChip slot={foundation} onPick={value => applyChange(foundation.change(value))} /></SystemCardRow>
+        <SystemCardRow side="proposed">{note(CONTROLS_COPY.systems.foundationFirst)}</SystemCardRow>
       </>
     )
   }
   return (
     <>
-      {sideRow('existing', existing.length === 0 ? note(CONTROLS_COPY.systems.noCrawlSpace) : existing)}
-      {sideRow('proposed', rows.length === 0 ? note(CONTROLS_COPY.systems.noneOnSlab) : [...proposed, ...panels])}
-      <LookInsideButton system={system} />
+      <SystemCardRow side="existing">{existing.length === 0 ? note(CONTROLS_COPY.systems.noCrawlSpace) : existing}</SystemCardRow>
+      <SystemCardRow side="proposed">{rows.length === 0 ? note(CONTROLS_COPY.systems.noneOnSlab) : proposed}</SystemCardRow>
       {state.lookInside && <LookInsideBody system={system} />}
     </>
   )

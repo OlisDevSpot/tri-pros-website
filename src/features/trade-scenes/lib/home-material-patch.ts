@@ -44,6 +44,8 @@ function writeOption(state: PatchState, field: ReplaceableField, value: string |
   return settled(state, state.property, materials, year)
 }
 
+const ERA_GUESS_CLEARS: Partial<Record<HomeMaterialId, Partial<HomeMaterialFacts>>> = { 'exterior-paint': { paintWear: {} }, 'roof': { coveringWear: {} } }
+
 export function homeMaterialPatch(state: PatchState, change: Extract<SceneChange, { kind: 'wear' | 'option' | 'era-guess' | 'fact' }>, year: number): Partial<TradeSceneInputs> {
   switch (change.kind) {
     case 'wear':
@@ -53,10 +55,10 @@ export function homeMaterialPatch(state: PatchState, change: Extract<SceneChange
     case 'era-guess': {
       // Only the replaceable option goes back to the guess: the roof type, system type, equipment and gutters are facts about the home, not about this material's age.
       const field = HOME_MATERIALS[change.id].replaceable
-      // The recorded levels were set against the paint being forgotten, so they go with its wear.
-      const cleared = change.id === 'exterior-paint' ? { ...state, homeMaterials: { ...state.homeMaterials, paintWear: {} } } : state
+      // The recorded levels were set against the material being forgotten, so they go with its wear.
+      const cleared = { ...state, homeMaterials: { ...state.homeMaterials, ...ERA_GUESS_CLEARS[change.id] } }
       return field === null
-        ? settled(state, state.property, withoutWear(state.homeMaterials, change.id), year)
+        ? settled(state, state.property, withoutWear(cleared.homeMaterials, change.id), year)
         : writeOption(cleared, field, null, year, true)
     }
     case 'fact':

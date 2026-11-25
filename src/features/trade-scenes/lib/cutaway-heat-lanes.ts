@@ -102,14 +102,17 @@ export function cutawayHeatLanes(form: RoofForm, parts: readonly ResolvedPart[],
 // Where the three readings pin on the steps: the roof's on the covering, the attic's in the air under it, the ceiling's
 // on the ceiling. They follow the line the heat crosses, so they ride the steps as they open. The attic's stand on its own
 // line, on the span the house it holds open keeps: the roof's and the attic's beside the line, clear of the card, the
-// ceiling's behind the kept cut edge.
+// ceiling's behind the kept cut edge, and beside the line too under a gable.
 export function cutawayReadingSpots(form: RoofForm, parts: readonly ResolvedPart[], steps: CutawaySteps): Record<SectionReadingId, Vec3> {
   const spans = cutawayCrossings(form, parts, steps, 'heat')
   const covering = spans.find(span => span.partId === 'covering')!
   const ceiling = spans.find(span => span.partId === 'ceiling')!
   const { onCovering, pitched, lowSlope, ceilingBelow, ceilingFromFront, attic } = CUTAWAY_READINGS
   const own = steps.system === 'attic'
-  const ceilingSpot: Vec3 = [ceiling.inner[0], ceiling.inner[1] - ceilingBelow, own ? HOUSE.atticFrontZ - attic.ceilingBack : HOUSE.halfDepth - ceilingFromFront]
+  const ownCeiling = attic.ceiling[form]
+  const ceilingSpot: Vec3 = own
+    ? [ceiling.inner[0] - ownCeiling.aside, ceiling.inner[1] - ceilingBelow, HOUSE.atticFrontZ - ownCeiling.back]
+    : [ceiling.inner[0], ceiling.inner[1] - ceilingBelow, HOUSE.halfDepth - ceilingFromFront]
   const aside = own ? attic.aside : 0
   if (form === 'low-slope') {
     return {

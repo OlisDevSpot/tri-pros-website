@@ -29,14 +29,13 @@ export const LOT = {
   gateZ: HOUSE.halfDepth - 0.6,
 }
 
-const SIDEWALK = 1.52
-const PARKWAY = 2.13
-const STREET = 11.0
+export const STREET_BAND = { sidewalk: 1.52, parkway: 2.13, street: 11.0 } as const
+const CURB_Z = LOT.front + STREET_BAND.sidewalk + STREET_BAND.parkway
 export const STREET_Z = {
-  sidewalk: [LOT.front, LOT.front + SIDEWALK] as const,
-  curb: LOT.front + SIDEWALK + PARKWAY,
-  farCurb: LOT.front + SIDEWALK + PARKWAY + STREET,
-  farSidewalk: [LOT.front + SIDEWALK + PARKWAY + STREET + PARKWAY, LOT.front + SIDEWALK + PARKWAY + STREET + PARKWAY + SIDEWALK] as const,
+  sidewalk: [LOT.front, LOT.front + STREET_BAND.sidewalk] as const,
+  curb: CURB_Z,
+  farCurb: CURB_Z + STREET_BAND.street,
+  farSidewalk: [CURB_Z + STREET_BAND.street + STREET_BAND.parkway, CURB_Z + STREET_BAND.street + STREET_BAND.parkway + STREET_BAND.sidewalk] as const,
 }
 
 // The house pad sits above the street: flat round the house, the front yard falling to the sidewalk, then the curb's step.
@@ -49,18 +48,25 @@ export const GRADE = {
 
 export const WALK = { x0: -1.25, x1: 0.05 }
 
+export const MULCH_BEDS: readonly { x0: number, x1: number, z0: number, z1: number }[] = [
+  { x0: -3.75 - 2.3, x1: -3.75 + 2.3, z0: HOUSE.halfDepth + 0.85 - 0.65, z1: HOUSE.halfDepth + 0.85 + 0.65 },
+  { x0: 2.6 - 2.2, x1: 2.6 + 2.2, z0: HOUSE.halfDepth + 0.85 - 0.65, z1: HOUSE.halfDepth + 0.85 + 0.65 },
+  { x0: LOT.left + 0.85 - 0.75, x1: LOT.left + 0.85 + 0.75, z0: LOT.gateZ, z1: GRADE.padEnd },
+]
+
 // The houses across the street sit on a pad of their own, the same rise up from their sidewalk.
 export const FAR_RISE = 4.5
 
-// The ground's cross-section along z; x runs flat.
+// The ground's cross-section along z; x runs flat. It steps down to the street just behind each curb's face, so the
+// curb hides the step.
 export const GROUND_ROWS: readonly (readonly [z: number, y: number])[] = [
   [-140, 0],
   [GRADE.padEnd, 0],
   [LOT.front, GRADE.walk],
-  [STREET_Z.curb + GRADE.curb, GRADE.walk],
-  [STREET_Z.curb + GRADE.curb + 0.01, GRADE.street],
-  [STREET_Z.farCurb - GRADE.curb - 0.01, GRADE.street],
-  [STREET_Z.farCurb - GRADE.curb, GRADE.walk],
+  [STREET_Z.curb + GRADE.curb - 0.01, GRADE.walk],
+  [STREET_Z.curb + GRADE.curb, GRADE.street],
+  [STREET_Z.farCurb - GRADE.curb, GRADE.street],
+  [STREET_Z.farCurb - GRADE.curb + 0.01, GRADE.walk],
   [STREET_Z.farSidewalk[1], GRADE.walk],
   [STREET_Z.farSidewalk[1] + FAR_RISE, 0],
   [140, 0],
@@ -80,4 +86,15 @@ export const LOT_PALETTE = {
   wallCap: '#c4b597',
   fenceBoard: '#a9693e',
   fenceRail: '#8f5832',
+  vinyl: '#f2f1ec',
+  compositeBoard: '#6e6257',
+  compositePost: '#2f2b28',
+  iron: '#2a2a2c',
+  galvanised: '#9ea3a6',
+  chainMesh: '#b7bcbf',
+  dryGrass: '#a59a5c',
+  bareSoil: '#7d6247',
+  stain: '#5c564d',
+  crack: '#3a3733',
+  fade: '#b5ad9e',
 } as const

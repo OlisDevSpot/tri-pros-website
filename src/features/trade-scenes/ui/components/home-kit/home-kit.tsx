@@ -3,7 +3,8 @@
 import type { ThreeEvent } from '@react-three/fiber'
 import type { RefObject } from 'react'
 import type { Group, Object3D } from 'three'
-import type { CeilingOpening, HomeFade, HomeKitInputs, HomeSpotId, PartPaint, SceneTargets, SystemLit, SystemPartId, SystemPartTagData } from '@/features/trade-scenes/types'
+import type { CeilingOpening, HomeFade, HomeKitInputs, HomeSpotId, PartPaint, SceneTargets, StainBoxes, SystemLit, SystemPartId, SystemPartTagData, Vec3 } from '@/features/trade-scenes/types'
+import type { SpotHover } from '@/features/trade-scenes/ui/components/home-kit/spot-hover'
 import type { ResolvedPart } from '@/shared/modules/construction/core/types'
 
 import { useThree } from '@react-three/fiber'
@@ -11,21 +12,28 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { HEAT_ARROW_LOOK } from '@/features/trade-scenes/constants/heat-arrow-look'
 import { AC_SCALE } from '@/features/trade-scenes/constants/home-equipment-sizes'
-import { HOME_FADES_SHOWN, HOME_GARAGE_TAG, HOME_GHOST_TAG } from '@/features/trade-scenes/constants/home-fades'
+import { HOME_FADE_TAGS, HOME_FADES_SHOWN, HOME_GARAGE_TAG, HOME_GHOST_TAG } from '@/features/trade-scenes/constants/home-fades'
 import { HOME_FLOOR_Y, HOME_OPENING_RISE } from '@/features/trade-scenes/constants/home-geometry'
 import { LEAK } from '@/features/trade-scenes/constants/home-life'
 import { RAIN_PRESET_WEATHER } from '@/features/trade-scenes/constants/home-temperatures'
 import { OWN_PAINT } from '@/features/trade-scenes/constants/home-thermal-zones'
 import { LOOK_INSIDE } from '@/features/trade-scenes/constants/look-inside'
 import { HOME_PRIMARY_ASSEMBLY } from '@/features/trade-scenes/constants/scene-controls'
+import { isStuccoFinish } from '@/features/trade-scenes/constants/system-parts'
 import { WEATHER_SKIES } from '@/features/trade-scenes/constants/weather-skies'
 import { LookInsideFadeContext } from '@/features/trade-scenes/contexts/look-inside-fade-context'
+import { useLotSlot } from '@/features/trade-scenes/contexts/lot-slot-context'
+import { useSceneCursorHover } from '@/features/trade-scenes/contexts/scene-cursor-hover-context'
 import { useEmphasizePart } from '@/features/trade-scenes/hooks/use-emphasize-part'
 import { useSceneScan } from '@/features/trade-scenes/hooks/use-scene-scan'
 import { useSceneTapClaim } from '@/features/trade-scenes/hooks/use-scene-tap-claim'
 import { atticInsulationTop } from '@/features/trade-scenes/lib/attic-insulation-boxes'
 import { ceilingOpenings } from '@/features/trade-scenes/lib/ceiling-openings'
+import { coveringWearInForce } from '@/features/trade-scenes/lib/covering-wear-in-force'
 import { openedDuctRun } from '@/features/trade-scenes/lib/duct-run-points'
+import { gutterHex } from '@/features/trade-scenes/lib/gutter-hex'
+import { gutterWallStains } from '@/features/trade-scenes/lib/gutter-marks'
+import { gutterOutlets, gutterWetSpans } from '@/features/trade-scenes/lib/gutter-water'
 import { hasOutdoorUnit } from '@/features/trade-scenes/lib/has-outdoor-unit'
 import { homeFadeNeeded } from '@/features/trade-scenes/lib/home-fade-needed'
 import { homeFloorY } from '@/features/trade-scenes/lib/home-floor-y'
@@ -35,10 +43,11 @@ import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
 import { indoorSide } from '@/features/trade-scenes/lib/indoor-side'
 import { installedShingleTone } from '@/features/trade-scenes/lib/installed-shingle-tone'
 import { isCutawayFaceSystem, isCutawaySystem } from '@/features/trade-scenes/lib/is-cutaway-system'
+import { overflowStains } from '@/features/trade-scenes/lib/overflow-stains'
 import { paintHexes } from '@/features/trade-scenes/lib/paint-hexes'
 import { paintWearInForce } from '@/features/trade-scenes/lib/paint-wear-in-force'
 import { partPaintTemperatures } from '@/features/trade-scenes/lib/part-paint-temperatures'
-import { partState } from '@/features/trade-scenes/lib/part-state'
+import { drawnGutterWear, partState } from '@/features/trade-scenes/lib/part-state'
 import { residentAct } from '@/features/trade-scenes/lib/resident-act'
 import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
 import { HeatArrows } from '@/features/trade-scenes/ui/components/heat-arrows'
@@ -48,6 +57,7 @@ import { CondenserUnit } from '@/features/trade-scenes/ui/components/home-kit/co
 import { CutawayFaceFlows } from '@/features/trade-scenes/ui/components/home-kit/cutaway-face-flows'
 import { CutawayFlows } from '@/features/trade-scenes/ui/components/home-kit/cutaway-flows'
 import { CutawayRotMarks } from '@/features/trade-scenes/ui/components/home-kit/cutaway-rot-marks'
+import { DownspoutFeet } from '@/features/trade-scenes/ui/components/home-kit/downspout-feet'
 import { Foundation } from '@/features/trade-scenes/ui/components/home-kit/foundation'
 import { Garage } from '@/features/trade-scenes/ui/components/home-kit/garage'
 import { HomeEquipment } from '@/features/trade-scenes/ui/components/home-kit/home-equipment'
@@ -74,6 +84,7 @@ import { SCENE_MOTION } from '@/shared/components/scene/constants/scene-motion'
 import { useEased } from '@/shared/components/scene/hooks/use-eased'
 import { useSceneBurst } from '@/shared/components/scene/hooks/use-scene-burst'
 import { normalizeOnScale } from '@/shared/components/scene/lib/normalize-on-scale'
+import { RainField } from '@/shared/components/scene/ui/rain-field'
 import { CLIMATE_PRESETS } from '@/shared/modules/construction/core/constants/climate-presets'
 import { seasonOf } from '@/shared/modules/construction/core/lib/season-of'
 
@@ -88,11 +99,12 @@ interface HomeKitProps {
   open: boolean
   thermal: boolean
   // A tap on the roof, a window or the outdoor unit; up close the house's taps go to its parts instead.
-  onSpotTap: (spot: HomeSpotId) => void
+  onSpotTap: (spot: HomeSpotId, point: Vec3, rides: 'lift' | 'ground') => void
 }
 
 const NO_PARTS: readonly ResolvedPart[] = []
 const NO_OPENINGS: readonly CeilingOpening[] = []
+const NO_STAINS: readonly StainBoxes[] = []
 const NO_PART_PAINT: Readonly<Partial<Record<SystemPartId, PartPaint>>> = {}
 const RAISED_SHARE = { min: HOME_FLOOR_Y.slab, max: HOME_FLOOR_Y.raised } as const
 const HOUSE_TAG = Object.freeze({ ...thermalTag('exterior'), ...HOME_GHOST_TAG })
@@ -110,6 +122,7 @@ function scenePartOf(object: Object3D): SystemPartId | null {
 
 // The whole home, drawn once from the profile and the resolved roof; up close is this same house, faded by system.
 export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotTap }: HomeKitProps) {
+  const lotSlot = useLotSlot()
   const lift = useRef<Group>(null)
   const house = useRef<Group>(null)
   const ground = useRef<Group>(null)
@@ -203,8 +216,11 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
   useEased([lit !== null ? LOOK_INSIDE.ghostOpacity : 1, floorY, open ? 1 : 0], ([opacity, easedFloorY, opened]) => {
     ghost.current = opacity
     lookInsideFade.current = (1 - opacity) / (1 - LOOK_INSIDE.ghostOpacity)
-    if (lit === null && opacity === 1) {
-      setHeld(null)
+    // A write from the frame loop can land after a newer render's hold (a Look inside pressed while the house still opens),
+    // so it lets go only of the system this frame saw held, and writes nothing while nothing is held.
+    if (lit === null && held !== null && opacity === 1) {
+      const leaving = held
+      setHeld(current => (current === leaving ? null : current))
     }
     if (lift.current && ground.current) {
       applyHomeFloor(lift.current, ground.current, easedFloorY)
@@ -219,6 +235,10 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
       lastOpened.current = opened
       if (house.current) {
         riseFadeGroup(house.current, 'complete', HOME_OPENING_RISE * opened)
+      }
+      // The left front downspout's foot rises off the lawn with its downspout.
+      if (groundLevel.current) {
+        riseFadeGroup(groundLevel.current, 'complete', HOME_OPENING_RISE * opened)
       }
       // The arrows read their fade in their own frame, which may run before this one; the ease asks for no frame once it
       // settles (under reduced motion, its first), so this one lets them draw the final fade.
@@ -274,17 +294,29 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
   const windowParts = targets.assemblies.windows?.parts ?? NO_PARTS
   const wallParts = targets.assemblies['exterior-wall']?.parts ?? NO_PARTS
   const repainted = wallParts.find(part => part.id === 'paint')?.condition === 'installed'
+  const coveringWear = useMemo(() => coveringWearInForce(targets.home.roof, homeMaterials.coveringWear, property.roofType ?? 'shingle'), [targets.home.roof, homeMaterials.coveringWear, property.roofType])
   const paintWear = paintWearInForce(targets.home['exterior-paint'], homeMaterials.paintWear)
   const paint = paintLook(partState(wallParts, 'paint'), paintWear, paintHexes(homeMaterials, repainted))
+  const stucco = isStuccoFinish(partState(wallParts, 'finish').material)
   const fasciaBoards = fasciaBoardsColor(targets.fasciaReplaced, repainted, paint.trim)
   const garageRoofTone = coveringTone(covering, roofForm === 'low-slope' ? 'membrane' : 'shingle', coveringPart.wear, installedShingleTone(parts, homeMaterials.shingleColor))
   // The resolver leaves the attic's ducts out for a home whose system has none.
   const ducted = targets.assemblies['hvac-attic'] !== undefined
   const hvacParts = targets.assemblies['hvac-attic']?.parts ?? NO_PARTS
   const floorInsulation = partState(targets.assemblies['crawl-space']?.parts ?? NO_PARTS, 'floor-insulation')
+  const gutterColour = gutterHex(homeMaterials, parts.find(part => part.id === 'gutter')?.condition === 'installed')
+  const gutterWear = drawnGutterWear(parts)
+  const raining = weather === 'rain'
+  const outlets = useMemo(() => gutterOutlets(gutterWear, roofForm), [gutterWear, roofForm])
+  const wetSpans = useMemo(() => gutterWetSpans(gutterWear, roofForm, raining), [gutterWear, roofForm, raining])
+  // Only the gable's gutter wears into the wall; a flat roof's takes its colour and tone alone.
+  const overflow = overflowStains(roofForm === 'pitched' ? targets.existingGutterWear : null, { repainted, newFascia: targets.fasciaReplaced })
+  const wallStains = useMemo(() => overflow.wall === null ? NO_STAINS : gutterWallStains(overflow.wall), [overflow.wall])
   const acScale = homeMaterials.acTons === null ? 1 : AC_SCALE[homeMaterials.acTons]
-  const airSealed = partState(parts, 'air-sealing').material !== null
-  const dusty = parts.find(part => part.id === 'air-sealing')?.condition === 'absent'
+  // A flat roof resolves no air sealing part, so its ceiling tells no sealing story: no foam and no dust.
+  const sealing = parts.find(part => part.id === 'air-sealing')
+  const airSealed = sealing !== undefined && sealing.material !== null
+  const dusty = sealing !== undefined && !airSealed
   const leaks = useMemo(() => airSealed ? [] : ceilingOpenings(ducted), [airSealed, ducted])
   const openHeatLanes = useMemo(() => heat !== null && season !== null ? homeHeatLanes(roofForm, heat, season, 'partly-open', covering, leaks) : [], [roofForm, heat, season, covering, leaks])
   const completeHeatLanes = useMemo(() => heat !== null && season !== null ? homeHeatLanes(roofForm, heat, season, 'complete', covering, leaks) : [], [roofForm, heat, season, covering, leaks])
@@ -295,18 +327,52 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
   const ductRuns = useMemo(() => partState(hvacParts, 'duct-runs'), [hvacParts])
   const ductRun = useMemo(() => openedDuctRun(ductRuns, roofForm), [ductRuns, roofForm])
 
-  const spotTap = (spot: HomeSpotId) => (event: ThreeEvent<MouseEvent>) => {
+  // The point is taken in the space of the group the part rides, so the chip's anchor sits on the part whichever way the
+  // foundation has lifted the house; the ground condenser never lifts.
+  const spotTap = (spot: HomeSpotId, rides: 'lift' | 'ground' = 'lift') => (event: ThreeEvent<MouseEvent>) => {
     if (lit !== null || event.delta > SCENE_MOTION.tapSlopPx) {
       return
     }
     event.stopPropagation()
-    onSpotTap(spot)
+    const riding = (rides === 'lift' ? lift : groundLevel).current
+    if (riding === null) {
+      return
+    }
+    const { x, y, z } = riding.worldToLocal(event.point.clone())
+    onSpotTap(spot, [x, y, z], rides)
+  }
+  // Hover only says a part is tappable; it draws nothing. Up close a tap is not a spot's, so the cursor stays the scene's;
+  // a part already hovered when a system opens still lets go.
+  const setHover = useSceneCursorHover()
+  const hover: SpotHover = {
+    onPointerOver: (event) => {
+      if (lit === null) {
+        event.stopPropagation()
+        setHover(true)
+      }
+    },
+    onPointerOut: (event) => {
+      event.stopPropagation()
+      setHover(false)
+    },
   }
   // The package unit is drawn among the ducts and the rest of the equipment, and only the unit is a spot.
   const packageUnitTap = (event: ThreeEvent<MouseEvent>) => {
     if (scenePartOf(event.object) === 'package-unit') {
       spotTap('equipment')(event)
     }
+  }
+  const packageUnitHover: SpotHover = {
+    onPointerOver: (event) => {
+      if (scenePartOf(event.object) === 'package-unit') {
+        hover.onPointerOver(event)
+      }
+    },
+    onPointerOut: (event) => {
+      if (scenePartOf(event.object) === 'package-unit') {
+        hover.onPointerOut(event)
+      }
+    },
   }
   // Up close a tap on a shown system part emphasises it, as its pin and its row in the card do. R3F hands the tap to every
   // mesh under the pointer, nearest first, so a ghosted part in front lets it through to the lit one behind.
@@ -325,54 +391,68 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
       <WeatherSky weather={weather} thermal={thermal} />
       <primitive object={sheets.layer} />
       <group userData={thermalTag('exterior')}>
-        <Lot ground={sky.ground} />
+        {lotSlot ? lotSlot(sky.ground) : <Lot ground={sky.ground} />}
         {/* Ghosted with the house only while the walls are up close. Its mark never changes, so its meshes keep their own
             thermal paint whichever view is up and the ghost never reaches the yard's. */}
         <group ref={garage} onClick={partTap} userData={HOME_GARAGE_TAG}>
-          <Garage form={roofForm} wallColor={paint.color} trimColor={paint.trim} roofTone={garageRoofTone} fasciaRot={paint.paintWear['fascia-rot']} fasciaBoards={fasciaBoards} thermal={thermal} lit={garageLit} />
+          <Garage form={roofForm} wallColor={paint.color} stucco={stucco} trimColor={paint.trim} roofTone={garageRoofTone} fasciaRot={paint.paintWear['fascia-rot']} fasciaBoards={fasciaBoards} thermal={thermal} lit={garageLit} />
         </group>
       </group>
       {/* On the ground whatever the foundation, ghosted with the house. */}
       <group ref={groundLevel} onClick={partTap} userData={HOME_GHOST_TAG}>
+        <SpotPinsLayer rides="ground" />
         {hasOutdoorUnit(property.hvacType, property.hvacComponents) && (
           <group userData={thermalTag(side ?? 'interior')}>
-            <CondenserUnit load={coolingLoad} burst={burst} wear={partState(hvacParts, 'condenser').wear} scale={acScale} onTap={spotTap('equipment')} />
+            <CondenserUnit load={coolingLoad} burst={burst} wear={partState(hvacParts, 'condenser').wear} scale={acScale} onTap={spotTap('equipment', 'ground')} hover={hover} />
+          </group>
+        )}
+        {gutterWear !== null && <DownspoutFeet form={roofForm} gutter={{ wear: gutterWear, hex: gutterColour }} />}
+        {raining && (
+          <group userData={thermalTag(OWN_PAINT)}>
+            <RainField columns={outlets.kept} running={burst.running} />
+            <group userData={HOME_FADE_TAGS.complete}>
+              <RainField columns={outlets.complete} running={burst.running} />
+            </group>
           </group>
         )}
       </group>
       {/* Under the thermal camera the streaks keep their own see-through look: painted, they would turn into solid sticks. */}
-      {weather === 'rain' && (
+      {raining && (
         <group userData={thermalTag(OWN_PAINT)}>
-          <HomeRain running={burst.running} gutters={partState(parts, 'gutter').material !== null} lowSlope={lowSlope} />
+          <HomeRain running={burst.running} />
         </group>
       )}
       {/* Untagged, so the thermal paint reaches only the house group in it, never the arrows or the anchors. */}
       <group ref={lift} onClick={partTap}>
         {/* Outside air is the thermal camera's reading for any part of the house no group below names otherwise. */}
         <group ref={house} userData={HOUSE_TAG}>
-          <Foundation ground={ground} floorInsulation={floorInsulation} paint={paint} thermal={thermal} lit={held} />
+          <Foundation onTap={spotTap('foundation')} hover={hover} ground={ground} floorInsulation={floorInsulation} paint={paint} stucco={stucco} thermal={thermal} lit={held} wetSpans={wetSpans} />
           <HouseShell
             glazing={partState(windowParts, 'glazing')}
             glass={glassLook(windowParts.find(part => part.id === 'glazing'))}
             frame={partState(windowParts, 'frame')}
             windowFrameColor={homeMaterials.windowFrameColor}
             paint={paint}
+            stucco={stucco}
             patchedCracks={repainted ? paintWear.cracks : 'none'}
             roofForm={roofForm}
+            gutterWallStains={wallStains}
+            wetSpans={wetSpans}
             windowGlow={sky.windowGlow}
             thermal={thermal}
             lit={held}
             onWindowTap={spotTap('window')}
             onWallTap={spotTap('wall')}
+            hover={hover}
           />
           <group ref={rooms}>
-            <Rooms roomLight={sky.roomLight} lit={held} />
+            <Rooms roomLight={sky.roomLight} form={roofForm} lit={held} />
           </group>
-          <HouseRoof form={form} parts={parts} onTap={spotTap('roof')} attic={attic} behindParapet={behindParapet} shingleColor={homeMaterials.shingleColor} paint={paint} fasciaBoards={fasciaBoards} thermal={thermal} atticFanRunning={heat?.atticFanRunning ?? false} burst={burst} ducted={ducted} dusty={dusty} lit={held} />
+          <HouseRoof form={form} parts={parts} coveringWear={coveringWear} onTap={spotTap('roof')} hover={hover} attic={attic} behindParapet={behindParapet} shingleColor={homeMaterials.shingleColor} gutterHex={gutterColour} paint={paint} stucco={stucco} fasciaBoards={fasciaBoards} fasciaOverflow={overflow.fascia} thermal={thermal} atticFanRunning={heat?.atticFanRunning ?? false} burst={burst} ducted={ducted} airSealed={airSealed} dusty={dusty} lit={held} raining={raining} />
           {cutawaySystem !== null && held !== null && (
             <CutawayRotMarks form={roofForm} parts={parts} water={roof?.water ?? null} weather={weather} system={cutawaySystem} lit={held} thermal={thermal} />
           )}
-          <group onClick={packageUnitTap}>
+          <group onClick={packageUnitTap} {...packageUnitHover}>
             <HomeEquipment
               hvacType={property.hvacType}
               hvacComponents={property.hvacComponents}
@@ -407,7 +487,7 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
           </group>
         </group>
         <PartAnchorsLayer form={form} lit={lit} ductRun={ductRun} />
-        <SpotPinsLayer form={form} hvacType={property.hvacType} />
+        <SpotPinsLayer rides="lift" />
         {/* Up close on the roof or the attic the readings pin on the steps instead, with the flows. */}
         {thermal && targets.heat !== null && cutawaySystem === null && <ReadingLabels form={form} />}
         {/* Outside the house group, so neither the ghost nor the thermal paint touches them. */}

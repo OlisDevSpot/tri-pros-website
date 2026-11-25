@@ -30,14 +30,15 @@ export function InstancedPieces({ geometry, pieces, color, stretchToWidth = fals
     }
     const dummy = new Object3D()
     const base = new Color(color)
-    const tint = new Color()
+    const own = new Color()
+    const out = new Color()
     pieces.forEach((piece, index) => {
       dummy.position.set(piece.x, piece.y, piece.z)
-      dummy.rotation.set(0, 0, piece.tilt)
+      dummy.rotation.set(0, piece.yaw ?? 0, piece.tilt)
       dummy.scale.set(1, 1, stretchToWidth ? piece.width : 1)
       dummy.updateMatrix()
       node.setMatrixAt(index, dummy.matrix)
-      node.setColorAt(index, tint.copy(base).multiplyScalar(piece.shade))
+      node.setColorAt(index, out.copy(piece.tint ? own.set(piece.tint) : base).multiplyScalar(piece.shade))
     })
     node.instanceMatrix.needsUpdate = true
     if (node.instanceColor) {

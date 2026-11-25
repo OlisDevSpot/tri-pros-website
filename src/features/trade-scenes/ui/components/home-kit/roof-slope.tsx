@@ -1,6 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
+import type { CoveringLook } from '@/features/trade-scenes/lib/covering-look'
 import type { PartState } from '@/features/trade-scenes/lib/part-state'
 import type { BoxSpec, HouseWall, PaintLook, SystemPartId } from '@/features/trade-scenes/types'
 import type { PieceLayout } from '@/shared/components/scene/types'
@@ -36,7 +37,7 @@ interface RoofSlopeProps {
   zTo: number
   /** The run the covering is laid out over; another part of the same slope past either end lays the same courses. */
   layout?: readonly [number, number]
-  covering: PartState
+  covering: CoveringLook
   deck: PartState
   underlayment: PartState
   radiantBarrier: PartState
@@ -141,12 +142,15 @@ export function RoofSlope({ face, zFrom, zTo, layout, covering, deck, underlayme
     const old = (box: BoxSpec) => !newPieces.some(piece => Math.abs(box.position[2] - piece.position[2]) < piece.size[2] / 2)
     return peelingMarks([{ bare: peeling.bare.filter(old), lifted: peeling.lifted.filter(old) }], WEAR_LOOKS.paint.peeling.bareWood)
   }, [zFrom, zTo, peelingShare, face, newBoards])
-  // The home's rot is placed once over every eave, so each part of a slope draws only the spots on its own run.
+  // The home's rot is placed once over every eave, so each part of a slope draws only the spots on its own run. A drip edge's
+  // lip covers the board's top, so the stain stops under it rather than staining the metal.
+  const hasDripEdge = dripEdge.material !== null
   const fasciaRot = useMemo(() => {
     const board: HouseWall = { run: 'z', line: 0, outward: -1, from: zFrom, to: zTo, openings: [] }
     const spots = fasciaRotWithin(fasciaRotLeft(rotSpots, lengths), face, [zFrom, zTo])
-    return fasciaRotBoxes(spots, board, FASCIA.thickness / 2, [-FASCIA.height / 2, FASCIA.height / 2])
-  }, [rotSpots, lengths, face, zFrom, zTo])
+    const top = FASCIA.height / 2 - (hasDripEdge ? ROOF_TRIM.dripEdge.lip : 0)
+    return fasciaRotBoxes(spots, board, FASCIA.thickness / 2, [-FASCIA.height / 2, top])
+  }, [rotSpots, lengths, face, zFrom, zTo, hasDripEdge])
 
   return (
     <group position={[0, RAFTER_ORIGIN_Y, face === 'front' ? HOUSE.halfDepth : -HOUSE.halfDepth]} rotation={[0, face === 'front' ? Math.PI / 2 : -Math.PI / 2, 0]}>
@@ -195,7 +199,7 @@ export function RoofSlope({ face, zFrom, zTo, layout, covering, deck, underlayme
 
         <group userData={thermalTag(null, 'covering')}>
           <group userData={systemPartTag('covering')}>
-            <RoofCovering material={covering.material} wear={covering.wear} zFrom={coveringFrom} zTo={zTo} layout={coveringLayout} seed={face === 'front' ? 7 : 19} newTone={shingleTone} />
+            <RoofCovering look={covering} zFrom={coveringFrom} zTo={zTo} layout={coveringLayout} seed={face === 'front' ? 7 : 19} newTone={shingleTone} />
           </group>
         </group>
 

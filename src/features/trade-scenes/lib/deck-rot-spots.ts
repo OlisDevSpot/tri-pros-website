@@ -19,7 +19,7 @@ const LOW_SLOPE_RUN = { from: D, to: -D + T } as const
 // an installed deck is all new wood, with none.
 export function deckRotSpots(form: RoofForm, parts: readonly ResolvedPart[], steps: CutawaySteps): CutawayRotSpot[] {
   const deck = parts.find(part => part.id === 'deck' && part.material !== null)
-  const start = stepStarts(steps.system, steps.shown, steps.peel).get('deck')
+  const start = stepStarts(steps.system, form, steps.shown, steps.peel).get('deck')
   const crossing = cutawayCrossings(form, parts, steps, 'rain').find(candidate => candidate.partId === 'deck')!
   if (!deck || deck.condition === 'installed' || start === undefined || steps.peel <= 0) {
     return []

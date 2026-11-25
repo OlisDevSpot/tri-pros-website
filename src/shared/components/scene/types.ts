@@ -24,6 +24,18 @@ export interface PieceLayout {
   tilt: number
   width: number
   shade: number
+  /** A turn about the surface normal, on top of `tilt`. */
+  yaw?: number
+  /** The piece's own colour in place of the mesh's, still multiplied by `shade`. */
+  tint?: string
+}
+
+export interface RainColumn {
+  box: readonly [number, number, number]
+  position: readonly [number, number, number]
+  streaks: number
+  /** The way its streaks run: a unit vector along one of the box's axes. Straight down when left out. */
+  flow?: readonly [number, number, number]
 }
 
 export interface SceneBurst {
@@ -69,4 +81,7 @@ export interface SceneCameraState {
   moved: boolean
   recenters: number
   tapMark: { x: number, y: number, at: number } | null
+  // A stroke drawn on the scene holds the camera still: the rig's taps and wheel listen on the DOM, where a mesh's
+  // stopPropagation never reaches.
+  drawing: boolean
 }

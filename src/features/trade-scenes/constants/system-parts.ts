@@ -5,12 +5,13 @@ const doublePane = (part: ResolvedPart) => part.material === 'double-pane'
 export const newDoublePane = (part: ResolvedPart) => doublePane(part) && part.condition === 'installed'
 // Argon and the Low-E coating come with the new window; the home's own double-pane is drawn with a plain air gap.
 const oldDoublePane = (part: ResolvedPart) => doublePane(part) && (part.condition === 'retained' || part.condition === 'worn')
-const stuccoFinish = (part: ResolvedPart) => part.material === 'stucco-finish'
+export const isStuccoFinish = (material: string | null) => material === 'stucco-finish'
+const stuccoFinish = (part: ResolvedPart) => isStuccoFinish(part.material)
 
 // Each system's parts inside out; the stepped cutaway reads the roof's and the attic's reversed, outermost first.
 export const SYSTEM_PARTS = [
-  // The roof lights it where a leak comes through; the attic where its gaps let air through.
-  { id: 'ceiling', assembly: 'roof-attic', part: 'ceiling', systems: ['roof', 'attic'], story: { roof: 'leak', attic: 'air-gaps' } },
+  // The roof lights it where a leak comes through; the attic shows it wherever the attic can be sealed, leaking or sealed.
+  { id: 'ceiling', assembly: 'roof-attic', part: 'ceiling', systems: ['roof', 'attic'], story: { roof: 'leak', attic: 'sealing' } },
 
   { id: 'rafters', assembly: 'roof-attic', part: 'rafters', systems: ['roof'] },
   { id: 'deck', assembly: 'roof-attic', part: 'deck', systems: ['roof'] },
@@ -21,7 +22,6 @@ export const SYSTEM_PARTS = [
   { id: 'ridge-vent', assembly: 'roof-attic', part: 'ridge-vent', systems: ['roof'] },
   { id: 'gutter', assembly: 'roof-attic', part: 'gutter', systems: ['roof'] },
 
-  { id: 'air-sealing', assembly: 'roof-attic', part: 'air-sealing', systems: ['attic'] },
   // Under a flat roof the joists are the roof's rafters, so they have no row of their own.
   { id: 'ceiling-joists', assembly: 'roof-attic', part: 'ceiling', systems: ['attic'], roofForms: ['pitched'] },
   { id: 'attic-insulation', assembly: 'roof-attic', part: 'attic-insulation', systems: ['attic'] },

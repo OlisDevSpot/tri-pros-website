@@ -82,7 +82,7 @@ export function AtticDucts({ lowSlope, heatLoad, material, wear, airHandler, acS
     ? { color: HOME_PALETTE.ductSilver, roughness: WEAR_LOOKS.newDucts.roughness, metalness: WEAR_LOOKS.newDucts.metalness }
     : { color: wornColor(HOME_PALETTE.duct, WEAR_LOOKS.ducts.dull, wear), roughness: wornValue(0.6, WEAR_LOOKS.ducts.roughness, wear), metalness: 0.2 }
   const straps = useMemo(() => (hung ? ductStrapBoxes(points, radius) : []), [hung, points, radius])
-  // Up close on the attic the boots light with the air gaps round them, as the cans and the vents do.
+  // Up close on the attic the boots light with the ceiling they pierce, as the cans and the vents do.
   const fixtures = ceilingOpeningPart(lit)
 
   // Each run ends at a register boot over its room.

@@ -2,7 +2,8 @@
 
 import type { ThreeEvent } from '@react-three/fiber'
 import type { PartState } from '@/features/trade-scenes/lib/part-state'
-import type { BoxSpec, HouseWall, PaintLook, StainBoxes, SystemLit, WallOpening } from '@/features/trade-scenes/types'
+import type { BoxSpec, GutterWetSpans, HouseWall, PaintLook, StainBoxes, SystemLit, WallOpening } from '@/features/trade-scenes/types'
+import type { SpotHover } from '@/features/trade-scenes/ui/components/home-kit/spot-hover'
 import type { GlassLook } from '@/features/trade-scenes/ui/lib/glass-look'
 import type { WallSkinSpec } from '@/features/trade-scenes/ui/lib/wall-skin-geometry'
 import type { PaintWearLevel } from '@/shared/modules/construction/core/constants/enums'
@@ -14,15 +15,15 @@ import { useMemo } from 'react'
 import { HOME_FADE_TAGS } from '@/features/trade-scenes/constants/home-fades'
 import { FRONT_CORNERS, FRONT_OPENINGS, FRONT_WALL, HOUSE, HOUSE_WALLS, SIDE_SKIN_FROM, WALL_TOP_Y, WINDOW_FRAMES } from '@/features/trade-scenes/constants/home-geometry'
 import { HOME_PALETTE } from '@/features/trade-scenes/constants/home-palette'
-import { LOOK_INSIDE_WINDOW, LOOK_INSIDE_WINDOW_TAG } from '@/features/trade-scenes/constants/look-inside'
+import { FRONT_WALL_WINDOW_TAG, LOOK_INSIDE_WINDOW } from '@/features/trade-scenes/constants/look-inside'
 import { PAINT_WEAR_SHARE, PEELING_SEEDS } from '@/features/trade-scenes/constants/paint-wear'
-import { WEAR_LOOKS } from '@/features/trade-scenes/constants/wear-looks'
+import { WEAR_LOOKS, wetBand } from '@/features/trade-scenes/constants/wear-looks'
 import { facesSummerSun } from '@/features/trade-scenes/lib/faces-summer-sun'
 import { FRONT_DOOR_BOXES } from '@/features/trade-scenes/lib/front-door-boxes'
 import { doorFramePeeling, peelingMarks, wallPeeling } from '@/features/trade-scenes/lib/paint-peeling'
 import { FRONT_STAIN_WALL, paintedSurfaceStains, STAIN_WALLS, surfaceStainLists } from '@/features/trade-scenes/lib/painted-surface-stains'
 import { wornShare } from '@/features/trade-scenes/lib/part-state'
-import { sillDirt, splashBand } from '@/features/trade-scenes/lib/stain-boxes'
+import { sillDirt, splashBand, wetBandBoxes } from '@/features/trade-scenes/lib/stain-boxes'
 import { stuccoCracks } from '@/features/trade-scenes/lib/stucco-cracks'
 import { systemPartTag } from '@/features/trade-scenes/lib/system-part-tag'
 import { thermalTag } from '@/features/trade-scenes/lib/thermal-tag'
@@ -45,9 +46,16 @@ interface HouseShellProps {
   // The build's vinyl frame takes this colour; a home's own frame ignores it.
   windowFrameColor: WindowFrameColorId
   paint: PaintLook
+  // A stucco home draws its body surfaces with the plaster map.
+  stucco: boolean
   // The existing cracks a paint job fills: the Stucco pick shows them patched on the bare base coat.
   patchedCracks: PaintWearLevel
   roofForm: RoofForm
+  // What a failing gutter spills down the front wall, drawn with the wall's own stains since the wall draws only on the Complete
+  // house. The caller memoizes it: a new array rebuilds the stains.
+  gutterWallStains: readonly StainBoxes[]
+  // Where the roof's water lands on the walls' feet, darkening them while it rains.
+  wetSpans: GutterWetSpans
   windowGlow: number
   thermal: boolean
   // The system up close, held while its steps ease shut; windows opens the window its view frames into its system parts.
@@ -56,6 +64,7 @@ interface HouseShellProps {
   onWindowTap: (event: ThreeEvent<MouseEvent>) => void
   // A tap on the stucco, its corners or its paint's wear asks which systems are there; the glass and frame take theirs first.
   onWallTap: (event: ThreeEvent<MouseEvent>) => void
+  hover: SpotHover
 }
 
 const WALLS = Object.values(HOUSE_WALLS)
@@ -112,7 +121,7 @@ function wallCracks(share: number, patchWidth?: number) {
   return { sides: WALLS.flatMap((wall, index) => crack(wall, 11 + index)), front: crack(FRONT_WALL, 5, FRONT_OPENINGS) }
 }
 
-export function HouseShell({ glazing, glass: glassLook, frame: framePart, windowFrameColor, paint, patchedCracks, roofForm, windowGlow, thermal, lit, onWindowTap, onWallTap }: HouseShellProps) {
+export function HouseShell({ glazing, glass: glassLook, frame: framePart, windowFrameColor, paint, patchedCracks, roofForm, stucco, gutterWallStains, wetSpans, windowGlow, thermal, lit, onWindowTap, onWallTap, hover }: HouseShellProps) {
   // Unknown glazing draws as single: the common case in the homes we visit, and the one the work changes.
   const double = glazing.material === 'double-pane'
   const frame = WINDOW_FRAMES[double ? 'double' : 'single']
@@ -141,7 +150,7 @@ export function HouseShell({ glazing, glass: glassLook, frame: framePart, window
     }
   }, [frame, up])
 
-  const skin = wallSkinLook(lit, paint.color)
+  const skin = wallSkinLook(lit, paint.color, stucco)
   const frameLook = windowFrameLook(framePart, double, windowFrameColor)
   const twoTone = frameLook.outside !== frameLook.inside
   const crackShare = PAINT_WEAR_SHARE[paint.paintWear.cracks]
@@ -179,26 +188,28 @@ export function HouseShell({ glazing, glass: glassLook, frame: framePart, window
   }, [cracks, patches, dirt, peeling, skin.peeled])
   const stains = useMemo(() => {
     const look = WEAR_LOOKS.paint
-    const splash = (walls: readonly HouseWall[], openings?: readonly WallOpening[]): StainBoxes[] => [
+    const splash = (walls: readonly HouseWall[], wet: readonly BoxSpec[], openings?: readonly WallOpening[]): StainBoxes[] => [
       { cell: 'splash', boxes: walls.flatMap(wall => splashBand(wall, STUCCO_BOTTOM, stainShare, openings ?? wall.openings)), color: look.splashColor, alpha: Math.min(1, look.splashAlpha * stainShare) },
+      { cell: 'splash', boxes: wet, color: wetBand.color, alpha: wetBand.alpha },
     ]
+    const wetOn = (wall: HouseWall, spans: GutterWetSpans['front'], openings: readonly WallOpening[]) => spans.flatMap(span => wetBandBoxes(wall, span, STUCCO_BOTTOM, wetBand.height, openings))
     const { sides, front } = paintedSurfaceStains(roofForm, stainShare, fadeShare).walls
     return {
-      sides: surfaceStainLists(sides, stainShare, fadeShare),
-      front: surfaceStainLists(front, stainShare, fadeShare),
-      sidesSplash: splash(STAIN_WALLS.map(({ wall }) => wall)),
-      frontSplash: splash([FRONT_STAIN_WALL], FRONT_OPENINGS),
+      sides: surfaceStainLists(sides, stainShare, fadeShare, paint.fade),
+      front: [...surfaceStainLists(front, stainShare, fadeShare, paint.fade), ...gutterWallStains],
+      sidesSplash: splash(STAIN_WALLS.map(({ wall }) => wall), wetOn(HOUSE_WALLS.back, wetSpans.back, HOUSE_WALLS.back.openings)),
+      frontSplash: splash([FRONT_STAIN_WALL], wetOn(FRONT_STAIN_WALL, wetSpans.front, FRONT_OPENINGS), FRONT_OPENINGS),
     }
-  }, [roofForm, stainShare, fadeShare])
+  }, [roofForm, stainShare, fadeShare, paint.fade, gutterWallStains, wetSpans])
 
   return (
     <group>
-      <group onClick={onWallTap}>
+      <group onClick={onWallTap} {...hover}>
         <group userData={skin.tag}>
           <group userData={thermalTag('sunlit')}>
-            <WallSkin skins={SUNLIT_STUCCO} color={skin.color} castShadow receiveShadow />
+            <WallSkin skins={SUNLIT_STUCCO} color={skin.color} texture={skin.texture} castShadow receiveShadow />
           </group>
-          <WallSkin skins={SHADED_STUCCO} color={skin.color} castShadow receiveShadow />
+          <WallSkin skins={SHADED_STUCCO} color={skin.color} texture={skin.texture} castShadow receiveShadow />
         </group>
         {/* The damage is the finish's story: it stays lit on the bare wall, and dims under a Paint pick. */}
         <group userData={skin.finish}>
@@ -212,7 +223,7 @@ export function HouseShell({ glazing, glass: glassLook, frame: framePart, window
           <PaintStains lists={stains.sidesSplash} thermal={thermal} />
         </group>
       </group>
-      <group onClick={onWindowTap} userData={systemPartTag('frame')}>
+      <group onClick={onWindowTap} {...hover} userData={systemPartTag('frame')}>
         {twoTone
           ? (
               <>
@@ -223,19 +234,19 @@ export function HouseShell({ glazing, glass: glassLook, frame: framePart, window
           : <MergedBoxes boxes={frames} color={frameLook.outside} radius={0.01} roughness={frameLook.roughness} metalness={frameLook.metalness} />}
       </group>
       <group userData={thermalTag('window')}>
-        <group onClick={onWindowTap} userData={systemPartTag('glazing')}>
+        <group onClick={onWindowTap} {...hover} userData={systemPartTag('glazing')}>
           <MergedBoxes boxes={glass} color={glassLook.color} roughness={glassLook.roughness} opacity={glassLook.opacity} emissive={HOME_PALETTE.glassGlow} emissiveIntensity={windowGlow} />
         </group>
       </group>
       <group userData={HOME_FADE_TAGS.complete}>
-        <group onClick={onWallTap}>
+        <group onClick={onWallTap} {...hover}>
           <group userData={skin.tag}>
             <group userData={thermalTag('sunlit')}>
-              <MergedBoxes boxes={SUNLIT_CORNERS} color={skin.color} castShadow receiveShadow />
+              <MergedBoxes boxes={SUNLIT_CORNERS} color={skin.color} texture={skin.texture} castShadow receiveShadow />
             </group>
-            <MergedBoxes boxes={SHADED_CORNERS} color={skin.color} castShadow receiveShadow />
+            <MergedBoxes boxes={SHADED_CORNERS} color={skin.color} texture={skin.texture} castShadow receiveShadow />
             <group userData={thermalTag(FRONT_ZONE)}>
-              <WallSkin skins={FRONT_STUCCO} color={skin.color} castShadow receiveShadow />
+              <WallSkin skins={FRONT_STUCCO} color={skin.color} texture={skin.texture} castShadow receiveShadow />
             </group>
           </group>
           {/* The door is no painted surface, so it takes the ghost with the rest of what the paint never coats. */}
@@ -256,7 +267,7 @@ export function HouseShell({ glazing, glass: glassLook, frame: framePart, window
             <PaintStains lists={stains.frontSplash} thermal={thermal} />
           </group>
         </group>
-        <group onClick={onWindowTap} userData={systemPartTag('frame')}>
+        <group onClick={onWindowTap} {...hover} userData={systemPartTag('frame', FRONT_WALL_WINDOW_TAG)}>
           {twoTone
             ? (
                 <>
@@ -267,13 +278,13 @@ export function HouseShell({ glazing, glass: glassLook, frame: framePart, window
             : <MergedBoxes boxes={front.frames} color={frameLook.outside} radius={0.01} roughness={frameLook.roughness} metalness={frameLook.metalness} />}
         </group>
         {opened !== null && (
-          <group onClick={onWindowTap} userData={systemPartTag('frame', LOOK_INSIDE_WINDOW_TAG)}>
+          <group onClick={onWindowTap} {...hover} userData={systemPartTag('frame', FRONT_WALL_WINDOW_TAG)}>
             <FramedWindowFrame frame={frame} frameLook={frameLook} lit={opened} />
             <WindowSeals frame={framePart} size={frame} lit={opened} />
           </group>
         )}
         <group userData={thermalTag('window')}>
-          <group onClick={onWindowTap} userData={systemPartTag('glazing')}>
+          <group onClick={onWindowTap} {...hover} userData={systemPartTag('glazing', FRONT_WALL_WINDOW_TAG)}>
             <MergedBoxes boxes={opened === null ? front.glass : front.unframedGlass} color={glassLook.color} roughness={glassLook.roughness} opacity={glassLook.opacity} emissive={HOME_PALETTE.glassGlow} emissiveIntensity={windowGlow} />
             {opened !== null && <WindowPanes glass={glassLook} frame={frame} lit={opened} glow={windowGlow} />}
           </group>

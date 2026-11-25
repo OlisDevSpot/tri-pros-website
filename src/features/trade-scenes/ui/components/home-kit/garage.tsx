@@ -21,6 +21,7 @@ interface GarageProps {
   form: RoofForm
   // The house's paint, worn and chalked as colour only.
   wallColor: string
+  stucco: boolean
   // The house's painted trim: the garage's trim and fascia.
   trimColor: string
   // The house's covering in one plain colour, worn with it.
@@ -47,8 +48,8 @@ const NEW_BOARDS_FRAME = fasciaBoardFrame(GARAGE_BOXES.pitched.fascia[0])
 // Drawn outside the house group, so the fades and the foundation's lift never reach it. The ghost reaches it only while the
 // walls are up close: its body is painted with the house and its trim and fascia are the house's trim, so they light with
 // the wall's picks while its door and roof fade. Every other system stands in the house alone, so it stays solid there.
-export function Garage({ form, wallColor, trimColor, roofTone, fasciaRot, fasciaBoards, thermal, lit }: GarageProps) {
-  const skin = wallSkinLook(lit, wallColor)
+export function Garage({ form, wallColor, stucco, trimColor, roofTone, fasciaRot, fasciaBoards, thermal, lit }: GarageProps) {
+  const skin = wallSkinLook(lit, wallColor, stucco)
   const boxes = GARAGE_BOXES[form]
   const flat = form === 'low-slope'
   const rotSpots = useMemo(() => fasciaRotSpots(fasciaRot, FASCIA_RUNS[form]), [fasciaRot, form])
@@ -62,8 +63,8 @@ export function Garage({ form, wallColor, trimColor, roofTone, fasciaRot, fascia
   return (
     <group>
       <group userData={skin.tag}>
-        <MergedBoxes boxes={boxes.body} color={skin.color} roughness={0.95} castShadow receiveShadow />
-        {!flat && <GarageGableEnd color={skin.color} />}
+        <MergedBoxes boxes={boxes.body} color={skin.color} texture={skin.texture} roughness={0.95} castShadow receiveShadow />
+        {!flat && <GarageGableEnd color={skin.color} texture={skin.texture} />}
       </group>
       <group userData={systemPartTag('eaves-trim')}>
         <MergedBoxes boxes={boxes.trim} color={trimColor} radius={0.01} roughness={0.9} castShadow receiveShadow />

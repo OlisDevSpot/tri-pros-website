@@ -14,7 +14,7 @@ export function focusFell(held: Element | null): boolean {
 // Back to the system. Focus an up-close control held, or that had already fallen to the page, goes to the way back in:
 // the card's Look inside, else the system's rail chip, else Systems; focus anywhere else on the stage stays put.
 export function leaveLookInside(store: StoreApi<TradeSceneInputs>, stage: Element): void {
-  const system = store.getState().cameraFocus
+  const system = store.getState().pickedSystem
   const held = document.activeElement
   // eslint-disable-next-line react-dom/no-flush-sync -- the up-close controls leave only once this write renders
   flushSync(() => store.setState(LEAVE_LOOK_INSIDE))
