@@ -410,7 +410,7 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
             <CondenserUnit kind={hvac.outdoor.kind} load={outdoorLoad} heating={side === 'heating'} burst={burst} wear={hvac.outdoor.wear} scale={acScale} onTap={spotTap('equipment', 'ground')} hover={hover} />
           </group>
         )}
-        {hvac.miniSplit !== null && <MiniSplitOutdoor running={running.has('mini-split')} wear={hvac.miniSplit.wear} onTap={spotTap('equipment')} />}
+        {hvac.miniSplit !== null && <MiniSplitOutdoor running={running.has('mini-split')} wear={hvac.miniSplit.wear} onTap={spotTap('equipment', 'ground')} hover={hover} />}
         {gutterWear !== null && <DownspoutFeet form={roofForm} gutter={{ wear: gutterWear, hex: gutterColour }} />}
         {raining && (
           <group userData={thermalTag(OWN_PAINT)}>
