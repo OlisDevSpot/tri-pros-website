@@ -1,12 +1,12 @@
 # Move live work onto GitHub issues — Epic Tracker
 
 > **Status**
-> - Stage: brainstorm · grilled 2026-11-24; `/to-spec #336` not run yet
+> - Stage: brainstorm · grilled 2026-11-24 · rulings SL2–SL5 2026-11-25 (SL1 struck); pilot of the no-code flow (#369), no `/to-spec` or `/to-tickets` (SL5)
 > - Built on: `main` · Verified at: — · page: —
-> - Done: bucket 0 docs half (`7a040c11d`); epic body contract EB1–EB8 (`160700426`); buckets 1 and 2 issues on GitHub (epics #354, #355)
-> - Next: bucket 0 rest → `/to-spec #336` (from **Shaping outcome**) → buckets 1 and 2 tracker and memory moves → buckets 3–8
-> - Open: bucket 0 has no issue yet (a #315 sub-issue that blocks bucket 1) · bucket owners for #345 and #222 (EB table)
-> - Blocked: buckets 3–8 in parallel on #335
+> - Done: bucket 0 docs half (`7a040c11d`); epic body contract EB1–EB8 (`160700426`); buckets 1 and 2 issues on GitHub (epics #354, #355), tracker status blocks and memory (`f1ab8d8ee`); #336's body without the tooling line, Spec link to #369 (SL2, SL5)
+> - Next: buckets 1 and 2 prunes → buckets 3–8 in parallel, each run as a pilot step of #369
+> - Open: bucket 0's rest runs under #315, not here (#336 Out of scope) · bucket owners for #345 and #222 (EB table)
+> - Blocked: —
 
 Issue: [#336](https://github.com/OlisDevSpot/tri-pros-website/issues/336). Its body is the contract (`docs/agents/issue-tracker.md`, Epic body); everything that changes lives here.
 
@@ -28,10 +28,10 @@ The `/grill-with-docs #336` session (transcript `3670293f`) finished at 17:38Z a
 
 1. **Shape** (Q3, Q4): an epic or a plan is a GitHub issue, and an epic's plans are its sub-issues; working detail stays in a committed tracker file. One live plan file is one plan issue; a lane can carry several plan issues. Epic body: what it solves, Done when, links. Plan body: a Step · Solves · Notes table from the tracker's task headings, plus the tracker link; no task sub-issues. Neither body carries status; rulings are linked, not copied. ~~A rewritten issue keeps its old body folded under "Original request".~~ Overridden for epics by EB1: the old body's live parts go to the tracker. Tracker rows with no plan file get no issue.
 2. **Sources and links** (Q1, Q2): every copy of a file counts (`main`, lane branches, worktrees); the lane's branch is the base for its own files. Uncommitted docs are committed by their lane before anything links to them (trade-scenes' 61 files). An issue links to the file on `main` until its lane opens, then to the lane's branch, switched once at Open the lane.
-3. **Nothing lost** (Q5): a file is deleted only when it has shipped (with proof), its leftovers have a home, nothing points at it, and no open lane has changed it. Every bucket's PR carries a per-file ledger of these checks with the last SHA. The owner sees a quick list before any bulk delete.
-4. **Checks before review** (Q6): eight checks; one message per bucket, then the owner says "apply" and merges the bucket's docs change.
-5. **Buckets** (Q7): table below. Run 0 → 1 → 2 in sequence, then 3–8 in parallel once #335 lands, and 9 last.
-6. **Tooling** (Q8): `scripts/plan-migration/` holds `inventory` (read-only) and `apply` (`--apply`-gated, with a read-back), built during bucket 1 and deleted in bucket 9. #336 can't close while that folder exists on `origin/main`; #321 may take the drift-check idea, not the script.
+3. **Nothing lost** (Q5): a file is deleted only when it has shipped (with proof), its leftovers have a home, nothing points at it, and no open lane has changed it. ~~Every bucket's PR carries~~ Every bucket's docs commit carries (WF16: no PR) a per-file ledger of these checks with the last SHA. The owner sees a quick list before any bulk delete.
+4. **Checks before review** (Q6): eight checks; one message per bucket, then the owner says "apply" and ~~merges the bucket's docs change~~ the bucket's docs commit is pushed to `main` (WF16).
+5. **Buckets** (Q7): table below. ~~Run 0 → 1 → 2 in sequence, then 3–8 in parallel once #335 lands, and 9 last.~~ Overridden 2026-11-25: bucket 0 runs under #315 (#336 Out of scope); buckets 1 and 2 ran their GitHub half before slicing; 3–8 run in parallel now (SL3); 9 last.
+6. ~~**Tooling** (Q8): `scripts/plan-migration/` holds `inventory` (read-only) and `apply` (`--apply`-gated, with a read-back), built during bucket 1 and deleted in bucket 9. #336 can't close while that folder exists on `origin/main`; #321 may take the drift-check idea, not the script.~~ Overridden by SL2: no tooling.
 7. **Agreed-but-unfiled steps** (Q10): each bucket reads only its own `memory/project-*.md` files. Nobody mines transcripts.
 8. **Terms and ADR** (Q9): **Tracker** and **Ruling** in `GLOSSARY.md`, ADR-0007. Both on `main` (`25c09f814`).
 
@@ -41,16 +41,16 @@ Sizes are filename matches on `origin/main`'s 311 files (2026-11-24), not a veri
 
 | # | Bucket | Size | Rating | Status |
 |---|---|---|---|---|
-| 0 | **The rules**: the reversal (below). A #315 sub-issue that blocks bucket 1 | ~8 files, ~15 issue writes | 9/10 | docs half done (`7a040c11d`); rest open; no issue yet |
+| 0 | **The rules**: the reversal (below). Runs under #315, not #336 (Out of scope); gets no #336 plan issue | ~8 files, ~15 issue writes | 9/10 | docs half done (`7a040c11d`); rest open; no issue yet |
 | 1 | **Filter rules (#309)**: the test run | 3 files + branch copies | 9/10 | issues done 2026-11-25: epic #355, #364 FR0, #309 FR4 · FR5 (7/10, `needs-info`); tracker status blocks on the lane branches (`feat/filter-rules` 07c848913, `feat/data-views` 69260cbad) and memory done 2026-11-25 |
 | 2 | **Data views (#308)**; one branch, one PR (#297), 24 docs files changed on the branch | ~28 | 8/10 | issues done 2026-11-25: epic #354, #308 DV3, #356–#363 (DV3a–DV11); tracker status blocks on the lane branches (`feat/filter-rules` 07c848913, `feat/data-views` 69260cbad) and memory done 2026-11-25 |
-| 3 | **Meta ads, funnels, CAPI (#3)** | ~27 | 7/10 | waits on #335 |
-| 4 | **UI and site**: theme, public site, media, PWA, analytics, R2, GoGreen, TV | ~46 | 6/10 | waits on #335 |
-| 5 | **Proposal**: #305/#306, #307, calculators, energy impact, editor (#347) | ~49 | 6/10 | waits on #335 |
-| 6 | **Meeting flow, home visit messages, VoIP (#313)** | ~49 + 3 `voip*` folders | 6/10 | waits on #335 |
+| 3 | **Meta ads, funnels, CAPI (#3)** | ~27 | 7/10 | not started |
+| 4 | **UI and site**: theme, public site, media, PWA, analytics, R2, GoGreen, TV | ~46 | 6/10 | not started |
+| 5 | **Proposal**: #305/#306, #307, calculators, energy impact, editor (#347) | ~49 | 6/10 | not started |
+| 6 | **Meeting flow, home visit messages, VoIP (#313)** | ~49 + 3 `voip*` folders | 6/10 | not started |
 | 7 | **Trade scenes (#302)**: ~14 on main + 61 uncommitted + `scene-layout-lab`'s 9 | ~84 | 5/10 | waits on the uncommitted docs being committed |
 | 8 | **Backend**: tRPC, CASL #285, projects, construction #195, JSONB, layering, providers | ~65 | 5/10 | `issue-285` hasn't merged main |
-| 9 | **Orphans and pointers**: unmatched files, open issues no bucket claimed, memory pointers; deletes `scripts/plan-migration/` | ~53 | 6/10 | last |
+| 9 | **Orphans and pointers**: unmatched files, open issues no bucket claimed, memory pointers | ~53 | 6/10 | last |
 
 ### Bucket 0: the reversal
 
@@ -105,6 +105,8 @@ This epic is the first run of the 12-stage flow. Each gap it hits goes here when
 12. Two sessions settled the same question differently on the same day: the board UI session amended Ruling DC1 (tracker in the issue body, its own file paths) while the shaping session was writing ADR-0007, and #336's body was overwritten from a stale copy (body revision 17:56Z, reverted 17:57Z). Nothing tells a session that another one is mid-way through the same ruling. Memory `feedback-reread-live-before-shared-writes.md`.
 13. An epic body with no contract grew without limit: #336 reached 14k with context, gaps and a restored handoff, because the Epic form asked for "What we know so far". Fixed 2026-11-24 by EB1–EB7.
 14. Shaping results lived only in a transcript: the grill finished at 17:38Z with "run `/to-spec #336` next", and nothing on `main` or the board recorded that. Copied into **Shaping outcome** 2026-11-24.
+15. A bucket ran its GitHub writes before its epic was specced or sliced: buckets 1 and 2 (2026-11-25) produced epics #354 and #355 with no #336 plan issue to hang them on, and skipped the shaped tooling (Q8) without a ruling. Nothing in the flow stops stage-5 work on an epic still at stage 2. Settled after the fact by SL2 and SL5.
+16. The 12-stage flow has one path, built for code (worktree, spec, plan issues, PR, preview). Work that only reads the repo and acts on outside services with our tokens (this epic) had to borrow it, and the borrowed stages added cost without covering the real risks. Owner 2026-11-25: #369 under #315, piloted here (SL5).
 
 ## Rulings
 
@@ -118,6 +120,11 @@ This epic is the first run of the 12-stage flow. Each gap it hits goes here when
 | EB6 | Issue forms under `.github/ISSUE_TEMPLATE/` count as docs under WF16: straight to `main`. | 2026-11-24 |
 | EB7 | Guard: the written rule and the form, with a soft limit of about 2,000 characters in the rule. A CI check only if it happens again. | 2026-11-24 |
 | EB8 | The restored 2026-11-22 handoff: its live parts (the "Not done yet" list and steps 1–5) go into this tracker; the superseded sections are dropped, and #336's edit history keeps the full text. | 2026-11-24 |
+| SL1 | ~~#336's sub-issues are one plan issue per bucket, 1–9; each one's tracker is its bucket's section of this tracker, no new files. A bucket's plan issue links the domain epics it produces (#354, #355, …) and is not their parent: those epics stay top-level. Buckets 1 and 2 get plan issues for their remaining work only: the prunes (~15 data-view plan and spec files on `main`); their tracker and memory moves are done (`f1ab8d8ee`). Bucket 0 gets none (#315).~~ Struck by the owner 2026-11-25 (SL5): #336 gets no plan issues. Each bucket stays a section of this tracker, and each bucket's apply gets a milestone comment on #336 (EB4). The domain epics a bucket produces (#354, #355, …) stay top-level. Whether a unit of no-code work needs its own issue is for #369 to settle. | 2026-11-25 |
+| SL2 | No migration tooling: `scripts/plan-migration/` is dropped, and its Done-when line leaves #336's body. Each bucket writes its `gh` commands to a dry-run file, the owner says "apply", then a read-back checks the result, as buckets 1 and 2 ran. | 2026-11-25 |
+| SL3 | Buckets 3–8 don't wait on #335: docs go through `main` (WF16), not separate worktrees. #335 stays open under #315 on its own. | 2026-11-25 |
+| SL4 | #354 Data views and #355 Data-view filter rules stay two top-level epics; the dependency is the blocking link #309 ← #308. | 2026-11-25 |
+| SL5 | "Our standard approach of worktree + to-spec + to tickets + preview etc is too robust for this external service task." #336 skips `/to-spec` and `/to-tickets` and runs as the pilot of #369, the flow for work that changes no code. | 2026-11-25 |
 
 ## Log
 
@@ -128,6 +135,8 @@ This epic is the first run of the 12-stage flow. Each gap it hits goes here when
 - **2026-11-24 18:34Z** Bucket 0 docs half done, `7a040c11d` ([comment](https://github.com/OlisDevSpot/tri-pros-website/issues/336#issuecomment-7140826441)). `origin/main` merged into 7 lane worktrees; `issue-285` conflicted (aborted, clean); `scene-layout-lab` and `trade-scenes` refused (uncommitted local edits).
 - **2026-11-24** Epic body contract (EB1–EB8, `160700426`): rule in `docs/agents/issue-tracker.md`, pointer in `CLAUDE.md` stage 1, Epic form rewritten, this tracker created, #336's body brought to the contract (14,286 → 1,732 characters).
 - **2026-11-25** Buckets 1 and 2 on GitHub, owner's go, from the data-view orchestrator session ([comment](https://github.com/OlisDevSpot/tri-pros-website/issues/336#issuecomment-7175755410)). Epic #354 Data views: #308 rewritten to DV3; #356 DV3a and #357 DV4 (closed by PR #297 with #308); #358 DV5, #359 DV6, #360 DV8, #361 DV9, #362 DV10, #363 DV11 as `needs-info` with ratings (owner: every DVx is a sub-issue). Epic #355 Data-view filter rules: #364 FR0; #309 rewritten to FR4 · FR5, 7/10 → `needs-info` (its plan is a month older than main). Blocked by: #309, #358, #359, #360 ← #308; #361 ← #360; #362 ← #359; #305 ← #308 unchanged. Bodies follow the epic body contract and the plan body shape; links point at the lane branches. #43, #153 and #110 overlap DV9 / #354: commented, left for `/triage`. Still open for both buckets: the tracker and memory moves.
+- **2026-11-25** Slicing rulings SL1–SL4 (owner, from the `/grill-with-docs #336` handoff): one plan issue per bucket; no tooling; #335 edge dropped; #354 and #355 stay top-level. Gap 15 logged.
+- **2026-11-25** Owner: the code flow is too heavy for #336. #369 opened under #315 for a flow for work that changes no code; #336 is its pilot (SL5). SL1 struck: no plan issues, buckets stay sections of this tracker. Gap 16 logged.
 
 ## Original request: the 2026-11-22 handoff (live parts)
 
@@ -162,5 +171,5 @@ Kept under EB8. Where it conflicts with ADR-0007, WF16 or **Shaping outcome**, t
 1. **Explore**, read-only, returning rows of `source · kind (epic | plan | spec | lane | action) · title · parent epic · state (shipped | live | parked | superseded | unclear) · open items · matching issue # · evidence (SHA, PR, file:line)`. State must be backed by evidence. The board is read with `ArtifactData`. Done when every file in scope and every lane has a state and every open issue is grouped or flagged.
 2. **Build the migration map**: one row per future issue, `key · parent key · title · labels · status (only if claimed) · reuse #N or new · body source · lane id · branch`. Reuse an existing issue whenever one matches; never invent a priority. List separately the files to delete, the issues to close (with evidence), and the lanes affected. Done when every live item is a row or written down as deliberately excluded, with the reason.
 3. **Show the owner and get the rulings**: conflicts, counts by group (epics, plans, reused, new, closes, deletes) and the full map. Done when the owner has approved the map group by group.
-4. **Dry run, then apply**: a script that does nothing without `--apply` (now `scripts/plan-migration/apply`, shaping Q8): create or rewrite issues → sub-issue links (database id, `-F`) → blocking links (real numbers, second pass) → Project 3 Status for claimed work only → board rows' `issue` field pinned with `if_version`. Done when a read-back matches the map.
+4. **Dry run, then apply**: a dry-run file of `gh` commands, run only on the owner's "apply" (SL2): create or rewrite issues → sub-issue links (database id, `-F`) → blocking links (real numbers, second pass) → Project 3 Status for claimed work only → board rows' `issue` field pinned with `if_version`. Done when a read-back matches the map.
 5. **Docs, memory**: delete the approved spec and plan files and fix tracker links and `CLAUDE.md` pointers (straight to `main`, WF16); update the migration-state line in `memory/reference-github-workflow.md` and `MEMORY.md` entries pointing at deleted files.
