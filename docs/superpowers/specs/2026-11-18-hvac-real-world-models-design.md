@@ -1,6 +1,6 @@
 # Heating & cooling equipment that looks like the real thing
 
-**Date:** 2026-11-18, updated 2026-11-25 · **Epic:** #302 (3D trade scenes). Builds on the heating & cooling build, which is on `feat/trade-scenes-foundation` and not yet on `feat/302-trade-scenes`; its lane opens once that build is there. · **Method and approved mockups:** the `/scene-realism` skill (`~/.claude/skills/scene-realism/`), examples `hvac-equipment-finish.html`, `duct-runs.html`; and the attic round `one-unit-two-spots.html`.
+**Date:** 2026-11-18, updated 2026-11-25 · **Epic:** #302 (3D trade scenes) · **Plans:** phase 1 #370, phase 2 #371 (blocked by #370). Builds on heating & cooling (#304), merged into `feat/302-trade-scenes` by #368 on 2026-11-25. · **Method and approved mockups:** the `/scene-realism` skill (`~/.claude/skills/scene-realism/`), examples `hvac-equipment-finish.html`, `duct-runs.html`; and the attic round `one-unit-two-spots.html`.
 
 ## Why
 
@@ -37,8 +37,7 @@ In the in-home meeting the rep shows the homeowner their own heating and cooling
 - **Running cues stay:** the furnace takes the heat glow (`useHeatGlow`, through a material ref). The outdoor unit's fan spins on a burst, its shake and shimmer stay, and `heating` is already passed to `CondenserUnit`.
 - **Wear inputs:** `DrawnHvac.indoor` carries `blower`, `furnace` and `coil` as `PartState` (wear 0–1); `IndoorUnit` ignores them today. `DrawnHvac.outdoor` carries wear and `kind: 'condenser' | 'heat-pump'`. Ducts carry `PartState` with a material (`original-flex`, `r6-silver-flex`, `r8-flex`).
 - **Cost:** geometry and textures are built once (at module level or memoized per placement), never per render. Repeats are merged or instanced. Draw calls today: 141 at the original baseline, 164 for Today Complete, 170 worst (central system with two mini-split heads, Build Complete). Record the before and after counts for the same cases.
-- **Look in the real scene:** only Oliver starts the dev server (:3002). Use the build's probe, one case per run, never a sweep in a software-rendered browser.
-- **Shared branch:** the heating & cooling build is complete (final review approved, fixes re-reviewed). Before editing, check `git status --short -- src scripts` is clean of anyone else's work.
+- **Look in the real scene:** Playwright against the lane's Vercel preview, signed in through `/api/dev/playwright-session`. One case per run, never a sweep: a multi-case sweep in a software-rendered browser crashed the machine. The heating & cooling build's probe lived in its scratchpad, so the lane writes its own first.
 
 ## Approaches considered
 
@@ -165,10 +164,10 @@ The approved duct mockup carries into `attic-ducts.tsx` and `duct-wraps.tsx`.
 
 ### 8. Phases
 
-1. Phase 1: the indoor unit (both spots), what joins it, every line end to end, the gas meter and the flue cap, and the outdoor unit (condenser and heat pump).
-2. Phase 2: duct runs, boots, and the cut-open core.
+1. Phase 1 (#370): the indoor unit (both spots), what joins it, every line end to end, the gas meter and the flue cap, and the outdoor unit (condenser and heat pump).
+2. Phase 2 (#371): duct runs, boots, and the cut-open core.
 
-Each phase ends with the owner looking at it on the iPad before the next starts.
+Each phase is its own plan, lane and PR into the epic branch, and ends with the owner looking at its preview on the iPad before the next starts.
 
 ## Left to the builder
 
@@ -176,7 +175,7 @@ Each phase ends with the owner looking at it on the iPad before the next starts.
 - Exact route points against the house geometry: gable exit height, line-set cover drop, meter height, window for the secondary drain, flue offset. Set by screenshot, as working numbers.
 - How the wear steps are cut, and how grime is applied: cached textures per step, or a small shader mix.
 - Whether the closet's service switch and the attic's float switch survive the draw-call budget. Drop small parts before big ones if the budget bites.
-- New part or domain names: check `CONTEXT.md` first, and ask the owner before introducing a term.
+- New part or domain names: check `GLOSSARY.md` first, and ask the owner before introducing a term.
 
 ## Verification
 
@@ -185,4 +184,4 @@ Each phase ends with the owner looking at it on the iPad before the next starts.
   - a furnace-only home draws no line set;
   - a heat pump home draws no gas line, flue or vent pipes (the meter stays);
   - a `high-efficiency-furnace` draws the two vent pipes and its condensate, and never the metal flue; any other furnace draws the reverse.
-- Screenshots through the probe, one case per run, in light and in the thermal view: closet Today and Build, attic Today and Build, condenser in summer, heat pump in winter, Look inside on the indoor unit, and (phase 2) the ducts cut open. Draw counts recorded for each.
+- Screenshots through the lane's probe on its preview, one case per run, in light and in the thermal view: closet Today and Build, attic Today and Build, condenser in summer, heat pump in winter, Look inside on the indoor unit, and (phase 2) the ducts cut open. Draw counts recorded for each.
