@@ -48,7 +48,7 @@ export default async function ({ page, opt }) {
     expect(r.ghCall.data?.issue?.title?.startsWith("chore(ship-board): one shared rule set"), "callTool answers the same fixture " + JSON.stringify(r.ghCall).slice(0, 160));
   }
   if (vc) expect(r.vcWatch.length === 1 && r.vcWatch[0].error === vc, "--deny=vercel: the Vercel watch gets " + vc + " " + JSON.stringify(r.vcWatch));
-  else expect(r.vcWatch.length === 1 && r.vcWatch[0].data?.result?.deployments?.length === 3, "input key order does not matter to a match " + JSON.stringify(r.vcWatch).slice(0, 160));
+  else expect(r.vcWatch.length === 1 && r.vcWatch[0].data?.result?.deployments?.deployments?.length === 3, "input key order does not matter to a match " + JSON.stringify(r.vcWatch).slice(0, 160));
   expect(r.unknownServer.error === "server_not_connected", "a server with no fixture file is not connected " + JSON.stringify(r.unknownServer));
   if (!gh) expect(r.unknownInput.error === "tool_error" && r.misses.includes("github issue_read"), "an input with no fixture rejects tool_error and is recorded as a miss " + JSON.stringify(r));
 

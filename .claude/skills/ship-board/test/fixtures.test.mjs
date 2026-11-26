@@ -21,5 +21,6 @@ test("connector fixtures load one file per server, keyed by the flag name", () =
   assert.deepEqual(c.map((s) => [s.key, s.server]).sort(), [["github", "github"], ["vercel", "Vercel"]]);
   const vc = c.find((s) => s.key === "vercel");
   assert.deepEqual(vc.calls.map((x) => x.tool), ["list_deployments"]);
-  assert.equal(vc.calls[0].payload.result.deployments.length, 3);
+  // Vercel nests the list beside its pagination; the fixture keeps that shape so the page parses what prod sends.
+  assert.equal(vc.calls[0].payload.result.deployments.deployments.length, 3);
 });

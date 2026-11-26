@@ -1,0 +1,63 @@
+{
+ "lane": "data-views",
+ "kind": "flow",
+ "no": 8,
+ "title": "Use the customer tables on a phone",
+ "who": "super-admin",
+ "paths": [
+  "/dashboard/customers",
+  "/dashboard/lead-sources",
+  "/dashboard/proposals"
+ ],
+ "steps": [
+  {
+   "do": "Open Customers on a phone (or DevTools at 390 px).",
+   "expect": "Title and number on one line, the toolbar under it on the same strip, the table reaching the screen edges, the footer pinned at the bottom with Prev / 'Page 1 of N' / Next. No sideways page scroll.",
+   "agent": "pass",
+   "note": "title 'Customers' + count '772' same line=true; toolbar under=true; table scroller x 0..390 with 16px inset (rows scroll sideways under the gutter to both screen edges), table x 16..738; footer 'Previous Page 1 of 39 Next' at y 710..756 of 844; horizontal page overflow 0px"
+  },
+  {
+   "do": "Open Filters.",
+   "expect": "Filters open as a bottom sheet; applying a filter adds a chip under the bar.",
+   "agent": "pass",
+   "note": "sheet y 394..844 ('Filter and sort FILTERS PIPELINE Any CREATED Pick dates SORT Created ROWS PER PA…'); closed via Close; chips [\"Pipeline: Leads\"] at y 127 (search bar y 69); url /dashboard/customers?pc_pipeline=leads"
+  },
+  {
+   "do": "Tap a row's ⋯ (always visible on phone) → Schedule Meeting, then close.",
+   "expect": "The 'New meeting — <name>' modal fits the screen and closes cleanly.",
+   "agent": "pass",
+   "note": "⋯ opacity 1; modal 'New meeting — Grant Nakagawa' box x 0..390, y 0..844 (viewport 390×844); page overflow 0px; closed=true"
+  },
+  {
+   "do": "Search nonsense.",
+   "expect": "The empty state fills the table area; no footer.",
+   "agent": "pass",
+   "note": "body 'No customers No customers match these filters' y 174..756; footer=false"
+  },
+  {
+   "do": "Open Lead Sources, tap a source, then the back button.",
+   "expect": "The source's customers pane (Customer, Pipeline, Created) fits the width; back returns to the source list. Agent saw: at 390 px the pane's table is 562 px wide, so Created is off-screen until you swipe sideways inside it, and about 2 rows show. Judge whether that's acceptable.",
+   "agent": "pass",
+   "note": "pane columns Customer|Pipeline|Created; table frame x 32..594; page overflow 0px; back → list visible=true (url /dashboard/lead-sources). Worth a look: the pane table is 562 px wide in a 358 px pane, so Created (and half of Pipeline) sit off-screen and need a sideways swipe inside the table; only ~2 rows show above the footer at 390×844 because the source header takes the top half."
+  },
+  {
+   "do": "Open Proposals.",
+   "expect": "Same strip and table layout as Customers.",
+   "agent": "pass",
+   "note": "title/count same line, toolbar under, body x 16..374, footer y 710 (customers 710), search y 69 (customers 69), overflow 0px"
+  }
+ ],
+ "why": "The customers page and both lead-source panes now lay out through DataView.Bar/Body instead of RecordsPageShell and hand-written wrappers (5e97899c8, 49787b7b8); the empty state now replaces the whole table, footer included (7e179f51e).",
+ "pr": 297,
+ "agent": {
+  "result": "pass",
+  "on": "2026-11-15",
+  "sha": "cb0a592c4"
+ },
+ "askedBy": "review-flows",
+ "askedOn": "2026-11-15",
+ "where": "At phone width, 390 px",
+ "answer": "Not right",
+ "note": "F8.2: the Created column is off-screen until I swipe",
+ "answeredOn": "2026-11-16"
+}

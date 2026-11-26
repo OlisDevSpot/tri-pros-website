@@ -472,6 +472,69 @@ a.bl-num{display:inline-flex;align-items:center;justify-content:center;min-heigh
 @media (prefers-color-scheme:dark){@container (max-width:860px){:root:not([data-theme="light"]) #lane-view .lb-insp{background:color-mix(in srgb,var(--surface) 92%,var(--ink));border-top-color:color-mix(in srgb,var(--muted) 70%,var(--line))}}}
 @container (max-width:860px){:root[data-theme="dark"] #lane-view .lb-insp{background:color-mix(in srgb,var(--surface) 92%,var(--ink));border-top-color:color-mix(in srgb,var(--muted) 70%,var(--line))}}
 @media (max-width:480px){#lane-view .lb-bar{grid-template-columns:minmax(0,120px) minmax(0,1fr) 34px}}
+/* Review flows: numbered so the owner can name a step (F1.3); one fold per flow, answered with three buttons. */
+.rf-link{font-size:14px}
+#lane-view .lb-flows{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;gap:12px}
+#lane-view .rf-preview{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding:10px 12px;border-radius:7px;background:var(--bg);border:1px solid var(--line);min-width:0}
+#lane-view .rf-preview[data-preview="no"]{border-style:dashed}
+#lane-view a.rf-open{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:6px;background:var(--accent);color:var(--surface);font:600 14px var(--body);text-decoration:none}
+#lane-view .rf-host{color:var(--muted);overflow-wrap:anywhere;min-width:0}
+#lane-view .rf-tiles{display:flex;flex-wrap:wrap;gap:6px}
+#lane-view .rf-tile{min-width:48px;min-height:36px;padding:0 10px;font:600 13px var(--mono);border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+#lane-view .rf-tile[data-state="open"]{border-color:var(--you);color:var(--you);background:var(--you-soft)}
+#lane-view .rf-tile[data-state="works"]{border-color:transparent;background:var(--done-soft);color:var(--done)}
+#lane-view .rf-tile[data-state="wrong"]{border-color:transparent;background:var(--blocked-soft);color:var(--blocked)}
+#lane-view .rf-tile[data-state="skip"]{color:var(--muted);text-decoration:line-through}
+#lane-view .rf-list{display:grid;gap:8px}
+#lane-view details.rf{border:1px solid var(--line);border-radius:7px;background:var(--surface);scroll-margin-top:64px;min-width:0}
+#lane-view details.rf[data-state="works"],#lane-view details.rf[data-state="skip"]{background:var(--bg)}
+#lane-view details.rf[data-state="wrong"]{border-color:var(--blocked)}
+#lane-view details.rf>summary{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:10px 12px;cursor:pointer;list-style:none;min-height:48px}
+#lane-view details.rf>summary::-webkit-details-marker{display:none}
+#lane-view details.rf[open]>summary{border-bottom:1px solid var(--line)}
+#lane-view .rf-no{font:700 15px var(--mono);color:var(--accent);min-width:3.2ch}
+#lane-view .rf-title{font:600 15.5px/1.35 var(--body);overflow-wrap:anywhere}
+#lane-view .rf-tags{display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+@media (max-width:620px){#lane-view details.rf>summary{grid-template-columns:auto minmax(0,1fr)}#lane-view .rf-tags{grid-column:2;justify-content:flex-start}}
+#lane-view .rf-body{display:grid;gap:14px;padding:12px 14px 14px;min-width:0}
+#lane-view .rf-meta{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:4px 14px;margin:0;font-size:14px}
+#lane-view .rf-meta dt{color:var(--muted)}
+#lane-view .rf-meta dd{margin:0;overflow-wrap:anywhere}
+#lane-view .rf-paths{display:flex;flex-wrap:wrap;gap:4px 12px}
+#lane-view .rf-paths a{display:inline-flex;align-items:center;min-height:28px}
+#lane-view ol.rf-steps{list-style:none;margin:0;padding:0;display:grid;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+#lane-view ol.rf-steps li{display:grid;grid-template-columns:4.6ch minmax(0,1fr) 3.4ch;gap:10px;padding:9px 12px;border-top:1px solid var(--line);align-items:start}
+#lane-view ol.rf-steps li:first-child{border-top:0}
+#lane-view ol.rf-steps li[data-agent="owner-only"]{background:var(--you-soft)}
+#lane-view .rf-sn{font:600 12.5px/1.75 var(--mono);color:var(--muted)}
+#lane-view .rf-sb{display:grid;gap:3px;min-width:0}
+#lane-view .rf-sb p{margin:0;overflow-wrap:anywhere}
+#lane-view .rf-do{font-weight:600;font-size:14.5px}
+#lane-view .rf-ex{font-size:14px;color:var(--muted)}
+#lane-view .rf-arrow{color:var(--accent);font-weight:700;margin-right:6px}
+#lane-view .rf-am{font:600 12px/1.75 var(--mono);text-align:right;color:var(--muted)}
+#lane-view li[data-agent="pass"] .rf-am{color:var(--done)}
+#lane-view li[data-agent="fail"] .rf-am{color:var(--blocked)}
+#lane-view li[data-agent="owner-only"] .rf-am{color:var(--you)}
+@container (max-width:560px){
+  #lane-view .lb-flows{padding:12px}
+  #lane-view .rf-body{padding:10px}
+  #lane-view ol.rf-steps li{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"sn am" "sb sb";gap:2px 8px;padding:8px 10px}
+  #lane-view .rf-sn{grid-area:sn} #lane-view .rf-sb{grid-area:sb} #lane-view .rf-am{grid-area:am}
+}
+#lane-view details.rf-dev summary{cursor:pointer;font:600 13px var(--body);color:var(--muted)}
+#lane-view details.rf-dev[open] summary{margin-bottom:6px}
+#lane-view .rf-notes{margin:0;padding-left:18px;display:grid;gap:4px;font:12.5px/1.55 var(--mono);color:var(--muted);overflow-wrap:anywhere}
+#lane-view details.rf-dev p{margin:0 0 6px;font:13px/1.6 var(--mono);color:var(--muted);overflow-wrap:anywhere}
+#lane-view form.rf-ans{display:grid;gap:10px;padding-top:12px;border-top:1px solid var(--line)}
+#lane-view .rf-btns{display:flex;flex-wrap:wrap;gap:8px}
+#lane-view .rf-btns button{min-height:40px;padding:0 16px;font-size:14px}
+#lane-view .rf-btns .rf-works{background:var(--done);border-color:var(--done)}
+#lane-view .rf-btns .rf-wrong{color:var(--blocked);border-color:var(--blocked)}
+#lane-view .rf-done{display:grid;gap:8px;padding-top:12px;border-top:1px solid var(--line);font-size:14px}
+#lane-view .rf-done p{margin:0;display:grid;gap:2px;overflow-wrap:anywhere}
+#lane-view .rf-done .lb-wait{font:500 12px var(--mono);color:var(--you)}
+#lane-view .rf-reply{padding-left:10px;border-left:2px solid var(--agent)}
 </style>
 
 <header class="top"><div class="wrap">
@@ -745,7 +808,7 @@ function renderStrip(){const L=(S.lanes||[]).filter(live),m=laneMap();const b=do
   const blocked=L.filter(l=>stateOf(l,m)==="blocked").length,yours=L.filter(l=>l.move==="you").length,prs=L.filter(l=>l.pr).length;
   [L.length,blocked,yours,prs].forEach((n,i)=>b[i].textContent=n)}
 
-function waitingChip(l){const n=S.decisions?LaneCore.openCount(S.decisions,l.id):0;return n?el("span",{class:"chip you",text:n+" waiting on you"}):null}
+function waitingChip(l){if(!S.decisions)return null;const n=LaneCore.openCount(S.decisions,l.id),f=LaneCore.flowsToWalk(S.decisions,l.id);return[n?el("span",{class:"chip you",text:n+" waiting on you"}):null,f?el("span",{class:"chip you","data-flows":"",text:f+(f===1?" flow":" flows")+" to walk"}):null]}
 const STATE_TXT={you:"your move",agent:"agent",working:"working",quiet:"gone quiet",blocked:"blocked",parked:"parked",shipped:"shipped"};
 // GitHub writes titles as "type(scope): words"; the map shows the words, the full title stays on the issue.
 const plainTitle=t=>{const w=String(t||"").replace(/^(feat|fix|refactor|chore|docs)(\([^)]*\))?!?:\s*/i,"").replace(/^epic:\s*/i,"");return w.charAt(0).toUpperCase()+w.slice(1)};
@@ -890,7 +953,8 @@ function link(href,text){return el("a",{href,target:"_blank",rel:"noopener",text
 const VC={server:"Vercel",project:"prj_TgWp6nu2nibQnDxQOWNpCJ4i2Kxx",team:"team_jzIVLz9O56V8f1agRDUZPnLT"};
 S.vc={state:"connecting",byBranch:{},prod:null,at:null};
 const VC_MSG={server_not_connected:"Vercel isn't connected for you. Add it at claude.ai → Settings → Connectors.",server_not_found:"Vercel isn't connected for you. Add it at claude.ai → Settings → Connectors.",needs_reauth:"Vercel needs you to sign in again at claude.ai → Settings → Connectors.",selection_required:"Pick which Vercel connector this page should use at claude.ai.",not_granted:"This page wasn't allowed to read Vercel. Reload to be asked again.",approval_required:"Vercel access is waiting for your approval in claude.ai.",blocked_by_policy:"Your organization blocks this Vercel tool.",capability_disabled:"Connectors are off in this view.",rate_limited:"Vercel is rate-limiting; it retries on its own.",server_unavailable:"Vercel didn't answer; it retries on its own.",upstream_error:"Vercel didn't answer; it retries on its own.",tool_error:"Vercel returned an error for the deployments list.",unavailable:"Live Vercel data needs the page open on claude.ai."};
-function deplList(p){if(typeof p==="string"){try{p=JSON.parse(p)}catch{return[]}}if(Array.isArray(p))return p;if(p&&Array.isArray(p.deployments))return p.deployments;if(p&&p.result)return deplList(p.result);return[]}
+// Vercel nests the list beside its pagination: {deployments:{pagination,deployments:[…]}}.
+function deplList(p){if(typeof p==="string"){try{p=JSON.parse(p)}catch{return[]}}if(Array.isArray(p))return p;if(p&&Array.isArray(p.deployments))return p.deployments;if(p&&p.deployments&&typeof p.deployments==="object")return deplList(p.deployments);if(p&&p.result)return deplList(p.result);return[]}
 function ingestVercel(payload){
   const by={};let prod=null;
   for(const d of deplList(payload)){const ref=d.meta?.githubCommitRef||d.gitSource?.ref;const t=d.created??d.createdAt??0;const x={url:d.url?(String(d.url).startsWith("http")?d.url:"https://"+d.url):null,state:String(d.state||d.readyState||"").toUpperCase(),t,sha:(d.meta?.githubCommitSha||"").slice(0,9),inspector:d.inspectorUrl||null};
@@ -904,8 +968,10 @@ function renderLive(){const p=$("#live");if(!p)return;const v=S.vc;
   else p.textContent="Live data: "+(VC_MSG[v.state]||"Vercel is unavailable ("+v.state+").");
 }
 const VSTATE={READY:["done","preview ready"],BUILDING:["agent","building"],QUEUED:["agent","queued"],INITIALIZING:["agent","starting"],ERROR:["blocked","build failed"],CANCELED:["","canceled"]};
+// The branch alias (brief.preview) always serves the branch's newest deploy, so flow links survive a push; a deploy URL is the fallback.
+function previewOf(l){const d=l.branch&&S.vc.byBranch[l.branch];const base=LaneCore.safeLink(l.brief?.preview)||(d&&d.url&&d.state==="READY"?LaneCore.safeLink(d.url):null);return{base,deploy:d||null,state:d?(VSTATE[d.state]||["",d.state.toLowerCase()]):null}}
 function previewChip(l){const d=l.branch&&S.vc.byBranch[l.branch];if(!d)return null;const[c,t]=VSTATE[d.state]||["",d.state.toLowerCase()||"deployed"];return el("span",{class:"chip "+c,title:"Vercel preview, "+ago(new Date(d.t).toISOString())},t)}
-function previewFact(l){const d=l.branch&&S.vc.byBranch[l.branch];if(!d)return S.vc.state==="ok"?"no preview deploy for this branch":null;const[,t]=VSTATE[d.state]||["",d.state.toLowerCase()];return el("span",{},d.url?link(d.url,t):t," · "+ago(new Date(d.t).toISOString())+(d.sha?" · "+d.sha:""),d.inspector?el("span",{}," · ",link(d.inspector,"build log")):"")}
+function previewFact(l){const d=l.branch&&S.vc.byBranch[l.branch];const alias=LaneCore.safeLink(l.brief?.preview);if(!d)return alias?link(alias,"preview"):S.vc.state==="ok"?"no preview deploy for this branch":null;const[,t]=VSTATE[d.state]||["",d.state.toLowerCase()];return el("span",{},d.url?link(d.url,t):t," · "+ago(new Date(d.t).toISOString())+(d.sha?" · "+d.sha:""),d.inspector?el("span",{}," · ",link(d.inspector,"build log")):"")}
 async function startConnectors(){
   let mcp=null;try{mcp=await window.claude?.use?.("mcp")}catch{}
   if(!mcp){S.vc={...S.vc,state:"unavailable"};S.gh={...S.gh,state:"unavailable"};renderLive();renderGhLive();renderMap();return}
@@ -966,11 +1032,14 @@ function renderSetup(){const box=$("#setup-list");if(!S.setup)return;box.replace
 function renderDecisions(){const box=$("#dec-list");if(!S.decisions)return;const n=LaneCore.openCount(S.decisions);const cnt=$("#dec-count");cnt.hidden=!n;cnt.textContent=n;
   if(!S.decisions.length){box.replaceChildren(el("div",{class:"loading",text:"Nothing waiting. New questions from lane sessions appear here."}));return}
   const m=laneMap(),rank=Object.fromEntries((S.lanes||[]).slice().sort(byOrder).map((l,i)=>[l.id,i]));
-  const groups={};for(const d of S.decisions)(groups[d.lane||""]??=[]).push(d);
+  // Review flows are walked on their lane page, so this tab links to them instead of drawing them.
+  const groups={},walk={};for(const d of S.decisions){if(d.kind==="flow"){if(!d.answer&&d.lane)walk[d.lane]=(walk[d.lane]||0)+1;continue}(groups[d.lane||""]??=[]).push(d)}
+  for(const id of Object.keys(walk))groups[id]??=[];
   const ids=Object.keys(groups).sort((a,b)=>(a?1:0)-(b?1:0)||(rank[a]??1e9)-(rank[b]??1e9)||a.localeCompare(b));
   keepUiState(box,()=>box.replaceChildren(...ids.map(id=>{const ds=groups[id].sort(byCard);const w=LaneCore.openCount(ds);
     return el("section",{class:"lb-dgroup","data-lane":id},el("div",{class:"group-h"},el("h3",{},id?el("a",{href:"#lane-"+id,text:laneName(m,id)}):"Across all lanes"),el("small",{text:w?w+" waiting on you":"nothing waiting on you"})),
-      el("div",{class:"lb-cards"},ds.map(d=>decisionCard(d))))})))}
+      walk[id]?el("a",{class:"rf-link",href:"#lane-"+id,"data-flows-link":""},walk[id]+(walk[id]===1?" review flow":" review flows")+" to walk on its lane page →"):null,
+      ds.length?el("div",{class:"lb-cards"},ds.map(d=>decisionCard(d))):null)})))}
 function renderSkills(){const box=$("#skill-list");if(!S.skills)return;box.replaceChildren();if(!S.skills.length){box.append(el("div",{class:"loading",text:"No skills proposed yet."}));return}
   for(const k of S.skills.slice().sort(byOrder)){const st=k.status||"proposed";const cls={approved:"agent",built:"done",proposed:"you"}[st]||"";
     box.append(el("article",{class:"skill"},el("div",{class:"lane-h"},el("span",{class:"cmd",text:k.name}),el("span",{class:"chip "+cls,text:st})),

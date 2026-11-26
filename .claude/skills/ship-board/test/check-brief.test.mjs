@@ -23,5 +23,5 @@ test("decision problems are prefixed by the doc id", () => {
   const r = run(tmp({ brief: { goal: "g", phases: [], plan: "p.md" }, decisions: [{ id: "dv-x", kind: "other" }] }));
   assert.equal(r.status, 1);
   assert.match(r.stdout, /^dv-x: missing question$/m);
-  assert.match(r.stdout, /^dv-x: kind must be decision or check$/m);
+  assert.match(r.stdout, /^dv-x: kind must be decision, check or flow$/m);
 });

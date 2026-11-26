@@ -1,0 +1,89 @@
+{
+ "lane": "data-views",
+ "kind": "flow",
+ "no": 1,
+ "title": "Find a customer on the Customers page",
+ "who": "super-admin",
+ "paths": [
+  "/dashboard/customers"
+ ],
+ "steps": [
+  {
+   "do": "Open Customers from the sidebar.",
+   "expect": "Title 'Customers' with a plain number beside it (e.g. '1,234', no word after it). Columns: Customer, Source, Pipeline, Created. Newest customers first. Footer reads 'Page 1 of N'.",
+   "agent": "pass",
+   "note": "title=true count='772' cols=Customer|Source|Pipeline|Created footer='Previous Page 1 of 39 Next' newestFirst=true"
+  },
+  {
+   "do": "Type part of a customer's name, email or phone in 'Search by name, email or phone…'.",
+   "expect": "Rows narrow to matches; the number beside the title drops to the match count; the URL gains a pc… search key.",
+   "agent": "pass",
+   "note": "search 'gmail' (email part): count 772→199; url /dashboard/customers?pc_q=gmail; all rows match=true"
+  },
+  {
+   "do": "Open Filters, pick Pipeline = Fresh, then a Created date range.",
+   "expect": "Chips for each filter appear under the bar; every row's Pipeline badge reads Fresh and its Created date sits in the range. While the new rows load, the old rows fade a little (only if it takes longer than a moment) and come back to full strength when the new ones land.",
+   "agent": "pass",
+   "note": "chips=[\"Pipeline: Fresh\",\"Created: Jan 1 → Nov 25\",\"Pipeline: Fresh\",\"Created: Jan 1 → Nov 25\"]; preset 'Year to Date'; 20 rows all Fresh=true; createdAt param={\"from\":\"2026-01-01T08:00:00.000Z\",\"to\":\"2026-11-26T07:59:59.999Z\"}; dates Aug 18, 2026..Oct 14, 2026; fade on pipeline change (1.5s delayed): stale=true minOpacity=0.60 end=1; on date change: stale=true min=0.60 end=1"
+  },
+  {
+   "do": "Search for nonsense such as 'zzqqxx'.",
+   "expect": "The whole table is replaced by an empty state: 'No customers' / 'No customers match these filters'. No pagination footer, no grey placeholder rows.",
+   "agent": "pass",
+   "note": "body='No customers No customers match these filters' table=0 footer=0 skeletons=0"
+  },
+  {
+   "do": "Clear the search and remove the chips.",
+   "expect": "All customers come back; the number returns to the full total.",
+   "agent": "pass",
+   "note": "count back to '772' (total 772); url /dashboard/customers"
+  },
+  {
+   "do": "Click the Customer column header, then Created.",
+   "expect": "Rows re-sort by name, then by created date. Pipeline is not sortable.",
+   "agent": "pass",
+   "note": "sort buttons {\"Customer\":2,\"Source\":1,\"Pipeline\":0,\"Created\":1}; after Customer: url /dashboard/customers?pc_sort=name&pc_dir=asc, names A→Z (, ,  Zuhier Damouni…); after Created: url /dashboard/customers?pc_dir=asc, dates oldest first"
+  },
+  {
+   "do": "Go to page 2 with the footer's next button, then press the browser Back button.",
+   "expect": "Page 2 shows different customers; Back returns to page 1 with the same filters.",
+   "agent": "pass",
+   "note": "page2 url /dashboard/customers?pc_pipeline=fresh&pc_p=2 ('Previous Page 2 of 11 Next', different rows=true); Back → /dashboard/customers?pc_pipeline=fresh ('Previous Page 1 of 11 Next'), same rows as p1=true"
+  },
+  {
+   "do": "Hover a row and open its ⋯ menu next to the name.",
+   "expect": "Exactly three items: View Profile, Schedule Meeting, Delete. No 'Edit Profile'.",
+   "agent": "pass",
+   "note": "menu: View Profile | Schedule Meeting | Delete"
+  },
+  {
+   "do": "Choose View Profile (or click the row anywhere else).",
+   "expect": "The customer's profile opens over the page; closing it leaves the table where it was.",
+   "agent": "pass",
+   "note": "profile overlay opened=true ('Oli Test's Profile Map unavailable — check console for diagnostics Street Aerial Map OT Oli Test 6252 Calvin Avenue, Tar'), url while open /dashboard/customers?pc_pipeline=fresh; after Escape closed=true, url /dashboard/customers?pc_pipeline=fresh, table unchanged=true; row click opens profile=true"
+  },
+  {
+   "do": "Click a row's Created date.",
+   "expect": "A date-and-time picker opens (super-admin only). Close it with Escape without picking anything.",
+   "agent": "pass",
+   "note": "date trigger button=true; picker opened=true; closed by Escape without picking=true"
+  },
+  {
+   "do": "In the top search bar type a common first name that matches at least 5 customers, then pick 'See all matches in Customers'.",
+   "expect": "The Customers page opens with that name already in its search box and only matching rows.",
+   "agent": "pass",
+   "note": "'John' (16 matches) → /dashboard/customers?pc_q=John; search box='John'; rows all match=true (16)"
+  }
+ ],
+ "why": "5e97899c8: the Customers page was rebuilt on the new useCustomersTable hook and EntityRecordsTable (DataView parts); the table's own empty row went (7e179f51e); Edit Profile removed (e1bb84e7c); search.service now reads CUSTOMERS_RECORDS_TABLE_VIEW.",
+ "pr": 297,
+ "agent": {
+  "result": "pass",
+  "on": "2026-11-15",
+  "sha": "cb0a592c4"
+ },
+ "askedBy": "review-flows",
+ "askedOn": "2026-11-15",
+ "answer": "Works",
+ "answeredOn": "2026-11-16"
+}
