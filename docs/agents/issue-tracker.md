@@ -110,6 +110,7 @@ Look option ids up by name as above; don't hard-code them. `item-add` returns th
 
 - Branch: `{feat|fix|refactor|chore|docs}/<issue-number>-<slug>`. The number in the branch is how a session finds its issue and its ship-board row.
 - PR body carries `Closes #<n>` for every issue it finishes, so merging closes them. A PR that ships part of a lane that keeps going carries `Refs #<n>` instead, and the issue stays open.
+- Epic folders (trial, `CLAUDE.md`): the epic's draft checkpoint PR into `main` opens with the epic branch and carries `Refs #<epic>`. A plan's PR targets the epic branch with `Closes #<plan>`, but GitHub closes issues only on merges into the default branch: close the plan issue by hand when its PR merges into the epic branch.
 
 ## What each stage writes
 
