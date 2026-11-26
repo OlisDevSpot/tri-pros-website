@@ -1,0 +1,54 @@
+{
+ "lane": "data-views",
+ "kind": "flow",
+ "no": 3,
+ "title": "Schedule a meeting for a customer from the list",
+ "who": "super-admin",
+ "paths": [
+  "/dashboard/customers"
+ ],
+ "steps": [
+  {
+   "do": "Filter Pipeline = Leads, open a row's ⋯ menu and choose Schedule Meeting.",
+   "expect": "A modal 'New meeting — <customer name>' opens over the Customers page. You stay on Customers (prod sent you to the pipeline board).",
+   "agent": "pass",
+   "note": "modal title 'New meeting — Grant Nakagawa' for row 'Grant Nakagawa'; url stayed /dashboard/customers?pc_pipeline=leads"
+  },
+  {
+   "do": "Press Escape (or Cancel).",
+   "expect": "The modal closes; the table, filters and page are unchanged.",
+   "agent": "pass",
+   "note": "modal closed=true; url /dashboard/customers?pc_pipeline=leads; table same=true"
+  },
+  {
+   "do": "Do the same from the Lead Sources 'All customers' table and from one source's pane.",
+   "expect": "The same 'New meeting — <name>' modal opens in both places.",
+   "agent": "pass",
+   "note": "All customers: 'New meeting — Oli Test'; Telemarketing pane: 'New meeting — Janet Shanks'"
+  },
+  {
+   "do": "OLIVER ONLY, on a test customer you own: open Schedule Meeting again, pick a type and a date/time, press 'Create meeting'.",
+   "expect": "Button reads 'Creating…', then the modal closes by itself.",
+   "agent": "owner-only"
+  },
+  {
+   "do": "Without reloading, look at that customer's row.",
+   "expect": "Its Pipeline badge moves from Leads to Fresh (with the Leads filter on, the row drops out of the list). The count updates.",
+   "agent": "owner-only"
+  },
+  {
+   "do": "Open that customer's profile → Meetings tab.",
+   "expect": "The new meeting is listed.",
+   "agent": "owner-only"
+  }
+ ],
+ "why": "e1bb84e7c: Schedule Meeting now opens CreateMeetingModal through openCreateMeeting (modal layer) instead of navigating to the pipeline; a booking calls invalidateMeeting, which now also refreshes the customers list (use-invalidation.ts).",
+ "pr": 297,
+ "agent": {
+  "result": "pass",
+  "on": "2026-11-15",
+  "sha": "cb0a592c4"
+ },
+ "askedBy": "review-flows",
+ "askedOn": "2026-11-15"
+}

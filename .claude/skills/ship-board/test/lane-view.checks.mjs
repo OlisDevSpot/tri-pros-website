@@ -123,11 +123,11 @@ export default async function ({ page, hash, viewport, scheme, opt, skillDir }) 
   expect(s.kind === "status", "the inspector opens on status (got " + s.kind + ")");
 
   if (lane === "data-views" && newBrief) {
-    expect(eq(s.sections, FULL), "data views sections " + JSON.stringify(s.sections));
+    expect(eq(s.sections, ["header", "flows", ...FULL.slice(1)]), "data views sections, its review flows under the header " + JSON.stringify(s.sections));
     expect(s.releaseMap, "data views draws the release map");
     expect(!s.empty.includes("brief"), "a full brief has no empty state");
   } else if (lane === "data-views") {
-    expect(eq(s.sections, ["header", "stands", "blocks", "decisions", "folded"]), "old-shape data views sections " + JSON.stringify(s.sections));
+    expect(eq(s.sections, ["header", "flows", "stands", "blocks", "decisions", "folded"]), "old-shape data views sections " + JSON.stringify(s.sections));
     expect(s.empty.includes("brief"), "old-shape data views shows the brief empty state");
     expect(s.releaseMap, "old-shape data views still draws the release map");
     const steps = await page.evaluate(() => Object.fromEntries([...document.querySelectorAll("#lane-view .lb-map [data-step]")].map((e) => [e.dataset.step, e.querySelectorAll(".lb-ph").length])));

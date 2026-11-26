@@ -40,6 +40,7 @@
     const m = laneMap(), b = l.brief || {};
     const ds = LaneCore.laneDecisions(S.decisions || [], l.id);
     const waiting = LaneCore.openCount(S.decisions || [], l.id);
+    const toWalk = LaneCore.flowsToWalk(S.decisions || [], l.id);
     const risks = watchOf(l).length;
     const layout = V && V.l.id === l.id ? V.layout : LaneCore.layoutBlockerMap(l.id, S.lanes || [], S.coll);
     const holds = downstream(layout);
@@ -47,6 +48,7 @@
     const [title, ids] = nameParts(l);
     const chips = el("div", { class: "lb-chips" },
       waiting && first ? el("button", { type: "button", class: "chip you lb-chip", "data-sel": first }, waiting + " waiting on you") : null,
+      toWalk ? el("button", { type: "button", class: "chip you lb-chip", "data-flow": String(firstToWalk(LaneCore.laneFlows(S.decisions || [], l.id)).no) }, plural(toWalk, "flow", "flows") + " to walk") : null,
       risks ? el("button", { type: "button", class: "chip blocked lb-chip", "data-sel": "watch:0" }, plural(risks, "risk", "risks")) : null,
       holds.length ? el("button", { type: "button", class: "chip lb-chip", "data-sel": "lane:" + holds[0] }, "holds up " + plural(holds.length, "lane", "lanes")) : null);
     const box = el("div", { class: "lb-head", "data-section": "header" },
@@ -461,6 +463,129 @@
       ev.length ? el("details", { class: "lb-fold", "data-fold": "evidence" }, el("summary", { text: "How the agent checked this" }), el("div", { class: "lb-ev" }, ev.map((t) => el("span", { text: t })), b.verifiedAt ? el("span", { text: "Verified at " + b.verifiedAt }) : null)) : null);
   }
 
+  const FLOW_STATE = { Works: "works", "Not right": "wrong", Skip: "skip" };
+  const FLOW_WORD = { works: "Works", wrong: "Not right", skip: "Skipped", open: "To walk" };
+  const FLOW_CHIP = { works: "done", wrong: "blocked", skip: "", open: "you" };
+  const AGENT_WORD = { pass: "agent passed", fail: "agent failed", partial: "agent passed part", "not-run": "agent didn't run it" };
+  const AGENT_CHIP = { pass: "done", fail: "blocked", partial: "you", "not-run": "" };
+  const STEP_MARK = { pass: ["✓", "agent passed this step"], fail: ["✗", "agent saw this step fail"], "owner-only": ["you", "writes data: yours to walk"], "not-run": ["–", "agent didn't run this step"] };
+  const flowState = (d) => FLOW_STATE[d.answer] || "open";
+  const flowKey = (d) => "F" + d.no;
+  const firstToWalk = (fs) => fs.find((d) => !d.answer) || null;
+
+  function openFlow(no, scope = document) {
+    const d = scope.querySelector("#rf-" + no);
+    if (!d) return;
+    d.open = true;
+    d.scrollIntoView({ block: "start", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    const s = d.querySelector("summary");
+    if (s) s.focus({ preventScroll: true });
+  }
+
+  async function answerFlow(btn, d, answer) {
+    const form = btn.closest("form");
+    const noteEl = form.elements.note;
+    let patch;
+    try { patch = LaneCore.flowAnswerPatch(answer, noteEl.value, today()); }
+    catch (err) { toast(err.message); noteEl.focus(); return; }
+    if (!startSaving(d.id)) return;
+    let ok = false;
+    try { ok = await save("decisions", d.id, patch); } finally { inFlight().delete(d.id); }
+    if (ok) {
+      delete drafts()[d.id];
+      const next = firstToWalk(LaneCore.laneFlows(S.decisions || [], d.lane).filter((x) => x.id !== d.id));
+      S.openFlow = next ? next.no : null;
+    }
+    redrawCards();
+    // The db's own redraw lands mid-save and keeps the fold open, so the answered flow is folded after the last one.
+    if (ok) for (const f of document.querySelectorAll("#lane-view #rf-" + d.no)) f.open = false;
+  }
+
+  function flowAnswer(d, can) {
+    const dr = drafts()[d.id] || {};
+    if (d.answer && !dr.editing) return el("div", { class: "rf-done" },
+      el("p", {}, el("span", { class: "lb-lbl", text: "Your answer" + (d.answeredOn ? " · " + shortDate(d.answeredOn) : "") }), el("b", { text: d.answer })),
+      d.note ? el("p", {}, el("span", { class: "lb-lbl", text: "Your note" }), d.note) : null,
+      d.reply ? el("p", { class: "rf-reply" }, el("span", { class: "lb-lbl", text: "The agent" + (d.replyOn ? " · " + shortDate(d.replyOn) : "") }), d.reply)
+        : d.answer === "Not right" ? el("p", { class: "lb-wait", text: d.appliedOn ? "Applied " + shortDate(d.appliedOn) : "Waiting for the agent" }) : null,
+      can ? el("div", {}, el("button", { type: "button", onclick: () => { drafts()[d.id] = { editing: true, note: d.note || "" }; redrawCards(); } }, "Change answer")) : null);
+    const busy = inFlight().has(d.id);
+    const note = el("input", { type: "text", name: "note", autocomplete: "off", disabled: !can, placeholder: "Which step, and what you saw: " + flowKey(d) + ".2 …" });
+    note.value = dr.note != null ? dr.note : "";
+    note.addEventListener("input", () => { (drafts()[d.id] ??= {}).note = note.value; });
+    const b = (answer, cls) => el("button", { type: "button", class: cls, "data-answer": answer, disabled: !can || busy, onclick: (e) => answerFlow(e.currentTarget, d, answer).catch((err) => toast(err.message)) }, answer);
+    return el("form", { class: "rf-ans", novalidate: true, onsubmit: (e) => e.preventDefault() },
+      el("label", { class: "lb-field" }, el("span", { class: "lb-lbl", text: "Note (needed for Not right)" }), note),
+      can ? el("div", { class: "rf-btns" }, b("Works", "primary rf-works"), b("Not right", "rf-wrong"), b("Skip", "rf-skip"),
+        dr.editing ? el("button", { type: "button", class: "ghost", onclick: () => { delete drafts()[d.id]; redrawCards(); } }, "Keep answer") : null)
+        : el("p", { class: "lb-ro", text: "This view can't save answers" }));
+  }
+
+  function flowLinks(d, base) {
+    const paths = d.paths || [];
+    if (!paths.length) return null;
+    return el("span", { class: "rf-paths" }, paths.map((p) => {
+      const href = base ? LaneCore.previewHref(base, p) : null;
+      return href ? el("a", { href, target: "_blank", rel: "noopener", class: "mono" }, p + " ↗") : el("span", { class: "mono", text: p });
+    }));
+  }
+
+  function flowCard(d, base, can) {
+    const st = flowState(d), key = flowKey(d), problems = LaneCore.validateDecision(d);
+    const a = d.agent && d.agent.result;
+    const summary = el("summary", {},
+      el("span", { class: "rf-no", text: key }),
+      el("span", { class: "rf-title", text: d.title || d.id }),
+      el("span", { class: "rf-tags" },
+        el("span", { class: "chip " + FLOW_CHIP[st], text: FLOW_WORD[st] }),
+        a ? el("span", { class: "chip " + AGENT_CHIP[a], text: AGENT_WORD[a] }) : null));
+    if (problems.length) return el("details", { class: "rf", id: "rf-" + d.no, "data-fold": "flow:" + d.id, "data-state": st }, summary, el("p", { class: "lb-ro", text: "This flow can't be shown: " + problems.join("; ") + "." }));
+    const meta = el("dl", { class: "rf-meta" },
+      d.who ? [el("dt", { text: "Sign in as" }), el("dd", { text: d.who })] : null,
+      (d.paths || []).length ? [el("dt", { text: "Open" }), el("dd", {}, flowLinks(d, base))] : null,
+      d.where ? [el("dt", { text: "Where" }), el("dd", { text: d.where })] : null);
+    const steps = el("ol", { class: "rf-steps" }, d.steps.map((s, i) => {
+      const m = s.agent ? STEP_MARK[s.agent] : null;
+      return el("li", { "data-agent": s.agent || null },
+        el("span", { class: "rf-sn", text: key + "." + (i + 1) }),
+        el("div", { class: "rf-sb" }, el("p", { class: "rf-do", text: s.do }), el("p", { class: "rf-ex" }, el("span", { class: "rf-arrow", "aria-label": "expect" , text: "→" }), s.expect)),
+        m ? el("span", { class: "rf-am", title: m[1], "aria-label": m[1], text: m[0] }) : el("span"));
+    }));
+    const ag = d.agent || {};
+    const devBits = [d.why, ag.on || ag.sha ? "Agent run " + [ag.on ? shortDate(ag.on) : null, ag.sha ? "at " + ag.sha : null].filter(Boolean).join(" ") + ": " + (AGENT_WORD[a] || "not run") + (ag.note ? ". " + ag.note : "") : null].filter(Boolean);
+    const stepNotes = d.steps.map((s, i) => (s.note ? key + "." + (i + 1) + (s.agent ? " " + s.agent : "") + ": " + s.note : null)).filter(Boolean);
+    const dev = devBits.length || stepNotes.length ? el("details", { class: "rf-dev", "data-fold": "dev:" + d.id }, el("summary", { text: "For the developer" }), devBits.map((t) => el("p", { text: t })), stepNotes.length ? el("ul", { class: "rf-notes" }, stepNotes.map((t) => el("li", { text: t }))) : null) : null;
+    return el("details", { class: "rf", id: "rf-" + d.no, "data-fold": "flow:" + d.id, "data-state": st }, summary,
+      el("div", { class: "rf-body" }, meta.children.length ? meta : null, steps, dev, flowAnswer(d, can)));
+  }
+
+  function previewBar(l) {
+    const pv = previewOf(l), d = pv.deploy;
+    const host = pv.base ? new URL(pv.base).host : null;
+    return el("div", { class: "rf-preview", "data-preview": pv.base ? "yes" : "no" },
+      el("span", { class: "lb-lbl", text: "Preview" }),
+      pv.base ? el("a", { class: "rf-open", href: pv.base, target: "_blank", rel: "noopener" }, "Open preview ↗") : el("span", { class: "muted", text: l.branch ? "No preview for " + l.branch + " yet" : "No branch, so no preview" }),
+      host ? el("span", { class: "mono rf-host", text: host }) : null,
+      d ? el("span", { class: "chip " + pv.state[0], text: pv.state[1] + " · " + ago(new Date(d.t).toISOString()) + (d.sha ? " · " + d.sha : "") }) : null);
+  }
+
+  function reviewFlows(l) {
+    if (!S.decisions) return null;
+    const fs = LaneCore.laneFlows(S.decisions, l.id);
+    if (!fs.length) return null;
+    const can = !!(S.canWrite && S.db);
+    const pv = previewOf(l);
+    const n = { works: 0, wrong: 0, skip: 0, open: 0 };
+    for (const d of fs) n[flowState(d)]++;
+    const tally = [n.open ? n.open + " to walk" : "all walked", n.works ? n.works + " works" : null, n.wrong ? n.wrong + " not right" : null, n.skip ? n.skip + " skipped" : null].filter(Boolean).join(" · ");
+    return el("section", { class: "lb-sec lb-flows", "data-section": "flows", id: "review-flows" },
+      el("div", { class: "lb-sec-h" }, el("h3", { text: "Review flows" }), el("small", { text: (l.pr ? "PR #" + l.pr + " · " : "") + tally })),
+      previewBar(l),
+      el("p", { class: "note", text: "Walk each flow on the preview, then answer it. Name a step by its number, like " + flowKey(fs[0]) + ".2, so the agent knows exactly where." }),
+      el("div", { class: "rf-tiles", "aria-label": "Flows by number" }, fs.map((d) => el("button", { type: "button", class: "rf-tile", "data-flow": String(d.no), "data-state": flowState(d), title: flowKey(d) + " · " + d.title + " · " + FLOW_WORD[flowState(d)] }, flowKey(d)))),
+      el("div", { class: "rf-list" }, fs.map((d) => flowCard(d, pv.base, can))));
+  }
+
   function selButton(sel, ...kids) { return el("button", { type: "button", class: "lb-link", "data-sel": sel }, ...kids); }
 
   function statusPanel(l) {
@@ -633,7 +758,7 @@
     const lands = b && l.branch && (b.areas || []).length ? el("section", { class: "lb-viz", "data-section": "lands" }, head("Where the change lands", (b.files != null ? plural(b.files, "file", "files") + " · " : "") + "tap a bar"), areaBars(b)) : null;
     const waited = b && l.branch && ((b.timeline || []).length || LaneCore.waitGap(l, today())) ? el("section", { class: "lb-viz", "data-section": "waited" }, head("How long it has waited", "tap a point"), waitTimeline(l)) : null;
     const main = el("div", { class: "lb-main" },
-      laneHeader(l), whereItStands(l, ds), blocksSection(l, layout),
+      laneHeader(l), reviewFlows(l), whereItStands(l, ds), blocksSection(l, layout),
       lands && waited ? el("div", { class: "lb-two" }, lands, waited) : lands || waited,
       b && l.branch && !lands && !waited ? el("p", { class: "lb-empty", "data-empty": "brief", text: "Where the change lands and how long it has waited fill in on the next /orient run" + (b.tracker ? " on " + b.tracker : "") + "." }) : null,
       decisionsList(l, ds), foldedSection(l));
@@ -641,12 +766,15 @@
     fitBlockerMap(box, oldScroll);
     renderInspector();
     markSel();
+    if (S.openFlow != null) { const no = S.openFlow; S.openFlow = null; requestAnimationFrame(() => openFlow(no, box)); }
   }
 
   function wire() {
     const box = document.getElementById("lane-view");
     if (!box) return;
     box.addEventListener("click", (e) => {
+      const f = e.target.closest("[data-flow]");
+      if (f && box.contains(f)) { openFlow(f.dataset.flow, box); return; }
       const t = e.target.closest("[data-sel]");
       if (!t || !box.contains(t)) return;
       const v = t.dataset.sel, i = v.indexOf(":");

@@ -133,8 +133,9 @@
   const normalizeOptions = (options) => (options || []).map((o) => typeof o === "string" ? { label: o, consequence: "" } : { label: o.label, consequence: o.consequence || "" });
 
   const isCheck = (d) => d.kind === "check";
+  const isFlow = (d) => d.kind === "flow";
   function laneDecisions(decisions, laneId) {
-    const mine = decisions.filter((d) => d.lane === laneId);
+    const mine = decisions.filter((d) => d.lane === laneId && !isFlow(d));
     return {
       open: mine.filter((d) => !isCheck(d) && !d.answer),
       answered: mine.filter((d) => d.answer),
@@ -143,7 +144,48 @@
   }
   function openCount(decisions, laneId) {
     const pool = laneId === undefined ? decisions : decisions.filter((d) => d.lane === laneId);
-    return pool.filter((d) => isCheck(d) ? !d.done : !d.answer).length;
+    return pool.filter((d) => !isFlow(d) && (isCheck(d) ? !d.done : !d.answer)).length;
+  }
+
+  const FLOW_ANSWERS = ["Works", "Not right", "Skip"];
+  const laneFlows = (decisions, laneId) => decisions.filter((d) => isFlow(d) && d.lane === laneId).sort((a, b) => (a.no ?? 99) - (b.no ?? 99));
+  const flowsToWalk = (decisions, laneId) => laneFlows(decisions, laneId).filter((d) => !d.answer).length;
+  function flowAnswerPatch(answer, note, today) {
+    if (!FLOW_ANSWERS.includes(answer)) throw new Error("a flow is answered " + FLOW_ANSWERS.join(", ") + ", not " + JSON.stringify(answer));
+    const n = String(note || "").trim();
+    // The note is the agent's whole brief for the fix, so a bare "Not right" would leave it guessing.
+    if (answer === "Not right" && !n) throw new Error("Say which step and what you saw, e.g. \"F1.3: the chips never appear\"");
+    return { answer, answeredOn: today, note: n || null, reply: null, replyOn: null, appliedOn: null };
+  }
+  // The address GitHub shows for a PR's preview is the branch alias Vercel's bot posts on it. Long branch names are
+  // cut and hashed in that alias, so it is read from the comment, never built from the branch name.
+  function previewFromComments(payload) {
+    let p = payload;
+    if (typeof p === "string") { try { p = JSON.parse(p); } catch { return null; } }
+    const list = Array.isArray(p) ? p : (p && (p.comments || (p.result && p.result.comments))) || [];
+    for (const c of list) {
+      const who = (c && c.user && c.user.login) || "";
+      if (!/^vercel(\[bot\])?$/i.test(who)) continue;
+      const body = String(c.body || "");
+      const link = /\[Preview\]\((https:\/\/[^)\s]+)\)/.exec(body);
+      if (link && safeLink(link[1])) return safeLink(link[1]);
+      const meta = /\[vc\]: #[^:]+:([A-Za-z0-9+/=]+)/.exec(body);
+      if (!meta) continue;
+      try {
+        const j = JSON.parse(typeof atob === "function" ? atob(meta[1]) : Buffer.from(meta[1], "base64").toString("utf8"));
+        const u = j && j.projects && j.projects[0] && j.projects[0].previewUrl;
+        const href = u && safeLink("https://" + u);
+        if (href) return href;
+      } catch { /* a meta line Vercel changed the shape of reads as no alias */ }
+    }
+    return null;
+  }
+
+  // A path on the preview, so a flow link can never leave the lane's own deploy.
+  function previewHref(base, path) {
+    const root = safeLink(base);
+    if (!root || typeof path !== "string" || !/^\/(?!\/)/.test(path)) return null;
+    return new URL(path, root).href;
   }
 
   function answerPatch(decision, choice, note, today) {
@@ -216,6 +258,7 @@
     if (!b.goal) p.push("missing goal");
     else if (!isStr(b.goal)) p.push("goal must be a string");
     if (b.stand != null && !isStr(b.stand)) p.push("stand must be a string");
+    if (b.preview != null && !safeLink(b.preview)) p.push("preview must be an https link on vercel.app");
     if (b.phases === undefined) p.push("missing phases");
     else if (!Array.isArray(b.phases)) p.push("phases must be a list");
     if (b.issue != null && !isIssueNo(b.issue)) p.push("issue must be a positive integer");
@@ -264,11 +307,33 @@
     return p;
   }
 
+  const FLOW_AGENT = ["pass", "fail", "partial", "not-run"];
+  const STEP_AGENT = ["pass", "fail", "owner-only", "not-run"];
+  function validateFlow(d) {
+    const p = [];
+    if (!(Number.isInteger(d.no) && d.no > 0)) p.push("no must be a positive integer");
+    if (!isStr(d.title) || !d.title) p.push("missing title");
+    if (!isStr(d.lane) || !d.lane) p.push("a flow needs its lane");
+    if (d.who != null && !isStr(d.who)) p.push("who must be a string");
+    if (d.where != null && !isStr(d.where)) p.push("where must be a string");
+    if (d.why != null && !isStr(d.why)) p.push("why must be a string");
+    if (d.paths != null && !(Array.isArray(d.paths) && d.paths.every((x) => isStr(x) && /^\/(?!\/)/.test(x)))) p.push("paths must be a list of paths starting with /");
+    if (!Array.isArray(d.steps) || !d.steps.length) p.push("steps must be a non-empty list");
+    else d.steps.forEach((s, i) => {
+      if (!isObj(s) || !isStr(s.do) || !s.do || !isStr(s.expect) || !s.expect) p.push("step " + (i + 1) + " needs do and expect");
+      else if (s.agent != null && !STEP_AGENT.includes(s.agent)) p.push("step " + (i + 1) + " agent must be one of " + STEP_AGENT.join(", "));
+    });
+    if (d.agent != null && !(isObj(d.agent) && FLOW_AGENT.includes(d.agent.result))) p.push("agent.result must be one of " + FLOW_AGENT.join(", "));
+    if (d.answer != null && !FLOW_ANSWERS.includes(d.answer)) p.push("answer must be one of " + FLOW_ANSWERS.join(", "));
+    return p;
+  }
+
   function validateDecision(d) {
+    if (d && isFlow(d)) return validateFlow(d);
     const p = [];
     if (!d || !d.question) p.push("missing question");
     if (!d) return p;
-    if (d.kind !== undefined && d.kind !== "decision" && d.kind !== "check") p.push("kind must be decision or check");
+    if (d.kind !== undefined && d.kind !== "decision" && d.kind !== "check") p.push("kind must be decision, check or flow");
     if (d.options !== undefined && !(Array.isArray(d.options) && d.options.every((o) => typeof o === "string" || (o && typeof o.label === "string")))) p.push("options must be strings or {label} objects");
     if (d.lane !== undefined && d.lane !== null && typeof d.lane !== "string") p.push("lane must be a string or null");
     return p;
@@ -387,5 +452,5 @@
     return h === "github.com" || h === "vercel.app" || h.endsWith(".vercel.app") ? u.href : null;
   }
 
-  globalThis.LaneCore = { deps, noLane, activeDeps, resolveDeps, isLive, stateOf, findCycle, layoutBlockerMap, localDay, hasStepMap, normalizeOptions, laneDecisions, openCount, answerPatch, stepFor, pinsByStep, waitGap, collisionAsOf, collisionStale, validateBrief, validateLane, validateDecision, docId, migrateBrief, labelNames, kindOf, mapBlocks, startCommand, safeLink };
+  globalThis.LaneCore = { deps, noLane, activeDeps, resolveDeps, isLive, stateOf, findCycle, layoutBlockerMap, localDay, hasStepMap, normalizeOptions, laneDecisions, openCount, answerPatch, FLOW_ANSWERS, laneFlows, flowsToWalk, flowAnswerPatch, previewHref, previewFromComments, stepFor, pinsByStep, waitGap, collisionAsOf, collisionStale, validateBrief, validateLane, validateDecision, docId, migrateBrief, labelNames, kindOf, mapBlocks, startCommand, safeLink };
 })();
