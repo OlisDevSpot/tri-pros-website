@@ -1,6 +1,6 @@
 # Heating & cooling equipment that looks like the real thing
 
-**Date:** 2026-11-18 · **Branch:** `feat/trade-scenes-foundation` (`.worktrees/trade-scenes`) · **Method and approved mockups:** the `/scene-realism` skill (`~/.claude/skills/scene-realism/`), examples `hvac-equipment-finish.html`, `duct-runs.html`; the attic round is `.superpowers/brainstorm/342572-1795066305/content/one-unit-two-spots-v2.html` (copied into the skill's `examples/` when this doc is approved).
+**Date:** 2026-11-18, updated 2026-11-25 · **Epic:** #302 (3D trade scenes). Builds on the heating & cooling build, which is on `feat/trade-scenes-foundation` and not yet on `feat/302-trade-scenes`; its lane opens once that build is there. · **Method and approved mockups:** the `/scene-realism` skill (`~/.claude/skills/scene-realism/`), examples `hvac-equipment-finish.html`, `duct-runs.html`; and the attic round `one-unit-two-spots.html`.
 
 ## Why
 
@@ -72,7 +72,7 @@ The owner picked A, open to changing course if it doesn't hold up in the scene.
 These are drawn from placement data in world space, not turned with the unit:
 
 - **Closet:**
-  - The return platform with its grille and the filter behind it (the return grille the build added stays the return).
+  - The return platform the unit stands on, with the filter in it. Its front stays plain (my call). The return grille the build added stays the one return, lowered to line up with the platform. The `return` tag stays on that grille and its duct, and the closet's section lengths shrink by the platform's height (the plenum takes what's left up to the ceiling).
   - The plenum rises through the ceiling into the trunk.
   - A service switch on the wall.
 - **Attic:**
@@ -90,11 +90,16 @@ Each line belongs to the part that needs it and is drawn only when that part is 
 | Primary condensate | coil | Coil drain port → trap at the unit → sloping down → out the wall, ending by the outdoor unit's pad. | White PVC. |
 | Secondary condensate | coil, attic only | Drain pan → out through the eave → ending over a window on that wall (code puts it where the homeowner sees it drip). | White PVC. |
 | Gas | furnace | New gas meter on the left side yard wall, near the front (the condenser and electric meter side) → up the wall → into the attic → across to the unit → tee, capped sediment trap, yellow-handled shutoff, yellow flex connector into the cabinet. A closet unit's gas comes down from the attic. | Black iron. Meter as it looks on a SoCal house. |
-| Flue | furnace | Straight up from the burner compartment → through the roof → storm collar and rain cap above the covering. Offsets with 45° elbows if it has to clear framing or reach a slope that stays put. | Galvanized B-vent with joint collars. |
+| Flue, old furnace (80%) | furnace, Today's | Straight up from the burner compartment → through the roof → storm collar and rain cap above the covering. Offsets with 45° elbows if it has to clear framing or reach a slope that stays put. | Galvanized B-vent with joint collars. |
+| Vent pipes, new furnace (90%) | furnace, a Build's | Two pipes from the burner compartment, one bringing combustion air in and one carrying exhaust out → through the roof → their terminations above the covering. The old metal flue and its cap are gone. | White PVC. |
+| Furnace condensate, new furnace (90%) | furnace, a Build's | The furnace's drain port → its own trap → joins the primary condensate run (or runs beside it where there's no coil). | White PVC. |
 
-- **Furnace only:** gas and flue, no line set, no condensate.
+- **Which furnace:** Tri Pros installs 90% furnaces (owner, 2026-11-25). A furnace whose material is the catalog's `high-efficiency-furnace` (every furnace a Build puts in) draws as a 90% unit. Any other furnace draws as the old 80% unit with the metal flue. Rule this from the furnace part's material, not from Today/Build, so a home that already has a high-efficiency furnace on file draws it right.
+- **Furnace only:** gas and the flue (80%) or the vent pipes plus the furnace condensate (90%), no line set, no coil condensate.
 - **Heat pump:** line set and condensate, no gas, no flue.
-- **Wear:** the gas line and meter take the furnace's wear; the line set takes the outdoor unit's.
+- **Wear:** the gas line takes the furnace's wear, and the line set takes the outdoor unit's.
+- **The gas meter belongs to the house, not the furnace (my call).** It's always drawn, whatever the system, with mild age of its own. A furnace Build never renews it, because the water heater and range still use gas. Only the gas line from the meter to the furnace comes and goes with the furnace.
+- **On a flat roof there's no attic for the closet unit's lines to cross (my call).** The flue or vent pipes go straight up through the roof. The gas runs up the outside wall and across the roof on supports to a penetration over the closet, as on a SoCal flat-roof house. The line set and condensate leave through the closet's wall, as they do today.
 - **Tags (my call; no new pins or copy):**
   - gas line, meter and flue → `furnace`
   - condensate lines, pan and float switch → `coil`
@@ -176,7 +181,8 @@ Each phase ends with the owner looking at it on the iPad before the next starts.
 ## Verification
 
 - `pnpm tsc`, ESLint on touched paths, `pnpm tsx scripts/verify-heating-cooling.ts`, `verify-trade-scene.ts`, `verify-trade-scene-layout.ts`, `verify-trade-scene-lot.ts`. Extend the checks where a rule is mechanical:
-  - every line ends where it belongs (the line set at the outdoor unit's valves, gas at the meter, the flue above the covering, each run over its boot's collar);
+  - every line ends where it belongs (the line set at the outdoor unit's valves, the gas line at the meter, the flue or both vent pipes above the covering, each run over its boot's collar);
   - a furnace-only home draws no line set;
-  - a heat pump home draws no gas or flue.
+  - a heat pump home draws no gas line, flue or vent pipes (the meter stays);
+  - a `high-efficiency-furnace` draws the two vent pipes and its condensate, and never the metal flue; any other furnace draws the reverse.
 - Screenshots through the probe, one case per run, in light and in the thermal view: closet Today and Build, attic Today and Build, condenser in summer, heat pump in winter, Look inside on the indoor unit, and (phase 2) the ducts cut open. Draw counts recorded for each.
