@@ -20,7 +20,7 @@ import { ValueMenu } from '@/features/trade-scenes/ui/components/controls/value-
 interface ExistingChipProps {
   // The material's own slot, or gutters' or air sealing's.
   slot: SceneChangeSlot
-  // Every slot, for the ones that ride with heating & cooling: its equipment and AC size.
+  // Every slot, for the ones that ride with heating & cooling: its indoor unit's location, equipment, AC size and heads.
   slots: readonly SceneChangeSlot[]
   // Null for gutters and air sealing, whose Condition rides on a slot of its own; an absent material has none either.
   material: ResolvedHomeMaterial | null

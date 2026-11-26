@@ -13,9 +13,4 @@ export const NOT_DRAWN: Partial<Record<string, true>> = {
   '2550ca1b-548b-8257-acfd-816f0f96a64a': true, // Sliding door installation (new) — doors are not a window part
   '25b0ca1b-548b-8281-af32-01c2e1b2f080': true, // Sliding door replacement — doors are not a window part
   '7ab0ca1b-548b-8375-b3b4-017bffbdc1e8': true, // Window installation (new) — adds openings, replaces no existing window
-  '3190ca1b-548b-805f-8d87-f51275832424': true, // Kit: mini-split — a ductless system, no air handler or ducts to draw
-  'dcb0ca1b-548b-8303-9f65-01730423e685': true, // Mini-split installation — a ductless system, no air handler or ducts to draw
-  '88d0ca1b-548b-82b2-bb26-017081659f61': true, // Furnace replacement — half a system, standard equipment on standard equipment
-  'e450ca1b-548b-8269-adc7-019776a6acf7': true, // A/C replacement — half a system, standard equipment on standard equipment
-  '8aa0ca1b-548b-82dd-9148-81d0b51076bf': true, // Split system new-cut installation — a first-time install with no existing system to replace
 }

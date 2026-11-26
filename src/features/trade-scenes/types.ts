@@ -3,7 +3,7 @@ import type { FENCE_KIND_IDS } from '@/features/trade-scenes/constants/fence-kin
 import type { GROUND_MATERIAL_IDS } from '@/features/trade-scenes/constants/ground-materials'
 import type { ReadingId } from '@/features/trade-scenes/constants/home-anchors'
 import type { HOME_FADES } from '@/features/trade-scenes/constants/home-fades'
-import type { BUILD_ROW_PART_IDS, HOME_SPOT_IDS, HOME_SYSTEM_IDS } from '@/features/trade-scenes/constants/home-systems'
+import type { BUILD_ROW_PART_IDS, HOME_SPOT_IDS, HOME_SYSTEM_IDS, HVAC_SYSTEM_CHOICES } from '@/features/trade-scenes/constants/home-systems'
 import type { LookDevView, MaterialTreatment } from '@/features/trade-scenes/constants/look-dev-options'
 import type { FULLY_OPEN_SYSTEM_IDS, PULLED_APART_SYSTEM_IDS, STEP_DEPTHS } from '@/features/trade-scenes/constants/look-inside'
 import type { PLANT_SPECIES } from '@/features/trade-scenes/constants/lot-plants'
@@ -15,6 +15,7 @@ import type { PANE_LOOKS } from '@/features/trade-scenes/constants/system-part-l
 import type { SYSTEM_PARTS } from '@/features/trade-scenes/constants/system-parts'
 import type { AREA_GROUP_IDS, GROUND_SYSTEM_IDS, YARD_IDS, YARD_SYSTEM_IDS } from '@/features/trade-scenes/constants/yards'
 import type { OfferBlockedReason, PartOffer } from '@/features/trade-scenes/lib/part-offers'
+import type { PartState } from '@/features/trade-scenes/lib/part-state'
 import type { RibbonStyle } from '@/shared/components/scene/constants/ribbon-styles'
 import type { ThermalSeason, ThermalStyle } from '@/shared/components/scene/constants/thermal-palettes'
 import type { PieceLayout, SceneRenderer } from '@/shared/components/scene/types'
@@ -24,7 +25,7 @@ import type { AssemblyId } from '@/shared/modules/construction/core/constants/as
 import type { BenefitKind } from '@/shared/modules/construction/core/constants/benefit-kinds'
 import type { Climate } from '@/shared/modules/construction/core/constants/climate-presets'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
-import type { CoveringWearKind, FoundationType, HVACType, PaintWearKind, PaintWearLevel, Wear } from '@/shared/modules/construction/core/constants/enums'
+import type { CoveringWearKind, FoundationType, HVACComponent, HvacIndoorLocation, HVACType, PaintWearKind, PaintWearLevel, Wear } from '@/shared/modules/construction/core/constants/enums'
 import type { HomeMaterialId } from '@/shared/modules/construction/core/constants/home-material-ids'
 import type { InstallStyleId } from '@/shared/modules/construction/core/constants/install-styles'
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
@@ -209,6 +210,30 @@ export interface SceneTargets {
 
 // What the home kit reads from the scene inputs: a narrower slice than the whole inputs, so a peel drag never redraws the house.
 export type HomeKitInputs = Pick<TradeSceneInputs, 'property' | 'weather' | 'homeMaterials' | 'homeView'> & { climate: Climate }
+
+// What the heating & cooling on show can run: Today and Build each answer it from their own systems.
+export interface HvacDuties {
+  cools: boolean
+  heats: boolean
+}
+
+// Heating & cooling as the side on show draws it. An idle system stands where it was and runs nothing.
+export interface DrawnHvac {
+  indoor: { location: HvacIndoorLocation, blower: PartState, furnace: PartState | null, coil: PartState | null } | null
+  // Where the indoor unit stood before the build moved it, drawn empty.
+  vacated: HvacIndoorLocation | null
+  outdoor: (PartState & { kind: 'condenser' | 'heat-pump' }) | null
+  lineSet: boolean
+  packageUnit: PartState | null
+  ducts: PartState | null
+  registers: boolean
+  wallUnit: { kind: 'wall-furnace' | 'wall-unit', idle: boolean } | null
+  windowUnit: { idle: boolean } | null
+  miniSplit: { heads: number, idle: boolean, wear: number } | null
+  // What the wall or window unit does while it runs, idle or not; a home has one of them or neither.
+  wallOrWindowDuties: HvacDuties
+  duties: HvacDuties
+}
 
 // Each kind's share of the Worn look, 1 at Moderate.
 export type CoveringShares = Record<CoveringWearKind, number>
@@ -496,6 +521,8 @@ export type SceneResolveSelection = Omit<SceneResolveInputs, 'homeMaterials'> & 
 
 export type HomeSystemId = typeof HOME_SYSTEM_IDS[number]
 
+export type HvacSystemChoice = typeof HVAC_SYSTEM_CHOICES[number]
+
 export interface HomeSystemRow {
   part: BuildRowPartId
   offer: PartOffer
@@ -728,8 +755,8 @@ export type BuildRowPartId = typeof BUILD_ROW_PART_IDS[number]
 
 export type SceneChangeSlotId
   = | 'household' | 'age-group' | 'foundation' | 'roof-form' | 'year-built' | 'climate'
-    | HomeMaterialId | 'gutters' | 'gutter-wear' | 'air-sealing' | 'hvac-components' | 'ac-tons' | `wear:${HomeMaterialId}`
-    | `build:${BuildRowPartId}` | `upgrade:${EfficiencyUpgradeId}` | `style:${InstallStyleId}` | `bill:${SavingsCategory}` | 'replace:fascia'
+    | HomeMaterialId | 'gutters' | 'gutter-wear' | 'air-sealing' | 'hvac-components' | 'hvac-location' | 'ac-tons' | 'mini-split-heads' | `wear:${HomeMaterialId}`
+    | `build:${BuildRowPartId}` | `upgrade:${EfficiencyUpgradeId}` | `style:${InstallStyleId}` | `bill:${SavingsCategory}` | 'replace:fascia' | 'move:indoor-unit'
 
 // What the Benefits window has picked: one dot, a whole system row, or a whole kind column.
 export type BenefitSelection
@@ -776,6 +803,7 @@ export interface HomeSpotContext {
   form: RoofForm
   picks: readonly string[]
   hvacType: HVACType | null
+  hvacComponents: HVACComponent | null
 }
 
 // What a shared system part is lit for in each of its systems.
@@ -808,11 +836,13 @@ export interface SystemPartTagData {
   overFront?: true
 }
 
-// The system up close: the system parts it keeps solid, and the one a tap keeps whole while the rest of it dims.
+// The system up close: the system parts it keeps solid, and the one a tap picks, which with the parts its story is told with
+// stays whole while the rest of the system dims.
 export interface SystemLit {
   system: HomeSystemId
   shown: ReadonlySet<SystemPartId>
   emphasized: SystemPartId | null
+  emphasizedParts: ReadonlySet<SystemPartId>
 }
 
 export type RoofShape = 'gable' | 'hip' | 'flat'
@@ -948,7 +978,7 @@ export interface DrawnGutter {
 }
 
 // The home material facts that only draw: no scope, part, material or figure reads them, so a change never re-resolves the scene.
-export type DrawingOnlyMaterialFact = 'acTons' | 'shingleColor' | 'paintWear' | 'coveringWear' | 'existingPaintColors' | 'proposedPaintColors' | 'windowFrameColor' | 'existingGutterColor' | 'proposedGutterColor'
+export type DrawingOnlyMaterialFact = 'acTons' | 'hvacIndoorLocation' | 'proposedHvacIndoorLocation' | 'miniSplitHeads' | 'proposedMiniSplitHeads' | 'shingleColor' | 'paintWear' | 'coveringWear' | 'existingPaintColors' | 'proposedPaintColors' | 'windowFrameColor' | 'existingGutterColor' | 'proposedGutterColor'
 
 // The two hexes the house's paint draws: the body of the walls and the trim round them.
 export interface PaintHexes {

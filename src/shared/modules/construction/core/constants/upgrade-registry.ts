@@ -1,7 +1,16 @@
 import type { ScopeId } from '@/shared/modules/construction/core/constants/scope-ids'
-import type { UpgradeEntry } from '@/shared/modules/construction/core/types'
+import type { UpgradeBenefit, UpgradeEntry } from '@/shared/modules/construction/core/types'
 
 import { SCOPE_IDS } from '@/shared/modules/construction/core/constants/scope-ids'
+
+// Facts only: no federal credit applies, the state money is spent, and no code requires a heat pump, so none is claimed; its
+// heating earns no bill cut, so no saving is claimed either.
+const HEAT_PUMP_BENEFITS: readonly UpgradeBenefit[] = [
+  { kind: 'looks-and-use', title: 'One outdoor unit heats and cools', detail: 'The same refrigerant loop as air conditioning, run either way, so one unit warms the home in winter and cools it in summer, on electricity.' },
+  { kind: 'protection', title: 'No flame in the house', detail: 'No gas burner, flue or gas line at the indoor unit.' },
+  { kind: 'looks-and-use', title: 'A rate plan for heat pump homes', detail: 'With SCE, a home heated by a heat pump can move to TOU-D-PRIME, the rate plan made for it.' },
+  { kind: 'warranty', title: 'Goodman heat pump', detail: 'The maker\'s warranty, plus the Tri Pros workmanship warranty.' },
+]
 
 // `detail` may hold {material} / {rValue}, filled from the upgrade's installed material by `fillBenefitText`.
 export const UPGRADE_REGISTRY: Record<ScopeId, UpgradeEntry> = {
@@ -120,9 +129,41 @@ export const UPGRADE_REGISTRY: Record<ScopeId, UpgradeEntry> = {
     name: 'Split system replacement',
     benefits: [
       { kind: 'warranty', title: 'Goodman system', detail: 'The maker\'s warranty, plus the Tri Pros workmanship warranty.' },
-      { kind: 'looks-and-use', title: 'Even heating and cooling', detail: 'A new high-efficiency system, quieter in every room, that uses less and lowers the gas and electric bills.' },
+      { kind: 'looks-and-use', title: 'Even heating and cooling', detail: 'A new high-efficiency system, quieter in every room.' },
       { kind: 'lasts-longer', title: 'High-quality materials', detail: 'Built to last, with plenty of parts available, so future repairs cost less.' },
     ],
+  },
+  [SCOPE_IDS.acReplacement]: {
+    name: 'A/C replacement',
+    benefits: [
+      { kind: 'warranty', title: 'Goodman condenser and coil', detail: 'The maker\'s warranty, plus the Tri Pros workmanship warranty.' },
+      { kind: 'looks-and-use', title: 'Steadier, quieter cooling', detail: 'A new condenser and coil, matched to each other, cool the home on less electricity.' },
+      { kind: 'lasts-longer', title: 'High-quality materials', detail: 'Built to last, with plenty of parts available, so future repairs cost less.' },
+    ],
+  },
+  [SCOPE_IDS.furnaceReplacement]: {
+    name: 'Furnace replacement',
+    benefits: [
+      { kind: 'warranty', title: 'Goodman furnace', detail: 'The maker\'s warranty, plus the Tri Pros workmanship warranty.' },
+      { kind: 'looks-and-use', title: 'Even, quiet heat', detail: 'A new furnace and blower heat the home on less gas.' },
+      { kind: 'lasts-longer', title: 'High-quality materials', detail: 'Built to last, with plenty of parts available, so future repairs cost less.' },
+    ],
+  },
+  [SCOPE_IDS.splitSystemNewCut]: {
+    name: 'Split system new-cut installation',
+    benefits: [
+      { kind: 'warranty', title: 'Goodman system', detail: 'The maker\'s warranty, plus the Tri Pros workmanship warranty.' },
+      { kind: 'looks-and-use', title: 'Heating and cooling in every room', detail: 'A whole new system, with its ducts, registers and thermostat, so every room gets heated and cooled air, not only the room with the old unit.' },
+      { kind: 'lasts-longer', title: 'High-quality materials', detail: 'Built to last, with plenty of parts available, so future repairs cost less.' },
+    ],
+  },
+  [SCOPE_IDS.heatPumpReplacement]: {
+    name: 'Heat pump replacement',
+    benefits: HEAT_PUMP_BENEFITS,
+  },
+  [SCOPE_IDS.heatPumpNewCut]: {
+    name: 'Heat pump new-cut installation',
+    benefits: HEAT_PUMP_BENEFITS,
   },
   [SCOPE_IDS.packageUnitReplacement]: {
     name: 'Package unit replacement',
@@ -137,6 +178,22 @@ export const UPGRADE_REGISTRY: Record<ScopeId, UpgradeEntry> = {
     benefits: [
       { kind: 'easier-on-hvac', title: 'Air arrives at the rooms cool', detail: 'New insulated ducts lose less air on the way, so the system runs more efficiently.', onlyWithout: 'r8-ducts' },
       { kind: 'easier-on-hvac', title: 'Air arrives at the rooms cool', detail: 'Having the right size of ducts makes all the difference.', onlyWith: 'r8-ducts' },
+    ],
+  },
+  [SCOPE_IDS.miniSplitInstallation]: {
+    name: 'Mini-split installation',
+    benefits: [
+      { kind: 'warranty', title: 'Mini-split system', detail: 'The maker\'s warranty, plus the Tri Pros workmanship warranty.' },
+      { kind: 'looks-and-use', title: 'Room by room comfort', detail: 'A quiet unit high on the wall in each room, set to its own temperature, with no ducts.' },
+      { kind: 'lasts-longer', title: 'High-quality materials', detail: 'Built to last, with plenty of parts available, so future repairs cost less.' },
+    ],
+  },
+  [SCOPE_IDS.miniSplitKit]: {
+    name: 'Kit: mini-split',
+    benefits: [
+      { kind: 'warranty', title: 'Mini-split system', detail: 'The maker\'s warranty, plus the Tri Pros workmanship warranty.' },
+      { kind: 'looks-and-use', title: 'Room by room comfort', detail: 'A quiet unit high on the wall in each room, set to its own temperature, with no ducts.' },
+      { kind: 'lasts-longer', title: 'High-quality materials', detail: 'Built to last, with plenty of parts available, so future repairs cost less.' },
     ],
   },
   [SCOPE_IDS.crawlSpaceInsulation]: {

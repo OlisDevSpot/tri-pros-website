@@ -88,6 +88,10 @@ export function resolveAssembly(assembly: Assembly, { existing, proposedScopeIds
         if (materialDefinition.forms && (existing.form === null || !materialDefinition.forms.includes(existing.form))) {
           continue
         }
+        // Nothing to take out: the part stays absent rather than reading as one the build added.
+        if (materialDefinition.removes && (existing.parts[part] === undefined || existing.parts[part].condition === 'absent')) {
+          continue
+        }
         installed.set(part, material)
         if (install.addsTo) {
           addedTo.add(part)
@@ -113,14 +117,17 @@ export function resolveAssembly(assembly: Assembly, { existing, proposedScopeIds
     .filter(part => !part.forms || (existing.form !== null && part.forms.includes(existing.form)))
     .map((part) => {
       const installedMaterial = installed.get(part.id)
-      const material = installedMaterial ?? existing.parts[part.id]?.material ?? null
+      // A material that takes the part out leaves no material behind, only its copy.
+      const removalCopy = installedMaterial !== undefined && part.materials[installedMaterial]?.removes ? part.materials[installedMaterial].copy : null
+      const material = removalCopy !== null ? null : installedMaterial ?? existing.parts[part.id]?.material ?? null
       const condition = installedMaterial ? 'installed' : existing.parts[part.id]?.condition ?? 'absent'
       // Only the home's own material can be put back; a tile reset on a shingle roof lays new tile.
       const reused = installedMaterial !== undefined && reusing.has(part.id) && installedMaterial === existing.parts[part.id]?.material
       const wear = installedMaterial && !reused ? undefined : existing.parts[part.id]?.wear
       const definition = material === null ? null : part.materials[material]
       const replacementCopy = woodReplaced.has(part.id) ? definition?.woodReplacementCopy : undefined
-      const copy = replacementCopy ?? baseCopy.get(part.id) ?? copyFor(part, material, condition)
+      const copy = replacementCopy ?? baseCopy.get(part.id) ?? removalCopy ?? copyFor(part, material, condition)
+      const added = installedMaterial !== undefined && (existing.parts[part.id] === undefined || existing.parts[part.id].condition === 'absent')
       const under = installedMaterial && addedTo.has(part.id) ? existing.parts[part.id]?.material ?? null : null
       return {
         id: part.id,
@@ -129,6 +136,8 @@ export function resolveAssembly(assembly: Assembly, { existing, proposedScopeIds
         ...(part.edge ? { edge: true as const } : {}),
         ...(replacementCopy ? { woodReplaced: true as const } : {}),
         ...(reused ? { reused: true as const } : {}),
+        ...(added ? { added: true as const } : {}),
+        ...(removalCopy !== null ? { removed: true as const } : {}),
         material,
         condition,
         ...(wear ? { wear } : {}),

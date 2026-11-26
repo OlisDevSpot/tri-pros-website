@@ -1,14 +1,14 @@
 'use client'
 
 import type { ThreeEvent } from '@react-three/fiber'
-import type { BoxSpec, FurniturePlacement } from '@/features/trade-scenes/types'
+import type { BoxSpec, DrawnHvac, FurniturePlacement } from '@/features/trade-scenes/types'
 import type { SpotHover } from '@/features/trade-scenes/ui/components/home-kit/spot-hover'
 import type { SceneBurst } from '@/shared/components/scene/types'
 
 import { useMemo } from 'react'
 
 import { CONDENSER_LINE_SET } from '@/features/trade-scenes/constants/home-details'
-import { CONDENSER_PLACEMENT } from '@/features/trade-scenes/constants/home-furnishings'
+import { CONDENSER_PLACEMENT, HEAT_PUMP_PLACEMENT } from '@/features/trade-scenes/constants/home-furnishings'
 import { EQUIPMENT, HOUSE } from '@/features/trade-scenes/constants/home-geometry'
 import { CONDENSER_SHIMMER_POSITION } from '@/features/trade-scenes/constants/home-life'
 import { HOME_PALETTE } from '@/features/trade-scenes/constants/home-palette'
@@ -25,8 +25,11 @@ import { MergedBoxes } from '@/features/trade-scenes/ui/components/home-kit/merg
 import { wornColor } from '@/features/trade-scenes/ui/lib/worn-color'
 
 interface CondenserUnitProps {
-  /** 0 when it is not cooling: a winter night's furnace leaves it idle. */
+  kind: NonNullable<DrawnHvac['outdoor']>['kind']
+  /** 0 when it is not running: a winter night's furnace leaves a condenser idle, while a heat pump heats with it. */
   load: number
+  // A heat pump heating draws its warmth out of the outdoor air, so no hot haze rises off it.
+  heating: boolean
   burst: SceneBurst
   wear: number
   /** The AC size's multiplier on the unit, about its base centre; 1 is the unit as modelled. */
@@ -48,22 +51,23 @@ const LINE_SET: BoxSpec[] = [
 ]
 
 const { position: [px, py, pz], rotationY } = CONDENSER_PLACEMENT
+const PLACEMENTS = { 'condenser': CONDENSER_PLACEMENT, 'heat-pump': HEAT_PUMP_PLACEMENT } as const satisfies Record<CondenserUnitProps['kind'], FurniturePlacement>
 
 // The case and grille go the colour of the dust they collect; the fan blades and the trim stay as they are.
-function dustyPlacement(wear: number): FurniturePlacement {
-  const { colors, standIn } = CONDENSER_PLACEMENT
+function dustyPlacement(placement: FurniturePlacement, wear: number): FurniturePlacement {
+  const { colors, standIn } = placement
   const { dust, case: caseShare, grille } = WEAR_LOOKS.condenser
   const dusted = (colour: string, share: number) => wornColor(colour, dust, wear * share)
   return {
-    ...CONDENSER_PLACEMENT,
+    ...placement,
     colors: { ...colors, LightGrey: dusted(colors.LightGrey, caseShare), Grey: dusted(colors.Grey, grille) },
     standIn: { ...standIn, color: dusted(standIn.color, caseShare) },
   }
 }
 
-export function CondenserUnit({ load, burst, wear, scale, onTap, hover }: CondenserUnitProps) {
+export function CondenserUnit({ kind, load, heating, burst, wear, scale, onTap, hover }: CondenserUnitProps) {
   const shake = useStrainShake(load, burst)
-  const placement = useMemo(() => dustyPlacement(wear), [wear])
+  const placement = useMemo(() => dustyPlacement(PLACEMENTS[kind], wear), [kind, wear])
   return (
     <group onClick={onTap} {...hover}>
       <group userData={thermalTag('exterior')}>
@@ -88,7 +92,7 @@ export function CondenserUnit({ load, burst, wear, scale, onTap, hover }: Conden
       </group>
       {/* Additive haze dimmed by its own colour: painted solid it would hang over the unit as a hot square. */}
       <group userData={thermalTag(OWN_PAINT)}>
-        <HeatShimmer position={CONDENSER_SHIMMER_POSITION} load={load} burst={burst} />
+        <HeatShimmer position={CONDENSER_SHIMMER_POSITION} load={heating ? 0 : load} burst={burst} />
       </group>
     </group>
   )

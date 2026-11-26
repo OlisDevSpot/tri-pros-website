@@ -11,7 +11,6 @@ import { CLIMATE_FALLBACK } from '@/features/trade-scenes/constants/climate-bill
 import { INSIDE_READING_IDS, READING_CALLOUTS } from '@/features/trade-scenes/constants/home-anchors'
 import { HOME_CAMERA_FAR } from '@/features/trade-scenes/constants/home-geometry'
 import { READING_COPY, SCENE_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
-import { HOME_PRIMARY_ASSEMBLY } from '@/features/trade-scenes/constants/scene-controls'
 import { useControlsOpen } from '@/features/trade-scenes/contexts/scene-controls-context'
 import { useSceneLoad, useSceneLoadApi } from '@/features/trade-scenes/contexts/scene-load-context'
 import { TextureStoreProvider } from '@/features/trade-scenes/contexts/texture-store-context'
@@ -19,12 +18,12 @@ import { useSceneTapAway } from '@/features/trade-scenes/hooks/use-scene-tap-awa
 import { useSceneTapClaim } from '@/features/trade-scenes/hooks/use-scene-tap-claim'
 import { useSceneTargets } from '@/features/trade-scenes/hooks/use-scene-targets'
 import { advanceSceneLoad } from '@/features/trade-scenes/lib/create-scene-load'
-import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
 import { houseOpen } from '@/features/trade-scenes/lib/house-open'
 import { isCutawaySystem } from '@/features/trade-scenes/lib/is-cutaway-system'
 import { listedRows } from '@/features/trade-scenes/lib/listed-rows'
 import { readingFromPinId } from '@/features/trade-scenes/lib/reading-pin-id'
 import { sceneBurstKey } from '@/features/trade-scenes/lib/scene-burst-key'
+import { sceneRoofForm } from '@/features/trade-scenes/lib/scene-roof-form'
 import { spotFromPinId } from '@/features/trade-scenes/lib/spot-pin-id'
 import { systemLit } from '@/features/trade-scenes/lib/system-lit'
 import { systemPartRows } from '@/features/trade-scenes/lib/system-parts-shown'
@@ -80,7 +79,7 @@ export function HomeSceneCanvas() {
   const wake = () => setTouches(count => count + 1)
   const burstKey = `${inputKey}|${touches}|${live}`
 
-  const form = homeRoofForm(targets.assemblies[HOME_PRIMARY_ASSEMBLY]?.form)
+  const form = sceneRoofForm(targets)
   // Looking inside always has a system picked.
   const system = lookInside ? pickedSystem : null
   const rows = useMemo(() => system === null ? [] : systemPartRows(system, targets), [system, targets])

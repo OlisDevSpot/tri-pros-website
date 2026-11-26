@@ -106,7 +106,7 @@ const livingSpaceFacePart = {
   'roof-attic': 'ceiling',
   'crawl-space': 'subfloor',
   'exterior-wall': 'drywall',
-  'hvac-attic': 'air-handler',
+  'hvac-attic': 'registers',
   'windows': 'glazing',
 } as const
 for (const [id, partId] of Object.entries(livingSpaceFacePart)) {

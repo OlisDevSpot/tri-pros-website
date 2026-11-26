@@ -1,8 +1,8 @@
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
 
-import { SCOPE_IDS } from '@/shared/modules/construction/core/constants/scope-ids'
+import { offersEfficiencyUpgrade } from '@/features/trade-scenes/lib/scope-chip-options'
 
-// R-8 only steps up a ducts pick, so it goes with the pick and a later one starts at R-6; the cool roof and Cool Life paint are defaults and stay.
+// R-8 only steps up the ducts a pick lays, so it stays while any pick lays them and a later one starts at R-6; the cool roof and Cool Life paint are defaults and stay.
 export function keepEfficiencyUpgrades(upgrades: readonly EfficiencyUpgradeId[], picks: readonly string[]): EfficiencyUpgradeId[] {
-  return picks.includes(SCOPE_IDS.airDuctsReplacement) ? [...upgrades] : upgrades.filter(upgrade => upgrade !== 'r8-ducts')
+  return offersEfficiencyUpgrade(picks, 'r8-ducts') ? [...upgrades] : upgrades.filter(upgrade => upgrade !== 'r8-ducts')
 }

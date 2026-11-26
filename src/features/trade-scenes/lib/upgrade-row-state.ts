@@ -31,8 +31,6 @@ export function upgradeRowBlockedLine(row: HomeSystemRow, facts: HomeFacts, pick
       return null
     case 'base-included':
       return { included: true, text: baseIncludedLabel(row.offer.assemblyId, picks, existingParts(row.offer.assemblyId, facts)) }
-    case 'no-offer-for-unit':
-      return { included: false, text: SCOPES_AND_ADDONS_COPY.unitBlocked[facts.property.hvacType === 'portable' ? 'portable' : 'wall-mounted'] }
     default:
       return { included: false, text: SCOPES_AND_ADDONS_COPY.blocked[row.blocked] }
   }

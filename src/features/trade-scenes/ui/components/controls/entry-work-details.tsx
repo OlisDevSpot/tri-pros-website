@@ -3,6 +3,7 @@
 import type { WorkDetailsKind } from '@/features/trade-scenes/lib/work-details-kind'
 import type { SceneChangeSlot } from '@/features/trade-scenes/types'
 
+import { DETAILS_SWITCH } from '@/features/trade-scenes/constants/work-details-switches'
 import { WorkDetails } from '@/features/trade-scenes/ui/components/controls/work-details'
 
 interface EntryWorkDetailsProps {
@@ -10,9 +11,9 @@ interface EntryWorkDetailsProps {
   slots: readonly SceneChangeSlot[]
 }
 
-// A picked piece of work's details, with the efficiency switch its work takes found among the slots: the same on the system
-// card and in a spot chip's quick edit.
+// A picked piece of work's details, with the switch its work takes found among the slots: the same on the system card and in
+// a spot chip's quick edit.
 export function EntryWorkDetails({ kind, slots }: EntryWorkDetailsProps) {
-  const upgradeId = kind === 'paint' ? 'upgrade:cool-paint' : 'upgrade:cool-roof'
-  return <WorkDetails kind={kind} upgrade={kind === 'vinyl-frame' || kind === 'gutter' ? null : slots.find(slot => slot.id === upgradeId) ?? null} />
+  const id = DETAILS_SWITCH[kind]
+  return <WorkDetails kind={kind} upgrade={id === null ? null : slots.find(slot => slot.id === id) ?? null} />
 }

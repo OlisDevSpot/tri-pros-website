@@ -31,11 +31,16 @@ export type RoofType = (typeof roofTypes)[number]
 export const roofLocations = ['main home', 'garage', 'adu'] as const
 export type RoofLocation = (typeof roofLocations)[number]
 
-export const hvacTypes = ['central', 'wall-mounted', 'portable', 'package-unit'] as const
+export const hvacTypes = ['central', 'wall-mounted', 'portable', 'package-unit', 'mini-split'] as const
 export type HVACType = (typeof hvacTypes)[number]
+
+export const hvacIndoorLocations = ['attic', 'closet', 'garage'] as const
+export type HvacIndoorLocation = (typeof hvacIndoorLocations)[number]
 
 export const hvacComponents = ['furnace', 'ac', 'both'] as const
 export type HVACComponent = (typeof hvacComponents)[number]
+export const centralHvacComponents = ['furnace', 'both'] as const satisfies readonly HVACComponent[]
+export type CentralHvacComponent = (typeof centralHvacComponents)[number]
 
 export const windowsTypes = ['single', 'double'] as const
 export type WindowsType = (typeof windowsTypes)[number]
@@ -78,3 +83,6 @@ export type CrawlInsulation = (typeof crawlInsulations)[number]
 // Strings, because the field primitives take `T extends string`.
 export const acTonnages = ['3', '4', '5'] as const
 export type AcTons = (typeof acTonnages)[number]
+
+export const miniSplitHeadCounts = ['1', '2', '3'] as const
+export type MiniSplitHeadCount = (typeof miniSplitHeadCounts)[number]

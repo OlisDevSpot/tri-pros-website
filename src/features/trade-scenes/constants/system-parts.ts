@@ -40,14 +40,24 @@ export const SYSTEM_PARTS = [
   { id: 'screen', assembly: 'windows', part: 'glazing', systems: ['windows'], drawnFor: newDoublePane },
   { id: 'glazing', assembly: 'windows', part: 'glazing', systems: ['windows'], listed: false },
 
-  { id: 'duct-runs', assembly: 'hvac-attic', part: 'duct-runs', systems: ['heating-cooling'] },
-  { id: 'air-handler', assembly: 'hvac-attic', part: 'air-handler', systems: ['heating-cooling'] },
-  { id: 'refrigerant-lines', assembly: 'hvac-attic', part: 'refrigerant-lines', systems: ['heating-cooling'] },
-  { id: 'condenser', assembly: 'hvac-attic', part: 'condenser', systems: ['heating-cooling'] },
+  // Heating & cooling lists in the order a rep walks a customer through it, not inside out.
+  // The walk starts where the air comes in.
+  { id: 'return', assembly: 'hvac-attic', part: 'return', systems: ['heating-cooling'] },
   { id: 'package-unit', assembly: 'hvac-attic', part: 'package-unit', systems: ['heating-cooling'] },
+  { id: 'blower', assembly: 'hvac-attic', part: 'blower', systems: ['heating-cooling'] },
+  { id: 'furnace', assembly: 'hvac-attic', part: 'furnace', systems: ['heating-cooling'] },
+  { id: 'coil', assembly: 'hvac-attic', part: 'coil', systems: ['heating-cooling'] },
+  { id: 'plenum', assembly: 'hvac-attic', part: 'plenum', systems: ['heating-cooling'] },
+  { id: 'duct-runs', assembly: 'hvac-attic', part: 'duct-runs', systems: ['heating-cooling'] },
   { id: 'jacket', assembly: 'hvac-attic', part: 'duct-runs', systems: ['heating-cooling'] },
   { id: 'blanket', assembly: 'hvac-attic', part: 'duct-runs', systems: ['heating-cooling'] },
   { id: 'core', assembly: 'hvac-attic', part: 'duct-runs', systems: ['heating-cooling'] },
+  { id: 'registers', assembly: 'hvac-attic', part: 'registers', systems: ['heating-cooling'] },
+  { id: 'thermostat', assembly: 'hvac-attic', part: 'thermostat', systems: ['heating-cooling'] },
+  { id: 'refrigerant-lines', assembly: 'hvac-attic', part: 'refrigerant-lines', systems: ['heating-cooling'] },
+  { id: 'condenser', assembly: 'hvac-attic', part: 'condenser', systems: ['heating-cooling'] },
+  { id: 'mini-split-heads', assembly: 'hvac-attic', part: 'mini-split-heads', systems: ['heating-cooling'] },
+  { id: 'mini-split-outdoor', assembly: 'hvac-attic', part: 'mini-split-outdoor', systems: ['heating-cooling'] },
 
   // The wall's construction parts stay whole entries, so the wall's lanes still see them, but the card lists only what the
   // house draws of the wall: its stucco or siding, its eaves and trim, and its paint.

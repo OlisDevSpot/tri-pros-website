@@ -1,11 +1,12 @@
 import type { YearBuiltRange } from '@/shared/constants/enums/customers'
 import type { AssemblyId } from '@/shared/modules/construction/core/constants/assembly-ids'
 import type { WrittenBenefitKind } from '@/shared/modules/construction/core/constants/benefit-kinds'
+import type { BillCategory } from '@/shared/modules/construction/core/constants/bill-categories'
 import type { BillCutAddOnId } from '@/shared/modules/construction/core/constants/bill-cut-add-ons'
 import type { CoolLifeColorId, CoolLifeFamilyId, PaintComboId } from '@/shared/modules/construction/core/constants/cool-life-colors'
 import type { CutMode } from '@/shared/modules/construction/core/constants/cut-modes'
 import type { EfficiencyUpgradeId } from '@/shared/modules/construction/core/constants/efficiency-upgrades'
-import type { AcTons, AirSealingOption, CoveringWearKind, CrawlInsulation, DuctMaterial, ExteriorPaint, FoundationType, GutterOption, HVACComponent, HVACType, InsulationLevel, PaintWearKind, PaintWearLevel, RoofType, Wear, WindowsType } from '@/shared/modules/construction/core/constants/enums'
+import type { AcTons, AirSealingOption, CoveringWearKind, CrawlInsulation, DuctMaterial, ExteriorPaint, FoundationType, GutterOption, HVACComponent, HvacIndoorLocation, HVACType, InsulationLevel, MiniSplitHeadCount, PaintWearKind, PaintWearLevel, RoofType, Wear, WindowsType } from '@/shared/modules/construction/core/constants/enums'
 import type { GutterColorId } from '@/shared/modules/construction/core/constants/gutter-colors'
 import type { HomeMaterialId } from '@/shared/modules/construction/core/constants/home-material-ids'
 import type { InstallStyleId } from '@/shared/modules/construction/core/constants/install-styles'
@@ -67,10 +68,14 @@ interface PartMaterialFields {
   water?: { demand?: number, passThrough?: number }
   // Higher saves more energy; a material without one never saves.
   energyRank?: number
+  // The bills this material runs on: where an installed material's base cut lands, and the bill the home pays that side on when it is today's. Absent means every bill its trade cuts.
+  bills?: readonly BillCategory[]
   // Installing this material also installs `with` on `part` when that part currently holds one of `replaces`.
   needsBase?: { part: string, replaces: readonly string[], with: string, copy: PartCopy }
   // What the part says once a scope takes the old roof off to it and the build keeps it, with its bad sections replaced.
   woodReplacementCopy?: PartCopy
+  // Installing it takes the part out: the build leaves nothing there, and the copy says what came out.
+  removes?: true
 }
 
 // A saving install earns its trade's base cut, or `cut`, an add-on of its scope's trade, in its place. A step up earns both, each
@@ -89,6 +94,8 @@ export interface PartDefinition {
   absentCopy?: PartCopy
   // Collects shed water at the roof's edge instead of sitting in the rain path.
   edge?: true
+  // A new one where the home had none brings comfort it never had, which can only raise a bill, so it earns no cut.
+  noCutWhereNone?: true
 }
 
 export interface Assembly {
@@ -132,12 +139,20 @@ export interface ResolvedPart {
   water: { demand?: number, passThrough?: number } | null
   // What the installed material is laid over, when its install adds to the part instead of replacing it.
   over?: string
+  // Installed where today has none.
+  added?: true
+  // Taken out by the build: no material, yet work the build does.
+  removed?: true
 }
 
 export interface ScopeInstall {
   assembly: AssemblyId
   // The catalog owns a scope's trade; it is copied here because the core cannot read the catalog, and the scope check holds the two equal.
   trade: TradeSlug
+  // The part the scope is sold on when that is not the first install's; core says nothing of build rows, the scene files the offer under it.
+  filedUnder?: string
+  // A replacement needs what it replaces, and a first install needs the home to have none.
+  onlyWhere?: { has?: readonly string[], lacks?: readonly string[] }
   // Parts the scope bares and keeps, replacing their rotted wood on the way.
   replacesWood?: readonly string[]
   installs: readonly {
@@ -262,6 +277,10 @@ export interface HomeMaterialFacts {
   ducts: DuctMaterial | null
   crawlInsulation: CrawlInsulation | null
   acTons: AcTons | null
+  hvacIndoorLocation: HvacIndoorLocation | null
+  proposedHvacIndoorLocation: HvacIndoorLocation | null
+  miniSplitHeads: MiniSplitHeadCount | null
+  proposedMiniSplitHeads: MiniSplitHeadCount | null
   shingleColor: ShingleColorId | null
   paintWear: Partial<Record<PaintWearKind, PaintWearLevel>>
   coveringWear: Partial<Record<CoveringWearKind, PaintWearLevel>>

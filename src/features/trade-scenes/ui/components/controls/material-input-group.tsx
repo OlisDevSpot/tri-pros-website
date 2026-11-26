@@ -28,8 +28,10 @@ export function MaterialInputGroup({ id, slot, slots, material }: MaterialInputG
   const applyChange = useApplySceneChange()
   const rated = ratedMaterial(material)
   switch (id) {
+    case 'hvac-location':
     case 'hvac-components':
-    case 'ac-tons': {
+    case 'ac-tons':
+    case 'mini-split-heads': {
       const riders = ridingSlot(slots, id)
       return riders && (
         <ChoicePill

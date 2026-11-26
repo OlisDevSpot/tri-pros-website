@@ -13,6 +13,7 @@
  *
  * Usage: import `painPoints` (nested by category) or `allPainPoints` (flat array)
  */
+import { formatRowClaim, tradeCutPercent } from '@/shared/modules/construction/core/lib/bill-cut-claims'
 
 export const programAccessors = [
   'energy-saver',
@@ -996,7 +997,7 @@ export const painPoints = {
         'Have you noticed higher bills without any change in how you use it?',
       ],
       outcomeStatement:
-        'A modern high-SEER heat pump or split system is dramatically more efficient than a system from 10 years ago — often 40–60% more efficient at the same comfort level. You\'ll notice the difference in both comfort and your bill immediately. And with federal IRA credits, a portion of the cost comes back as a tax credit.',
+        `A new high-efficiency system uses far less than one from 15 or 20 years ago. Our estimate from customer bills is ${formatRowClaim(tradeCutPercent('hvac', 'electric'))} off the electric bill and ${tradeCutPercent('hvac', 'gas')}% off gas, and the comfort difference shows right away.`,
       lossFrame:
         'An aging HVAC system is a mechanical time bomb with no off switch. Every repair buys you months, not years. And every month it runs at 60% efficiency is money out of your pocket for comfort you\'re not fully getting. A system failure on the hottest day of August in Southern California is not a comfortable situation.',
       closeTrigger:

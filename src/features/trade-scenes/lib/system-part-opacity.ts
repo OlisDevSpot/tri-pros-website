@@ -12,5 +12,5 @@ export function systemPartOpacity(tag: SystemPartTagData, completeOnly: boolean,
   if (part === undefined || !lit.shown.has(part) || (completeOnly && tag.overFront !== true && lit.system !== 'walls')) {
     return ghost
   }
-  return lit.emphasized !== null && lit.emphasized !== part ? LOOK_INSIDE.dimmedOpacity : 1
+  return lit.emphasized !== null && !lit.emphasizedParts.has(part) ? LOOK_INSIDE.dimmedOpacity : 1
 }

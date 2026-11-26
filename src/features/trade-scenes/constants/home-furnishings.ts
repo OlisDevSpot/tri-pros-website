@@ -83,6 +83,14 @@ export const CONDENSER_PLACEMENT: FurniturePlacement = {
   standIn: { size: [0.5, 0.55, 1.0], color: '#d9d6cf' },
 }
 
+// The heat pump's outdoor unit is the condenser's cabinet in a cooler blue-grey case, so the rep tells Today's condenser from
+// the build's heat pump at a glance. Working colours, set by screenshot.
+export const HEAT_PUMP_PLACEMENT: FurniturePlacement = {
+  ...CONDENSER_PLACEMENT,
+  colors: { ...CONDENSER_PLACEMENT.colors, LightGrey: '#c2ccd6', Grey: '#87939f' },
+  standIn: { ...CONDENSER_PLACEMENT.standIn, color: '#c2ccd6' },
+}
+
 function legs(centre: readonly [number, number, number], spread: readonly [number, number], height: number): BoxSpec[] {
   const [x, , z] = centre
   return [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([sx, sz]) => ({

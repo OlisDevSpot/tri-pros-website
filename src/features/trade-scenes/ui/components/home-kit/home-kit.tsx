@@ -24,6 +24,7 @@ import { WEATHER_SKIES } from '@/features/trade-scenes/constants/weather-skies'
 import { LookInsideFadeContext } from '@/features/trade-scenes/contexts/look-inside-fade-context'
 import { useLotSlot } from '@/features/trade-scenes/contexts/lot-slot-context'
 import { useSceneCursorHover } from '@/features/trade-scenes/contexts/scene-cursor-hover-context'
+import { useDrawnHvac } from '@/features/trade-scenes/hooks/use-drawn-hvac'
 import { useEmphasizePart } from '@/features/trade-scenes/hooks/use-emphasize-part'
 import { useSceneScan } from '@/features/trade-scenes/hooks/use-scene-scan'
 import { useSceneTapClaim } from '@/features/trade-scenes/hooks/use-scene-tap-claim'
@@ -31,15 +32,16 @@ import { atticInsulationTop } from '@/features/trade-scenes/lib/attic-insulation
 import { ceilingOpenings } from '@/features/trade-scenes/lib/ceiling-openings'
 import { coveringWearInForce } from '@/features/trade-scenes/lib/covering-wear-in-force'
 import { openedDuctRun } from '@/features/trade-scenes/lib/duct-run-points'
+import { emphasizedParts } from '@/features/trade-scenes/lib/emphasized-parts'
 import { gutterHex } from '@/features/trade-scenes/lib/gutter-hex'
 import { gutterWallStains } from '@/features/trade-scenes/lib/gutter-marks'
 import { gutterOutlets, gutterWetSpans } from '@/features/trade-scenes/lib/gutter-water'
-import { hasOutdoorUnit } from '@/features/trade-scenes/lib/has-outdoor-unit'
 import { homeFadeNeeded } from '@/features/trade-scenes/lib/home-fade-needed'
 import { homeFloorY } from '@/features/trade-scenes/lib/home-floor-y'
 import { homeHeatLanes } from '@/features/trade-scenes/lib/home-heat-lanes'
 import { homePaintTemperatures } from '@/features/trade-scenes/lib/home-paint-temperatures'
 import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
+import { hvacRunning, runningZone } from '@/features/trade-scenes/lib/hvac-running'
 import { indoorSide } from '@/features/trade-scenes/lib/indoor-side'
 import { installedShingleTone } from '@/features/trade-scenes/lib/installed-shingle-tone'
 import { isCutawayFaceSystem, isCutawaySystem } from '@/features/trade-scenes/lib/is-cutaway-system'
@@ -66,6 +68,7 @@ import { HomeThermalPaint } from '@/features/trade-scenes/ui/components/home-kit
 import { HouseRoof } from '@/features/trade-scenes/ui/components/home-kit/house-roof'
 import { HouseShell } from '@/features/trade-scenes/ui/components/home-kit/house-shell'
 import { Lot } from '@/features/trade-scenes/ui/components/home-kit/lot'
+import { MiniSplitOutdoor } from '@/features/trade-scenes/ui/components/home-kit/mini-split-outdoor'
 import { PartAnchorsLayer } from '@/features/trade-scenes/ui/components/home-kit/part-anchors-layer'
 import { ReadingLabels } from '@/features/trade-scenes/ui/components/home-kit/reading-labels'
 import { Residents } from '@/features/trade-scenes/ui/components/home-kit/residents'
@@ -160,7 +163,7 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
   const [heldFrom, setHeldFrom] = useState(lit)
   if (heldFrom !== lit) {
     setHeldFrom(lit)
-    setHeld(lit ?? (held === null ? null : { ...held, emphasized: null }))
+    setHeld(lit ?? (held === null ? null : { ...held, emphasized: null, emphasizedParts: emphasizedParts(null) }))
   }
   const cutawaySystem = held !== null && isCutawaySystem(held.system) ? held.system : null
   const faceSystem = held !== null && isCutawayFaceSystem(held.system) ? held.system : null
@@ -300,8 +303,6 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
   const stucco = isStuccoFinish(partState(wallParts, 'finish').material)
   const fasciaBoards = fasciaBoardsColor(targets.fasciaReplaced, repainted, paint.trim)
   const garageRoofTone = coveringTone(covering, roofForm === 'low-slope' ? 'membrane' : 'shingle', coveringPart.wear, installedShingleTone(parts, homeMaterials.shingleColor))
-  // The resolver leaves the attic's ducts out for a home whose system has none.
-  const ducted = targets.assemblies['hvac-attic'] !== undefined
   const hvacParts = targets.assemblies['hvac-attic']?.parts ?? NO_PARTS
   const floorInsulation = partState(targets.assemblies['crawl-space']?.parts ?? NO_PARTS, 'floor-insulation')
   const gutterColour = gutterHex(homeMaterials, parts.find(part => part.id === 'gutter')?.condition === 'installed')
@@ -317,12 +318,15 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
   const sealing = parts.find(part => part.id === 'air-sealing')
   const airSealed = sealing !== undefined && sealing.material !== null
   const dusty = sealing !== undefined && !airSealed
+  const hvac = useDrawnHvac()
+  const ducted = hvac.ducts !== null
   const leaks = useMemo(() => airSealed ? [] : ceilingOpenings(ducted), [airSealed, ducted])
   const openHeatLanes = useMemo(() => heat !== null && season !== null ? homeHeatLanes(roofForm, heat, season, 'partly-open', covering, leaks) : [], [roofForm, heat, season, covering, leaks])
   const completeHeatLanes = useMemo(() => heat !== null && season !== null ? homeHeatLanes(roofForm, heat, season, 'complete', covering, leaks) : [], [roofForm, heat, season, covering, leaks])
-  const side = indoorSide(weather, property.hvacType, property.hvacComponents)
-  // The condenser cools; on a winter night the furnace or the unit's heater carries the load instead.
-  const coolingLoad = side === 'cooling' ? targets.equipmentLoad : 0
+  const side = indoorSide(weather, hvac.duties)
+  const running = useMemo(() => hvacRunning(hvac, weather), [hvac, weather])
+  // The outdoor unit carries the load only while its season runs it: a condenser in summer, a heat pump in either.
+  const outdoorLoad = running.has('outdoor') ? targets.equipmentLoad : 0
   const partPaint = useMemo(() => held !== null && heat !== null ? partPaintTemperatures(held.shown, heat) : NO_PART_PAINT, [held, heat])
   const ductRuns = useMemo(() => partState(hvacParts, 'duct-runs'), [hvacParts])
   const ductRun = useMemo(() => openedDuctRun(ductRuns, roofForm), [ductRuns, roofForm])
@@ -401,11 +405,12 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
       {/* On the ground whatever the foundation, ghosted with the house. */}
       <group ref={groundLevel} onClick={partTap} userData={HOME_GHOST_TAG}>
         <SpotPinsLayer rides="ground" />
-        {hasOutdoorUnit(property.hvacType, property.hvacComponents) && (
-          <group userData={thermalTag(side ?? 'interior')}>
-            <CondenserUnit load={coolingLoad} burst={burst} wear={partState(hvacParts, 'condenser').wear} scale={acScale} onTap={spotTap('equipment', 'ground')} hover={hover} />
+        {hvac.outdoor !== null && (
+          <group userData={thermalTag(runningZone(running.has('outdoor'), side, 'interior'))}>
+            <CondenserUnit kind={hvac.outdoor.kind} load={outdoorLoad} heating={side === 'heating'} burst={burst} wear={hvac.outdoor.wear} scale={acScale} onTap={spotTap('equipment', 'ground')} hover={hover} />
           </group>
         )}
+        {hvac.miniSplit !== null && <MiniSplitOutdoor running={running.has('mini-split')} wear={hvac.miniSplit.wear} onTap={spotTap('equipment', 'ground')} hover={hover} />}
         {gutterWear !== null && <DownspoutFeet form={roofForm} gutter={{ wear: gutterWear, hex: gutterColour }} />}
         {raining && (
           <group userData={thermalTag(OWN_PAINT)}>
@@ -454,19 +459,16 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
           )}
           <group onClick={packageUnitTap} {...packageUnitHover}>
             <HomeEquipment
-              hvacType={property.hvacType}
-              hvacComponents={property.hvacComponents}
+              hvac={hvac}
+              side={side}
+              running={running}
               lowSlope={lowSlope}
-              weather={weather}
               load={targets.equipmentLoad}
               meterSpeed={targets.meterSpeed}
               setpoint={setpoint}
               burst={burst}
               ducts={ducts}
-              ductRuns={ductRuns}
-              packageUnit={partState(hvacParts, 'package-unit')}
               acScale={acScale}
-              ducted={ducted}
               lit={held}
             />
           </group>
@@ -486,7 +488,7 @@ export function HomeKit({ targets, inputs, burstKey, lit, open, thermal, onSpotT
             )}
           </group>
         </group>
-        <PartAnchorsLayer form={form} lit={lit} ductRun={ductRun} />
+        <PartAnchorsLayer form={form} lit={lit} ductRun={ductRun} location={hvac.indoor?.location ?? 'attic'} />
         <SpotPinsLayer rides="lift" />
         {/* Up close on the roof or the attic the readings pin on the steps instead, with the flows. */}
         {thermal && targets.heat !== null && cutawaySystem === null && <ReadingLabels form={form} />}

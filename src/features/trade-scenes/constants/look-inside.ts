@@ -49,6 +49,9 @@ export const WINDOW_SPREAD = { step: 0.08 } as const
 // stay whole where they stand.
 export const UNSTEPPED_SYSTEM_PARTS = ['ridge-vent', 'attic-fan', 'radiant-barrier', 'ceiling-joists'] as const satisfies readonly SystemPartId[]
 
+// A part whose story needs others lit with it: the coil cools only with the line set carrying its heat to the condenser.
+export const PAIRED_EMPHASIS = { coil: ['refrigerant-lines', 'condenser'] } as const satisfies Partial<Record<SystemPartId, readonly SystemPartId[]>>
+
 // The window the windows view frames, which comes apart into its system parts up close: the front window right of the door,
 // seen from the front yard, where the side yard's fence never stands in the way.
 export const LOOK_INSIDE_WINDOW = { wall: FRONT_WALL, opening: FRONT_WALL.openings[1] } as const

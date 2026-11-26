@@ -10,6 +10,7 @@ import { AC_SCALE } from '@/features/trade-scenes/constants/home-equipment-sizes
 import { HOME_ORBIT, HOME_PAN } from '@/features/trade-scenes/constants/home-geometry'
 import { lookInsideView, partLookInsideView, SYSTEM_CAMERA_VIEWS } from '@/features/trade-scenes/constants/system-camera-views'
 import { useSceneVisibleArea } from '@/features/trade-scenes/contexts/scene-visible-area-context'
+import { useDrawnHvac } from '@/features/trade-scenes/hooks/use-drawn-hvac'
 import { useSceneTargets } from '@/features/trade-scenes/hooks/use-scene-targets'
 import { openedDuctRun } from '@/features/trade-scenes/lib/duct-run-points'
 import { framingTowardPart, partOffset } from '@/features/trade-scenes/lib/framing-toward-part'
@@ -18,6 +19,7 @@ import { homeLift } from '@/features/trade-scenes/lib/home-lift'
 import { homePanBox } from '@/features/trade-scenes/lib/home-pan-box'
 import { homeRoofForm } from '@/features/trade-scenes/lib/home-roof-form'
 import { houseOpen } from '@/features/trade-scenes/lib/house-open'
+import { hvacFocusOf } from '@/features/trade-scenes/lib/hvac-focus-of'
 import { leanPoint } from '@/features/trade-scenes/lib/lean-point'
 import { liftedFraming } from '@/features/trade-scenes/lib/lifted-framing'
 import { openPeel } from '@/features/trade-scenes/lib/open-peel'
@@ -58,10 +60,11 @@ export function HomeCameraRig({ lit }: HomeCameraRigProps) {
   // sits and a resolve that keeps the form never re-renders the rig.
   const form = useSceneInputs((state: TradeSceneInputs) => homeRoofForm(roofFormOf(state.property.roofType)))
   const lift = homeLift(foundationType)
-  // Heating & cooling finds a package unit on the roof, where it stands by its size.
-  const hvacType = useSceneInputs((state: TradeSceneInputs) => state.property.hvacType)
+  // Heating & cooling looks at the system the side on show draws doing the home's work, and finds a package unit on the roof
+  // where it stands by its size.
+  const drawnHvac = useDrawnHvac()
   const acTons = useSceneInputs((state: TradeSceneInputs) => state.homeMaterials.acTons)
-  const hvac = { type: hvacType, scale: acTons === null ? 1 : AC_SCALE[acTons] }
+  const hvac = { focus: hvacFocusOf(drawnHvac), scale: acTons === null ? 1 : AC_SCALE[acTons] }
   // Only where the open front shows the crawl does the foundation look into it: a slab home or a closed house has none.
   const looksUnderFloor = cameraFocus === 'foundation' && partlyOpen && foundationType === 'raised'
   // Up close comes straight in along the system's own view, and leans toward a part the rep emphasises.
@@ -93,7 +96,7 @@ export function HomeCameraRig({ lit }: HomeCameraRigProps) {
   const peel = useSceneInputs((state: TradeSceneInputs) => lit !== null && emphasized !== null ? openPeel(lit.system, state.peel) : 0)
   const targets = useSceneTargets()
   const point = lit !== null && emphasized !== null
-    ? leanPoint(lit.system, form, emphasized, peel, lit.shown, openedDuctRun(partState(targets.assemblies['hvac-attic']?.parts ?? [], 'duct-runs'), form))
+    ? leanPoint(lit.system, form, emphasized, peel, lit.shown, openedDuctRun(partState(targets.assemblies['hvac-attic']?.parts ?? [], 'duct-runs'), form), drawnHvac.indoor?.location)
     : null
   // A part off the system's own run has a look of its own instead of the lean.
   const partFraming = lit !== null && emphasized !== null ? partLookInsideView(lit.system, emphasized, form, shape, lift, hvac) : null

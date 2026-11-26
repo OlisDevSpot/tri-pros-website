@@ -6,6 +6,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useId } from 'react'
 
 import { PART_COPY } from '@/features/trade-scenes/constants/home-scene-copy'
+import { partRowWord } from '@/features/trade-scenes/lib/part-row-word'
 import { SCENE_MOTION } from '@/shared/components/scene/constants/scene-motion'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
@@ -48,7 +49,7 @@ export function PartList({ parts, emphasized, onEmphasize }: PartListProps) {
                   absent && 'border border-dashed border-control-border',
                 )}
               >
-                {PART_COPY.condition[part.condition]}
+                {partRowWord(part)}
               </span>
               <AnimatePresence initial={false}>
                 {selected && part.detail !== '' && (

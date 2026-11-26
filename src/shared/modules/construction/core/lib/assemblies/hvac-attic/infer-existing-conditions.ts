@@ -1,18 +1,33 @@
-import type { ExistingConditions, HomeFacts, ResolvedHomeMaterials } from '@/shared/modules/construction/core/types'
+import type { ExistingConditions, ExistingPart, HomeFacts, ResolvedHomeMaterials } from '@/shared/modules/construction/core/types'
 
 import { basisOfMaterials, drawnPart } from '@/shared/modules/construction/core/lib/drawn-part'
+import { centralComponents, isCentralSystem, isDuctedSystem } from '@/shared/modules/construction/core/lib/hvac-system'
+
+const ABSENT: ExistingPart = { material: null, condition: 'absent' }
 
 export function inferHvacAtticExistingConditions({ property }: HomeFacts, home: ResolvedHomeMaterials): ExistingConditions {
   const ducts = home.ducts?.option ?? 'original-flex'
+  const central = isCentralSystem(property.hvacType)
+  const cools = central && centralComponents(property.hvacComponents) !== 'furnace'
+  const miniSplit = property.hvacType === 'mini-split'
+  const aging = (material: string, present: boolean): ExistingPart => present ? drawnPart(material, home, 'heating-cooling') : ABSENT
   return {
     form: property.hvacType === 'package-unit' ? 'package' : 'split',
     basis: basisOfMaterials(property, home, ['heating-cooling', 'ducts']),
     parts: {
-      'air-handler': drawnPart('furnace-coil', home, 'heating-cooling'),
+      'registers': isDuctedSystem(property.hvacType) ? { material: 'grille', condition: 'retained' } : ABSENT,
+      'return': central ? { material: 'return-grille', condition: 'retained' } : ABSENT,
+      'blower': aging('standard-blower', central),
+      'furnace': aging('standard-furnace', central),
+      'coil': aging('standard-coil', cools),
+      'plenum': central ? { material: 'sheet-metal', condition: 'retained' } : ABSENT,
       'duct-runs': drawnPart(ducts, home, 'ducts'),
-      'refrigerant-lines': drawnPart('copper', home, 'heating-cooling'),
-      'condenser': property.hvacType !== 'package-unit' && property.hvacComponents === 'furnace' ? { material: null, condition: 'absent' } : drawnPart('standard-seer', home, 'heating-cooling'),
+      'thermostat': { material: 'thermostat', condition: 'retained' },
+      'refrigerant-lines': aging('copper', cools),
+      'condenser': aging('standard-seer', cools),
       'package-unit': drawnPart('standard-package', home, 'heating-cooling'),
+      'mini-split-heads': aging('wall-head', miniSplit),
+      'mini-split-outdoor': aging('mini-split-condenser', miniSplit),
     },
   }
 }

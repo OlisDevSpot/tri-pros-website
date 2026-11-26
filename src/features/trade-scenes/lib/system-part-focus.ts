@@ -1,13 +1,16 @@
 import type { HomeSystemId, SystemPartId, Vec3, WindowPieceId } from '@/features/trade-scenes/types'
+import type { HvacIndoorLocation } from '@/shared/modules/construction/core/constants/enums'
 import type { RoofForm } from '@/shared/modules/construction/core/constants/roof-forms'
 
 import { CEILING_OPENING_LOOK } from '@/features/trade-scenes/constants/home-details'
-import { ATTIC_FAN_SPOT, COVERING_BASE, EQUIPMENT, GUTTER_BACK, GUTTER_Y, HOUSE, HOUSE_WALLS, LOW_SLOPE, LOW_SLOPE_DECK_Y, LOW_SLOPE_ROOF_Y, RAFTER_ORIGIN_Y, RIDGE_Y, SLOPE_LENGTH, WALL_TOP_Y, WINDOW_FRAMES } from '@/features/trade-scenes/constants/home-geometry'
+import { ATTIC_FAN_SPOT, COVERING_BASE, EQUIPMENT, GUTTER_BACK, GUTTER_Y, HOUSE, HOUSE_WALLS, LOW_SLOPE, LOW_SLOPE_DECK_Y, LOW_SLOPE_ROOF_Y, MINI_SPLIT_HEAD_SIZE, MINI_SPLIT_HEADS, MINI_SPLIT_OUTDOOR, RAFTER_ORIGIN_Y, RIDGE_Y, ROOMS, SLOPE_LENGTH, WALL_TOP_Y, WINDOW_FRAMES } from '@/features/trade-scenes/constants/home-geometry'
 import { LEAK } from '@/features/trade-scenes/constants/home-life'
 import { ATTIC_HEAT_LINE, DUCT_PIN_RISE, LOOK_INSIDE_WINDOW, PART_PIECES, STEP_CUTS, STEP_DEPTHS } from '@/features/trade-scenes/constants/look-inside'
 import { WINDOW_SEAL_LOOKS } from '@/features/trade-scenes/constants/system-part-looks'
 import { atticJoistBoxes } from '@/features/trade-scenes/lib/attic-joist-boxes'
 import { ceilingOpenings } from '@/features/trade-scenes/lib/ceiling-openings'
+import { indoorUnitBoxes } from '@/features/trade-scenes/lib/indoor-unit-boxes'
+import { indoorUnitPlacement } from '@/features/trade-scenes/lib/indoor-unit-placement'
 import { packageUnitPlacement } from '@/features/trade-scenes/lib/package-unit-placement'
 import { stepBottom, stepCentre, stepCutBack, stepStarts } from '@/features/trade-scenes/lib/step-cut-back'
 import { flashingBoxes } from '@/features/trade-scenes/lib/window-flashing-boxes'
@@ -81,14 +84,28 @@ const PIECE_PIN_ALONG = WINDOW.along - 0.2
 
 // The left wall's window, which every home view draws: the whole home's window spot stands on its glass.
 const SPOT_WINDOW = HOUSE_WALLS.left.openings[0]
+const CONDENSER_POINT: Vec3 = [EQUIPMENT.condenser.position[0], 0.55, EQUIPMENT.condenser.position[2]]
+// The indoor unit's sections, each pinned at its own centre wherever the unit stands.
+const INDOOR_SECTION_IDS = ['blower', 'furnace', 'coil', 'plenum'] as const satisfies readonly SystemPartId[]
+// The living room's grille, on its face under the ceiling where the run's boot comes through.
+const [LIVING_BOOT_X, , LIVING_BOOT_Z] = EQUIPMENT.ductRuns.map(run => run[run.length - 1]).find(([x]) => x > ROOMS.living.from && x < ROOMS.living.to)!
+const LIVING_ROOM_GRILLE: Vec3 = [LIVING_BOOT_X, CEILING_Y - 0.01, LIVING_BOOT_Z]
+// Every mini-split home has the first head, so the heads are pointed at the middle of it.
+const FIRST_HEAD: Vec3 = (() => {
+  const { position: [x, y, z], outward } = MINI_SPLIT_HEADS[0]
+  return [x, y, z - outward * MINI_SPLIT_HEAD_SIZE[2] / 2]
+})()
 // Where each system part sits on the house at rest, before the foundation lifts it: the whole window glass, which its spot
 // points at, and the equipment. Working numbers, set by eye.
 const SHARED_POINTS: Partial<Record<SystemPartId, Vec3>> = {
   'glazing': [-HOUSE.halfLength, HOUSE.floorY + SPOT_WINDOW.sill + 0.75, SPOT_WINDOW.along + 0.25],
-  'condenser': [EQUIPMENT.condenser.position[0], 0.55, EQUIPMENT.condenser.position[2]],
+  'condenser': CONDENSER_POINT,
   'refrigerant-lines': [-HOUSE.halfLength - 0.15, 0.4, EQUIPMENT.condenser.position[2] + 0.5],
-  'air-handler': EQUIPMENT.plenum.position,
   'duct-runs': ductC[1],
+  'registers': LIVING_ROOM_GRILLE,
+  'thermostat': EQUIPMENT.thermostat.position,
+  'mini-split-heads': FIRST_HEAD,
+  'mini-split-outdoor': MINI_SPLIT_OUTDOOR.position,
 }
 
 // The roof's and the attic's, and the package unit's, by roof form: on a gable the layers stand in section at the near
@@ -157,6 +174,19 @@ function pieceFocus(id: SystemPartId, peel: number, shown: ReadonlySet<SystemPar
   return [x, y + DUCT_PIN_RISE[id as keyof typeof DUCT_PIN_RISE], z]
 }
 
+// A section of the indoor unit at its centre where `location` stands it, closed up as the house draws it round a furnace or a
+// coil the system lacks; the return on its grille, where the room air goes in.
+function indoorSectionFocus(id: SystemPartId, form: RoofForm, location: HvacIndoorLocation, shown: ReadonlySet<SystemPartId>): Vec3 | null {
+  const placement = indoorUnitPlacement(location, form)
+  if (placement !== null && id === 'return') {
+    return placement.returnAir.grille.position
+  }
+  if (placement === null || !(INDOOR_SECTION_IDS as readonly SystemPartId[]).includes(id)) {
+    return null
+  }
+  return indoorUnitBoxes(placement, { furnace: shown.has('furnace'), coil: shown.has('coil') }).find(section => section.id === id)?.box.position ?? null
+}
+
 // A window part where it stands at rest: a glazing piece on its own glass, the window's other parts at their points.
 function windowRestingPoint(id: SystemPartId, shown: ReadonlySet<SystemPartId>): Vec3 | null {
   const piece = windowPieceBoxes(WINDOW_FRAMES[shown.has('pane') ? 'single' : 'double'], shown).find(entry => entry.id === id)
@@ -177,9 +207,9 @@ function restingPoint(system: HomeSystemId, form: RoofForm, id: SystemPartId): V
 // its step shows, which moves with the peel and with the other parts `shown` above and below it; the bottom step, whole
 // on both sides of the cut, keeps its resting point. A window part is pointed at where it stands at rest, moved out as far as
 // the pull (`peel`) has moved it. A piece of the duct run is pointed at its own step, along `ductRun`, the line the house
-// draws the opened run on (hung or laid); with no duct piece shown it is never read. The wall is looked inside whole, so
-// none of its parts has a place.
-export function systemPartFocus(system: HomeSystemId, form: RoofForm, id: SystemPartId, peel: number, shown: Iterable<SystemPartId>, ductRun: readonly Vec3[]): Vec3 | null {
+// draws the opened run on (hung or laid); with no duct piece shown it is never read. The indoor unit's sections are pointed at
+// where `location` stands the unit. The wall is looked inside whole, so none of its parts has a place.
+export function systemPartFocus(system: HomeSystemId, form: RoofForm, id: SystemPartId, peel: number, shown: Iterable<SystemPartId>, ductRun: readonly Vec3[], location: HvacIndoorLocation = 'attic'): Vec3 | null {
   if (system === 'windows') {
     const set = new Set(shown)
     const point = windowRestingPoint(id, set)
@@ -187,9 +217,10 @@ export function systemPartFocus(system: HomeSystemId, form: RoofForm, id: System
     return point === null || offset === undefined ? point : [point[0] + offset[0], point[1] + offset[1], point[2] + offset[2]]
   }
   if (system === 'heating-cooling') {
-    const piece = pieceFocus(id, peel, new Set(shown), ductRun)
-    if (piece !== null) {
-      return piece
+    const set = new Set(shown)
+    const point = pieceFocus(id, peel, set, ductRun) ?? indoorSectionFocus(id, form, location, set)
+    if (point !== null) {
+      return point
     }
   }
   const point = restingPoint(system, form, id)

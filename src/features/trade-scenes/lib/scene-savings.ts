@@ -12,6 +12,7 @@ import { repairsFigure } from '@/features/trade-scenes/lib/repairs-figure'
 import { HOME_MATERIAL_IDS } from '@/shared/modules/construction/core/constants/home-material-ids'
 import { HOME_MATERIALS } from '@/shared/modules/construction/core/constants/home-materials'
 import { SCOPE_INSTALLS } from '@/shared/modules/construction/core/constants/scope-installs'
+import { billsPaid } from '@/shared/modules/construction/core/lib/bills-paid'
 import { combineCuts } from '@/shared/modules/construction/core/lib/combine-cuts'
 import { cutFor } from '@/shared/modules/construction/core/lib/cut-for'
 import { installKind } from '@/shared/modules/construction/core/lib/install-kind'
@@ -25,23 +26,34 @@ interface SceneSavingsInput {
   repairsOverrides: TradeSceneInputs['repairsOverrides']
 }
 
-interface Landed {
+interface LandedOn {
   baseTrades: TradeSlug[]
   addOns: BillCutAddOnId[]
   addOnTrades: TradeSlug[]
+}
+
+interface Landed {
+  byCategory: Record<SavingsCategory, LandedOn>
   repairs: { trade: TradeSlug, wear: Wear | null }[]
 }
+
+const newByCategory = <T>() => Object.fromEntries(SAVINGS_CATEGORIES.map(category => [category, new Set<T>()])) as Record<SavingsCategory, Set<T>>
 
 // The scene credits only work it draws, part by part. A bill moves only for an installed part that beats what the home has there (a
 // like-for-like part earns nothing), while repairs are avoided only by a part that is the material itself (a new gutter is not a new roof), once per material.
 function landed({ resolved, home, proposedScopeIds }: SceneSavingsInput, installs: Partial<Record<string, ScopeInstall>>): Landed {
-  const baseTrades = new Set<TradeSlug>()
-  const addOns = new Set<BillCutAddOnId>()
-  const addOnTrades = new Set<TradeSlug>()
+  const baseTrades = newByCategory<TradeSlug>()
+  const addOns = newByCategory<BillCutAddOnId>()
+  const addOnTrades = newByCategory<TradeSlug>()
   const repairs = new Map<TradeSlug, Wear | null>()
   const credited = new Set<string>()
 
   for (const { assembly, parts, existing } of resolved) {
+    // New ducts save only on a bill the home pays that side on both today and after the build, so a furnace-only home never
+    // earns them on electric, and a home whose heat pump takes the furnace out never earns them on gas.
+    const paidToday = billsPaid(Object.entries(existing.parts).map(([id, entry]) => ({ id, ...entry })), assembly)
+    const paidAfter = billsPaid(parts, assembly)
+    const addOnLands = (category: SavingsCategory) => (paidToday?.has(category) ?? true) && (paidAfter?.has(category) ?? true)
     for (const part of parts) {
       if (part.condition !== 'installed' || part.material === null) {
         continue
@@ -51,25 +63,30 @@ function landed({ resolved, home, proposedScopeIds }: SceneSavingsInput, install
       if (!scope || !definition) {
         continue
       }
+      const baseLands = (category: SavingsCategory) => definition.materials[part.material!].bills?.includes(category) ?? true
       const saves = (material: string) => installKind(definition, existing.parts[part.id]?.material ?? null, material) === 'saves-energy'
       const { cut, stepUp } = definition.materials[part.material]
       // A step up earns the base only over a home below where it steps up from, so topping off R-30 to R-38 earns the step alone.
       if (stepUp) {
-        if (saves(stepUp.from)) {
-          baseTrades.add(scope.trade)
-        }
-        if (saves(part.material)) {
-          addOns.add(stepUp.cut)
-          addOnTrades.add(scope.trade)
+        for (const category of SAVINGS_CATEGORIES) {
+          if (saves(stepUp.from) && baseLands(category)) {
+            baseTrades[category].add(scope.trade)
+          }
+          if (saves(part.material) && addOnLands(category)) {
+            addOns[category].add(stepUp.cut)
+            addOnTrades[category].add(scope.trade)
+          }
         }
       }
       else if (saves(part.material)) {
-        if (cut) {
-          addOns.add(cut)
-          addOnTrades.add(scope.trade)
-        }
-        else {
-          baseTrades.add(scope.trade)
+        for (const category of SAVINGS_CATEGORIES) {
+          if (cut && addOnLands(category)) {
+            addOns[category].add(cut)
+            addOnTrades[category].add(scope.trade)
+          }
+          else if (!cut && baseLands(category)) {
+            baseTrades[category].add(scope.trade)
+          }
         }
       }
       for (const id of HOME_MATERIAL_IDS) {
@@ -85,17 +102,18 @@ function landed({ resolved, home, proposedScopeIds }: SceneSavingsInput, install
   // Cuts read in the assemblies' trade order, whatever order the parts happen to draw in.
   const tradeOrder = resolved.flatMap(({ assembly }) => assembly.trades)
   const inOrder = (trades: Set<TradeSlug>) => [...trades].sort((a, b) => tradeOrder.indexOf(a) - tradeOrder.indexOf(b))
-  return { baseTrades: inOrder(baseTrades), addOns: [...addOns], addOnTrades: inOrder(addOnTrades), repairs: [...repairs].map(([trade, wear]) => ({ trade, wear })) }
+  const byCategory = Object.fromEntries(SAVINGS_CATEGORIES.map(category => [category, { baseTrades: inOrder(baseTrades[category]), addOns: [...addOns[category]], addOnTrades: inOrder(addOnTrades[category]) }])) as Record<SavingsCategory, LandedOn>
+  return { byCategory, repairs: [...repairs].map(([trade, wear]) => ({ trade, wear })) }
 }
 
 // The same combineCuts and cutFor the ROI calculator runs, so a figure shown in the scene matches the calculator's for the same picks.
 export function sceneSavings(input: SceneSavingsInput, cuts: TradeBillCuts, installs: Partial<Record<string, ScopeInstall>> = SCOPE_INSTALLS): SceneSavings {
-  const { baseTrades, addOns, addOnTrades, repairs } = landed(input, installs)
-  const earned = baseTrades.length > 0 || addOns.length > 0
+  const { byCategory, repairs } = landed(input, installs)
   // With no cut earned (always so in the existing view, and for a like-for-like build) a typed cut has nothing to apply to, so the figures stay whole.
   const cutOf = (category: SavingsCategory): BillCut => {
     const bill = { ...input.bills[category], now: input.bills[category].now ?? CLIMATE_DEFAULT_BILLS[input.climate][category] }
-    if (!earned) {
+    const { baseTrades, addOns, addOnTrades } = byCategory[category]
+    if (baseTrades.length === 0 && addOns.length === 0) {
       return cutFor({ ...bill, cut: { mode: 'trades', value: null } }, [], 0)
     }
     const { parts, combined } = combineCuts({ trades: baseTrades, addOns, addOnTrades }, category, cuts)

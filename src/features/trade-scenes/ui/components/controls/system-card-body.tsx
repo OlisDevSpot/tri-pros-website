@@ -8,12 +8,14 @@ import { NO_CHANGE_CHOICE } from '@/features/trade-scenes/constants/scene-contro
 import { useApplySceneChange } from '@/features/trade-scenes/hooks/use-apply-scene-change'
 import { useSceneTargets } from '@/features/trade-scenes/hooks/use-scene-targets'
 import { currentYear } from '@/features/trade-scenes/lib/current-year'
+import { moveToAtticOffered } from '@/features/trade-scenes/lib/indoor-location'
 import { sceneChangeSlots } from '@/features/trade-scenes/lib/scene-change-slots'
+import { sceneRoofForm } from '@/features/trade-scenes/lib/scene-roof-form'
 import { systemBuildEntries } from '@/features/trade-scenes/lib/system-build-entries'
 import { systemInputSlotIds } from '@/features/trade-scenes/lib/system-input-slots'
 import { upgradeRowBlockedLine } from '@/features/trade-scenes/lib/upgrade-row-state'
 import { upgradeRows } from '@/features/trade-scenes/lib/upgrade-rows'
-import { workDetailsKind } from '@/features/trade-scenes/lib/work-details-kind'
+import { workDetailsKind, workDetailsShown } from '@/features/trade-scenes/lib/work-details-kind'
 import { BuildSwitch } from '@/features/trade-scenes/ui/components/controls/build-switch'
 import { EntryWorkDetails } from '@/features/trade-scenes/ui/components/controls/entry-work-details'
 import { ExistingChip } from '@/features/trade-scenes/ui/components/controls/existing-chip'
@@ -42,6 +44,10 @@ export function SystemCardBody({ system }: SystemCardBodyProps) {
     <ExistingChip key={slotId} slot={slotOf(slotId)!} slots={slots} material={material} />
   ))
 
+  // A whole new system has a choice only where its unit could move to the attic, so elsewhere its menu closes on the pick
+  // like any other.
+  const moveOffered = moveToAtticOffered(state.homeMaterials, sceneRoofForm(targets))
+
   const proposed = systemBuildEntries(rows, picks, state.efficiencyUpgrades).flatMap(({ row, kind, switches }): ReactNode[] => {
     const id = `build:${row.part}` as const
     const label = PART_LABELS[row.part]
@@ -63,10 +69,10 @@ export function SystemCardBody({ system }: SystemCardBodyProps) {
             add={words.add}
             short={words.short}
             slot={slot}
-            staysOpenOn={value => workDetailsKind(value) !== null}
+            staysOpenOn={value => workDetailsShown(workDetailsKind(value), moveOffered)}
             // Inside the menu the colours line up with its header, and the line pill, which wraps at the menu's width,
             // keeps a radius that reads at two rows.
-            extra={kind !== null && <div className="px-1.5 pb-1.5 [&_[data-slot=toggle-group]]:rounded-[18px]"><EntryWorkDetails kind={kind} slots={slots} /></div>}
+            extra={workDetailsShown(kind, moveOffered) && <div className="px-1.5 pb-1.5 [&_[data-slot=toggle-group]]:rounded-[18px]"><EntryWorkDetails kind={kind} slots={slots} /></div>}
           />
         )
       : (

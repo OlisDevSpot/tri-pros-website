@@ -3,7 +3,7 @@ import type { AssemblyId } from '@/shared/modules/construction/core/constants/as
 
 export const HOME_SYSTEM_IDS = ['roof', 'attic', 'windows', 'walls', 'heating-cooling', 'foundation'] as const
 
-export const BUILD_ROW_PART_IDS = ['covering', 'deck', 'gutter', 'radiant-barrier', 'attic-insulation', 'air-sealing', 'attic-fan', 'glazing', 'paint', 'air-handler', 'package-unit', 'duct-runs', 'floor-insulation'] as const
+export const BUILD_ROW_PART_IDS = ['covering', 'deck', 'gutter', 'radiant-barrier', 'attic-insulation', 'air-sealing', 'attic-fan', 'glazing', 'paint', 'blower', 'package-unit', 'duct-runs', 'mini-split-heads', 'floor-insulation'] as const
 
 // A system action card's build row lists these parts, grouped the way the owner names a home's systems, so a part sits under the
 // system a rep would look for it in.
@@ -12,7 +12,7 @@ export const HOME_SYSTEMS: readonly { id: HomeSystemId, rows: readonly { assembl
   { id: 'attic', rows: [{ assembly: 'roof-attic', part: 'radiant-barrier' }, { assembly: 'roof-attic', part: 'attic-insulation' }, { assembly: 'roof-attic', part: 'air-sealing' }, { assembly: 'roof-attic', part: 'attic-fan' }] },
   { id: 'windows', rows: [{ assembly: 'windows', part: 'glazing' }] },
   { id: 'walls', rows: [{ assembly: 'exterior-wall', part: 'paint' }] },
-  { id: 'heating-cooling', rows: [{ assembly: 'hvac-attic', part: 'air-handler' }, { assembly: 'hvac-attic', part: 'package-unit' }, { assembly: 'hvac-attic', part: 'duct-runs' }] },
+  { id: 'heating-cooling', rows: [{ assembly: 'hvac-attic', part: 'blower' }, { assembly: 'hvac-attic', part: 'package-unit' }, { assembly: 'hvac-attic', part: 'duct-runs' }, { assembly: 'hvac-attic', part: 'mini-split-heads' }] },
   { id: 'foundation', rows: [{ assembly: 'crawl-space', part: 'floor-insulation' }] },
 ]
 
@@ -25,6 +25,10 @@ export const HOUSE_OPENING_SYSTEM_IDS = ['attic', 'heating-cooling', 'foundation
 // The systems whose parts stand in the front wall, which only the Complete house draws, so the house stays closed while one
 // is picked, whatever home view the rep chose: the window its Look inside opens, and the walls' whole painted skin.
 export const HOUSE_CLOSING_SYSTEM_IDS = ['windows', 'walls'] as const satisfies readonly HomeSystemId[]
+
+// Today's system as the rep names it: a wall-mounted unit is a wall furnace or a wall unit, so the rep never reads its
+// equipment to tell them apart.
+export const HVAC_SYSTEM_CHOICES = ['central', 'package-unit', 'wall-furnace', 'wall-unit', 'portable', 'mini-split'] as const
 
 export const HOME_SPOT_IDS = ['roof', 'window', 'wall', 'equipment', 'foundation'] as const
 

@@ -1,4 +1,4 @@
-import type { BoxSpec, CeilingOpening, HouseWall, RoomSpan, WallOpening } from '@/features/trade-scenes/types'
+import type { BoxSpec, CeilingOpening, HouseWall, RoomSpan, Vec3, WallOpening } from '@/features/trade-scenes/types'
 import type { CameraFraming } from '@/shared/components/scene/types'
 
 import { ATTIC_FAN_LOOK } from '@/features/trade-scenes/constants/attic-fan-look'
@@ -235,6 +235,9 @@ export const WINDOW_FRAMES = {
   double: { bar: 0.075, depth: 0.12, panes: 2 },
 } as const
 
+const WALL_FURNACE_SIDE = { partition: 0, facing: 1 } as const
+const WALL_FURNACE_DEPTH = 0.18
+
 export const EQUIPMENT = {
   condenser: { position: [-7.25, 0, -2.1] as const, pad: [1.0, 0.08, 1.3] as const },
   meter: { position: [-HOUSE.halfLength - 0.02, HOUSE.floorY + 1.15, 2.7] as const },
@@ -246,6 +249,14 @@ export const EQUIPMENT = {
   // Most of the box hangs outside, the way a window unit sits on the sill with its condenser behind the house; `inside` of it
   // stands in from the wall's centre line.
   windowUnit: { x: -4.34, size: [0.6, 0.42, 0.6] as const, inside: 0.24 },
+  // Heat only, so nothing goes outside: flat on the living room's side of the bedroom partition, low where its warm air
+  // rises into the room, in front of the doorway. Its back is on `partition`'s face and its front looks along x by
+  // `facing`. [through the wall, height, along the wall]. Working numbers, set by screenshot.
+  wallFurnace: {
+    ...WALL_FURNACE_SIDE,
+    position: [PARTITIONS_X[WALL_FURNACE_SIDE.partition] + WALL_FURNACE_SIDE.facing * (HOUSE.partitionThickness / 2 + WALL_FURNACE_DEPTH / 2), HOUSE.floorY + 0.12 + 0.425, 0.5] as const,
+    size: [WALL_FURNACE_DEPTH, 0.85, 0.5] as const,
+  },
   // Toward the ridge, where the attic has the headroom for it under the rafters, standing just clear of the joists.
   plenum: { position: [-0.6, WALL_TOP_Y + 0.385, -1.55] as const, size: [0.7, 0.45, 0.7] as const },
   ductRadius: 0.11,
@@ -255,6 +266,39 @@ export const EQUIPMENT = {
     [[-0.25, WALL_TOP_Y + 0.38, -1.4], [0.1, WALL_TOP_Y + 0.37, -1], [0.44, WALL_TOP_Y + 0.36, -0.5]],
     [[-0.25, WALL_TOP_Y + 0.4, -1.75], [2, WALL_TOP_Y + 0.38, -2], [2.9, WALL_TOP_Y + 0.36, -1.3]],
   ] as const,
+} as const
+
+// Mini-split heads hang high on the back wall, which the open front looks straight at, one to a room in the order they fill
+// the rooms: the living room's between its partition and its window, the bedroom's in the corner by the left wall, the
+// kitchen's over the fridge, each clear of the windows, the wall unit and the cabinets. A head's `position` is the middle of
+// its back on the wall's inside face; it hangs into the room against `outward`. [along the wall, height, out from it].
+// Working numbers, set by screenshot.
+export const MINI_SPLIT_HEAD_SIZE = [0.8, 0.27, 0.2] as const
+const HEAD_Y = HOUSE.floorY + 2.25
+const ON_BACK_WALL = BACK_INNER + HOUSE.paintThickness
+export const MINI_SPLIT_HEADS: readonly { room: keyof typeof ROOMS, position: Vec3, outward: 1 | -1 }[] = [
+  { room: 'living', position: [-1.35, HEAD_Y, ON_BACK_WALL], outward: HOUSE_WALLS.back.outward },
+  { room: 'bedroom', position: [-5.25, HEAD_Y, ON_BACK_WALL], outward: HOUSE_WALLS.back.outward },
+  { room: 'kitchen', position: [5.3, HEAD_Y, ON_BACK_WALL], outward: HOUSE_WALLS.back.outward },
+]
+
+// On the lawn in the left side yard, its back to the wall and its fan to the yard, behind the condenser's pad. It stops short
+// enough of the heat lane through the left wall in front of it that the arrows never cross it, even on a slab, where the
+// house sits lowest round it. [out from the wall, height, along it]. Working numbers, set by screenshot.
+export const MINI_SPLIT_OUTDOOR = { position: [-6.35, 0.29, -3.62] as const, size: [0.3, 0.58, 0.76] as const } as const
+
+// Each head's lines leave the outdoor unit's back at `port` off the lawn, cross to the left wall and climb it at `riser`, turn
+// the back corner at `y` and run along the back wall's outside to come through it behind the head. A run that turns higher
+// climbs further from the corner, so no run crosses another; the runs over the back windows clear their heads. In the heads'
+// order, in a line-hide cover `MINI_SPLIT_LINE_SIZE` square. Working numbers, set by screenshot.
+export const MINI_SPLIT_LINE_SIZE = 0.05
+export const MINI_SPLIT_RUNS = {
+  port: 0.3,
+  runs: [
+    { riser: -3.68, y: HOUSE.floorY + 2.24 },
+    { riser: -3.75, y: HOUSE.floorY + 2.17 },
+    { riser: -3.61, y: HOUSE.floorY + 2.31 },
+  ],
 } as const
 
 // Every hole through the ceiling: a boot at each run's end, a recessed light's can in each room, and the two plumbing vents,
