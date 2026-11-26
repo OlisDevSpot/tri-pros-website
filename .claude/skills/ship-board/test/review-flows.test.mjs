@@ -38,3 +38,15 @@ test("previewHref stays on the preview", () => {
   assert.equal(C.previewHref(base, "https://evil.com"), null);
   assert.equal(C.previewHref("https://evil.com", "/x"), null);
 });
+
+test("previewFromComments reads the alias from Vercel's PR comment, link first, then its meta line", () => {
+  const alias = "tri-pros-website-git-feat-trade-sc-3e2051-olisdevspots-projects.vercel.app";
+  const meta = Buffer.from(JSON.stringify({ projects: [{ previewUrl: alias }] })).toString("base64");
+  const bot = (body) => ({ comments: [{ user: { login: "OlisDevSpot" }, body: "[Preview](https://evil.vercel.app)" }, { user: { login: "vercel[bot]" }, body }] });
+  assert.equal(C.previewFromComments(bot("| [Preview](https://" + alias + ") |")), "https://" + alias + "/");
+  assert.equal(C.previewFromComments(bot("[vc]: #x=:" + meta + "\nno link yet")), "https://" + alias + "/");
+  assert.equal(C.previewFromComments(JSON.stringify(bot("[vc]: #x=:" + meta))), "https://" + alias + "/");
+  assert.equal(C.previewFromComments(bot("[Preview](https://evil.com)")), null);
+  assert.equal(C.previewFromComments({ comments: [] }), null);
+  assert.equal(C.previewFromComments("not json"), null);
+});

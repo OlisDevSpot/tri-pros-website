@@ -1,4 +1,4 @@
-// Run: node test/harness.mjs lane-data-views decisions map --viewport=1280x900,390x844 --script=test/flows.checks.mjs
+// Run: node test/harness.mjs lane-data-views lane-r19 lane-drain decisions map --viewport=1280x900,390x844 --script=test/flows.checks.mjs
 export default async function ({ page, hash }) {
   const failures = [];
   const expect = (ok, msg) => { if (!ok) failures.push(msg); };
@@ -12,6 +12,13 @@ export default async function ({ page, hash }) {
     }));
     expect(r.flowCards === 0, "flows are not drawn as decision cards: " + r.flowCards);
     expect(r.link === "1 review flow to walk on its lane page →", "the lane's group links to its flows: " + r.link);
+    return { failures };
+  }
+  if (hash === "lane-r19" || hash === "lane-drain") {
+    await page.waitForTimeout(300);
+    const hrefs = await page.evaluate(() => [...document.querySelectorAll("#lane-inspector dl.facts a")].map((a) => a.getAttribute("href")));
+    const want = hash === "lane-r19" ? "https://tri-pros-website-git-feat-calculators-r19-olisdevspots-projects.vercel.app/" : "https://tri-pros-website-git-release-2026-11-13-d-9a1b2c-olisdevspots-projects.vercel.app/";
+    expect(hrefs.includes(want), "the status panel's preview is the alias Vercel posted on the PR, as GitHub shows it: " + JSON.stringify(hrefs));
     return { failures };
   }
   if (hash === "map") {

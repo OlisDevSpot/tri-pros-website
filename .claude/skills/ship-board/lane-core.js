@@ -157,6 +157,30 @@
     if (answer === "Not right" && !n) throw new Error("Say which step and what you saw, e.g. \"F1.3: the chips never appear\"");
     return { answer, answeredOn: today, note: n || null, reply: null, replyOn: null, appliedOn: null };
   }
+  // The address GitHub shows for a PR's preview is the branch alias Vercel's bot posts on it. Long branch names are
+  // cut and hashed in that alias, so it is read from the comment, never built from the branch name.
+  function previewFromComments(payload) {
+    let p = payload;
+    if (typeof p === "string") { try { p = JSON.parse(p); } catch { return null; } }
+    const list = Array.isArray(p) ? p : (p && (p.comments || (p.result && p.result.comments))) || [];
+    for (const c of list) {
+      const who = (c && c.user && c.user.login) || "";
+      if (!/^vercel(\[bot\])?$/i.test(who)) continue;
+      const body = String(c.body || "");
+      const link = /\[Preview\]\((https:\/\/[^)\s]+)\)/.exec(body);
+      if (link && safeLink(link[1])) return safeLink(link[1]);
+      const meta = /\[vc\]: #[^:]+:([A-Za-z0-9+/=]+)/.exec(body);
+      if (!meta) continue;
+      try {
+        const j = JSON.parse(typeof atob === "function" ? atob(meta[1]) : Buffer.from(meta[1], "base64").toString("utf8"));
+        const u = j && j.projects && j.projects[0] && j.projects[0].previewUrl;
+        const href = u && safeLink("https://" + u);
+        if (href) return href;
+      } catch { /* a meta line Vercel changed the shape of reads as no alias */ }
+    }
+    return null;
+  }
+
   // A path on the preview, so a flow link can never leave the lane's own deploy.
   function previewHref(base, path) {
     const root = safeLink(base);
@@ -428,5 +452,5 @@
     return h === "github.com" || h === "vercel.app" || h.endsWith(".vercel.app") ? u.href : null;
   }
 
-  globalThis.LaneCore = { deps, noLane, activeDeps, resolveDeps, isLive, stateOf, findCycle, layoutBlockerMap, localDay, hasStepMap, normalizeOptions, laneDecisions, openCount, answerPatch, FLOW_ANSWERS, laneFlows, flowsToWalk, flowAnswerPatch, previewHref, stepFor, pinsByStep, waitGap, collisionAsOf, collisionStale, validateBrief, validateLane, validateDecision, docId, migrateBrief, labelNames, kindOf, mapBlocks, startCommand, safeLink };
+  globalThis.LaneCore = { deps, noLane, activeDeps, resolveDeps, isLive, stateOf, findCycle, layoutBlockerMap, localDay, hasStepMap, normalizeOptions, laneDecisions, openCount, answerPatch, FLOW_ANSWERS, laneFlows, flowsToWalk, flowAnswerPatch, previewHref, previewFromComments, stepFor, pinsByStep, waitGap, collisionAsOf, collisionStale, validateBrief, validateLane, validateDecision, docId, migrateBrief, labelNames, kindOf, mapBlocks, startCommand, safeLink };
 })();

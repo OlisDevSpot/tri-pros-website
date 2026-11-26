@@ -968,14 +968,23 @@ function renderLive(){const p=$("#live");if(!p)return;const v=S.vc;
   else p.textContent="Live data: "+(VC_MSG[v.state]||"Vercel is unavailable ("+v.state+").");
 }
 const VSTATE={READY:["done","preview ready"],BUILDING:["agent","building"],QUEUED:["agent","queued"],INITIALIZING:["agent","starting"],ERROR:["blocked","build failed"],CANCELED:["","canceled"]};
-// The branch alias (brief.preview) always serves the branch's newest deploy, so flow links survive a push; a deploy URL is the fallback.
-function previewOf(l){const d=l.branch&&S.vc.byBranch[l.branch];const base=LaneCore.safeLink(l.brief?.preview)||(d&&d.url&&d.state==="READY"?LaneCore.safeLink(d.url):null);return{base,deploy:d||null,state:d?(VSTATE[d.state]||["",d.state.toLowerCase()]):null}}
+// The branch alias serves the branch's newest deploy and is the address GitHub shows, so links survive a push. It comes
+// from Vercel's comment on the PR (read once per PR), then brief.preview; a single deploy's URL is the last resort.
+S.alias={};
+function prAlias(l){
+  if(!l.pr)return null;const a=S.alias[l.pr];if(a&&!(a.failed&&Date.now()-a.failed>60000))return a.url;if(!S.mcp)return null;
+  S.alias[l.pr]={url:null};
+  S.mcp.callTool(GH.server,"issue_read",{method:"get_comments",owner:GH.owner,repo:GH.repo,issue_number:l.pr,perPage:100})
+    .then(r=>{const url=LaneCore.previewFromComments(r?.payload??r?.content?.[0]?.text??null);if(!url)return;S.alias[l.pr]={url};if(S.lane)renderLaneView()})
+    .catch(()=>{S.alias[l.pr]={url:null,failed:Date.now()}});
+  return null}
+function previewOf(l){const d=l.branch&&S.vc.byBranch[l.branch];const base=prAlias(l)||LaneCore.safeLink(l.brief?.preview)||(d&&d.url&&d.state==="READY"?LaneCore.safeLink(d.url):null);return{base,deploy:d||null,state:d?(VSTATE[d.state]||["",d.state.toLowerCase()]):null}}
 function previewChip(l){const d=l.branch&&S.vc.byBranch[l.branch];if(!d)return null;const[c,t]=VSTATE[d.state]||["",d.state.toLowerCase()||"deployed"];return el("span",{class:"chip "+c,title:"Vercel preview, "+ago(new Date(d.t).toISOString())},t)}
-function previewFact(l){const d=l.branch&&S.vc.byBranch[l.branch];const alias=LaneCore.safeLink(l.brief?.preview);if(!d)return alias?link(alias,"preview"):S.vc.state==="ok"?"no preview deploy for this branch":null;const[,t]=VSTATE[d.state]||["",d.state.toLowerCase()];return el("span",{},d.url?link(d.url,t):t," · "+ago(new Date(d.t).toISOString())+(d.sha?" · "+d.sha:""),d.inspector?el("span",{}," · ",link(d.inspector,"build log")):"")}
+function previewFact(l){const pv=previewOf(l),d=pv.deploy;if(!d)return pv.base?link(pv.base,"preview"):S.vc.state==="ok"?"no preview deploy for this branch":null;const t=pv.state[1];return el("span",{},pv.base?link(pv.base,t):d.url?link(d.url,t):t," · "+ago(new Date(d.t).toISOString())+(d.sha?" · "+d.sha:""),d.inspector?el("span",{}," · ",link(d.inspector,"build log")):"")}
 async function startConnectors(){
   let mcp=null;try{mcp=await window.claude?.use?.("mcp")}catch{}
   if(!mcp){S.vc={...S.vc,state:"unavailable"};S.gh={...S.gh,state:"unavailable"};renderLive();renderGhLive();renderMap();return}
-  S.mcp=mcp;
+  S.mcp=mcp;if(S.lane)renderLaneView();
   for(const k of Object.keys(GH_LISTS))ghWatch(k,"list_issues",GH_LISTS[k]);
   syncGhSubs();
   mcp.watchTool(VC.server,"list_deployments",{projectId:VC.project,teamId:VC.team,limit:60},ev=>{

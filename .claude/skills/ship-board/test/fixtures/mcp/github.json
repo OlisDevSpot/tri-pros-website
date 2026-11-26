@@ -1042,6 +1042,60 @@
     "method": "get_sub_issues",
     "sub_issues": []
    }
+  },
+  {
+   "tool": "issue_read",
+   "input": {
+    "method": "get_comments",
+    "owner": "OlisDevSpot",
+    "repo": "tri-pros-website",
+    "issue_number": 290,
+    "perPage": 100
+   },
+   "payload": {
+    "comments": [
+     {
+      "body": "Looks good on the iPad.",
+      "user": {
+       "login": "OlisDevSpot"
+      }
+     },
+     {
+      "body": "[vc]: #abc=:eyJpc01vbm9yZXBvIjogdHJ1ZSwgInR5cGUiOiAiZ2l0aHViIiwgInByb2plY3RzIjogW3sibmFtZSI6ICJ0cmktcHJvcy13ZWJzaXRlIiwgInByZXZpZXdVcmwiOiAidHJpLXByb3Mtd2Vic2l0ZS1naXQtZmVhdC1jYWxjdWxhdG9ycy1yMTktb2xpc2RldnNwb3RzLXByb2plY3RzLnZlcmNlbC5hcHAiLCAibmV4dENvbW1pdFN0YXR1cyI6ICJERVBMT1lFRCJ9XX0=\nThe latest updates on your projects.\n\n| Project | Deployment | Actions | Updated |\n| :--- | :----- | :------ | :------ |\n| [tri-pros-website](https://vercel.com/x/tri-pros-website) | Ready | [Preview](https://tri-pros-website-git-feat-calculators-r19-olisdevspots-projects.vercel.app) | now |\n",
+      "user": {
+       "login": "vercel[bot]"
+      }
+     }
+    ],
+    "method": "get_comments"
+   }
+  },
+  {
+   "tool": "issue_read",
+   "input": {
+    "method": "get_comments",
+    "owner": "OlisDevSpot",
+    "repo": "tri-pros-website",
+    "issue_number": 289,
+    "perPage": 100
+   },
+   "payload": {
+    "comments": [
+     {
+      "body": "Looks good on the iPad.",
+      "user": {
+       "login": "OlisDevSpot"
+      }
+     },
+     {
+      "body": "[vc]: #abc=:eyJpc01vbm9yZXBvIjogdHJ1ZSwgInR5cGUiOiAiZ2l0aHViIiwgInByb2plY3RzIjogW3sibmFtZSI6ICJ0cmktcHJvcy13ZWJzaXRlIiwgInByZXZpZXdVcmwiOiAidHJpLXByb3Mtd2Vic2l0ZS1naXQtcmVsZWFzZS0yMDI2LTExLTEzLWQtOWExYjJjLW9saXNkZXZzcG90cy1wcm9qZWN0cy52ZXJjZWwuYXBwIiwgIm5leHRDb21taXRTdGF0dXMiOiAiREVQTE9ZRUQifV19\nThe latest updates on your projects.\n\n| Project | Deployment | Actions | Updated |\n| :--- | :----- | :------ | :------ |\n| [tri-pros-website](https://vercel.com/x/tri-pros-website) | Ready |  | now |\n",
+      "user": {
+       "login": "vercel[bot]"
+      }
+     }
+    ],
+    "method": "get_comments"
+   }
   }
  ]
 }

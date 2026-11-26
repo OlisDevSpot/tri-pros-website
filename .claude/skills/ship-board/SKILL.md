@@ -22,7 +22,7 @@ Clearing a field: the page writes `null` (its db's `update` merges and has no de
 - **Brief**: the lane's `brief` object, written by the sync skill (#321) and, until it ships, by `/orient`; the lane page reads it.
 - **Decision**: a question only the owner can answer (`kind: "decision"`), with options or free text.
 - **Owner check**: something only the owner can verify (`kind: "check"`); open until `done`.
-- **Review flow**: one user flow the owner walks on the lane's preview before merging (`kind: "flow"` in `decisions`, numbered `no`, steps named `F<no>.<step>`). It is drawn in the lane page's Review flows section, never in the Decisions tab, and answered Works / Not right / Skip; a Not right carries the owner's note and is work for the lane's agent, closed like any answer below. The lane's `brief.preview` holds the branch alias (`https://<project>-git-<branch-slug>-<team>.vercel.app`), which the flow links use.
+- **Review flow**: one user flow the owner walks on the lane's preview before merging (`kind: "flow"` in `decisions`, numbered `no`, steps named `F<no>.<step>`). It is drawn in the lane page's Review flows section, never in the Decisions tab, and answered Works / Not right / Skip; a Not right carries the owner's note and is work for the lane's agent, closed like any answer below. Preview links use the branch alias Vercel's bot posts on the lane's PR (the address GitHub shows; long branch names are hashed, so it is never built by hand), then `brief.preview`, then the newest deploy's own URL.
 - **Watch out**: a risk to the lane, shown on its page.
 - **N waiting on you**: open decisions and owner checks for a lane.
 
@@ -49,4 +49,4 @@ Delete the docs the change created, `set` each lane and decision back from the p
 Never write to the board from a test; the harness runs the page on a mock store built from `test/fixtures/`.
 
 - Unit: `node --test '.claude/skills/ship-board/test/*.test.mjs'` (quoted glob; a folder argument fails on Node 24)
-- Page: `node .claude/skills/ship-board/test/harness.mjs now decisions reference lane-data-views`; review flows: add `map --script=test/flows.checks.mjs`; flags `--viewport=WxH`, `--scheme=light|dark`, `--brief=<laneId>=<file>`, `--order=lanes,decisions,collisions`, `--delay=<collection>=<ms>`, `--reject-next[=code]`, `--read-only`, `--script=<file.mjs>`. Each state prints one JSON line; screenshots go to `test/shots/`.
+- Page: `node .claude/skills/ship-board/test/harness.mjs now decisions reference lane-data-views`; review flows and preview links: `lane-data-views lane-r19 lane-drain decisions map --script=test/flows.checks.mjs`; flags `--viewport=WxH`, `--scheme=light|dark`, `--brief=<laneId>=<file>`, `--order=lanes,decisions,collisions`, `--delay=<collection>=<ms>`, `--reject-next[=code]`, `--read-only`, `--script=<file.mjs>`. Each state prints one JSON line; screenshots go to `test/shots/`.
